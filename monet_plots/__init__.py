@@ -1,0 +1,136 @@
+import warnings
+
+# Import taylordiagram module to make it available for documentation
+from . import taylordiagram
+from .colorbars import cmap_discretize, colorbar_index
+from .mapgen import draw_map
+from .plots import create_taylor_diagram  # Import with original name
+from .plots import (
+    kdeplot,
+    make_spatial_contours,
+    make_spatial_plot,
+    normval,
+    scatter,
+    spatial,
+    spatial_bias_scatter,
+    sp_scatter_bias,
+    timeseries,
+    wind_barbs,
+    wind_quiver,
+)
+
+# Keep the function available under a clear name
+taylordiagram_function = create_taylor_diagram  # Rename for public API
+
+__all__ = (
+    #
+    "savefig",
+    #
+    "cmap_discretize",
+    "colorbar_index",
+    #
+    "mapgen",
+    #
+    "kdeplot",
+    "make_spatial_contours",
+    "make_spatial_plot",
+    "normval",
+    "scatter",
+    "spatial",
+    "spatial_bias_scatter",
+    "taylordiagram",
+    "timeseries",
+    "wind_barbs",
+    "wind_quiver",
+)
+
+
+# This is the driver for all verify objects
+
+
+def savefig(fname, *, decorate=False, logo=None, logo_loc="bottom_left", logo_height=None, **kwargs):
+    """Save figure and optionally add a logo.
+
+    Parameters
+    ----------
+    fname : str
+        Output file name or path. Passed to ``plt.savefig``.
+        Must include a file extension (e.g., '.png', '.jpg').
+    decorate : bool, default: False
+        Whether to add the logo. If False, the function behaves like a simple
+        wrapper around ``plt.savefig``.
+    logo : str, optional
+        Path to the logo to be used. If not provided and ``decorate`` is True,
+        the default MONET logo is used.
+    logo_loc : str, default: "bottom_left"
+        The location for the logo. Options are:
+        - "bottom_left"
+        - "bottom_right"
+        - "top_right"
+        - "top_left"
+    logo_height : float or int, optional
+        Desired logo height in pixels. If not provided, the original logo
+        image dimensions are used. Modify to scale the logo.
+    **kwargs : dict
+        Passed to the ``plt.savefig`` function.
+
+    Returns
+    -------
+    None
+    """
+    import matplotlib.pyplot as plt
+    from PIL import Image
+    from pathlib import Path
+
+    # Save the figure first
+    plt.savefig(fname, **kwargs)
+
+    if not decorate:
+        return
+
+    if logo is None:
+        # Default logo path relative to the package
+        logo_path = Path(__file__).parent / "../data/MONET-logo.png"
+    else:
+        logo_path = Path(logo)
+
+    if not logo_path.exists():
+        warnings.warn(f"Logo file not found at {logo_path}, skipping decoration.")
+        return
+
+    # Open the saved figure and the logo
+    main_image = Image.open(fname)
+    logo_image = Image.open(logo_path)
+
+    # Resize logo if height is specified
+    if logo_height is not None:
+        aspect_ratio = logo_image.width / logo_image.height
+        new_width = int(logo_height * aspect_ratio)
+        logo_image = logo_image.resize((new_width, logo_height), Image.Resampling.LANCZOS)
+
+    # Calculate logo position
+    main_width, main_height = main_image.size
+    logo_width, logo_height = logo_image.size
+    padding = 10
+
+    if logo_loc == "bottom_left":
+        position = (padding, main_height - logo_height - padding)
+    elif logo_loc == "bottom_right":
+        position = (main_width - logo_width - padding, main_height - logo_height - padding)
+    elif logo_loc == "top_right":
+        position = (main_width - logo_width - padding, padding)
+    elif logo_loc == "top_left":
+        position = (padding, padding)
+    else:
+        raise ValueError(f"Invalid `logo_loc`: {logo_loc!r}")
+
+    # Paste the logo onto the main image
+    if main_image.mode != 'RGBA':
+        main_image = main_image.convert('RGBA')
+    if logo_image.mode != 'RGBA':
+        logo_image = logo_image.convert('RGBA')
+
+    main_image.paste(logo_image, position, logo_image)
+
+    # Save the final image
+    main_image.save(fname)
