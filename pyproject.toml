@@ -21,6 +21,7 @@ dependencies = [
     "seaborn",
     "pandas",
     "cartopy",
+    "xarray",
 ]
 
 [project.urls]
