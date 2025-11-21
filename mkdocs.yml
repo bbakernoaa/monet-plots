@@ -1,13 +1,45 @@
 site_name: MONET Plots
+repo_url: https://github.com/pypa/sampleproject
 theme:
   name: material
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
 nav:
   - Home: index.md
+  - Getting Started: getting-started.md
+  - Examples:
+    - Xarray Weather Example: examples/xarray_weather_example.ipynb
+    - GRIB Data Example: examples/grib_data_example.ipynb
+    - ROMS Ocean Example: examples/roms_ocean_example.ipynb
+    - KDE Plot Example: examples/kde_plot_example.ipynb
+    - Scatter Plot Example: examples/scatter_plot_example.ipynb
+    - Taylor Diagram Plot Example: examples/taylor_diagram_plot_example.ipynb
+    - Facet Grid Plot Example: examples/facet_grid_plot_example.ipynb
+    - Wind Plots Example: examples/wind_plots_example.ipynb
+    - Spatial Bias Scatter Plot Example: examples/spatial_bias_scatter_plot_example.ipynb
+    - Spatial Contour Plot Example: examples/spatial_contour_plot_example.ipynb
   - API Reference:
+    - API Home: api/index.md
     - Spatial Plots: plots/spatial.md
+    - Spatial Bias Scatter Plots: plots/spatial_bias_scatter.md
+    - Spatial Contour Plots: plots/spatial_contour.md
+    - Xarray Spatial Plots: plots/xarray_spatial.md
     - Time Series Plots: plots/timeseries.md
     - Taylor Diagrams: plots/taylor.md
     - KDE Plots: plots/kde.md
     - Scatter Plots: plots/scatter.md
     - Wind Plots: plots/wind.md
     - Facet Grids: plots/facet_grid.md
+  - Configuration: configuration/index.md
+  - Performance: performance/index.md
+  - Troubleshooting: troubleshooting/index.md

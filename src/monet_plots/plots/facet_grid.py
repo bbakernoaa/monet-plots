@@ -2,6 +2,8 @@
 from .base import BasePlot
 import seaborn as sns
 import matplotlib.pyplot as plt
+import pandas as pd
+import xarray as xr
 from ..style import wiley_style
 
 
@@ -15,7 +17,7 @@ class FacetGridPlot(BasePlot):
        """Initializes the facet grid.
 
        Args:
-           data (pandas.DataFrame): The data to plot.
+           data (pandas.DataFrame or xarray.DataArray): The data to plot.
            row (str, optional): Variable to map to row facets. Defaults to None
            col (str, optional): Variable to map to column facets. Defaults to None
            hue (str, optional): Variable to map to color mapping. Defaults to None
@@ -29,6 +31,11 @@ class FacetGridPlot(BasePlot):
        
        # Initialize BasePlot with general figure parameters
        super().__init__(**kwargs)
+       
+       # Convert xarray DataArray to pandas DataFrame if necessary
+       if isinstance(data, xr.DataArray):
+           # Convert xarray DataArray to pandas DataFrame
+           data = data.to_dataframe().reset_index()
        
        # Store the data and facet parameters
        self.data = data

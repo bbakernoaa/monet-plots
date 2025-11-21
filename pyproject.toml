@@ -25,8 +25,19 @@ dependencies = [
     "scipy", 
     "numpy",
     "statsmodels",
+    "cfgrib",
+    "eccodes",
+    "cdo",
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/pypa/sampleproject"
 "Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+
+[project.optional-dependencies]
+docs = [
+    "mkdocs>=1.4",
+    "mkdocs-material>=8.5",
+    "mkdocstrings[python]>=0.19",
+    "pymdown-extensions>=9.0",
+]

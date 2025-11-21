@@ -8,7 +8,6 @@ from .plots.wind_quiver import WindQuiverPlot
 from .plots.wind_barbs import WindBarbsPlot
 from .plots.spatial_bias_scatter import SpatialBiasScatterPlot
 from .plots.spatial_contour import SpatialContourPlot
-from .plots.xarray_spatial import XarraySpatialPlot
 from .plots.facet_grid import FacetGridPlot
 
 __all__ = [
@@ -21,6 +20,5 @@ __all__ = [
     'WindBarbsPlot',
     'SpatialBiasScatterPlot',
     'SpatialContourPlot',
-    'XarraySpatialPlot',
     'FacetGridPlot',
 ]

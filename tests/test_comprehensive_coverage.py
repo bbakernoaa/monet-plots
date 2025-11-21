@@ -94,7 +94,7 @@ class TestCoverageReport:
         assert len(coverage_summary['test_categories']) >= 7, "Should include at least 7 test categories"
         assert len(coverage_summary['test_modules']) >= 7, "Should have at least 7 test modules"
         
-        return coverage_summary
+        # Return statement removed to avoid pytest warning
     
     def test_fixture_coverage(self, mock_data_factory):
         """Test coverage of test fixtures and utilities."""
@@ -172,7 +172,7 @@ class TestCoverageReport:
         # Should have most fixtures working
         assert len(fixtures_tested) >= 6, f"Should have at least 6 fixtures working, got {len(fixtures_tested)}"
         
-        return fixtures_tested
+        # Return statement removed to avoid pytest warning
     
     def test_parameterized_test_coverage(self):
         """Test coverage of parameterized tests."""
@@ -195,7 +195,7 @@ class TestCoverageReport:
         # Verify parameterized tests exist
         assert len(parameterized_tests) >= 8, "Should have multiple parameterized tests"
         
-        return parameterized_tests
+        # Return statement removed to avoid pytest warning
     
     def test_error_handling_coverage(self):
         """Test coverage of error handling scenarios."""
@@ -219,7 +219,7 @@ class TestCoverageReport:
         # Should cover comprehensive error scenarios
         assert len(error_scenarios) >= 10, "Should cover at least 10 error scenarios"
         
-        return error_scenarios
+        # Return statement removed to avoid pytest warning
     
     def test_performance_test_coverage(self):
         """Test coverage of performance benchmarks."""
@@ -241,7 +241,7 @@ class TestCoverageReport:
         # Should cover key performance aspects
         assert len(performance_tests) >= 8, "Should cover at least 8 performance aspects"
         
-        return performance_tests
+        # Return statement removed to avoid pytest warning
     
     def test_integration_test_coverage(self):
         """Test coverage of integration workflows."""
@@ -263,7 +263,7 @@ class TestCoverageReport:
         # Should cover comprehensive workflows
         assert len(integration_workflows) >= 8, "Should cover at least 8 integration workflows"
         
-        return integration_workflows
+        # Return statement removed to avoid pytest warning
     
     def test_visual_testing_coverage(self):
         """Test coverage of visual regression and appearance tests."""
@@ -288,7 +288,7 @@ class TestCoverageReport:
         # Should cover comprehensive visual aspects
         assert len(visual_tests) >= 10, "Should cover at least 10 visual aspects"
         
-        return visual_tests
+        # Return statement removed to avoid pytest warning
     
     def test_tdd_compliance(self):
         """Test compliance with TDD principles."""
@@ -311,7 +311,7 @@ class TestCoverageReport:
         all_compliant = all(tdd_principles.values())
         assert all_compliant, "All TDD principles should be followed"
         
-        return tdd_principles
+        # Return statement removed to avoid pytest warning
     
     def test_file_size_compliance(self):
         """Test that all test files comply with size requirements."""
@@ -349,7 +349,7 @@ class TestCoverageReport:
         max_lines = max(file_sizes.values()) if file_sizes else 0
         assert max_lines <= 500, f"Largest file has {max_lines} lines, should be ≤500"
         
-        return file_sizes
+        # Return statement removed to avoid pytest warning
     
     def test_modularity_and_organization(self):
         """Test modularity and organization of the test suite."""
@@ -373,7 +373,7 @@ class TestCoverageReport:
         all_organized = all(test_organization.values())
         assert all_organized, "All organization principles should be followed"
         
-        return test_organization
+        # Return statement removed to avoid pytest warning
     
     def generate_final_coverage_report(self):
         """Generate final comprehensive coverage report."""
@@ -439,7 +439,7 @@ class TestCoverageReport:
         quality_score = sum(report['quality_metrics'].values()) / len(report['quality_metrics'])
         assert quality_score == 1.0, f"Quality score should be 100%, got {quality_score*100:.1f}%"
         
-        return report
+        # Return statement removed to avoid pytest warning
 
 
 # Test execution summary
@@ -465,7 +465,7 @@ class TestExecutionSummary:
         all_ready = all(readiness_checks.values())
         assert all_ready, "Test suite should be ready for execution"
         
-        return readiness_checks
+        # Return statement removed to avoid pytest warning
     
     def test_maintenance_guidelines(self):
         """Document test maintenance guidelines."""
@@ -486,7 +486,7 @@ class TestExecutionSummary:
         for i, guideline in enumerate(guidelines, 1):
             print(f"   {i}. {guideline}")
         
-        return guidelines
+        # Return statement removed to avoid pytest warning
 
 
 # Test cleanup fixture

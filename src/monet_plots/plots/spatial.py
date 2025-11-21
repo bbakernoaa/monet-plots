@@ -43,48 +43,54 @@ class SpatialPlot(BasePlot):
         
         # Add cartographic features if axes supports them (i.e., it's a GeoAxes)
         if hasattr(self.ax, 'coastlines'):
-            self.ax.coastlines()
-            self.ax.add_feature(cfeature.BORDERS, linestyle=':')
-            self.ax.add_feature(cfeature.STATES, linestyle=':')
-        else:
-            # Create new figure and axes with projection
-            super().__init__(fig=fig, ax=ax, subplot_kw={'projection': projection}, **kwargs)
-        
-        # Add cartographic features if axes supports them (i.e., it's a GeoAxes)
-        if hasattr(self.ax, 'coastlines'):
+            self.ax.add_feature(cfeature.LAND, facecolor='lightgray')
             self.ax.coastlines()
             self.ax.add_feature(cfeature.BORDERS, linestyle=':')
             self.ax.add_feature(cfeature.STATES, linestyle=':')
 
     def plot(self, modelvar, plotargs={}, ncolors=15, discrete=False, **kwargs):
-        """Plots the spatial data.
+       """Plots the spatial data.
 
-        Args:
-            modelvar (numpy.ndarray): The 2D model variable to plot.
-            plotargs (dict, optional): Keyword arguments to pass to `imshow`. Defaults to {}.
-            ncolors (int, optional): The number of colors to use for a discrete colorbar. Defaults to 15.
-            discrete (bool, optional): Whether to use a discrete colorbar. Defaults to False.
-            **kwargs: Additional keyword arguments to pass to `imshow`.
-        """
-        if 'cmap' not in plotargs:
-            plotargs['cmap'] = 'viridis'
+       Args:
+           modelvar (numpy.ndarray): The 2D model variable to plot.
+           plotargs (dict, optional): Keyword arguments to pass to `imshow`. Defaults to {}.
+           ncolors (int, optional): The number of colors to use for a discrete colorbar. Defaults to 15.
+           discrete (bool, optional): Whether to use a discrete colorbar. Defaults to False.
+           **kwargs: Additional keyword arguments to pass to `imshow`.
+       """
+       # Validate discrete parameter type
+       if not isinstance(discrete, bool):
+           raise TypeError(f"discrete parameter must be boolean, got {type(discrete).__name__}")
+       
+       # Validate ncolors parameter type and range
+       if not isinstance(ncolors, int):
+           raise TypeError(f"ncolors parameter must be integer, got {type(ncolors).__name__}")
+       if ncolors <= 0 or ncolors > 1000:
+           raise ValueError(f"ncolors parameter must be between 1 and 1000, got {ncolors}")
+       
+       # Validate plotargs parameter type
+       if not isinstance(plotargs, dict):
+           raise TypeError(f"plotargs parameter must be dict, got {type(plotargs).__name__}")
 
-        if 'transform' not in kwargs:
-            kwargs['transform'] = ccrs.PlateCarree()
+       if 'cmap' not in plotargs:
+           plotargs['cmap'] = 'viridis'
 
-        if discrete:
-            vmin = plotargs.get('vmin', modelvar.min())
-            vmax = plotargs.get('vmax', modelvar.max())
-            # Create discrete colormap without using colorbar_index which causes issues with cartopy
-            from matplotlib.colors import BoundaryNorm
-            import numpy as np
-            bounds = np.linspace(vmin, vmax, ncolors + 1)
-            norm = BoundaryNorm(bounds, ncolors)
-            plotargs['cmap'] = plotargs['cmap'] if isinstance(plotargs['cmap'], str) else plotargs['cmap'].name
-            im = self.ax.imshow(modelvar, norm=norm, **plotargs, **kwargs)
-            self.cbar = self.fig.colorbar(im, ax=self.ax, ticks=np.linspace(vmin, vmax, ncolors))
-        else:
-            im = self.ax.imshow(modelvar, **plotargs, **kwargs)
-            self.cbar = self.fig.colorbar(im, ax=self.ax)
+       if 'transform' not in kwargs:
+           kwargs['transform'] = ccrs.PlateCarree()
 
-        return self.ax
+       if discrete:
+           vmin = plotargs.get('vmin', modelvar.min())
+           vmax = plotargs.get('vmax', modelvar.max())
+           # Create discrete colormap without using colorbar_index which causes issues with cartopy
+           from matplotlib.colors import BoundaryNorm
+           import numpy as np
+           bounds = np.linspace(vmin, vmax, ncolors + 1)
+           norm = BoundaryNorm(bounds, ncolors)
+           plotargs['cmap'] = plotargs['cmap'] if isinstance(plotargs['cmap'], str) else plotargs['cmap'].name
+           im = self.ax.imshow(modelvar, norm=norm, **plotargs, **kwargs)
+           self.cbar = self.fig.colorbar(im, ax=self.ax, ticks=np.linspace(vmin, vmax, ncolors))
+       else:
+           im = self.ax.imshow(modelvar, **plotargs, **kwargs)
+           self.cbar = self.fig.colorbar(im, ax=self.ax)
+
+       return self.ax

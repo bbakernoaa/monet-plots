@@ -277,6 +277,17 @@ def baseline_images_dir():
 
 
 @pytest.fixture
+def visual_thresholds():
+    """Visual regression thresholds."""
+    return {
+        'pixel_tolerance': 0.01, # 1% of pixels can differ
+        'structural_similarity': 0.95,  # SSIM threshold
+        'color_tolerance': 10,  # RGB color difference tolerance
+        'size_tolerance': 2 # Pixel size difference tolerance
+    }
+
+
+@pytest.fixture
 def test_outputs_dir(temp_directory):
     """Directory for test output files."""
     outputs_dir = Path(temp_directory) / "test_outputs"
