@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 from monet_plots import style, TimeSeriesPlot
 
 # Apply Wiley style (default)
-plt.style.use(style.wiley_style)
+style.set_style("wiley")
 
 # Create a plot
 plot = TimeSeriesPlot(figsize=(12, 6))
@@ -45,51 +45,22 @@ plot.save("wiley_style.png")
 
 ### APS Style
 
-For American Physical Society publications:
+For American Physical Society publications, use the `paper` style context:
 
 ```python
-# Apply APS-style configuration
-aps_style = {
-    'font.family': 'serif',
-    'font.serif': ['Times New Roman'],
-    'font.size': 10,
-    'axes.labelsize': 10,
-    'axes.titlesize': 12,
-    'legend.fontsize': 9,
-    'figure.figsize': (8, 6),
-    'figure.dpi': 300,
-    'savefig.dpi': 300,
-    'savefig.format': 'eps',  # EPS format for APS
-    'axes.grid': True,
-    'grid.linestyle': ':',
-    'grid.color': 'gray'
-}
-
-plt.style.use(aps_style)
+from monet_plots import style
+style.set_style("paper")
 ```
 
 ### Nature Style
 
-For Nature journal publications:
+For Nature journal publications, use the `paper` style context (or customize further if needed):
 
 ```python
-# Apply Nature-style configuration
-nature_style = {
-    'font.family': 'sans-serif',
-    'font.sans-serif': ['Helvetica'],
-    'font.size': 7,
-    'axes.labelsize': 7,
-    'axes.titlesize': 9,
-    'legend.fontsize': 7,
-    'figure.figsize': (3.5, 2),  # Single column
-    'figure.dpi': 300,
-    'savefig.dpi': 300,
-    'savefig.format': 'tiff',
-    'axes.grid': False,
-    'axes.spines': ['top', 'right']
-}
-
-plt.style.use(nature_style)
+from monet_plots import style
+style.set_style("paper")
+# Further customizations can be applied after setting the base style
+# plt.rcParams.update({'font.size': 7, 'figure.figsize': (3.5, 2)})
 ```
 
 ## Quick Customizations
@@ -409,83 +380,33 @@ plot.save("colorblind_qualitative.png")
 
 ## Quick Style Templates
 
+MONET Plots provides convenient `set_style` contexts for common use cases:
+
 ### Presentation Style
 
-```python
-# Style for presentations
-presentation_style = {
-    'figure.figsize': (12, 8),
-    'figure.dpi': 100,
-    'axes.labelsize': 14,
-    'axes.titlesize': 18,
-    'legend.fontsize': 12,
-    'xtick.labelsize': 12,
-    'ytick.labelsize': 12,
-    'font.size': 14,
-    'axes.grid': False,
-    'savefig.dpi': 150,
-    'savefig.format': 'png',
-    'savefig.bbox': 'tight'
-}
+Apply a style optimized for presentations:
 
-plt.style.use(presentation_style)
+```python
+from monet_plots import style
+style.set_style("presentation")
 ```
 
 ### Paper Publication Style
 
-```python
-# Style for academic papers
-paper_style = {
-    'font.family': 'serif',
-    'font.serif': ['Times New Roman'],
-    'font.size': 10,
-    'axes.labelsize': 10,
-    'axes.titlesize': 12,
-    'legend.fontsize': 9,
-    'xtick.labelsize': 9,
-    'ytick.labelsize': 9,
-    'figure.figsize': (8, 6),
-    'figure.dpi': 300,
-    'savefig.dpi': 300,
-    'savefig.format': 'tiff',
-    'savefig.bbox': 'tight',
-    'axes.grid': True,
-    'grid.linestyle': ':',
-    'grid.color': 'lightgray',
-    'axes.spines': ['bottom', 'left'],
-    'axes.spines.right': False,
-    'axes.spines.top': False
-}
+Apply a style suitable for academic papers:
 
-plt.style.use(paper_style)
+```python
+from monet_plots import style
+style.set_style("paper")
 ```
 
 ### Web Publication Style
 
-```python
-# Style for web content
-web_style = {
-    'font.family': 'sans-serif',
-    'font.sans-serif': ['Arial', 'Helvetica'],
-    'font.size': 12,
-    'axes.labelsize': 12,
-    'axes.titlesize': 16,
-    'legend.fontsize': 11,
-    'xtick.labelsize': 11,
-    'ytick.labelsize': 11,
-    'figure.figsize': (10, 6),
-    'figure.dpi': 100,
-    'savefig.dpi': 150,
-    'savefig.format': 'png',
-    'savefig.bbox': 'tight',
-    'axes.grid': True,
-    'grid.linestyle': '-',
-    'grid.color': '#e0e0e0',
-    'axes.facecolor': '#f8f9fa',
-    'figure.facecolor': 'white'
-}
+Apply a style designed for web content:
 
-plt.style.use(web_style)
+```python
+from monet_plots import style
+style.set_style("web")
 ```
 
 ## Common Styling Patterns
@@ -594,6 +515,7 @@ After mastering basic styling, explore:
 
 | Style Element | Key | Common Values |
 |---------------|-----|---------------|
+| Preset Style | `style.set_style(context)` | `"wiley"`, `"presentation"`, `"paper"`, `"web"`, `"default"` |
 | Font Family | `font.family` | `serif`, `sans-serif`, `monospace` |
 | Font Size | `font.size` | 8-16pt for most uses |
 | Figure Size | `figure.figsize` | (8, 6), (12, 8), (10, 6) |
