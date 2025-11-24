@@ -10,6 +10,10 @@ The examples are organized by difficulty and application area, starting from bas
 |------------------|------------|------------|
 | [Getting Started](./getting-started) | Beginner | Basic plotting concepts |
 | [Core Plot Types](./core-plots) | Beginner | Individual plot types |
+| [Brier Score Decomposition](./plots/brier_decomposition.md) | Intermediate | Forecast verification |
+| [Categorical Plot](./plots/categorical_plot.md) | Intermediate | Data distribution |
+| [Conditional Bias Plot](./plots/conditional_bias_plot.md) | Intermediate | Forecast bias analysis |
+| [Spread-Skill Plot](./plots/spread_skill_plot.md) | Intermediate | Ensemble reliability |
 | [Advanced Workflows](./advanced-workflows) | Intermediate | Multi-plot analysis |
 | [Scientific Applications](./scientific-applications) | Advanced | Domain-specific use cases |
 | [Customization](./customization) | Intermediate | Advanced styling and customization |
@@ -27,6 +31,10 @@ If you're new to MONET Plots, follow this path:
 For users with some experience:
 
 1. **[Core Plot Types](./core-plots)** - Master individual plot types
+2. **[Brier Score Decomposition](./plots/brier_decomposition.md)** - Analyze forecast skill
+3. **[Categorical Plot](./plots/categorical_plot.md)** - Visualize data distribution
+4. **[Conditional Bias Plot](./plots/conditional_bias_plot.md)** - Analyze forecast bias
+5. **[Spread-Skill Plot](./plots/spread_skill_plot.md)** - Evaluate ensemble reliability
 2. **[Multi-Plot Layouts](./advanced-workflows/multi-plot-layouts)** - Combine plots
 3. **[Statistical Analysis](./advanced-workflows/statistical-analysis)** - Add statistics
 
