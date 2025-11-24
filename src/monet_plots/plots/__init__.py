@@ -3,13 +3,14 @@ from .scatter import ScatterPlot
 from .timeseries import TimeSeriesPlot
 from .spatial import SpatialPlot
 from .kde import KDEPlot
-from .taylor import TaylorDiagramPlot
+from .taylor_diagram import TaylorDiagramPlot
 from .wind_barbs import WindBarbsPlot
 from .wind_quiver import WindQuiverPlot
 from .facet_grid import FacetGridPlot
 from .spatial_bias_scatter import SpatialBiasScatterPlot
 from .spatial_contour import SpatialContourPlot
-from .xarray_spatial import XarraySpatialPlot
+from .spatial_imshow import SpatialImshow
+from .sp_scatter_bias import SpScatterBiasPlot
 
 # New Verification Plots
 from .performance_diagram import PerformanceDiagramPlot
@@ -20,6 +21,7 @@ from .brier_decomposition import BrierScoreDecompositionPlot
 from .scorecard import ScorecardPlot
 from .rev import RelativeEconomicValuePlot
 from .conditional_bias import ConditionalBiasPlot
+from .ensemble import SpreadSkillPlot
 
 __all__ = [
     "BasePlot",
@@ -33,7 +35,8 @@ __all__ = [
     "FacetGridPlot",
     "SpatialBiasScatterPlot",
     "SpatialContourPlot",
-    "XarraySpatialPlot",
+    "SpatialImshow",
+    "SpScatterBiasPlot",
     "PerformanceDiagramPlot",
     "ROCCurvePlot",
     "ReliabilityDiagramPlot",
@@ -42,4 +45,5 @@ __all__ = [
     "ScorecardPlot",
     "RelativeEconomicValuePlot",
     "ConditionalBiasPlot",
+    "SpreadSkillPlot",
 ]

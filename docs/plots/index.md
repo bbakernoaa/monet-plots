@@ -20,6 +20,7 @@ The following verification plots are available. Each link directs to a page deta
 | [`ScorecardPlot`](./scorecard) | Provides a tabular or graphical summary of key verification statistics for quick assessment. | [`Scorecard`](./scorecard) |
 | [`RelativeEconomicValuePlot`](./rev) | Evaluates the economic value of forecasts by comparing them against reference forecasts. | [`Relative Economic Value (REV)`](./rev) |
 | [`ConditionalBiasPlot`](./conditional_bias) | Shows bias conditioned on forecast value, helping to identify systematic over/under-forecasting for certain outcomes. | [`Conditional Bias`](./conditional_bias) |
+| [`CategoricalPlot`](./categorical) | Creates grouped bar or violin plots for categorical data. | [`Categorical Plot`](./categorical) |
 
 ## Usage and Style Guidelines
 

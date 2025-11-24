@@ -646,7 +646,7 @@ def facet_time_map(
         fig.colorbar(mesh, cax=cax, orientation="vertical", label=cbar_label)
     if suptitle:
         fig.suptitle(suptitle, fontsize=14, fontweight="bold")
-    fig.tight_layout(rect=(0, 0, 0.97, 1))
+    
     # Export
     if export_path:
         if export_formats is None:

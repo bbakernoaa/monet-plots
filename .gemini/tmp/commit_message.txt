@@ -1,0 +1,11 @@
+feat: Implement context-based style switching and update docs
+
+This commit introduces a new `set_style` function in `monet_plots/style.py`
+that allows users to easily switch between predefined plotting styles
+(e.g., "wiley", "presentation", "paper", "web") based on a context string.
+
+The `docs/configuration/basic-styling.md` file has been updated to:
+- Reflect the use of the new `set_style` function.
+- Remove redundant style definitions that are now managed centrally.
+- Provide clear examples of how to use `set_style` for different contexts.
+- Update the "Quick Reference" table to include the `set_style` function.

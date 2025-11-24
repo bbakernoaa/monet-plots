@@ -1,6 +1,39 @@
 import warnings
 import numpy as np
+import pandas as pd
 from typing import Any, Dict, Union
+
+
+def to_dataframe(data: Any) -> pd.DataFrame:
+    """
+    Convert input data to a pandas DataFrame.
+
+    Args:
+        data: Input data. Can be a pandas DataFrame, xarray DataArray,
+              xarray Dataset, or numpy ndarray.
+
+    Returns:
+        A pandas DataFrame.
+
+    Raises:
+        TypeError: If the input data type is not supported.
+    """
+    if isinstance(data, pd.DataFrame):
+        return data
+    
+    # Using hasattr to avoid direct dependency on xarray for users who don't have it installed.
+    if hasattr(data, 'to_dataframe'): # Works for both xarray DataArray and Dataset
+        return data.to_dataframe()
+
+    if isinstance(data, np.ndarray):
+        if data.ndim == 1:
+            return pd.DataFrame(data, columns=['col_0'])
+        elif data.ndim == 2:
+            return pd.DataFrame(data, columns=[f'col_{i}' for i in range(data.shape[1])])
+        else:
+            raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
+
+    raise TypeError(f"Unsupported data type: {type(data).__name__}")
 
 
 def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:

@@ -1,7 +1,7 @@
 # src/monet_plots/__init__.py
 from .plots.spatial import SpatialPlot
 from .plots.timeseries import TimeSeriesPlot
-from .plots.taylor import TaylorDiagramPlot
+from .plots.taylor_diagram import TaylorDiagramPlot
 from .plots.kde import KDEPlot
 from .plots.scatter import ScatterPlot
 from .plots.wind_quiver import WindQuiverPlot
@@ -9,6 +9,21 @@ from .plots.wind_barbs import WindBarbsPlot
 from .plots.spatial_bias_scatter import SpatialBiasScatterPlot
 from .plots.spatial_contour import SpatialContourPlot
 from .plots.facet_grid import FacetGridPlot
+from .plots.performance_diagram import PerformanceDiagramPlot
+from .plots.roc_curve import ROCCurvePlot
+from .plots.reliability_diagram import ReliabilityDiagramPlot
+from .plots.rank_histogram import RankHistogramPlot
+from .plots.brier_decomposition import BrierScoreDecompositionPlot
+from .plots.scorecard import ScorecardPlot
+from .plots.rev import RelativeEconomicValuePlot
+from .plots.conditional_bias import ConditionalBiasPlot
+from .plots.ensemble import SpreadSkillPlot
+from .plots.spatial_imshow import SpatialImshow
+from .plots.sp_scatter_bias import SpScatterBiasPlot
+from .plots.windrose import Windrose
+from .plots.meteogram import Meteogram
+from .plots.upper_air import UpperAir
+from .plots.profile import ProfilePlot
 
 __all__ = [
     'SpatialPlot',
@@ -21,4 +36,19 @@ __all__ = [
     'SpatialBiasScatterPlot',
     'SpatialContourPlot',
     'FacetGridPlot',
+    'PerformanceDiagramPlot',
+    'ROCCurvePlot',
+    'ReliabilityDiagramPlot',
+    'RankHistogramPlot',
+    'BrierScoreDecompositionPlot',
+    'ScorecardPlot',
+    'RelativeEconomicValuePlot',
+    'ConditionalBiasPlot',
+    'SpreadSkillPlot',
+    'SpatialImshow',
+    'SpScatterBiasPlot',
+    'Windrose',
+    'Meteogram',
+    'UpperAir',
+    'ProfilePlot',
 ]

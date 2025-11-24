@@ -1,25 +1,39 @@
 # src/monet_plots/plots/kde.py
-from .base import BasePlot
+
+import matplotlib.pyplot as plt
 import seaborn as sns
+from .base import BasePlot
 
 class KDEPlot(BasePlot):
-    """Creates a kernel density estimate plot.
+    """Create a kernel density estimate plot.
 
-    This class creates a kernel density estimate (KDE) plot.
+    This plot shows the distribution of a single variable.
     """
-    def __init__(self, **kwargs):
-        """Initializes the plot."""
-        super().__init__(**kwargs)
-        sns.despine()
 
-    def plot(self, df, title=None, label=None, **kwargs):
-        """Plots the KDE data.
+    def __init__(self, df, x, y, title=None, label=None, *args, **kwargs):
+        """
+        Initialize the plot with data and plot settings.
 
         Args:
-            df (pandas.DataFrame): The DataFrame containing the data.
-            title (str, optional): The title of the plot. Defaults to None.
-            label (str, optional): The label for the legend. Defaults to None.
-            **kwargs: Additional keyword arguments to pass to `kdeplot`.
+            df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): DataFrame with the data to plot.
+            x (str): Column name for the x-axis.
+            y (str): Column name for the y-axis.
+            title (str, optional): Title for the plot.
+            label (str, optional): Label for the plot.
         """
-        sns.kdeplot(df, ax=self.ax, label=label, **kwargs)
-        self.ax.set_title(title)
+        super().__init__(*args, **kwargs)
+        self.df = df
+        self.x = x
+        self.y = y
+        self.title = title
+        self.label = label
+
+    def plot(self, **kwargs):
+        """Generate the KDE plot."""
+        with sns.axes_style("ticks"):
+            self.ax = sns.kdeplot(data=self.df, x=self.x, y=self.y, ax=self.ax, label=self.label, **kwargs)
+            if self.title:
+                self.ax.set_title(self.title)
+            sns.despine()
+        return self.ax
+

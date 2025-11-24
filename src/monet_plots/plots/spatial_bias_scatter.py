@@ -1,58 +1,78 @@
-# src/monet_plots/plots/spatial_bias_scatter.py
-from .base import BasePlot
-from ..colorbars import colorbar_index
-from numpy import around
+import matplotlib.pyplot as plt
 from scipy.stats import scoreatpercentile as score
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-import matplotlib.pyplot as plt
+from .spatial import SpatialPlot
+from ..colorbars import colorbar_index
+from ..plot_utils import to_dataframe
+from typing import Any
 
-class SpatialBiasScatterPlot(BasePlot):
-    """Creates a spatial bias scatter plot.
+class SpatialBiasScatterPlot(SpatialPlot):
+    """Create a spatial scatter plot showing bias between model and observations.
 
-    This class creates a spatial bias scatter plot on a map.
+    The scatter points are colored by the difference (CMAQ - Obs) and sized
+    by the absolute magnitude of this difference, making larger biases more visible.
     """
-    def __init__(self, projection=ccrs.PlateCarree(), **kwargs):
-        """Initializes the plot with a cartopy projection.
+
+    def __init__(self, df: Any, col1: str, col2: str, projection=ccrs.PlateCarree(), vmin: float = None, vmax: float = None, ncolors: int = 15, fact: float = 1.5, cmap: str = "RdBu_r", *args, **kwargs):
+        """
+        Initialize the plot with data and map projection.
 
         Args:
-            projection (cartopy.crs): The cartopy projection to use.
-            **kwargs: Additional keyword arguments to pass to `subplots`.
+            df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): DataFrame with 'latitude', 'longitude', and data columns.
+            col1 (str): Name of the first column (e.g., observations).
+            col2 (str): Name of the second column (e.g., model). Bias is calculated as col2 - col1.
+            projection (ccrs.Projection): The cartopy projection for the map.
+            vmin (float, optional): Minimum for colorscale.
+            vmax (float, optional): Maximum for colorscale.
+            ncolors (int): Number of discrete colors.
+            fact (float): Scaling factor for point sizes.
+            cmap (str or Colormap): Colormap for bias values.
+            **kwargs: Additional keyword arguments for plotting, including cartopy features
+                      like 'coastlines', 'countries', 'states', 'borders', 'ocean',
+                      'land', 'rivers', 'lakes', 'gridlines'. These can be True for default styling or a dict for
+                      custom styling.
         """
-        super().__init__(subplot_kw={'projection': projection}, **kwargs)
-        self.ax.coastlines()
-        self.ax.add_feature(cfeature.BORDERS, linestyle=':')
-        self.ax.add_feature(cfeature.STATES, linestyle=':')
-        self.ax.set_facecolor('white')
+        super().__init__(*args, projection=projection, **kwargs)
+        self.df = to_dataframe(df)
+        self.col1 = col1
+        self.col2 = col2
+        self.vmin = vmin
+        self.vmax = vmax
+        self.ncolors = ncolors
+        self.fact = fact
+        self.cmap = cmap
 
-    def plot(self, df, date, vmin=None, vmax=None, ncolors=15, fact=1.5, cmap='RdBu_r', **kwargs):
-        """Plots the spatial bias scatter data.
+    def plot(self, **kwargs):
+        """Generate the spatial bias scatter plot."""
+        from numpy import around
 
-        Args:
-            df (pandas.DataFrame): The DataFrame containing the data.
-            date (datetime): The date to plot.
-            vmin (float, optional): The minimum value for the colorbar. Defaults to None.
-            vmax (float, optional): The maximum value for the colorbar. Defaults to None.
-            ncolors (int, optional): The number of colors to use for the colorbar. Defaults to 15.
-            fact (float, optional): The factor to scale the scatter points by. Defaults to 1.5.
-            cmap (str, optional): The colormap to use. Defaults to 'RdBu_r'.
-            **kwargs: Additional keyword arguments to pass to `scatter`.
-        """
-        diff = df.CMAQ - df.Obs
+        scatter_kwargs = self._draw_features(**kwargs)
+
+        # Ensure we are working with a clean copy with no NaNs in relevant columns
+        new = self.df[["latitude", "longitude", self.col1, self.col2]].dropna().copy(deep=True)
+
+        diff = new[self.col2] - new[self.col1]
         top = around(score(diff.abs(), per=95))
-        new = df[df.datetime == date]
+        c, cmap = colorbar_index(self.ncolors, self.cmap, minval=top * -1, maxval=top, ax=self.ax)
 
-        if 'transform' not in kwargs:
-            kwargs['transform'] = ccrs.PlateCarree()
-
-        c, cmap_obj = colorbar_index(ncolors, cmap, minval=top * -1, maxval=top)
-
-        colors = new.CMAQ - new.Obs
-        ss = (new.CMAQ - new.Obs).abs() / top * 100.0
+        c.ax.tick_params(labelsize=13)
+        colors = diff
+        ss = diff.abs() / top * 100.0
         ss[ss > 300] = 300.0
 
-        p = self.ax.scatter(new.longitude.values, new.latitude.values, c=colors, s=ss, vmin=-1.0 * top, vmax=top, cmap=cmap_obj, edgecolors='k', linewidths=0.25, alpha=0.7, **kwargs)
-
-        cbar = self.fig.colorbar(p, orientation='horizontal', pad=0.05, aspect=50, extend='both')
-        cbar.ax.tick_params(labelsize=13)
-        cbar.set_label('Bias')
+        self.ax.scatter(
+            new.longitude.values,
+            new.latitude.values,
+            c=colors,
+            s=ss,
+            vmin=-1.0 * top,
+            vmax=top,
+            cmap=cmap,
+            transform=ccrs.PlateCarree(), # Tell cartopy the data is in lat/lon
+            edgecolors="k",
+            linewidths=0.25,
+            alpha=0.7,
+            **scatter_kwargs,
+        )
+        return c

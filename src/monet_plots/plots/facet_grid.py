@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 from ..style import wiley_style
+from ..plot_utils import to_dataframe
+from typing import Any
 
 
 class FacetGridPlot(BasePlot):
@@ -12,12 +14,12 @@ class FacetGridPlot(BasePlot):
 
     This class creates a facet grid plot using seaborn's FacetGrid.
     """
-    def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
-                 height=3, aspect=1, **kwargs):
+    def __init__(self, data: Any, row: str = None, col: str = None, hue: str = None, col_wrap: int = None,
+                 height: float = 3, aspect: float = 1, **kwargs):
        """Initializes the facet grid.
 
        Args:
-           data (pandas.DataFrame or xarray.DataArray): The data to plot.
+           data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): The data to plot.
            row (str, optional): Variable to map to row facets. Defaults to None
            col (str, optional): Variable to map to column facets. Defaults to None
            hue (str, optional): Variable to map to color mapping. Defaults to None
@@ -28,15 +30,13 @@ class FacetGridPlot(BasePlot):
        """
        # Apply Wiley style - this is the key functionality from BasePlot
        plt.style.use(wiley_style)
-       
+
        # Initialize BasePlot with general figure parameters
        super().__init__(**kwargs)
-       
-       # Convert xarray DataArray to pandas DataFrame if necessary
-       if isinstance(data, xr.DataArray):
-           # Convert xarray DataArray to pandas DataFrame
-           data = data.to_dataframe().reset_index()
-       
+
+       # Convert data to pandas DataFrame
+       data = to_dataframe(data)
+
        # Store the data and facet parameters
        self.data = data
        self.row = row
@@ -45,7 +45,7 @@ class FacetGridPlot(BasePlot):
        self.col_wrap = col_wrap
        self.height = height
        self.aspect = aspect
-       
+
        # Create the FacetGrid (this creates its own figure)
        self.grid = sns.FacetGrid(
            data,
@@ -57,11 +57,11 @@ class FacetGridPlot(BasePlot):
            aspect=self.aspect,
            **kwargs
        )
-       
+
        # Update the figure reference to the one from the grid since seaborn creates its own
        self.fig = self.grid.fig
        self.ax = None  # FacetGrid handles multiple axes internally
-       
+
        # For compatibility with tests, also store as 'g'
        self.g = self.grid
 
@@ -95,7 +95,7 @@ class FacetGridPlot(BasePlot):
 
     def plot(self, plot_func=None, *args, **kwargs):
        """Plots the data using the FacetGrid.
-       
+
        Args:
            plot_func (function, optional): The plotting function to use. If None, uses the default plotting behavior.
            *args: Positional arguments to pass to the plotting function.
