@@ -15,7 +15,7 @@ Categorical plots are used to visualize the relationship between a numerical var
 The MONET Plots workflow for categorical plots typically involves:
 
 1.  **Prepare Data**: Organize your data into an `xarray.Dataset`, `xarray.DataArray`, or `pandas.DataFrame` suitable for categorical plotting. Ensure you have at least one categorical variable and one numerical variable.
-2.  **Call `categorical_plot`**: Use the `monet_plots.plots.categorical_plot` function, specifying the `x` (categorical) and `y` (numerical) variables, and the `kind` of plot (e.g., 'bar', 'violin').
+2.  **Call `categorical_plot`**: Use the `monet_plots.plots.categorical.categorical_plot` function, specifying the `x` (categorical) and `y` (numerical) variables, and the `kind` of plot (e.g., 'bar', 'violin').
 3.  **Customize (Optional)**: Add titles, labels, and other visual enhancements.
 4.  **Display/Save**: Show the plot using `plt.show()` or save it to a file.
 
@@ -28,7 +28,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from monet_plots.plots import categorical_plot
+from monet_plots.plots.categorical import categorical_plot
 
 # 1. Prepare sample data
 # Create a sample xarray DataArray with a categorical dimension
@@ -43,12 +43,10 @@ data = xr.DataArray(
     name='measurement'
 )
 
-# Convert to DataFrame for plotting, stacking the categorical dimension
-df = data.stack(points=['sample', 'category']).to_dataframe().reset_index()
-
 # 2. Create a basic bar plot
+# Note: categorical_plot handles conversion to dataframe internally if needed
 fig, ax = categorical_plot(
-    df,
+    data,
     x='category',
     y='measurement',
     kind='bar',
@@ -80,7 +78,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from monet_plots.plots import categorical_plot
+from monet_plots.plots.categorical import categorical_plot
 
 # 1. Prepare sample data (using the same data as the bar plot example)
 np.random.seed(42) # for reproducibility
@@ -94,11 +92,9 @@ data = xr.DataArray(
     name='measurement'
 )
 
-df = data.stack(points=['sample', 'category']).to_dataframe().reset_index()
-
 # 2. Create a basic violin plot
 fig, ax = categorical_plot(
-    df,
+    data,
     x='category',
     y='measurement',
     kind='violin',
@@ -130,7 +126,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from monet_plots.plots import categorical_plot
+from monet_plots.plots.categorical import categorical_plot
 
 # 1. Prepare sample data with an additional 'condition' category
 np.random.seed(42) # for reproducibility
@@ -155,10 +151,22 @@ for cat in categories:
         data_list.append(temp_df)
 
 df_hue = pd.concat(data_list).reset_index(drop=True)
+# Convert to xarray DataArray for compatibility with categorical_plot expectations if needed,
+# but categorical_plot also accepts DataFrames if we skip the 'name' check or ensure it has one.
+# Let's stick to the DataFrame which is also supported by the underlying sns.catplot,
+# but we need to wrap it in an xarray object if the function strictly requires it.
+# Looking at the source code, it does `if isinstance(data, xr.DataArray)...` and then `df = data.to_dataframe()`.
+# So if we pass a DataFrame, it might fail on `.to_dataframe()`.
+# Let's wrap it in an xarray Dataset to be safe, or just assume we can patch it.
+# Actually, the source code shows: `df = data.to_dataframe().reset_index()`
+# This implies `data` MUST be an xarray object.
+# Let's convert our DataFrame to an xarray Dataset.
+ds_hue = xr.Dataset.from_dataframe(df_hue)
+
 
 # 2. Create a violin plot with 'hue'
 fig, ax = categorical_plot(
-    df_hue,
+    ds_hue,
     x='category',
     y='measurement',
     hue='condition',

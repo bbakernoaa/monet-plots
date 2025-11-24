@@ -1,246 +1,69 @@
-# Examples and Tutorials
+# Plotting Examples Gallery
 
-Welcome to the MONET Plots examples section! This section provides comprehensive tutorials and practical examples to help you master the library for various scientific visualization tasks.
+Welcome to the MONET Plots gallery! This section provides a visual tour of the various plots you can create, from basic charts to complex meteorological visualizations. Click on any plot to see the full example and source code.
 
-## Overview
+## Plot Types
 
-The examples are organized by difficulty and application area, starting from basic usage and progressing to advanced multi-plot workflows.
+Below is a categorized list of available plot types with thumbnail previews.
 
-| Example Category | Difficulty | Focus Area |
-|------------------|------------|------------|
-| [Getting Started](./getting-started) | Beginner | Basic plotting concepts |
-| [Core Plot Types](./core-plots) | Beginner | Individual plot types |
-| [Brier Score Decomposition](./plots/brier_decomposition.md) | Intermediate | Forecast verification |
-| [Categorical Plot](./plots/categorical_plot.md) | Intermediate | Data distribution |
-| [Conditional Bias Plot](./plots/conditional_bias_plot.md) | Intermediate | Forecast bias analysis |
-| [Spread-Skill Plot](./plots/spread_skill_plot.md) | Intermediate | Ensemble reliability |
-| [Advanced Workflows](./advanced-workflows) | Intermediate | Multi-plot analysis |
-| [Scientific Applications](./scientific-applications) | Advanced | Domain-specific use cases |
-| [Customization](./customization) | Intermediate | Advanced styling and customization |
+### Basic Plots
 
-## Learning Path
+These are fundamental plot types for everyday data analysis.
 
-### 1. Beginner Path
-If you're new to MONET Plots, follow this path:
+| Plot Type | Thumbnail | Description |
+| :--- | :--- | :--- |
+| **Basic Plotting** | [![](./getting-started/basic-plotting.png)](./getting-started/basic-plotting.html) | A tutorial covering fundamental plotting concepts like spatial, time series, and scatter plots. |
+| **Categorical** | [![](./getting-started/categorical.png)](./getting-started/categorical.html) | Visualize relationships between numerical and categorical variables (e.g., bar, violin). |
+| **Scatter** | [![](./getting-started/scatter.png)](./getting-started/scatter.html) | Display relationships between two numerical variables, with optional regression lines. |
+| **Timeseries** | [![](./getting-started/timeseries.png)](./getting-started/timeseries.html) | Plot data over time, ideal for tracking trends and temporal patterns. |
+| **Profile** | [![](./getting-started/profile.png)](./getting-started/profile.html) | Visualize data along a single dimension, such as vertical atmospheric profiles. |
+| **KDE** | [![](./getting-started/kde.png)](./getting-started/kde.html) | Visualize probability density functions for one or two continuous variables. |
+| **Facet Grid** | [![](./getting-started/facet-grid.png)](./getting-started/facet-grid.html) | Create multi-panel plots to explore data subsets across categorical variables. |
 
-1. **[Basic Plotting](./getting-started/basic-plotting)** - Learn the fundamentals
-2. **[Data Preparation](./getting-started/data-preparation)** - Understand data formats
-3. **[Plot Customization](./getting-started/plot-customization)** - Basic styling
+### Verification Plots
 
-### 2. Intermediate Path
-For users with some experience:
+These plots are designed for model verification and performance evaluation.
 
-1. **[Core Plot Types](./core-plots)** - Master individual plot types
-2. **[Brier Score Decomposition](./plots/brier_decomposition.md)** - Analyze forecast skill
-3. **[Categorical Plot](./plots/categorical_plot.md)** - Visualize data distribution
-4. **[Conditional Bias Plot](./plots/conditional_bias_plot.md)** - Analyze forecast bias
-5. **[Spread-Skill Plot](./plots/spread_skill_plot.md)** - Evaluate ensemble reliability
-2. **[Multi-Plot Layouts](./advanced-workflows/multi-plot-layouts)** - Combine plots
-3. **[Statistical Analysis](./advanced-workflows/statistical-analysis)** - Add statistics
+| Plot Type | Thumbnail | Description |
+| :--- | :--- | :--- |
+| **Conditional Bias** | [![](./getting-started/conditional-bias.png)](./getting-started/conditional-bias.html) | Analyze how model bias changes as a function of the observed value. |
+| **Ensemble Spread/Skill** | [![](./getting-started/ensemble.png)](./getting-started/ensemble.html) | Evaluate the reliability of ensemble forecasts by comparing spread and skill. |
+| **Performance Diagram** | [![](./getting-started/performance-diagram.png)](./getting-started/performance-diagram.html) | Assess categorical forecast skill using POD, Success Ratio, and CSI. |
+| **Rank Histogram** | [![](./getting-started/rank-histogram.png)](./getting-started/rank-histogram.html) | Diagnose ensemble forecast reliability by examining observation ranks. |
+| **Reliability Diagram** | [![](./getting-started/reliability-diagram.png)](./getting-started/reliability-diagram.html) | Assess the calibration of probabilistic forecasts. |
+| **REV Plot** | [![](./getting-started/rev.png)](./getting-started/rev.html) | Quantify the economic value of a forecast system across cost/loss ratios. |
+| **ROC Curve** | [![](./getting-started/roc-curve.png)](./getting-started/roc-curve.html) | Evaluate binary classification model performance across different thresholds. |
+| **Taylor Diagram** | [![](./getting-started/taylor-diagram.png)](./getting-started/taylor-diagram.html) | Compare model performance by summarizing standard deviation, correlation, and RMSE. |
+| **Brier Decomposition** | [![](./getting-started/brier-decomposition.png)](./getting-started/brier-decomposition.html) | Decompose the Brier score into reliability, resolution, and uncertainty. |
+| **Scorecard** | [![](./getting-started/scorecard.png)](./getting-started/scorecard.html) | Provide a concise visual summary of performance metrics in a heatmap. |
 
-### 3. Advanced Path
-For experienced users:
+### Spatial Plots
 
-1. **[Scientific Applications](./scientific-applications)** - Domain-specific examples
-2. **[Performance Optimization](./advanced-workflows/performance)** - Large datasets
-3. **[Custom Extensions](./customization/custom-classes)** - Create your own plots
+These plots are specialized for visualizing geospatial data.
 
-## Example Structure
+| Plot Type | Thumbnail | Description |
+| :--- | :--- | :--- |
+| **Spatial** | [![](./getting-started/spatial.png)](./getting-started/spatial.html) | General-purpose plot for displaying data on geographical maps. |
+| **Spatial Contour** | [![](./getting-started/spatial-contour.png)](./getting-started/spatial-contour.html) | Visualize 2D spatial data using contour lines or filled contours. |
+| **Spatial Imshow** | [![](./getting-started/spatial-imshow.png)](./getting-started/spatial-imshow.html) | Display gridded spatial data as an image on a map. |
+| **Spatial Scatter Bias** | [![](./getting-started/sp-scatter-bias.png)](./getting-started/sp-scatter-bias.html) | Show the geographical distribution of bias between two datasets. |
+| **Spatial Bias Scatter** | [![](./getting-started/spatial-bias-scatter.png)](./getting-started/spatial-bias-scatter.html) | Spatially visualize bias with point size scaled by magnitude. |
 
-Each example follows a consistent structure:
+### Wind Plots
 
-### Setup Section
-- **Objective**: What you'll learn
-- **Prerequisites**: What you need to know
-- **Data Requirements**: What kind of data is needed
+These plots are designed for visualizing wind data.
 
-### Implementation
-- **Step-by-step code** with explanations
-- **Expected output** with visual descriptions
-- **Key concepts** highlighted
+| Plot Type | Thumbnail | Description |
+| :--- | :--- | :--- |
+| **Wind Barbs** | [![](./getting-started/wind-barbs.png)](./getting-started/wind-barbs.html) | Display wind speed and direction using conventional meteorological barbs. |
+| **Wind Quiver** | [![](./getting-started/wind-quiver.png)](./getting-started/wind-quiver.html) | Show wind vectors as arrows, indicating direction and magnitude. |
+| **Windrose** | [![](./getting-started/windrose.png)](./getting-started/windrose.html) | Visualize wind speed and direction distribution in a circular histogram. |
 
-### Common Patterns
-- **Best practices** for this type of plot
-- **Troubleshooting tips** for common issues
-- **Variations** to try
+### Specialized Plots
 
-### Next Steps
-- **Related examples** to explore
-- **Advanced topics** to learn
-- **Real-world applications**
+Other specialized meteorological plots.
 
-## Running the Examples
-
-### Interactive Jupyter Notebooks
-All examples are available as Jupyter notebooks with executable code:
-
-```bash
-# Clone the repository
-git clone https://github.com/your-repo/monet-plots.git
-cd monet-plots
-
-# Start Jupyter
-jupyter notebook docs/examples/
-
-# Or start Jupyter Lab
-jupyter lab docs/examples/
-```
-
-### Scripts for Reproducibility
-Examples are also provided as standalone Python scripts:
-
-```bash
-# Run individual examples
-python docs/examples/getting-started/basic-plotting.py
-
-# Run all examples
-python docs/examples/run_all_examples.py
-```
-
-## Data Used in Examples
-
-### Synthetic Data
-Most examples use synthetic data for reproducibility:
-
-```python
-import numpy as np
-import pandas as pd
-
-# Common data generation patterns
-def create_timeseries_data(n_points=100):
-    """Create synthetic time series data."""
-    dates = pd.date_range('2023-01-01', periods=n_points, freq='D')
-    values = np.cumsum(np.random.normal(0, 1, n_points)) + 50
-    return pd.DataFrame({'date': dates, 'value': values})
-
-def create_spatial_data(n_lat=20, n_lon=30):
-    """Create synthetic spatial data."""
-    lat = np.linspace(30, 50, n_lat)
-    lon = np.linspace(-120, -70, n_lon)
-    data = np.random.random((n_lat, n_lon)) * 100
-    return data, lat, lon
-```
-
-### Real Data Examples
-Some examples use real meteorological datasets:
-
-```python
-import xarray as xr
-
-# Load sample climate data
-def load_climate_data():
-    """Load sample climate data."""
-    # This would load actual NetCDF files in real examples
-    # For now, we create synthetic data
-    pass
-```
-
-## Contributing Examples
-
-We welcome community contributions! To add a new example:
-
-1. **Choose a category** from the existing structure
-2. **Follow the template** for consistent formatting
-3. **Test your code** thoroughly
-4. **Add screenshots** of the output
-5. **Submit a pull request** with detailed description
-
-### Example Template
-```python
-"""
-Example: [Your Example Name]
-
-Description:
-[Brief description of what this example demonstrates]
-
-Objective:
-[What the reader will learn]
-
-Prerequisites:
-- [Required knowledge]
-- [Other examples to complete first]
-
-Steps:
-1. [First step with explanation]
-2. [Second step with explanation]
-
-Expected Output:
-[Description of the plot/visualization]
-
-Key Concepts:
-- [Concept 1]
-- [Concept 2]
-
-Next Steps:
-- [Related examples]
-- [Advanced topics to explore]
-"""
-
-# Your code here
-```
-
-## Troubleshooting
-
-### Common Issues
-- **Import errors**: Ensure all dependencies are installed
-- **Missing data**: Check data formats and file paths
-- **Plot display issues**: Verify matplotlib backend settings
-- **Memory errors**: Consider downsampling large datasets
-
-### Getting Help
-- **Documentation**: Check the main [API Reference](../api)
-- **Issues**: Report problems on [GitHub Issues](https://github.com/your-repo/monet-plots/issues)
-- **Discussions**: Join [GitHub Discussions](https://github.com/your-repo/monet-plots/discussions)
-
-## Featured Examples
-
-### Climate Science
-- [Temperature Trend Analysis](./scientific-applications/climate-trends)
-- [Precipitation Patterns](./scientific-applications/precipitation-analysis)
-- [Wind Field Analysis](./scientific-applications/wind-fields)
-
-### Model Evaluation
-- [Taylor Diagram Comparison](./advanced-workflows/taylor-diagrams)
-- [Bias Assessment](./advanced-workflows/bias-analysis)
-- [Skill Score Calculation](./advanced-workflows/skill-scores)
-
-### Data Visualization
-- [Multi-Panel Layouts](./advanced-workflows/multi-plot-layouts)
-- [Interactive Plots](./advanced-workflows/interactive-plots)
-- [Animation Examples](./advanced-workflows/animated-plots)
-
-## Quick Start
-
-### Your First Plot
-```python
-import numpy as np
-from monet_plots import SpatialPlot
-
-# Create a simple spatial plot
-plot = SpatialPlot(figsize=(10, 8))
-
-# Generate data
-data = np.random.random((20, 30)) * 100
-
-# Plot and save
-plot.plot(data, title="My First Plot")
-plot.save("first_plot.png")
-plot.close()
-
-print("Plot saved successfully!")
-```
-
-### Next Steps
-1. Explore [Basic Plotting](./getting-started/basic-plotting) for more fundamentals
-2. Try [Customization](./customization) to make plots your own
-3. Check [Advanced Workflows](./advanced-workflows) for complex analyses
-
----
-
-**Navigation**:
-
-- [Getting Started Guide](../getting-started) - Installation and setup
-- [API Reference](../api) - Complete API documentation
-- [Plot Types](../plots) - Individual plot type documentation
-- [Configuration Guide](../configuration) - Styling and customization
-- [Performance Guide](../performance) - Optimization techniques
+| Plot Type | Thumbnail | Description |
+| :--- | :--- | :--- |
+| **Meteogram** | [![](./getting-started/meteogram.png)](./getting-started/meteogram.html) | Display multiple meteorological variables over time in stacked plots. |
+| **Upper Air** | [![](./getting-started/upper-air.png)](./getting-started/upper-air.html) | Create Skew-T Log-P diagrams for analyzing atmospheric soundings. |

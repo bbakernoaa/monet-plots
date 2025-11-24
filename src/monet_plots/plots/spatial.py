@@ -30,8 +30,16 @@ class SpatialPlot(BasePlot):
         # Separate BasePlot kwargs from feature kwargs
         fig = kwargs.pop('fig', None)
         ax = kwargs.pop('ax', None)
+        figsize = kwargs.pop('figsize', None)
 
-        super().__init__(*args, fig=fig, ax=ax, subplot_kw=subplot_kw, **kwargs)
+        base_plot_kwargs = {}
+        if fig: base_plot_kwargs['fig'] = fig
+        if ax: base_plot_kwargs['ax'] = ax
+        if figsize: base_plot_kwargs['figsize'] = figsize
+        if subplot_kw: base_plot_kwargs['subplot_kw'] = subplot_kw
+
+        super().__init__(*args, **base_plot_kwargs)
+        
         # Store feature kwargs passed at initialization
         self.feature_kwargs = kwargs
 

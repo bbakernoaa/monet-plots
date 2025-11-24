@@ -44,11 +44,13 @@ data = np.random.random((20, 30)) * 100
 plot = SpatialPlot(figsize=(10, 8))
 
 # Step 3: Plot the data
-plot.plot(data, title="Basic Spatial Plot")
+# SpatialPlot sets up the map axes. We use standard matplotlib/cartopy methods to plot.
+plot.ax.pcolormesh(data)
+plot.ax.set_title("Basic Spatial Plot")
 
 # Step 4: Add labels and save
-plot.xlabel("Longitude")
-plot.ylabel("Latitude")
+plot.ax.set_xlabel("Longitude")
+plot.ax.set_ylabel("Latitude")
 plot.save("basic_spatial.png")
 
 # Step 5: Close the plot
@@ -90,11 +92,10 @@ df = pd.DataFrame({
 })
 
 # Step 2: Initialize the time series plot
-plot = TimeSeriesPlot(figsize=(12, 6))
+plot = TimeSeriesPlot(df=df, figsize=(12, 6))
 
 # Step 3: Plot the data with custom styling
 plot.plot(
-    df,
     x='time',
     y='values',
     title="Time Series Plot",
@@ -144,25 +145,18 @@ df = pd.DataFrame({
 })
 
 # Step 2: Initialize the scatter plot
-plot = ScatterPlot(figsize=(10, 8))
+plot = ScatterPlot(df=df, x='x_variable', y='y_variable', title="Scatter Plot with Regression", figsize=(10, 8))
 
 # Step 3: Plot with regression line
 plot.plot(
-    df,
-    x='x_variable',
-    y='y_variable',
-    title="Scatter Plot with Regression",
-    label="Data Points",
-    plotargs={
-        'scatter_kws': {'alpha': 0.6, 's': 50},
-        'line_kws': {'linewidth': 2, 'color': 'red'}
-    }
+    scatter_kws={'alpha': 0.6, 's': 50},
+    line_kws={'linewidth': 2, 'color': 'red'}
 )
 
 # Step 4: Add customizations
-plot.xlabel("X Variable")
-plot.ylabel("Y Variable")
-plot.legend()
+plot.ax.set_xlabel("X Variable")
+plot.ax.set_ylabel("Y Variable")
+plot.ax.legend()
 
 # Step 5: Save
 plot.save("basic_scatter.png")
@@ -215,7 +209,7 @@ for model_std, correlation, name in models_data:
     n_points = 500
     obs = np.random.normal(0, obs_std, n_points)
     model = correlation * obs * (model_std / obs_std) + np.random.normal(0, np.sqrt(model_std**2 * (1 - correlation**2)), n_points)
-    
+
     df = pd.DataFrame({'obs': obs, 'model': model})
     plot.add_sample(df, col1='obs', col2='model', label=name)
 
@@ -308,38 +302,38 @@ The wind plot will display:
 # For spatial data
 data = np.random.random((20, 30)) * 100
 plot = SpatialPlot()
-plot.plot(data)
+plot.ax.pcolormesh(data)
 
 # For time series data
 dates = pd.date_range('2023-01-01', periods=100, freq='D')
 values = np.random.normal(0, 1, 100)
 df = pd.DataFrame({'time': dates, 'values': values})
-plot = TimeSeriesPlot()
-plot.plot(df, x='time', y='values')
+plot = TimeSeriesPlot(df=df)
+plot.plot(x='time', y='values')
 
 # For scatter data
 x = np.random.normal(0, 1, 100)
 y = x + np.random.normal(0, 0.5, 100)
 df = pd.DataFrame({'x': x, 'y': y})
-plot = ScatterPlot()
-plot.plot(df, x='x', y='y')
+plot = ScatterPlot(df=df, x='x', y='y')
+plot.plot()
 ```
 
 ### Pattern 2: Customization
 
 ```python
 # Title and labels
-plot.title("My Custom Title")
-plot.xlabel("X Axis Label")
-plot.ylabel("Y Axis Label")
+plot.ax.set_title("My Custom Title")
+plot.ax.set_xlabel("X Axis Label")
+plot.ax.set_ylabel("Y Axis Label")
 
 # Styling
-plotargs = {
-    'linewidth': 2,
-    'color': 'blue',
-    'alpha': 0.8
-}
-plot.plot(data, **plotargs)
+# plotargs = {
+#     'linewidth': 2,
+#     'color': 'blue',
+#     'alpha': 0.8
+# }
+# plot.plot(data, **plotargs)
 ```
 
 ### Pattern 3: Plot Management
@@ -349,10 +343,10 @@ plot.plot(data, **plotargs)
 plot.save("my_plot.png")
 plot.close()
 
-# Or use context manager for automatic cleanup
-with SpatialPlot() as plot:
-    plot.plot(data)
-    plot.save("temp_plot.png")
+# Or use context manager for automatic cleanup (if supported)
+# with SpatialPlot() as plot:
+#     plot.ax.pcolormesh(data)
+#     plot.save("temp_plot.png")
 ```
 
 ## Troubleshooting Common Issues
@@ -361,14 +355,14 @@ with SpatialPlot() as plot:
 
 ```python
 # If you get import errors, ensure all dependencies are installed
-pip install monet_plots matplotlib cartopy seaborn pandas numpy
+# pip install monet_plots matplotlib cartopy seaborn pandas numpy
 ```
 
 ### Issue 2: No Plot Display
 
 ```python
 # For interactive plotting in notebooks
-%matplotlib inline
+# %matplotlib inline
 
 # For interactive scripts
 import matplotlib.pyplot as plt
@@ -380,7 +374,7 @@ plt.ion()
 ```python
 # Close plots when not in use
 plot = SpatialPlot()
-plot.plot(data)
+plot.ax.pcolormesh(data)
 plot.save("output.png")
 plot.close()  # Important for memory management
 ```
