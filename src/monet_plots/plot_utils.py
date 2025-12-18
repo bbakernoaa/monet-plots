@@ -1,7 +1,13 @@
 import warnings
 import numpy as np
 import pandas as pd
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Optional
+
+# Optional xarray import - will be used if available
+try:
+    import xarray as xr
+except ImportError:
+    xr = None
 
 
 def to_dataframe(data: Any) -> pd.DataFrame:
@@ -20,7 +26,7 @@ def to_dataframe(data: Any) -> pd.DataFrame:
     """
     if isinstance(data, pd.DataFrame):
         return data
-    
+
     # Using hasattr to avoid direct dependency on xarray for users who don't have it installed.
     if hasattr(data, 'to_dataframe'): # Works for both xarray DataArray and Dataset
         return data.to_dataframe()
@@ -39,12 +45,12 @@ def to_dataframe(data: Any) -> pd.DataFrame:
 def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:
     """
     Validate parameters for plot methods.
-    
+
     Args:
         plot_class: The plot class name
         method: The method name
         **kwargs: Parameters to validate
-        
+
     Raises:
         TypeError: If parameter types are invalid
         ValueError: If parameter values are invalid
@@ -55,7 +61,7 @@ def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:
             discrete = kwargs['discrete']
             if not isinstance(discrete, bool):
                 raise TypeError(f"discrete parameter must be boolean, got {type(discrete).__name__}")
-        
+
         # Validate ncolors parameter
         if 'ncolors' in kwargs:
             ncolors = kwargs['ncolors']
@@ -63,45 +69,45 @@ def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:
                 raise TypeError(f"ncolors parameter must be integer, got {type(ncolors).__name__}")
             if ncolors <= 0 or ncolors > 1000:
                 raise ValueError(f"ncolors parameter must be between 1 and 1000, got {ncolors}")
-        
+
         # Validate plotargs parameter
         if 'plotargs' in kwargs and kwargs['plotargs'] is not None:
             plotargs = kwargs['plotargs']
             if not isinstance(plotargs, dict):
                 raise TypeError(f"plotargs parameter must be dict, got {type(plotargs).__name__}")
-            
+
             # Validate specific plotargs keys
             if 'cmap' in plotargs:
                 cmap = plotargs['cmap']
                 # This would need actual colormap validation
                 if not isinstance(cmap, str):
                     raise TypeError(f"colormap must be string, got {type(cmap).__name__}")
-    
+
     elif plot_class == 'TimeSeriesPlot' and method == 'plot':
         # Validate x parameter
         if 'x' in kwargs:
             x = kwargs['x']
             if not isinstance(x, str):
                 raise TypeError(f"x parameter must be string, got {type(x).__name__}")
-        
+
         # Validate y parameter
         if 'y' in kwargs:
             y = kwargs['y']
             if not isinstance(y, str):
                 raise TypeError(f"y parameter must be string, got {type(y).__name__}")
-        
+
         # Validate plotargs parameter
         if 'plotargs' in kwargs and kwargs['plotargs'] is not None:
             plotargs = kwargs['plotargs']
             if not isinstance(plotargs, dict):
                 raise TypeError(f"plotargs parameter must be dict, got {type(plotargs).__name__}")
-        
+
         # Validate fillargs parameter
         if 'fillargs' in kwargs and kwargs['fillargs'] is not None:
             fillargs = kwargs['fillargs']
             if not isinstance(fillargs, dict):
                 raise TypeError(f"fillargs parameter must be dict, got {type(fillargs).__name__}")
-            
+
             # Validate alpha in fillargs
             if 'alpha' in fillargs:
                 alpha = fillargs['alpha']
@@ -111,59 +117,126 @@ def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:
                     raise ValueError(f"alpha must be between 0 and 1, got {alpha}")
 
 
-def validate_data_array(data: Any, required_dims: list = None) -> None:
+def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None:
     """
     Validate data array parameters.
-    
+
     Args:
         data: Data to validate
         required_dims: List of required dimension names
-        
+
     Raises:
         TypeError: If data type is invalid
         ValueError: If data dimensions are invalid
     """
     if data is None:
         raise ValueError("data cannot be None")
-    
+
     # Check if data has required attributes
     if not hasattr(data, 'shape'):
         raise TypeError("data must have a shape attribute")
-    
-    if required_dims is not None:
+
+    if required_dims:
         if not hasattr(data, 'dims'):
             raise TypeError("data must have dims attribute for dimension validation")
-        
+
         for dim in required_dims:
             if dim not in data.dims:
                 raise ValueError(f"required dimension '{dim}' not found in data dimensions {data.dims}")
 
 
-def validate_dataframe(df: Any, required_columns: list = None) -> None:
+def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None:
     """
     Validate DataFrame parameters.
-    
+
     Args:
         df: DataFrame to validate
         required_columns: List of required column names
-        
+
     Raises:
         TypeError: If DataFrame type is invalid
         ValueError: If DataFrame structure is invalid
     """
     if df is None:
         raise ValueError("DataFrame cannot be None")
-    
+
     if not hasattr(df, 'columns'):
         raise TypeError("object must have columns attribute")
-    
-    if required_columns is not None:
+
+    if required_columns:
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
             raise ValueError(f"missing required columns: {missing_columns}")
-    
+
     if len(df) == 0:
         raise ValueError("DataFrame cannot be empty")
+
+
+def _normalize_data(data: Any) -> Any:
+    """
+    Normalize input data to a standardized format, preferring xarray objects when possible.
+
+    This function intelligently handles different input types:
+    - xarray DataArray/Dataset: returned as-is (preferred format)
+    - pandas DataFrame: returned as-is
+    - numpy array: converted to DataFrame
+    - Other types: converted to DataFrame if possible
+
+    Args:
+        data: Input data of various types
+
+    Returns:
+        Either an xarray DataArray, xarray Dataset, or pandas DataFrame
+
+    Raises:
+        TypeError: If the input data type is not supported
+    """
+    # Check if data is already an xarray object (preferred)
+    if xr is not None:
+        if hasattr(xr, 'DataArray') and isinstance(data, xr.DataArray):
+            return data
+        if hasattr(xr, 'Dataset') and isinstance(data, xr.Dataset):
+            return data
+
+    # Check if data is a pandas DataFrame
+    if isinstance(data, pd.DataFrame):
+        return data
+
+    # Check if data is numpy array
+    if isinstance(data, np.ndarray):
+        if data.ndim == 1:
+            return pd.DataFrame(data, columns=['col_0'])
+        elif data.ndim == 2:
+            return pd.DataFrame(data, columns=[f'col_{i}' for i in range(data.shape[1])])
+        else:
+            raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
+
+    # If xarray is available, check if data has xarray-like methods
+    if xr is not None and hasattr(data, 'to_dataset') and hasattr(data, 'to_dataframe'):
+        # Try to convert to xarray Dataset first
+        try:
+            return data.to_dataset()
+        except Exception:
+            # Fall back to DataFrame
+            return data.to_dataframe()
+
+    # Fall back to existing to_dataframe logic for backward compatibility
+    return to_dataframe(data)
+
+
+def normalize_data(data: Any) -> Any:
+    """
+    Public API for normalizing data, preferring xarray objects when possible.
+
+    This is the same as _normalize_data but exposed as a public API.
+
+    Args:
+        data: Input data of various types
+
+    Returns:
+        Either an xarray DataArray, xarray Dataset, or pandas DataFrame
+    """
+    return _normalize_data(data)
 
 
 def _dynamic_fig_size(obj):
@@ -181,7 +254,7 @@ def _dynamic_fig_size(obj):
 
     """
     scale = 1.0  # Default scale
-    
+
     if "x" in obj.dims:
         nx, ny = len(obj.x), len(obj.y)
         scale = float(ny) / float(nx)
@@ -191,7 +264,7 @@ def _dynamic_fig_size(obj):
     elif "lat" in obj.dims:
         nx, ny = len(obj.lon), len(obj.lat)
         scale = float(ny) / float(nx)
-    
+
     figsize = (10, 10 * scale)
     return figsize
 

@@ -1,7 +1,8 @@
 import pytest
 import matplotlib.pyplot as plt
 import numpy as np
-from monet_plots.plots.profile import ProfilePlot
+from matplotlib.quiver import Quiver
+from monet_plots.plots.profile import ProfilePlot, VerticalSlice, StickPlot, VerticalBoxPlot
 
 @pytest.fixture
 def clear_figures():
@@ -40,3 +41,40 @@ def test_profile_plot_contour_creates_plot(clear_figures, sample_data_contour):
     plot.plot()
     assert plot.ax is not None
     assert len(plot.ax.collections) > 0
+
+def test_profile_plot_alt_adjust(clear_figures, sample_data_line):
+    """Test that ProfilePlot adjusts altitude correctly."""
+    alt_adjust = 5.0
+    original_y = sample_data_line['y'].copy()
+    plot = ProfilePlot(**sample_data_line, alt_adjust=alt_adjust)
+    assert np.allclose(plot.y, original_y - alt_adjust)
+
+def test_VerticalBoxPlot_plot(clear_figures):
+    """Test that VerticalBoxPlot creates a plot."""
+    data = np.random.rand(100)
+    y = np.linspace(0, 10, 100)
+    thresholds = [0, 2, 4, 6, 8, 10]
+    plot = VerticalBoxPlot(data, y, thresholds)
+    result = plot.plot()
+    assert plot.ax is not None
+    assert len(result['boxes']) > 0
+
+
+def test_VerticalSlice_plot(clear_figures, sample_data_contour):
+    """Test that VerticalSlice creates a contour plot."""
+    plot = VerticalSlice(**sample_data_contour)
+    plot.plot()
+    assert plot.ax is not None
+    assert len(plot.ax.collections) > 0
+
+from matplotlib.quiver import Quiver
+
+def test_StickPlot_plot(clear_figures):
+    """Test that StickPlot creates a plot."""
+    u = np.random.rand(10) * 10
+    v = np.random.rand(10) * 10
+    y = np.arange(10)
+    plot = StickPlot(u, v, y)
+    result = plot.plot()
+    assert plot.ax is not None
+    assert isinstance(result, Quiver)

@@ -67,6 +67,8 @@ nav:
     - Scatter Plots: plots/scatter.md
     - Wind Plots: plots/wind.md
     - Facet Grids: plots/facet_grid.md
+    - Profile Plots: plots/profile.md
+    - Trajectory Plots: plots/trajectory.md
   - Configuration: configuration/index.md
   - Performance: performance/index.md
   - Troubleshooting: troubleshooting/index.md

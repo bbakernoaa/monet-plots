@@ -78,3 +78,36 @@ class SpatialPlot(BasePlot):
 
         # Return the remaining kwargs so they can be passed to the actual plotting function
         return combined_kwargs
+
+
+class SpatialTrack(SpatialPlot):
+    """Plot a trajectory on a map, with points colored by a variable."""
+
+    def __init__(self, longitude, latitude, data, *args, **kwargs):
+        """
+        Initialize the spatial track plot.
+        Args:
+            longitude (np.ndarray, pd.Series, xr.DataArray): Longitude values.
+            latitude (np.ndarray, pd.Series, xr.DataArray): Latitude values.
+            data (np.ndarray, pd.Series, xr.DataArray): Data to use for coloring the track.
+            **kwargs: Additional keyword arguments passed to SpatialPlot.
+        """
+        super().__init__(*args, **kwargs)
+        self.longitude = longitude
+        self.latitude = latitude
+        self.data = data
+
+    def plot(self, **kwargs):
+        """
+        Plot the trajectory.
+        Args:
+            **kwargs: Keyword arguments passed to `matplotlib.pyplot.scatter`.
+        """
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(projection=self.projection)
+
+        plot_kwargs = self._draw_features(**kwargs)
+        plot_kwargs.setdefault('transform', ccrs.PlateCarree())
+
+        sc = self.ax.scatter(self.longitude, self.latitude, c=self.data, **plot_kwargs)
+        return sc

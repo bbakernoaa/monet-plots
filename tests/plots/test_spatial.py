@@ -2,7 +2,7 @@ import pytest
 import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
-from monet_plots.plots.spatial import SpatialPlot
+from monet_plots.plots.spatial import SpatialPlot, SpatialTrack
 
 @pytest.fixture
 def clear_figures():
@@ -34,3 +34,11 @@ def test_spatial_plot_plot(clear_figures, sample_da):
     # ax = plot.plot()  # SpatialPlot has no plot method
     # assert ax is not None
     assert plot.ax is not None
+
+def test_SpatialTrack_plot(clear_figures):
+    """Test SpatialTrack plot method."""
+    lon = np.linspace(-120, -80, 10)
+    lat = np.linspace(30, 40, 10)
+    data = np.random.rand(10)
+    plot = SpatialTrack(lon, lat, data)
+    plot.plot()

@@ -1,7 +1,7 @@
 from .base import BasePlot
 from .scatter import ScatterPlot
 from .timeseries import TimeSeriesPlot
-from .spatial import SpatialPlot
+from .spatial import SpatialPlot, SpatialTrack
 from .kde import KDEPlot
 from .taylor_diagram import TaylorDiagramPlot
 from .wind_barbs import WindBarbsPlot
@@ -11,6 +11,8 @@ from .spatial_bias_scatter import SpatialBiasScatterPlot
 from .spatial_contour import SpatialContourPlot
 from .spatial_imshow import SpatialImshow
 from .sp_scatter_bias import SpScatterBiasPlot
+from .profile import ProfilePlot, VerticalSlice, StickPlot, VerticalBoxPlot
+from .trajectory import TrajectoryPlot
 
 # New Verification Plots
 from .performance_diagram import PerformanceDiagramPlot
@@ -28,6 +30,7 @@ __all__ = [
     "ScatterPlot",
     "TimeSeriesPlot",
     "SpatialPlot",
+    "SpatialTrack",
     "KDEPlot",
     "TaylorDiagramPlot",
     "WindBarbsPlot",
@@ -37,6 +40,11 @@ __all__ = [
     "SpatialContourPlot",
     "SpatialImshow",
     "SpScatterBiasPlot",
+    "ProfilePlot",
+    "VerticalSlice",
+    "StickPlot",
+    "VerticalBoxPlot",
+    "TrajectoryPlot",
     "PerformanceDiagramPlot",
     "ROCCurvePlot",
     "ReliabilityDiagramPlot",

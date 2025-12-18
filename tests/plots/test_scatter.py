@@ -26,3 +26,11 @@ def test_scatter_plot_creates_plot(clear_figures, sample_data):
     assert ax is not None
     assert len(ax.lines) > 0  # Check for regression line
     assert len(ax.collections) > 0  # Check for scatter points
+
+def test_scatter_plot_with_c_and_colorbar(clear_figures, sample_data):
+    """Test ScatterPlot with colorization and colorbar."""
+    sample_data['c'] = np.random.rand(100)
+    plot = ScatterPlot(df=sample_data, x='x', y='y', c='c', colorbar=True)
+    ax = plot.plot()
+    assert ax is not None
+    assert len(ax.figure.axes) > 1  # Check for colorbar axes

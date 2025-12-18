@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from .base import BasePlot
-from ..plot_utils import to_dataframe
-from typing import Any, Union, List
+from ..plot_utils import normalize_data
+from typing import Any, Union, List, Optional
 
 class TimeSeriesPlot(BasePlot):
     """Create a timeseries plot with shaded error bounds.
@@ -13,7 +13,7 @@ class TimeSeriesPlot(BasePlot):
     shading for ±1 standard deviation around the mean.
     """
 
-    def __init__(self, df: Any, x: str = "time", y: str = "obs", plotargs: dict = {}, fillargs: dict = {"alpha": 0.2}, title: str = "", ylabel: str = None, label: str = None, *args, **kwargs):
+    def __init__(self, df: Any, x: str = "time", y: str = "obs", plotargs: dict = {}, fillargs: dict = {"alpha": 0.2}, title: str = "", ylabel: Optional[str] = None, label: Optional[str] = None, *args, **kwargs):
         """
         Initialize the plot with data and plot settings.
 
@@ -29,7 +29,7 @@ class TimeSeriesPlot(BasePlot):
             *args, **kwargs: Arguments passed to BasePlot.
         """
         super().__init__(*args, **kwargs)
-        self.df = to_dataframe(df)
+        self.df = normalize_data(df)
         self.x = x
         self.y = y
         self.plotargs = plotargs
@@ -40,11 +40,21 @@ class TimeSeriesPlot(BasePlot):
 
     def plot(self, **kwargs):
         """Generate the timeseries plot."""
+        import xarray as xr
+
+        # Handle xarray objects differently from pandas DataFrames
+        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+            return self._plot_xarray(**kwargs)
+        else:
+            return self._plot_dataframe(**kwargs)
+
+    def _plot_dataframe(self, **kwargs):
+        """Generate the timeseries plot from pandas DataFrame (original implementation)."""
         self.df.index = self.df[self.x]
         df = self.df.drop(columns=self.x).reset_index()
         m = df.groupby("time").mean(numeric_only=True)
         e = df.groupby("time").std(numeric_only=True)
-        variable = df.variable
+        variable = self.y
         if df.columns.isin(["units"]).max():
             unit = df.units
         else:
@@ -71,6 +81,61 @@ class TimeSeriesPlot(BasePlot):
         self.fig.tight_layout()
         return self.ax
 
+    def _plot_xarray(self, **kwargs):
+        """Generate the timeseries plot from xarray DataArray or Dataset."""
+        import xarray as xr
+
+        # Ensure we have the right data structure
+        if isinstance(self.df, xr.DataArray):
+            # Convert DataArray to Dataset for easier handling
+            data = self.df.to_dataset(name=self.y)
+        else:
+            data = self.df
+
+        # Set default fill alpha if not provided
+        if "alpha" not in self.fillargs:
+            self.fillargs["alpha"] = 0.2
+
+        # Use xarray's built-in plotting capabilities
+        # For time series, we can use the plot method with error shading
+        if self.label is not None:
+            data[self.y].plot(ax=self.ax, label=self.label, **self.plotargs)
+        else:
+            data[self.y].plot(ax=self.ax, **self.plotargs)
+
+        # Calculate and plot error bounds
+        # Use the time coordinate directly from the data
+        time_coord = data[self.y].coords[self.x]
+        mean_data = data[self.y].mean(dim=self.x)
+        std_data = data[self.y].std(dim=self.x)
+        upper = mean_data + std_data
+        lower = mean_data - std_data
+        lower = lower.where(lower >= 0, 0)  # Ensure non-negative values
+
+        # Plot the error bounds using the time coordinate values
+        self.ax.fill_between(
+            time_coord.values,
+            lower.values,
+            upper.values,
+            **self.fillargs
+        )
+
+        # Set labels and title
+        unit = "None"  # xarray doesn't have a direct units attribute like pandas
+        if hasattr(data[self.y], 'attrs') and 'units' in data[self.y].attrs:
+            unit = data[self.y].attrs['units']
+
+        if self.ylabel is None:
+            self.ax.set_ylabel(f"{self.y} ({unit})")
+        else:
+            self.ax.set_ylabel(self.label)
+
+        self.ax.set_xlabel("")
+        self.ax.legend()
+        self.ax.set_title(self.title)
+        self.fig.tight_layout()
+        return self.ax
+
 
 class TimeSeriesStatsPlot(BasePlot):
     """
@@ -91,7 +156,7 @@ class TimeSeriesStatsPlot(BasePlot):
             *args, **kwargs: Arguments passed to BasePlot.
         """
         super().__init__(*args, **kwargs)
-        self.df = to_dataframe(df)
+        self.df = normalize_data(df)
         if not isinstance(self.df.index, pd.DatetimeIndex):
             # Attempt to set 'time' or 'datetime' column as index if not already
             if "datetime" in self.df.columns:

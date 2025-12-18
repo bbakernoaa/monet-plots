@@ -2,6 +2,14 @@
 
 Welcome to the MONET Plots gallery! This section provides a visual tour of the various plots you can create, from basic charts to complex meteorological visualizations. Click on any plot to see the full example and source code.
 
+## Getting Started
+
+New to MONET Plots? Start with these foundational guides:
+
+| Guide | Description |
+| :--- | :--- |
+| **Xarray Integration** | Learn how to use xarray DataArrays and Datasets directly with MONET Plots for better performance and metadata preservation. [Read more](./getting-started/xarray-integration.html) |
+
 ## Plot Types
 
 Below is a categorized list of available plot types with thumbnail previews.
@@ -67,3 +75,11 @@ Other specialized meteorological plots.
 | :--- | :--- | :--- |
 | **Meteogram** | [![](./getting-started/meteogram.png)](./getting-started/meteogram.html) | Display multiple meteorological variables over time in stacked plots. |
 | **Upper Air** | [![](./getting-started/upper-air.png)](./getting-started/upper-air.html) | Create Skew-T Log-P diagrams for analyzing atmospheric soundings. |
+
+### Trajectory Plots
+
+These plots are designed for visualizing trajectory data.
+
+| Plot Type | Thumbnail | Description |
+| :--- | :--- | :--- |
+| **Trajectory** | [![](./plots/trajectory.png)](./plots/trajectory.html) | Plot a trajectory on a map and a timeseries of a variable. |
