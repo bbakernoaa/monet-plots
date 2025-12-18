@@ -1,6 +1,5 @@
 # src/monet_plots/plots/kde.py
 
-import matplotlib.pyplot as plt
 import seaborn as sns
 from .base import BasePlot
 

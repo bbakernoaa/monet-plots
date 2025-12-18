@@ -1,5 +1,4 @@
 # src/monet_plots/plots/timeseries.py
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from .base import BasePlot
@@ -219,8 +218,9 @@ class TimeSeriesStatsPlot(BasePlot):
         plot_kwargs = {**plot_kwargs, **kwargs}
 
         for model_col in self.col2:
-            # Define a lambda to pass the current model column to the stat function
-            stat_func = lambda group: self.stats[stat.lower()](group, model_col)
+            # Define a function to pass the current model column to the stat function
+            def stat_func(group):
+                return self.stats[stat.lower()](group, model_col)
 
             # Resample and apply the chosen statistical function for the current model
             stat_series = self.df.resample(freq).apply(stat_func)

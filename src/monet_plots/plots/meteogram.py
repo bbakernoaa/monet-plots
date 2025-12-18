@@ -5,7 +5,6 @@ import typing as t
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from .. import plot_utils
 from .base import BasePlot
 
 

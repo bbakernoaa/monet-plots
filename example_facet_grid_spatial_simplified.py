@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from monet_plots.plots.facet_grid import FacetGridPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
-from typing import List, Dict, Any, Union
+from typing import List
 
 
 # --- 1. Helper function to create the meta DataFrame ---

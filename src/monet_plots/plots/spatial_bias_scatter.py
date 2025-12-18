@@ -1,7 +1,5 @@
-import matplotlib.pyplot as plt
 from scipy.stats import scoreatpercentile as score
 import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 from .spatial import SpatialPlot
 from ..colorbars import colorbar_index
 from ..plot_utils import to_dataframe

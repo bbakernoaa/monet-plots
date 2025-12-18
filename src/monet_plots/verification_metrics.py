@@ -1,6 +1,5 @@
 import numpy as np
-import pandas as pd
-from typing import Tuple, Union, Optional, Dict
+from typing import Tuple, Union, Dict
 
 
 def compute_pod(hits: Union[int, np.ndarray], misses: Union[int, np.ndarray]) -> Union[float, np.ndarray]:

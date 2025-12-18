@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Any
 from ..verification_metrics import compute_brier_score_components
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
@@ -43,7 +42,8 @@ class BrierScoreDecompositionPlot(BasePlot):
         Main plotting method.
 
         Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Input data with component columns or raw forecasts/observations.
+            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray):
+                Input data with component columns or raw forecasts/observations.
             reliability_col/resolution_col/uncertainty_col (str): Pre-computed component columns.
             forecasts_col/observations_col (str, optional): Raw forecast probabilities and binary observations.
             n_bins (int): Bins for decomposition if raw data.

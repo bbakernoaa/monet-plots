@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Optional, Union, List, Any
+from typing import Optional, List, Any
 from ..verification_metrics import compute_rev
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe

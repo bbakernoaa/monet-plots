@@ -1,6 +1,5 @@
 # src/monet_plots/plots/wind_quiver.py
 
-import matplotlib.pyplot as plt
 from .spatial import SpatialPlot
 from .. import tools
 import numpy as np

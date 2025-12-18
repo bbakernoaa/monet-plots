@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 from scipy.stats import scoreatpercentile as score
 from .base import BasePlot
 from ..plot_utils import _set_outline_patch_alpha, to_dataframe

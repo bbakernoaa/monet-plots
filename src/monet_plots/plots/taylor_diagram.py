@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import seaborn as sns
 from numpy import corrcoef
 from .base import BasePlot
 from .. import taylordiagram as td

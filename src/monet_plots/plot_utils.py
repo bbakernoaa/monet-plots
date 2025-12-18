@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 import pandas as pd
-from typing import Any, Dict, Union, Optional
+from typing import Any, Optional
 
 # Optional xarray import - will be used if available
 try:

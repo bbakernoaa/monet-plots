@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 from .spatial import SpatialPlot
 from ..colorbars import colorbar_index
 import numpy as np

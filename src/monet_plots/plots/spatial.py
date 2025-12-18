@@ -1,6 +1,5 @@
 # src/monet_plots/plots/spatial.py
 
-import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from .base import BasePlot

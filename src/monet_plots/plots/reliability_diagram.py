@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Optional, Union, Any
+from typing import Optional, Any
 from ..verification_metrics import compute_reliability_curve
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
@@ -45,7 +44,8 @@ class ReliabilityDiagramPlot(BasePlot):
         Main plotting method.
 
         Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Either pre-binned reliability data or raw forecasts/observations.
+            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray):
+                Either pre-binned reliability data or raw forecasts/observations.
             x_col (str): Forecast Probability bin center (for pre-binned).
             y_col (str): Observed Frequency in bin (for pre-binned).
             forecasts_col (str, optional): Column of raw forecast probabilities [0,1].
