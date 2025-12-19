@@ -12,6 +12,5 @@ def test_TrajectoryPlot():
     time = pd.to_datetime(np.arange(10), unit="D")
     ts_data = np.random.rand(10)
     df = pd.DataFrame({"time": time, "value": ts_data})
-    df.variable = "value"
-    plot = TrajectoryPlot(lon, lat, data, df, "value")
-    plot.plot()
+    plot = TrajectoryPlot(lon, lat, data, df, ts_data)
+    plot.plot(freq="1D")
