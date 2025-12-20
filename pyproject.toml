@@ -32,6 +32,10 @@ dependencies = [
 "Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
 
 [project.optional-dependencies]
+test = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+]
 docs = [
     "mkdocs>=1.4",
     "mkdocs-material>=8.5",

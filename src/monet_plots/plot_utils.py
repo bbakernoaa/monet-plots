@@ -172,71 +172,26 @@ def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None
         raise ValueError("DataFrame cannot be empty")
 
 
-def _normalize_data(data: Any) -> Any:
-    """
-    Normalize input data to a standardized format, preferring xarray objects when possible.
-
-    This function intelligently handles different input types:
-    - xarray DataArray/Dataset: returned as-is (preferred format)
-    - pandas DataFrame: returned as-is
-    - numpy array: converted to DataFrame
-    - Other types: converted to DataFrame if possible
-
-    Args:
-        data: Input data of various types
-
-    Returns:
-        Either an xarray DataArray, xarray Dataset, or pandas DataFrame
-
-    Raises:
-        TypeError: If the input data type is not supported
-    """
-    # Check if data is already an xarray object (preferred)
-    if xr is not None:
-        if hasattr(xr, "DataArray") and isinstance(data, xr.DataArray):
-            return data
-        if hasattr(xr, "Dataset") and isinstance(data, xr.Dataset):
-            return data
-
-    # Check if data is a pandas DataFrame
-    if isinstance(data, pd.DataFrame):
-        return data
-
-    # Check if data is numpy array
-    if isinstance(data, np.ndarray):
-        if data.ndim == 1:
-            return pd.DataFrame(data, columns=["col_0"])
-        elif data.ndim == 2:
-            return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
-        else:
-            raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
-
-    # If xarray is available, check if data has xarray-like methods
-    if xr is not None and hasattr(data, "to_dataset") and hasattr(data, "to_dataframe"):
-        # Try to convert to xarray Dataset first
-        try:
-            return data.to_dataset()
-        except Exception:
-            # Fall back to DataFrame
-            return data.to_dataframe()
-
-    # Fall back to existing to_dataframe logic for backward compatibility
-    return to_dataframe(data)
-
-
 def normalize_data(data: Any) -> Any:
     """
-    Public API for normalizing data, preferring xarray objects when possible.
+    Inspects the input data and prepares it for plotting.
 
-    This is the same as _normalize_data but exposed as a public API.
+    If the input is a pandas DataFrame, it is returned as is.
+    If the input is an xarray DataArray, it is converted to a Dataset.
+    If the input is an xarray Dataset, it is returned as is.
 
-    Args:
-        data: Input data of various types
-
-    Returns:
-        Either an xarray DataArray, xarray Dataset, or pandas DataFrame
+    This ensures that downstream plotting functions can expect a consistent
+    data structure (either a DataFrame or a Dataset).
     """
-    return _normalize_data(data)
+    if isinstance(data, pd.DataFrame):
+        return data
+    if xr is not None:
+        if isinstance(data, xr.DataArray):
+            return data.to_dataset()
+        if isinstance(data, xr.Dataset):
+            return data
+
+    raise TypeError("Unsupported data type. Please provide a pandas DataFrame or an xarray object.")
 
 
 def _dynamic_fig_size(obj):

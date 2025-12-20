@@ -72,7 +72,7 @@ def test_VerticalSlice_plot(clear_figures, sample_data_contour):
     assert len(plot.ax.collections) > 0
 
 
-from matplotlib.quiver import Quiver
+from matplotlib.quiver import Barbs
 
 
 def test_StickPlot_plot(clear_figures):
@@ -83,4 +83,4 @@ def test_StickPlot_plot(clear_figures):
     plot = StickPlot(u, v, y)
     result = plot.plot()
     assert plot.ax is not None
-    assert isinstance(result, Quiver)
+    assert isinstance(result, Barbs)
