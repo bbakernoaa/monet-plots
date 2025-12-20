@@ -11,8 +11,16 @@ class SpatialImshow(SpatialPlot):
     This plot is useful for visualizing 2D model data on a map.
     """
 
-    def __init__(self, modelvar: Any, gridobj, plotargs: dict = {},
-                 ncolors: int = 15, discrete: bool = False, *args, **kwargs):
+    def __init__(
+        self,
+        modelvar: Any,
+        gridobj,
+        plotargs: dict = {},
+        ncolors: int = 15,
+        discrete: bool = False,
+        *args,
+        **kwargs,
+    ):
         """
         Initialize the plot with data and map projection.
 
@@ -51,7 +59,12 @@ class SpatialImshow(SpatialPlot):
         if self.discrete:
             vmin, vmax = img.get_clim()
             c, _ = colorbar_index(
-                self.ncolors, imshow_kwargs["cmap"], minval=vmin, maxval=vmax, ax=self.ax)
+                self.ncolors,
+                imshow_kwargs["cmap"],
+                minval=vmin,
+                maxval=vmax,
+                ax=self.ax,
+            )
         else:
             c = self.fig.colorbar(img, ax=self.ax)
 

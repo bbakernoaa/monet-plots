@@ -24,23 +24,23 @@ class SpatialPlot(BasePlot):
                       'gridlines'.
         """
         # The 'projection' kwarg is passed to subplot creation via 'subplot_kw'.
-        subplot_kw = kwargs.pop('subplot_kw', {})
-        subplot_kw['projection'] = projection
+        subplot_kw = kwargs.pop("subplot_kw", {})
+        subplot_kw["projection"] = projection
 
         # Separate BasePlot kwargs from feature kwargs
-        fig = kwargs.pop('fig', None)
-        ax = kwargs.pop('ax', None)
-        figsize = kwargs.pop('figsize', None)
+        fig = kwargs.pop("fig", None)
+        ax = kwargs.pop("ax", None)
+        figsize = kwargs.pop("figsize", None)
 
         base_plot_kwargs = {}
         if fig:
-            base_plot_kwargs['fig'] = fig
+            base_plot_kwargs["fig"] = fig
         if ax:
-            base_plot_kwargs['ax'] = ax
+            base_plot_kwargs["ax"] = ax
         if figsize:
-            base_plot_kwargs['figsize'] = figsize
+            base_plot_kwargs["figsize"] = figsize
         if subplot_kw:
-            base_plot_kwargs['subplot_kw'] = subplot_kw
+            base_plot_kwargs["subplot_kw"] = subplot_kw
 
         super().__init__(*args, **base_plot_kwargs)
 
@@ -54,14 +54,14 @@ class SpatialPlot(BasePlot):
 
         # Define a mapping from keyword to cartopy feature
         feature_map = {
-            'coastlines': cfeature.COASTLINE,
-            'countries': cfeature.BORDERS.with_scale('50m'),
-            'states': cfeature.STATES.with_scale('50m'),
-            'borders': cfeature.BORDERS,
-            'ocean': cfeature.OCEAN,
-            'land': cfeature.LAND,
-            'rivers': cfeature.RIVERS,
-            'lakes': cfeature.LAKES,
+            "coastlines": cfeature.COASTLINE,
+            "countries": cfeature.BORDERS.with_scale("50m"),
+            "states": cfeature.STATES.with_scale("50m"),
+            "borders": cfeature.BORDERS,
+            "ocean": cfeature.OCEAN,
+            "land": cfeature.LAND,
+            "rivers": cfeature.RIVERS,
+            "lakes": cfeature.LAKES,
         }
 
         for key, feature in feature_map.items():
@@ -70,17 +70,15 @@ class SpatialPlot(BasePlot):
                 if isinstance(style, dict):
                     self.ax.add_feature(feature, **style)
                 elif style:  # If it's True, add with default style
-                    self.ax.add_feature(
-                        feature, edgecolor='black', linewidth=0.5)
+                    self.ax.add_feature(feature, edgecolor="black", linewidth=0.5)
 
         # Special handling for gridlines
-        if 'gridlines' in combined_kwargs:
-            gl_style = combined_kwargs.pop('gridlines')
+        if "gridlines" in combined_kwargs:
+            gl_style = combined_kwargs.pop("gridlines")
             if isinstance(gl_style, dict):
                 self.ax.gridlines(**gl_style)
             else:
-                self.ax.gridlines(draw_labels=True,
-                                  linestyle='--', color='gray')
+                self.ax.gridlines(draw_labels=True, linestyle="--", color="gray")
 
         # Return the remaining kwargs.
         return combined_kwargs
@@ -113,8 +111,7 @@ class SpatialTrack(SpatialPlot):
             self.ax = self.fig.add_subplot(projection=self.projection)
 
         plot_kwargs = self._draw_features(**kwargs)
-        plot_kwargs.setdefault('transform', ccrs.PlateCarree())
+        plot_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        sc = self.ax.scatter(self.longitude, self.latitude,
-                             c=self.data, **plot_kwargs)
+        sc = self.ax.scatter(self.longitude, self.latitude, c=self.data, **plot_kwargs)
         return sc

@@ -8,9 +8,9 @@ from monet_plots.plots.spatial import SpatialPlot, SpatialTrack
 @pytest.fixture
 def clear_figures():
     """Clear all existing figures before and after a test."""
-    plt.close('all')
+    plt.close("all")
     yield
-    plt.close('all')
+    plt.close("all")
 
 
 @pytest.fixture
@@ -18,11 +18,11 @@ def sample_da():
     """Create a sample DataArray for testing."""
     return xr.DataArray(
         np.random.rand(10, 10),
-        dims=('latitude', 'longitude'),
+        dims=("latitude", "longitude"),
         coords={
-            'latitude': np.arange(30, 40),
-            'longitude': np.arange(-100, -90),
-        }
+            "latitude": np.arange(30, 40),
+            "longitude": np.arange(-100, -90),
+        },
     )
 
 

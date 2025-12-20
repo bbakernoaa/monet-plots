@@ -31,13 +31,18 @@ class WindBarbsPlot(SpatialPlot):
     def plot(self, **kwargs):
         """Generate the wind barbs plot."""
         barb_kwargs = self._draw_features(**kwargs)
-        barb_kwargs.setdefault('transform', ccrs.PlateCarree())
+        barb_kwargs.setdefault("transform", ccrs.PlateCarree())
 
         lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
         lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
         u, v = tools.wsdir2uv(self.ws, self.wdir)
         # Subsample the data for clarity
-        skip = barb_kwargs.pop('skip', 15)
-        self.ax.barbs(lon[::skip, ::skip], lat[::skip, ::skip],
-                      u[::skip, ::skip], v[::skip, ::skip], **barb_kwargs)
+        skip = barb_kwargs.pop("skip", 15)
+        self.ax.barbs(
+            lon[::skip, ::skip],
+            lat[::skip, ::skip],
+            u[::skip, ::skip],
+            v[::skip, ::skip],
+            **barb_kwargs,
+        )
         return self.ax

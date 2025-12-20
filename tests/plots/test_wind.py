@@ -8,8 +8,8 @@ from monet_plots.plots.wind_quiver import WindQuiverPlot
 class GridObj:
     def __init__(self):
         self.variables = {
-            'LAT': np.random.rand(1, 1, 10, 10),
-            'LON': np.random.rand(1, 1, 10, 10)
+            "LAT": np.random.rand(1, 1, 10, 10),
+            "LON": np.random.rand(1, 1, 10, 10),
         }
 
 
@@ -21,16 +21,16 @@ class Basemap:
         pass
 
     def quiver(self, *args, **kwargs):
-        kwargs.pop('ax', None)
+        kwargs.pop("ax", None)
         return plt.quiver(*args, **kwargs)
 
 
 @pytest.fixture
 def clear_figures():
     """Clear all existing figures before and after a test."""
-    plt.close('all')
+    plt.close("all")
     yield
-    plt.close('all')
+    plt.close("all")
 
 
 @pytest.fixture

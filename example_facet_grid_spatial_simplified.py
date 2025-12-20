@@ -12,7 +12,7 @@ from typing import List
 def create_facet_grid_data(
     data_arrays: List[xr.DataArray],
     facet_attrs: List[str],
-    data_var_name: str = 'data_array'
+    data_var_name: str = "data_array",
 ) -> pd.DataFrame:
     """
     Creates a pandas DataFrame suitable for FacetGridPlot from a list of xarray.DataArrays.
@@ -39,56 +39,53 @@ def create_facet_grid_data(
 # Model A data (coarser resolution)
 lats_A = np.arange(30, 35, 1.0)
 lons_A = np.arange(-100, -95, 1.0)
-time_A = pd.to_datetime(['2023-01-01T00:00', '2023-01-01T06:00'])
+time_A = pd.to_datetime(["2023-01-01T00:00", "2023-01-01T06:00"])
 da_A_t0 = xr.DataArray(
     np.random.rand(len(lats_A), len(lons_A)) * 50 + 273.15,  # K
-    coords={'lat': lats_A, 'lon': lons_A},
-    dims=['lat', 'lon'],
-    name='temperature_K'
+    coords={"lat": lats_A, "lon": lons_A},
+    dims=["lat", "lon"],
+    name="temperature_K",
 )
-da_A_t0.attrs['model'] = 'Model A'
-da_A_t0.attrs['time_label'] = time_A[0].strftime('%Y-%m-%d %H:%M')
+da_A_t0.attrs["model"] = "Model A"
+da_A_t0.attrs["time_label"] = time_A[0].strftime("%Y-%m-%d %H:%M")
 
 da_A_t1 = xr.DataArray(
     np.random.rand(len(lats_A), len(lons_A)) * 50 + 273.15,  # K
-    coords={'lat': lats_A, 'lon': lons_A},
-    dims=['lat', 'lon'],
-    name='temperature_K'
+    coords={"lat": lats_A, "lon": lons_A},
+    dims=["lat", "lon"],
+    name="temperature_K",
 )
-da_A_t1.attrs['model'] = 'Model A'
-da_A_t1.attrs['time_label'] = time_A[1].strftime('%Y-%m-%d %H:%M')
+da_A_t1.attrs["model"] = "Model A"
+da_A_t1.attrs["time_label"] = time_A[1].strftime("%Y-%m-%d %H:%M")
 
 
 # Model B data (finer resolution)
 lats_B = np.arange(30, 35, 0.5)
 lons_B = np.arange(-100, -95, 0.5)
-time_B = pd.to_datetime(['2023-01-01T03:00', '2023-01-01T09:00'])
+time_B = pd.to_datetime(["2023-01-01T03:00", "2023-01-01T09:00"])
 da_B_t0 = xr.DataArray(
     np.random.rand(len(lats_B), len(lons_B)) * 30 + 280.15,  # K
-    coords={'lat': lats_B, 'lon': lons_B},
-    dims=['lat', 'lon'],
-    name='temperature_K'
+    coords={"lat": lats_B, "lon": lons_B},
+    dims=["lat", "lon"],
+    name="temperature_K",
 )
-da_B_t0.attrs['model'] = 'Model B'
-da_B_t0.attrs['time_label'] = time_B[0].strftime('%Y-%m-%d %H:%M')
+da_B_t0.attrs["model"] = "Model B"
+da_B_t0.attrs["time_label"] = time_B[0].strftime("%Y-%m-%d %H:%M")
 
 da_B_t1 = xr.DataArray(
     np.random.rand(len(lats_B), len(lons_B)) * 30 + 280.15,  # K
-    coords={'lat': lats_B, 'lon': lons_B},
-    dims=['lat', 'lon'],
-    name='temperature_K'
+    coords={"lat": lats_B, "lon": lons_B},
+    dims=["lat", "lon"],
+    name="temperature_K",
 )
-da_B_t1.attrs['model'] = 'Model B'
-da_B_t1.attrs['time_label'] = time_B[1].strftime('%Y-%m-%d %H:%M')
+da_B_t1.attrs["model"] = "Model B"
+da_B_t1.attrs["time_label"] = time_B[1].strftime("%Y-%m-%d %H:%M")
 
 # Collect all DataArrays into a list
 all_data_arrays = [da_A_t0, da_A_t1, da_B_t0, da_B_t1]
 
 # --- 3. Use the helper function to create the meta DataFrame ---
-meta_df = create_facet_grid_data(
-    all_data_arrays,
-    facet_attrs=['model', 'time_label']
-)
+meta_df = create_facet_grid_data(all_data_arrays, facet_attrs=["model", "time_label"])
 
 # --- 4. Define a custom plotting function ---
 
@@ -98,7 +95,7 @@ def plot_heterogeneous_spatial(data, **kwargs):
     # It will have only one row in this setup.
 
     # Extract the actual xarray.DataArray from the 'data_array' column
-    da_to_plot = data['data_array'].iloc[0]
+    da_to_plot = data["data_array"].iloc[0]
 
     # Create and plot using SpatialImshowPlot
     plotter = SpatialImshowPlot(da_to_plot, **kwargs)
@@ -108,16 +105,15 @@ def plot_heterogeneous_spatial(data, **kwargs):
 # --- 5. Create the FacetGridPlot using the Meta DataFrame ---
 grid = FacetGridPlot(
     meta_df,
-    row='time_label',
-    col='model',
+    row="time_label",
+    col="model",
     height=4,
     aspect=1.2,
-    cbar_label='Temperature (K)'
+    cbar_label="Temperature (K)",
 )
 
 # --- 6. Map the custom plotting function to the grid ---
-grid.map_dataframe(plot_heterogeneous_spatial,
-                   cmap='plasma', add_colorbar=True)
+grid.map_dataframe(plot_heterogeneous_spatial, cmap="plasma", add_colorbar=True)
 
 # --- 7. Set titles and adjust layout ---
 grid.set_titles(col_template="{col_name}", row_template="{row_name}")

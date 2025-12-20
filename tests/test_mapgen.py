@@ -1,4 +1,3 @@
-
 import pytest
 import cartopy.crs as ccrs
 from cartopy.mpl.geoaxes import GeoAxes
@@ -9,9 +8,9 @@ from monet_plots.mapgen import draw_map
 @pytest.fixture
 def clear_figures():
     """Clear all existing figures before and after a test."""
-    plt.close('all')
+    plt.close("all")
     yield
-    plt.close('all')
+    plt.close("all")
 
 
 def test_draw_map_returns_axes(clear_figures):
@@ -45,10 +44,6 @@ def test_draw_map_extent(clear_figures):
 def test_draw_map_with_features(clear_figures):
     """Test that draw_map adds features like coastlines, states, and countries."""
     fig, ax = draw_map(
-        coastlines=True,
-        states=True,
-        countries=True,
-        resolution='110m',
-        return_fig=True
+        coastlines=True, states=True, countries=True, resolution="110m", return_fig=True
     )
     return fig

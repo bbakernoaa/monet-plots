@@ -343,11 +343,11 @@ files = glob.glob('data/*.nc')
 for file in files:
     # Load data
     data = load_data(file)
-    
+
     # Create plot
     plot = monet_plots.SpatialPlot()
     plot.plot(data, title=f"Data from {file}")
-    
+
     # Save with consistent naming
     filename = file.replace('.nc', '.png').replace('data/', 'plots/')
     plot.save(filename)

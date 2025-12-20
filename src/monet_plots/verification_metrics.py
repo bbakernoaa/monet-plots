@@ -2,54 +2,81 @@ import numpy as np
 from typing import Tuple, Union, Dict
 
 
-def compute_pod(hits: Union[int, np.ndarray],
-                misses: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
+def compute_pod(
+    hits: Union[int, np.ndarray], misses: Union[int, np.ndarray]
+) -> Union[float, np.ndarray]:
     """
     Calculates Probability of Detection (POD) or Hit Rate.
 
     POD = Hits / (Hits + Misses)
     """
     denominator = hits + misses
-    return np.divide(hits, denominator, out=np.zeros_like(denominator, dtype=float), where=denominator != 0)
+    return np.divide(
+        hits,
+        denominator,
+        out=np.zeros_like(denominator, dtype=float),
+        where=denominator != 0,
+    )
 
 
-def compute_far(hits: Union[int, np.ndarray],
-                fa: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
+def compute_far(
+    hits: Union[int, np.ndarray], fa: Union[int, np.ndarray]
+) -> Union[float, np.ndarray]:
     """
     Calculates False Alarm Ratio (FAR).
 
     FAR = False Alarms / (Hits + False Alarms)
     """
     denominator = hits + fa
-    return np.divide(fa, denominator, out=np.zeros_like(denominator, dtype=float), where=denominator != 0)
+    return np.divide(
+        fa,
+        denominator,
+        out=np.zeros_like(denominator, dtype=float),
+        where=denominator != 0,
+    )
 
 
-def compute_success_ratio(hits: Union[int, np.ndarray],
-                          fa: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
+def compute_success_ratio(
+    hits: Union[int, np.ndarray], fa: Union[int, np.ndarray]
+) -> Union[float, np.ndarray]:
     """
     Calculates Success Ratio (SR).
 
     SR = 1 - FAR = Hits / (Hits + False Alarms)
     """
     denominator = hits + fa
-    return np.divide(hits, denominator, out=np.zeros_like(denominator, dtype=float), where=denominator != 0)
+    return np.divide(
+        hits,
+        denominator,
+        out=np.zeros_like(denominator, dtype=float),
+        where=denominator != 0,
+    )
 
 
-def compute_csi(hits: Union[int, np.ndarray],
-                misses: Union[int, np.ndarray],
-                fa: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
+def compute_csi(
+    hits: Union[int, np.ndarray],
+    misses: Union[int, np.ndarray],
+    fa: Union[int, np.ndarray],
+) -> Union[float, np.ndarray]:
     """
     Calculates Critical Success Index (CSI).
 
     CSI = Hits / (Hits + Misses + False Alarms)
     """
     denominator = hits + misses + fa
-    return np.divide(hits, denominator, out=np.zeros_like(denominator, dtype=float), where=denominator != 0)
+    return np.divide(
+        hits,
+        denominator,
+        out=np.zeros_like(denominator, dtype=float),
+        where=denominator != 0,
+    )
 
 
-def compute_frequency_bias(hits: Union[int, np.ndarray],
-                           misses: Union[int, np.ndarray],
-                           fa: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
+def compute_frequency_bias(
+    hits: Union[int, np.ndarray],
+    misses: Union[int, np.ndarray],
+    fa: Union[int, np.ndarray],
+) -> Union[float, np.ndarray]:
     """
     Calculates Frequency Bias.
 
@@ -57,18 +84,29 @@ def compute_frequency_bias(hits: Union[int, np.ndarray],
     """
     numerator = hits + fa
     denominator = hits + misses
-    return np.divide(numerator, denominator, out=np.zeros_like(denominator, dtype=float), where=denominator != 0)
+    return np.divide(
+        numerator,
+        denominator,
+        out=np.zeros_like(denominator, dtype=float),
+        where=denominator != 0,
+    )
 
 
-def compute_pofd(fa: Union[int, np.ndarray],
-                 cn: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
+def compute_pofd(
+    fa: Union[int, np.ndarray], cn: Union[int, np.ndarray]
+) -> Union[float, np.ndarray]:
     """
     Calculates Probability of False Detection (POFD).
 
     POFD = False Alarms / (False Alarms + Correct Negatives)
     """
     denominator = fa + cn
-    return np.divide(fa, denominator, out=np.zeros_like(denominator, dtype=float), where=denominator != 0)
+    return np.divide(
+        fa,
+        denominator,
+        out=np.zeros_like(denominator, dtype=float),
+        where=denominator != 0,
+    )
 
 
 def compute_auc(x: np.ndarray, y: np.ndarray) -> float:
@@ -84,9 +122,9 @@ def compute_auc(x: np.ndarray, y: np.ndarray) -> float:
     return float(np.trapezoid(y[sort_idx], x[sort_idx]))
 
 
-def compute_reliability_curve(forecasts: np.ndarray, observations: np.ndarray,
-                              n_bins: int = 10) -> Tuple[np.ndarray, np.ndarray,
-                                                         np.ndarray]:
+def compute_reliability_curve(
+    forecasts: np.ndarray, observations: np.ndarray, n_bins: int = 10
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Computes reliability curve statistics.
 
@@ -123,9 +161,9 @@ def compute_reliability_curve(forecasts: np.ndarray, observations: np.ndarray,
     return bin_centers, np.array(observed_frequencies), np.array(bin_counts)
 
 
-def compute_brier_score_components(forecasts: np.ndarray,
-                                   observations: np.ndarray,
-                                   n_bins: int = 10) -> Dict[str, float]:
+def compute_brier_score_components(
+    forecasts: np.ndarray, observations: np.ndarray, n_bins: int = 10
+) -> Dict[str, float]:
     """
     Decomposes Brier Score into Reliability, Resolution, and Uncertainty.
 
@@ -136,7 +174,8 @@ def compute_brier_score_components(forecasts: np.ndarray,
     uncertainty = base_rate * (1.0 - base_rate)
 
     bin_centers, obs_freq, bin_counts = compute_reliability_curve(
-        forecasts, observations, n_bins)
+        forecasts, observations, n_bins
+    )
 
     # Filter out empty bins
     mask = ~np.isnan(obs_freq)
@@ -145,10 +184,10 @@ def compute_brier_score_components(forecasts: np.ndarray,
     bin_counts = bin_counts[mask]
 
     # Reliability: Weighted average of (forecast - observed_freq)^2
-    reliability = float(np.sum(bin_counts * (bin_centers - obs_freq)**2) / N)
+    reliability = float(np.sum(bin_counts * (bin_centers - obs_freq) ** 2) / N)
 
     # Resolution: Weighted average of (observed_freq - base_rate)**2
-    resolution = float(np.sum(bin_counts * (obs_freq - base_rate)**2) / N)
+    resolution = float(np.sum(bin_counts * (obs_freq - base_rate) ** 2) / N)
 
     return {
         "reliability": reliability,
@@ -158,7 +197,9 @@ def compute_brier_score_components(forecasts: np.ndarray,
     }
 
 
-def compute_rank_histogram(ensemble: np.ndarray, observations: np.ndarray) -> np.ndarray:
+def compute_rank_histogram(
+    ensemble: np.ndarray, observations: np.ndarray
+) -> np.ndarray:
     """
     Computes rank histogram counts.
 
@@ -182,9 +223,14 @@ def compute_rank_histogram(ensemble: np.ndarray, observations: np.ndarray) -> np
     return counts
 
 
-def compute_rev(hits: float, misses: float, fa: float, cn: float,
-                cost_loss_ratios: np.ndarray,
-                climatology: float) -> np.ndarray:
+def compute_rev(
+    hits: float,
+    misses: float,
+    fa: float,
+    cn: float,
+    cost_loss_ratios: np.ndarray,
+    climatology: float,
+) -> np.ndarray:
     """
     Calculates Relative Economic Value (REV).
 
@@ -222,7 +268,7 @@ def compute_rev(hits: float, misses: float, fa: float, cn: float,
         # We divide by Loss * N to get normalized expense
         # E_norm = alpha * (FA + Hits)/N + Misses/N
 
-        e_fcst = alpha * (hits + fa)/n + misses/n
+        e_fcst = alpha * (hits + fa) / n + misses / n
 
         # Expected Expense for Climatology
         # If alpha < s: Always Protect. Expense = Cost. Norm = alpha.

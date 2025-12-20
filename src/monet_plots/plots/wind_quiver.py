@@ -31,13 +31,18 @@ class WindQuiverPlot(SpatialPlot):
     def plot(self, **kwargs):
         """Generate the wind quiver plot."""
         quiver_kwargs = self._draw_features(**kwargs)
-        quiver_kwargs.setdefault('transform', ccrs.PlateCarree())
+        quiver_kwargs.setdefault("transform", ccrs.PlateCarree())
 
         lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
         lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
         u, v = tools.wsdir2uv(self.ws, self.wdir)
         # Subsample the data for clarity
-        skip = quiver_kwargs.pop('skip', 15)
-        quiv = self.ax.quiver(lon[::skip, ::skip], lat[::skip, ::skip],
-                              u[::skip, ::skip], v[::skip, ::skip], **quiver_kwargs)
+        skip = quiver_kwargs.pop("skip", 15)
+        quiv = self.ax.quiver(
+            lon[::skip, ::skip],
+            lat[::skip, ::skip],
+            u[::skip, ::skip],
+            v[::skip, ::skip],
+            **quiver_kwargs,
+        )
         return quiv

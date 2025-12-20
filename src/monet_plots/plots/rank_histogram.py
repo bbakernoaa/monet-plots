@@ -24,13 +24,15 @@ class RankHistogramPlot(BasePlot):
     def __init__(self, fig=None, ax=None, **kwargs):
         super().__init__(fig=fig, ax=ax, **kwargs)
 
-    def plot(self,
-             data: Any,
-             rank_col: str = 'rank',
-             n_members: Optional[int] = None,
-             label_col: Optional[str] = None,
-             normalize: bool = True,
-             **kwargs):
+    def plot(
+        self,
+        data: Any,
+        rank_col: str = "rank",
+        n_members: Optional[int] = None,
+        label_col: Optional[str] = None,
+        normalize: bool = True,
+        **kwargs,
+    ):
         """
         Main plotting method.
 
@@ -60,34 +62,41 @@ class RankHistogramPlot(BasePlot):
 
         if label_col:
             for name, group in df.groupby(label_col):
-                counts = group[rank_col].value_counts().reindex(
-                    np.arange(num_bins), fill_value=0)
+                counts = (
+                    group[rank_col]
+                    .value_counts()
+                    .reindex(np.arange(num_bins), fill_value=0)
+                )
                 total = counts.sum()
                 freq = counts / total if normalize else counts
-                self.ax.bar(counts.index, freq.values,
-                            label=str(name), alpha=0.7, **kwargs)
+                self.ax.bar(
+                    counts.index, freq.values, label=str(name), alpha=0.7, **kwargs
+                )
             self.ax.legend()
         else:
-            counts = df[rank_col].value_counts().reindex(
-                np.arange(num_bins), fill_value=0)
+            counts = (
+                df[rank_col].value_counts().reindex(np.arange(num_bins), fill_value=0)
+            )
             total = counts.sum()
             freq = counts / total if normalize else counts
             self.ax.bar(counts.index, freq.values, alpha=0.7, **kwargs)
 
         # Expected uniform line
-        self.ax.axhline(expected, color='k', linestyle='--',
-                        linewidth=2, label='Expected (Uniform)')
+        self.ax.axhline(
+            expected, color="k", linestyle="--", linewidth=2, label="Expected (Uniform)"
+        )
         self.ax.legend()
 
         # Formatting
-        self.ax.set_xlabel('Rank')
-        self.ax.set_ylabel('Relative Frequency' if normalize else 'Count')
+        self.ax.set_xlabel("Rank")
+        self.ax.set_ylabel("Relative Frequency" if normalize else "Count")
         self.ax.set_xticks(np.arange(n_members + 1))
         self.ax.set_xlim(-0.5, n_members + 0.5)
         self.ax.grid(True, alpha=0.3)
 
         # TDD Anchor: test_normalization: Check sum of frequencies is 1.0.
         # TDD Anchor: test_missing_ranks: Ensure ranks with 0 counts are plotted as 0.
+
 
 # TDD Anchors:
 # 1. test_flat_distribution: Verify perfectly uniform ranks yield flat line.

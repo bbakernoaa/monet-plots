@@ -26,13 +26,15 @@ class ROCCurvePlot(BasePlot):
     def __init__(self, fig=None, ax=None, **kwargs):
         super().__init__(fig=fig, ax=ax, **kwargs)
 
-    def plot(self,
-             data: Any,
-             x_col: str = 'pofd',
-             y_col: str = 'pod',
-             label_col: Optional[str] = None,
-             show_auc: bool = True,
-             **kwargs):
+    def plot(
+        self,
+        data: Any,
+        x_col: str = "pofd",
+        y_col: str = "pod",
+        label_col: Optional[str] = None,
+        show_auc: bool = True,
+        **kwargs,
+    ):
         """
         Main plotting method.
 
@@ -49,25 +51,27 @@ class ROCCurvePlot(BasePlot):
         validate_dataframe(df, required_columns=[x_col, y_col])
 
         # Draw No Skill Line
-        self.ax.plot([0, 1], [0, 1], 'k--', label='No Skill', alpha=0.5)
+        self.ax.plot([0, 1], [0, 1], "k--", label="No Skill", alpha=0.5)
         self.ax.grid(True, alpha=0.3)
 
         if label_col:
             groups = df.groupby(label_col)
             for name, group in groups:
-                self._plot_single_curve(group, x_col, y_col, label=str(
-                    name), show_auc=show_auc, **kwargs)
-            self.ax.legend(loc='lower right')
+                self._plot_single_curve(
+                    group, x_col, y_col, label=str(name), show_auc=show_auc, **kwargs
+                )
+            self.ax.legend(loc="lower right")
         else:
             self._plot_single_curve(
-                df, x_col, y_col, label='Model', show_auc=show_auc, **kwargs)
+                df, x_col, y_col, label="Model", show_auc=show_auc, **kwargs
+            )
 
         # Formatting
         self.ax.set_xlim(0, 1)
         self.ax.set_ylim(0, 1)
         self.ax.set_xlabel("Probability of False Detection (POFD)")
         self.ax.set_ylabel("Probability of Detection (POD)")
-        self.ax.set_aspect('equal')
+        self.ax.set_aspect("equal")
 
     def _plot_single_curve(self, df, x_col, y_col, label, show_auc, **kwargs):
         """
@@ -96,6 +100,7 @@ class ROCCurvePlot(BasePlot):
         full_label = label + auc_str
         self.ax.plot(x, y, label=full_label, **kwargs)
         self.ax.fill_between(x, 0, y, alpha=0.2, **kwargs)
+
 
 # TDD Anchors (Unit Tests):
 # 1. test_auc_calculation: Provide points for a known square/triangle, verify AUC.

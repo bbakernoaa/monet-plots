@@ -12,6 +12,7 @@ import pandas as pd
 # Check if xarray is available
 try:
     import xarray as xr
+
     HAS_XARRAY = True
 except ImportError:
     HAS_XARRAY = False
@@ -26,10 +27,9 @@ def test_normalize_data():
     print("Testing normalize_data function...")
 
     # Test with pandas DataFrame
-    df = pd.DataFrame({
-        'time': pd.date_range('2023-01-01', periods=10),
-        'value': np.random.randn(10)
-    })
+    df = pd.DataFrame(
+        {"time": pd.date_range("2023-01-01", periods=10), "value": np.random.randn(10)}
+    )
     result = normalize_data(df)
     print(f"✓ Pandas DataFrame normalized: {type(result)}")
     assert isinstance(result, pd.DataFrame)
@@ -44,18 +44,21 @@ def test_normalize_data():
         # Test with xarray DataArray
         da = xr.DataArray(
             np.random.randn(10),
-            dims=['time'],
-            coords={'time': pd.date_range('2023-01-01', periods=10)}
+            dims=["time"],
+            coords={"time": pd.date_range("2023-01-01", periods=10)},
         )
         result = normalize_data(da)
         print(f"✓ Xarray DataArray normalized: {type(result)}")
         assert isinstance(result, xr.DataArray)
 
         # Test with xarray Dataset
-        ds = xr.Dataset({
-            'value': (['time'], np.random.randn(10)),
-            'other': (['time'], np.random.randn(10))
-        }, coords={'time': pd.date_range('2023-01-01', periods=10)})
+        ds = xr.Dataset(
+            {
+                "value": (["time"], np.random.randn(10)),
+                "other": (["time"], np.random.randn(10)),
+            },
+            coords={"time": pd.date_range("2023-01-01", periods=10)},
+        )
         result = normalize_data(ds)
         print(f"✓ Xarray Dataset normalized: {type(result)}")
         assert isinstance(result, xr.Dataset)
@@ -68,16 +71,17 @@ def test_timeseries_plot_pandas():
     print("Testing TimeSeriesPlot with pandas DataFrame...")
 
     # Create sample data
-    dates = pd.date_range('2023-01-01', periods=100, freq='H')
-    df = pd.DataFrame({
-        'time': dates,
-        'obs': np.random.normal(0, 1, 100),
-        'model': np.random.normal(0.1, 1.1, 100)
-    })
+    dates = pd.date_range("2023-01-01", periods=100, freq="H")
+    df = pd.DataFrame(
+        {
+            "time": dates,
+            "obs": np.random.normal(0, 1, 100),
+            "model": np.random.normal(0.1, 1.1, 100),
+        }
+    )
 
     # Create and plot
-    plot = TimeSeriesPlot(df, x='time', y='obs',
-                          title="Pandas TimeSeries Test")
+    plot = TimeSeriesPlot(df, x="time", y="obs", title="Pandas TimeSeries Test")
     plot.plot()
 
     # Save the plot
@@ -98,17 +102,13 @@ def test_timeseries_plot_xarray():
     print("Testing TimeSeriesPlot with xarray DataArray...")
 
     # Create sample xarray data
-    dates = pd.date_range('2023-01-01', periods=100, freq='H')
+    dates = pd.date_range("2023-01-01", periods=100, freq="H")
     da = xr.DataArray(
-        np.random.normal(0, 1, 100),
-        dims=['time'],
-        coords={'time': dates},
-        name='obs'
+        np.random.normal(0, 1, 100), dims=["time"], coords={"time": dates}, name="obs"
     )
 
     # Create and plot
-    plot = TimeSeriesPlot(da, x='time', y='obs',
-                          title="Xarray TimeSeries Test")
+    plot = TimeSeriesPlot(da, x="time", y="obs", title="Xarray TimeSeries Test")
     plot.plot()
 
     # Save the plot
@@ -129,15 +129,17 @@ def test_timeseries_plot_xarray_dataset():
     print("Testing TimeSeriesPlot with xarray Dataset...")
 
     # Create sample xarray dataset
-    dates = pd.date_range('2023-01-01', periods=100, freq='H')
-    ds = xr.Dataset({
-        'obs': (['time'], np.random.normal(0, 1, 100)),
-        'model': (['time'], np.random.normal(0.1, 1.1, 100))
-    }, coords={'time': dates})
+    dates = pd.date_range("2023-01-01", periods=100, freq="H")
+    ds = xr.Dataset(
+        {
+            "obs": (["time"], np.random.normal(0, 1, 100)),
+            "model": (["time"], np.random.normal(0.1, 1.1, 100)),
+        },
+        coords={"time": dates},
+    )
 
     # Create and plot
-    plot = TimeSeriesPlot(ds, x='time', y='obs',
-                          title="Xarray Dataset TimeSeries Test")
+    plot = TimeSeriesPlot(ds, x="time", y="obs", title="Xarray Dataset TimeSeries Test")
     plot.plot()
 
     # Save the plot

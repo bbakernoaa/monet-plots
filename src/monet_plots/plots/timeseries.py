@@ -13,10 +13,19 @@ class TimeSeriesPlot(BasePlot):
     shading for ±1 standard deviation around the mean.
     """
 
-    def __init__(self, df: Any, x: str = "time", y: str = "obs",
-                 plotargs: dict = {}, fillargs: dict = {"alpha": 0.2},
-                 title: str = "", ylabel: Optional[str] = None,
-                 label: Optional[str] = None, *args, **kwargs):
+    def __init__(
+        self,
+        df: Any,
+        x: str = "time",
+        y: str = "obs",
+        plotargs: dict = {},
+        fillargs: dict = {"alpha": 0.2},
+        title: str = "",
+        ylabel: Optional[str] = None,
+        label: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
         """
         Initialize the plot with data and plot settings.
 
@@ -73,8 +82,7 @@ class TimeSeriesPlot(BasePlot):
         else:
             self.label = self.y
         m[self.label].plot(ax=self.ax, **self.plotargs)
-        self.ax.fill_between(m[self.label].index, lower,
-                             upper, **self.fillargs)
+        self.ax.fill_between(m[self.label].index, lower, upper, **self.fillargs)
         if self.ylabel is None:
             self.ax.set_ylabel(variable + " (" + unit + ")")
         else:
@@ -118,16 +126,13 @@ class TimeSeriesPlot(BasePlot):
 
         # Plot the error bounds using the time coordinate values
         self.ax.fill_between(
-            time_coord.values,
-            lower.values,
-            upper.values,
-            **self.fillargs
+            time_coord.values, lower.values, upper.values, **self.fillargs
         )
 
         # Set labels and title
         unit = "None"  # xarray doesn't have a direct units attribute like pandas
-        if hasattr(data[self.y], 'attrs') and 'units' in data[self.y].attrs:
-            unit = data[self.y].attrs['units']
+        if hasattr(data[self.y], "attrs") and "units" in data[self.y].attrs:
+            unit = data[self.y].attrs["units"]
 
         if self.ylabel is None:
             self.ax.set_ylabel(f"{self.y} ({unit})")
@@ -147,7 +152,9 @@ class TimeSeriesStatsPlot(BasePlot):
     calculated between two data columns, resampled to a given frequency.
     """
 
-    def __init__(self, df: Any, col1: str, col2: Union[str, List[str]], *args, **kwargs):
+    def __init__(
+        self, df: Any, col1: str, col2: Union[str, List[str]], *args, **kwargs
+    ):
         """
         Initialize the plot with data.
 
@@ -208,18 +215,16 @@ class TimeSeriesStatsPlot(BasePlot):
         """
         if stat.lower() not in self.stats:
             raise ValueError(
-                f"Statistic '{stat}' not supported. Use one of {list(self.stats.keys())}")
+                f"Statistic '{stat}' not supported. Use one of {list(self.stats.keys())}"
+            )
 
         # Set default plot properties, allowing user to override
-        plot_kwargs = {
-            "grid": True,
-            "marker": "o",
-            "linestyle": "-"
-        }
+        plot_kwargs = {"grid": True, "marker": "o", "linestyle": "-"}
         # User-provided kwargs will override defaults but not the label
         plot_kwargs = {**plot_kwargs, **kwargs}
 
         for model_col in self.col2:
+
             def stat_func(group):
                 return self.stats[stat.lower()](group, model_col)
 

@@ -26,15 +26,17 @@ class ScorecardPlot(BasePlot):
     def __init__(self, fig=None, ax=None, **kwargs):
         super().__init__(fig=fig, ax=ax, **kwargs)
 
-    def plot(self,
-             data: Any,
-             x_col: str,
-             y_col: str,
-             val_col: str,
-             sig_col: Optional[str] = None,
-             cmap: str = 'RdYlGn',
-             center: float = 0.0,
-             **kwargs):
+    def plot(
+        self,
+        data: Any,
+        x_col: str,
+        y_col: str,
+        val_col: str,
+        sig_col: Optional[str] = None,
+        cmap: str = "RdYlGn",
+        center: float = 0.0,
+        **kwargs,
+    ):
         """
         Main plotting method.
 
@@ -57,8 +59,16 @@ class ScorecardPlot(BasePlot):
         # TDD Anchor: Test pivot structure
 
         # Plot Heatmap
-        sns.heatmap(pivot_data, ax=self.ax, cmap=cmap, center=center, annot=True,
-                    fmt=".2f", cbar_kws={'label': 'Relative Performance'}, **kwargs)
+        sns.heatmap(
+            pivot_data,
+            ax=self.ax,
+            cmap=cmap,
+            center=center,
+            annot=True,
+            fmt=".2f",
+            cbar_kws={"label": "Relative Performance"},
+            **kwargs,
+        )
 
         # Add Significance Markers
         if sig_col:
@@ -67,8 +77,8 @@ class ScorecardPlot(BasePlot):
 
         self.ax.set_xlabel(x_col.title())
         self.ax.set_ylabel(y_col.title())
-        self.ax.tick_params(axis='x', rotation=45)
-        self.ax.set_title('Performance Scorecard')
+        self.ax.tick_params(axis="x", rotation=45)
+        self.ax.set_title("Performance Scorecard")
 
     def _overlay_significance(self, data_grid, sig_grid):
         """
@@ -82,10 +92,18 @@ class ScorecardPlot(BasePlot):
                 sig_val = sig_grid.iloc[i, j]
                 if pd.notna(sig_val) and bool(sig_val):
                     # Position at center of cell
-                    self.ax.text(j + 0.5, rows - i - 0.5, '*',
-                                 ha='center', va='center',
-                                 fontweight='bold', fontsize=12,
-                                 color='black', zorder=5)
+                    self.ax.text(
+                        j + 0.5,
+                        rows - i - 0.5,
+                        "*",
+                        ha="center",
+                        va="center",
+                        fontweight="bold",
+                        fontsize=12,
+                        color="black",
+                        zorder=5,
+                    )
+
 
 # TDD Anchors:
 # 1. test_pivot_logic: Verify long-to-wide conversion.

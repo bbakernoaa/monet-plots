@@ -148,11 +148,13 @@ class VerticalBoxPlot(BasePlot):
                 self.fig = plt.figure()
             self.ax = self.fig.add_subplot()
 
-        output_list = tools.split_by_threshold(
-            self.data, self.y, self.thresholds)
+        output_list = tools.split_by_threshold(self.data, self.y, self.thresholds)
         position_list_1 = self.thresholds[:-1]
         position_list_2 = self.thresholds[1:]
-        position_list_mid = [(p1 + p2) / 2 for p1,
-                             p2 in zip(position_list_1, position_list_2)]
+        position_list_mid = [
+            (p1 + p2) / 2 for p1, p2 in zip(position_list_1, position_list_2)
+        ]
 
-        return self.ax.boxplot(output_list, vert=False, positions=position_list_mid, **kwargs)
+        return self.ax.boxplot(
+            output_list, vert=False, positions=position_list_mid, **kwargs
+        )

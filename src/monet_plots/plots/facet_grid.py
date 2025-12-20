@@ -13,8 +13,17 @@ class FacetGridPlot(BasePlot):
     This class creates a facet grid plot using seaborn's FacetGrid.
     """
 
-    def __init__(self, data: Any, row: str = None, col: str = None, hue: str = None, col_wrap: int = None,
-                 height: float = 3, aspect: float = 1, **kwargs):
+    def __init__(
+        self,
+        data: Any,
+        row: str = None,
+        col: str = None,
+        hue: str = None,
+        col_wrap: int = None,
+        height: float = 3,
+        aspect: float = 1,
+        **kwargs,
+    ):
         """Initializes the facet grid.
 
         Args:
@@ -54,7 +63,7 @@ class FacetGridPlot(BasePlot):
             col_wrap=self.col_wrap,
             height=self.height,
             aspect=self.aspect,
-            **kwargs
+            **kwargs,
         )
 
         # Update the figure reference to the one from the grid since seaborn creates its own

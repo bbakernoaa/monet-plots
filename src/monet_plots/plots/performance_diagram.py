@@ -31,8 +31,8 @@ class PerformanceDiagramPlot(BasePlot):
     def plot(
         self,
         data: Any,
-        x_col: str = 'success_ratio',
-        y_col: str = 'pod',
+        x_col: str = "success_ratio",
+        y_col: str = "pod",
         counts_cols: Optional[List[str]] = None,
         label_col: Optional[str] = None,
         **kwargs,
@@ -63,19 +63,26 @@ class PerformanceDiagramPlot(BasePlot):
         # TDD Anchor: Verify scatter points match input data coordinates
         if label_col:
             for name, group in df_plot.groupby(label_col):
-                self.ax.plot(group[x_col], group[y_col], marker='o',
-                             label=name, linestyle='none', **kwargs)
-            self.ax.legend(loc='best')
+                self.ax.plot(
+                    group[x_col],
+                    group[y_col],
+                    marker="o",
+                    label=name,
+                    linestyle="none",
+                    **kwargs,
+                )
+            self.ax.legend(loc="best")
         else:
-            self.ax.plot(df_plot[x_col], df_plot[y_col],
-                         marker='o', linestyle='none', **kwargs)
+            self.ax.plot(
+                df_plot[x_col], df_plot[y_col], marker="o", linestyle="none", **kwargs
+            )
 
         # Formatting
         self.ax.set_xlim(0, 1)
         self.ax.set_ylim(0, 1)
         self.ax.set_xlabel("Success Ratio (1-FAR)")
         self.ax.set_ylabel("Probability of Detection (POD)")
-        self.ax.set_aspect('equal')
+        self.ax.set_aspect("equal")
 
     def _validate_inputs(self, data, x, y, counts):
         """Validates input dataframe structure."""
@@ -109,26 +116,39 @@ class PerformanceDiagramPlot(BasePlot):
         6. Label contours.
         """
         # Avoid division by zero at boundaries
-        xx, yy = np.meshgrid(np.linspace(0.01, 0.99, 50),
-                             np.linspace(0.01, 0.99, 50))
+        xx, yy = np.meshgrid(np.linspace(0.01, 0.99, 50), np.linspace(0.01, 0.99, 50))
         csi = (xx * yy) / (xx + yy - xx * yy)
         bias = yy / xx
 
         # CSI contours (dashed, lightgray)
-        cs_csi = self.ax.contour(xx, yy, csi, levels=np.arange(0.1, 0.95, 0.1),
-                                 colors='lightgray', linestyles='--', alpha=0.6)
-        self.ax.clabel(cs_csi, inline=True, fontsize=8, fmt='%.1f')
+        cs_csi = self.ax.contour(
+            xx,
+            yy,
+            csi,
+            levels=np.arange(0.1, 0.95, 0.1),
+            colors="lightgray",
+            linestyles="--",
+            alpha=0.6,
+        )
+        self.ax.clabel(cs_csi, inline=True, fontsize=8, fmt="%.1f")
 
         # Bias contours (dotted, darkgray)
-        cs_bias = self.ax.contour(xx, yy, bias, levels=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0],
-                                  colors='darkgray', linestyles=':', alpha=0.6)
-        self.ax.clabel(cs_bias, inline=True, fontsize=8, fmt='%.1f')
+        cs_bias = self.ax.contour(
+            xx,
+            yy,
+            bias,
+            levels=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0],
+            colors="darkgray",
+            linestyles=":",
+            alpha=0.6,
+        )
+        self.ax.clabel(cs_bias, inline=True, fontsize=8, fmt="%.1f")
 
         # Perfect forecast line
-        self.ax.plot([0.01, 0.99], [0.01, 0.99],
-                     'k-', linewidth=1.5, alpha=0.8)
+        self.ax.plot([0.01, 0.99], [0.01, 0.99], "k-", linewidth=1.5, alpha=0.8)
 
         # TDD Anchor: Test that contours are within 0-1 range.
+
 
 # TDD Anchors (Unit Tests):
 # 1. test_metric_calculation_from_counts: Provide hits/misses/fa, verify SR/POD output.

@@ -1,4 +1,3 @@
-
 from scipy.stats import scoreatpercentile as score
 from .base import BasePlot
 from ..plot_utils import _set_outline_patch_alpha, to_dataframe
@@ -14,7 +13,21 @@ class SpScatterBiasPlot(BasePlot):
     for display purposes.
     """
 
-    def __init__(self, df: Any, col1: str, col2: str, outline: bool = False, tight: bool = True, global_map: bool = True, map_kwargs: dict = {}, cbar_kwargs: dict = {}, val_max: float = None, val_min: float = None, *args, **kwargs):
+    def __init__(
+        self,
+        df: Any,
+        col1: str,
+        col2: str,
+        outline: bool = False,
+        tight: bool = True,
+        global_map: bool = True,
+        map_kwargs: dict = {},
+        cbar_kwargs: dict = {},
+        val_max: float = None,
+        val_min: float = None,
+        *args,
+        **kwargs,
+    ):
         """
         Initialize the plot with data and map projection.
 
@@ -47,8 +60,11 @@ class SpScatterBiasPlot(BasePlot):
         if self.ax is None:
             self.ax = draw_map(**self.map_kwargs)
 
-        dfnew = self.df[["latitude", "longitude",
-                         self.col1, self.col2]].dropna().copy(deep=True)
+        dfnew = (
+            self.df[["latitude", "longitude", self.col1, self.col2]]
+            .dropna()
+            .copy(deep=True)
+        )
         dfnew["sp_diff"] = dfnew[self.col2] - dfnew[self.col1]
         top = score(dfnew["sp_diff"].abs(), per=95)
         if self.val_max is not None:
@@ -71,6 +87,7 @@ class SpScatterBiasPlot(BasePlot):
 
         if not self.outline:
             from cartopy.mpl.geoaxes import GeoAxes
+
             if isinstance(self.ax, GeoAxes):
                 _set_outline_patch_alpha(self.ax)
         if self.global_map:

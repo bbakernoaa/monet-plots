@@ -49,15 +49,11 @@ class TrajectoryPlot(BasePlot):
         if self.fig is None:
             self.fig = plt.figure(figsize=kwargs.get("figsize", (10, 8)))
 
-        gs = self.fig.add_gridspec(2, 1,
-                                   height_ratios=[3, 1])
+        gs = self.fig.add_gridspec(2, 1, height_ratios=[3, 1])
 
         # Spatial track plot
-        ax0 = self.fig.add_subplot(gs[0, 0],
-                                   projection=kwargs.get("projection"))
-        spatial_track = SpatialTrack(
-            self.longitude, self.latitude, self.data, ax=ax0
-        )
+        ax0 = self.fig.add_subplot(gs[0, 0], projection=kwargs.get("projection"))
+        spatial_track = SpatialTrack(self.longitude, self.latitude, self.data, ax=ax0)
         spatial_track.plot(**kwargs.get("spatial_track_kwargs", {}))
 
         # Timeseries plot

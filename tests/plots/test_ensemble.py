@@ -7,9 +7,9 @@ from monet_plots.plots.ensemble import SpreadSkillPlot
 @pytest.fixture
 def clear_figures():
     """Clear all existing figures before and after a test."""
-    plt.close('all')
+    plt.close("all")
     yield
-    plt.close('all')
+    plt.close("all")
 
 
 @pytest.fixture

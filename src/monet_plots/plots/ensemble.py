@@ -1,4 +1,3 @@
-
 import numpy as np
 from .base import BasePlot
 
@@ -33,7 +32,7 @@ class SpreadSkillPlot(BasePlot):
 
         # Add a 1:1 reference line
         max_val = max(np.max(self.spread), np.max(self.skill))
-        self.ax.plot([0, max_val], [0, max_val], 'k--')
+        self.ax.plot([0, max_val], [0, max_val], "k--")
 
         # Set labels and title
         self.ax.set_xlabel("Ensemble Spread (Standard Deviation)")
@@ -41,6 +40,6 @@ class SpreadSkillPlot(BasePlot):
         self.ax.set_title("Spread-Skill Plot")
 
         # Ensure aspect ratio is equal
-        self.ax.set_aspect('equal', 'box')
+        self.ax.set_aspect("equal", "box")
 
         return self.ax

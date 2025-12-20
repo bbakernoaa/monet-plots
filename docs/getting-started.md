@@ -241,7 +241,7 @@ MONET Plots follows a class-based architecture where each plot type has its own 
 ```
 BasePlot (abstract base class)
 ├── SpatialPlot
-├── TimeSeriesPlot  
+├── TimeSeriesPlot
 ├── ScatterPlot
 ├── TaylorDiagramPlot
 ├── KDEPlot

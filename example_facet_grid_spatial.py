@@ -9,25 +9,20 @@ from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 # Simulate data for two models ('model_A', 'model_B') and two times ('2023-01-01', '2023-01-02')
 lats = np.arange(30, 35, 0.5)
 lons = np.arange(-100, -95, 0.5)
-times = pd.to_datetime(['2023-01-01', '2023-01-02'])
-models = ['model_A', 'model_B']
+times = pd.to_datetime(["2023-01-01", "2023-01-02"])
+models = ["model_A", "model_B"]
 
 # Create a DataArray with dimensions (time, model, lat, lon)
 data = xr.DataArray(
     np.random.rand(len(times), len(models), len(lats), len(lons)) * 100,
-    coords={
-        'time': times,
-        'model': models,
-        'lat': lats,
-        'lon': lons
-    },
-    dims=['time', 'model', 'lat', 'lon'],
-    name='temperature'
+    coords={"time": times, "model": models, "lat": lats, "lon": lons},
+    dims=["time", "model", "lat", "lon"],
+    name="temperature",
 )
 
 # Add some variation for demonstration
-data.loc[{'model': 'model_A', 'time': '2023-01-01'}] += 10
-data.loc[{'model': 'model_B', 'time': '2023-01-02'}] -= 5
+data.loc[{"model": "model_A", "time": "2023-01-01"}] += 10
+data.loc[{"model": "model_B", "time": "2023-01-02"}] -= 5
 
 # Convert to Dataset if you have multiple variables, or keep as DataArray
 ds = data.to_dataset()
@@ -52,7 +47,7 @@ def plot_spatial_imshow(data, **kwargs):
 
     # Create a temporary DataArray for plotting
     # Ensure 'lat' and 'lon' are correctly identified as coordinates
-    temp_da = data.set_index(['lat', 'lon']).to_xarray()[var_name]
+    temp_da = data.set_index(["lat", "lon"]).to_xarray()[var_name]
 
     # Create and plot using SpatialImshowPlot
     plotter = SpatialImshowPlot(temp_da, **kwargs)
@@ -65,17 +60,18 @@ def plot_spatial_imshow(data, **kwargs):
 # We want 'time' as rows and 'model' as columns
 grid = FacetGridPlot(
     ds,
-    row='time',
-    col='model',
+    row="time",
+    col="model",
     height=4,
     aspect=1.2,
-    cbar_label='Temperature'  # This will be passed to the spatial plot
+    cbar_label="Temperature",  # This will be passed to the spatial plot
 )
 
 # 4. Map the spatial plotting function to the grid
 # Pass the variable name to plot_spatial_imshow
-grid.map_dataframe(plot_spatial_imshow, 'temperature',
-                   cmap='viridis', add_colorbar=True)
+grid.map_dataframe(
+    plot_spatial_imshow, "temperature", cmap="viridis", add_colorbar=True
+)
 
 # 5. Set titles and adjust layout
 grid.set_titles(col_template="{col_name}", row_template="{row_name}")

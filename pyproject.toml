@@ -41,3 +41,7 @@ docs = [
 
 [tool.ruff]
 exclude = ["examples"]
+
+[tool.flake8]
+extend-ignore = "C901"
+exclude = ["examples"]
