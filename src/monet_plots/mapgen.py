@@ -1,8 +1,15 @@
 """Map utilities."""
+import warnings
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
+
+# Re-export SpatialPlot for a clear, centralized API
+from .plots.spatial import SpatialPlot
+
+
+__all__ = ("SpatialPlot", "draw_map")
 
 
 def draw_map(
@@ -21,6 +28,12 @@ def draw_map(
     **kwargs,
 ):
     """Draw a map with Cartopy.
+
+    .. deprecated:: 0.1.0
+       This function is deprecated and will be removed in a future version.
+       Please use the `monet_plots.plots.spatial.SpatialPlot` class instead,
+       which provides a more flexible and object-oriented interface for
+       creating spatial plots.
 
     Creates a map using Cartopy with configurable features like coastlines,
     borders, and natural earth elements. This function simplifies the process
@@ -85,6 +98,12 @@ def draw_map(
     ...     extent=[-125, -65, 25, 50]
     ... )
     """
+    warnings.warn(
+        "`draw_map` is deprecated and will be removed in a future version. "
+        "Please use the `SpatialPlot` class for a more robust and flexible API.",
+        FutureWarning,
+        stacklevel=2,
+    )
     kwargs["figsize"] = figsize
     if "subplot_kw" not in kwargs:
         kwargs["subplot_kw"] = {}

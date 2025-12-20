@@ -52,11 +52,15 @@ class SpatialPlot(BasePlot):
         # Combine kwargs from __init__ and the plot call, with plot() taking precedence
         combined_kwargs = {**self.feature_kwargs, **kwargs}
 
+        # Pop off special kwargs that control features but aren't features themselves
+        resolution = combined_kwargs.pop("resolution", "10m")
+        linewidth = combined_kwargs.pop("linewidth", 0.25)
+        extent = combined_kwargs.pop("extent", None)
+
         # Define a mapping from keyword to cartopy feature
         feature_map = {
             "coastlines": cfeature.COASTLINE,
-            "countries": cfeature.BORDERS.with_scale("50m"),
-            "states": cfeature.STATES.with_scale("50m"),
+            "countries": cfeature.BORDERS,
             "borders": cfeature.BORDERS,
             "ocean": cfeature.OCEAN,
             "land": cfeature.LAND,
@@ -64,13 +68,49 @@ class SpatialPlot(BasePlot):
             "lakes": cfeature.LAKES,
         }
 
+        # Add Natural Earth features if requested
+        if combined_kwargs.pop("natural_earth", False):
+            self.ax.add_feature(cfeature.OCEAN)
+            self.ax.add_feature(cfeature.LAND)
+            self.ax.add_feature(cfeature.LAKES)
+            self.ax.add_feature(cfeature.RIVERS)
+
+        # Add states and counties with specified resolution
+        if combined_kwargs.pop("states", False):
+            states_provinces = cfeature.NaturalEarthFeature(
+                category="cultural",
+                name="admin_1_states_provinces_lines",
+                scale=resolution,
+                facecolor="none",
+                edgecolor="k",
+            )
+            self.ax.add_feature(states_provinces, linewidth=linewidth)
+
+        if combined_kwargs.pop("counties", False):
+            counties = cfeature.NaturalEarthFeature(
+                category="cultural",
+                name="admin_2_counties",
+                scale=resolution,
+                facecolor="none",
+                edgecolor="k",
+            )
+            self.ax.add_feature(counties, linewidth=linewidth)
+
+        # Add other simple features
         for key, feature in feature_map.items():
             if key in combined_kwargs:
                 style = combined_kwargs.pop(key)  # Remove from kwargs
                 if isinstance(style, dict):
-                    self.ax.add_feature(feature, **style)
+                    if key == "coastlines":
+                        style.setdefault("resolution", resolution)
+                        self.ax.coastlines(**style)
+                    else:
+                        self.ax.add_feature(feature, **style)
                 elif style:  # If it's True, add with default style
-                    self.ax.add_feature(feature, edgecolor="black", linewidth=0.5)
+                    if key == "coastlines":
+                        self.ax.coastlines(resolution=resolution, linewidth=linewidth)
+                    else:
+                        self.ax.add_feature(feature, linewidth=linewidth)
 
         # Special handling for gridlines
         if "gridlines" in combined_kwargs:
@@ -80,8 +120,19 @@ class SpatialPlot(BasePlot):
             else:
                 self.ax.gridlines(draw_labels=True, linestyle="--", color="gray")
 
+        # Set map extent
+        if extent is not None:
+            self.ax.set_extent(extent)
+
         # Return the remaining kwargs so they can be passed to the actual plotting function
         return combined_kwargs
+
+    def plot(self, data=None, **kwargs):
+        """Plot an xarray DataArray and draw map features."""
+        plot_kwargs = self._draw_features(**kwargs)
+        if data is not None:
+            return data.plot(ax=self.ax, **plot_kwargs)
+        return self.ax
 
 
 class SpatialTrack(SpatialPlot):

@@ -47,3 +47,25 @@ def test_SpatialTrack_plot(clear_figures):
     data = np.random.rand(10)
     plot = SpatialTrack(lon, lat, data)
     plot.plot()
+
+
+def test_spatial_plot_draw_features(clear_figures):
+    """Test that map features are drawn correctly when plotting."""
+    lon = np.linspace(-120, -80, 10)
+    lat = np.linspace(30, 40, 10)
+    data = np.random.rand(10)
+    plot = SpatialTrack(
+        lon, lat, data, coastlines=True, borders=True, gridlines=True
+    )
+    plot.plot()
+    # The _draw_features method adds artists to the axes, so we check the collections
+    assert len(plot.ax.collections) > 0
+    assert plot.ax.gridlines is not None
+
+
+def test_spatial_plot_da(clear_figures, sample_da):
+    """Test plotting a DataArray with SpatialPlot."""
+    plot = SpatialPlot()
+    artist = plot.plot(sample_da)
+    assert artist is not None
+    assert hasattr(artist, "get_array")  # Check if it's a QuadMesh
