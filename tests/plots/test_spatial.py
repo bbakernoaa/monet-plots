@@ -4,12 +4,14 @@ import xarray as xr
 import numpy as np
 from monet_plots.plots.spatial import SpatialPlot, SpatialTrack
 
+
 @pytest.fixture
 def clear_figures():
     """Clear all existing figures before and after a test."""
     plt.close('all')
     yield
     plt.close('all')
+
 
 @pytest.fixture
 def sample_da():
@@ -23,10 +25,12 @@ def sample_da():
         }
     )
 
+
 def test_spatial_plot_init(clear_figures, sample_da):
     """Test SpatialPlot initialization."""
     plot = SpatialPlot()
     assert plot is not None
+
 
 def test_spatial_plot_plot(clear_figures, sample_da):
     """Test SpatialPlot plot method."""
@@ -34,6 +38,7 @@ def test_spatial_plot_plot(clear_figures, sample_da):
     # ax = plot.plot()  # SpatialPlot has no plot method
     # assert ax is not None
     assert plot.ax is not None
+
 
 def test_SpatialTrack_plot(clear_figures):
     """Test SpatialTrack plot method."""

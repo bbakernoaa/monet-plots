@@ -1,8 +1,8 @@
 # src/monet_plots/plots/kde.py
 
-import matplotlib.pyplot as plt
 import seaborn as sns
 from .base import BasePlot
+
 
 class KDEPlot(BasePlot):
     """Create a kernel density estimate plot.
@@ -31,9 +31,9 @@ class KDEPlot(BasePlot):
     def plot(self, **kwargs):
         """Generate the KDE plot."""
         with sns.axes_style("ticks"):
-            self.ax = sns.kdeplot(data=self.df, x=self.x, y=self.y, ax=self.ax, label=self.label, **kwargs)
+            self.ax = sns.kdeplot(
+                data=self.df, x=self.x, y=self.y, ax=self.ax, label=self.label, **kwargs)
             if self.title:
                 self.ax.set_title(self.title)
             sns.despine()
         return self.ax
-

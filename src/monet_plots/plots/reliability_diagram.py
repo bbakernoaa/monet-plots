@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Optional, Union, Any
+from typing import Optional, Any
 from ..verification_metrics import compute_reliability_curve
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
+
 
 class ReliabilityDiagramPlot(BasePlot):
     """
@@ -59,7 +59,8 @@ class ReliabilityDiagramPlot(BasePlot):
             if climatology is None:
                 climatology = float(df[observations_col].mean())
             bin_centers, obs_freq, bin_counts = compute_reliability_curve(
-                np.asarray(df[forecasts_col]), np.asarray(df[observations_col]), n_bins
+                np.asarray(df[forecasts_col]), np.asarray(
+                    df[observations_col]), n_bins
             )
             plot_data = pd.DataFrame({
                 x_col: bin_centers,
@@ -73,16 +74,19 @@ class ReliabilityDiagramPlot(BasePlot):
         # Draw Reference Lines
         self.ax.plot([0, 1], [0, 1], 'k--', label='Perfect Reliability')
         if climatology is not None:
-            self.ax.axhline(climatology, color='gray', linestyle=':', label='Climatology')
+            self.ax.axhline(climatology, color='gray',
+                            linestyle=':', label='Climatology')
             self._draw_skill_regions(climatology)
 
         # Plot Data
         if label_col:
             for name, group in plot_data.groupby(label_col):
-                self.ax.plot(group[x_col], group[y_col], marker='o', label=name, **kwargs)
+                self.ax.plot(group[x_col], group[y_col],
+                             marker='o', label=name, **kwargs)
             self.ax.legend(loc='best')
         else:
-            self.ax.plot(plot_data[x_col], plot_data[y_col], marker='o', label='Model', **kwargs)
+            self.ax.plot(plot_data[x_col], plot_data[y_col],
+                         marker='o', label='Model', **kwargs)
 
         # Histogram Overlay (Sharpness)
         if show_hist and 'count' in plot_data.columns:
@@ -108,7 +112,8 @@ class ReliabilityDiagramPlot(BasePlot):
         y_perfect = x
 
         # Shade skill region (above no-skill towards perfect)
-        self.ax.fill_between(x, y_no_skill, y_perfect, alpha=0.1, color='green', label='Skill Region')
+        self.ax.fill_between(x, y_no_skill, y_perfect,
+                             alpha=0.1, color='green', label='Skill Region')
 
         # TDD Anchor: Test geometry of skill regions.
 
@@ -117,8 +122,10 @@ class ReliabilityDiagramPlot(BasePlot):
         Adds a small inset axes for sharpness histogram.
         """
         from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-        inset_ax = inset_axes(self.ax, width=1.5, height=1.2, loc='upper right')
-        inset_ax.bar(data[x_col], data['count'], alpha=0.5, color='blue', width=0.08)
+        inset_ax = inset_axes(self.ax, width=1.5,
+                              height=1.2, loc='upper right')
+        inset_ax.bar(data[x_col], data['count'],
+                     alpha=0.5, color='blue', width=0.08)
         inset_ax.set_title('Sharpness')
         inset_ax.set_xlabel(x_col)
         inset_ax.set_ylabel('Count')

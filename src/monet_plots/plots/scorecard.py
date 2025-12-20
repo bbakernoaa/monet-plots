@@ -1,10 +1,9 @@
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Optional, Union, List, Any
+from typing import Optional, Any
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
+
 
 class ScorecardPlot(BasePlot):
     """
@@ -58,7 +57,8 @@ class ScorecardPlot(BasePlot):
         # TDD Anchor: Test pivot structure
 
         # Plot Heatmap
-        sns.heatmap(pivot_data, ax=self.ax, cmap=cmap, center=center, annot=True, fmt=".2f", cbar_kws={'label': 'Relative Performance'}, **kwargs)
+        sns.heatmap(pivot_data, ax=self.ax, cmap=cmap, center=center, annot=True,
+                    fmt=".2f", cbar_kws={'label': 'Relative Performance'}, **kwargs)
 
         # Add Significance Markers
         if sig_col:
@@ -83,9 +83,9 @@ class ScorecardPlot(BasePlot):
                 if pd.notna(sig_val) and bool(sig_val):
                     # Position at center of cell
                     self.ax.text(j + 0.5, rows - i - 0.5, '*',
-                               ha='center', va='center',
-                               fontweight='bold', fontsize=12,
-                               color='black', zorder=5)
+                                 ha='center', va='center',
+                                 fontweight='bold', fontsize=12,
+                                 color='black', zorder=5)
 
 # TDD Anchors:
 # 1. test_pivot_logic: Verify long-to-wide conversion.

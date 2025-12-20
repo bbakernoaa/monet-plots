@@ -1,10 +1,9 @@
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Optional, Union, List, Any
+from typing import Optional, List, Any
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
 from ..verification_metrics import compute_pod, compute_success_ratio
+
 
 class PerformanceDiagramPlot(BasePlot):
     """
@@ -64,10 +63,12 @@ class PerformanceDiagramPlot(BasePlot):
         # TDD Anchor: Verify scatter points match input data coordinates
         if label_col:
             for name, group in df_plot.groupby(label_col):
-                self.ax.plot(group[x_col], group[y_col], marker='o', label=name, linestyle='none', **kwargs)
+                self.ax.plot(group[x_col], group[y_col], marker='o',
+                             label=name, linestyle='none', **kwargs)
             self.ax.legend(loc='best')
         else:
-            self.ax.plot(df_plot[x_col], df_plot[y_col], marker='o', linestyle='none', **kwargs)
+            self.ax.plot(df_plot[x_col], df_plot[y_col],
+                         marker='o', linestyle='none', **kwargs)
 
         # Formatting
         self.ax.set_xlim(0, 1)
@@ -108,7 +109,8 @@ class PerformanceDiagramPlot(BasePlot):
         6. Label contours.
         """
         # Avoid division by zero at boundaries
-        xx, yy = np.meshgrid(np.linspace(0.01, 0.99, 50), np.linspace(0.01, 0.99, 50))
+        xx, yy = np.meshgrid(np.linspace(0.01, 0.99, 50),
+                             np.linspace(0.01, 0.99, 50))
         csi = (xx * yy) / (xx + yy - xx * yy)
         bias = yy / xx
 
@@ -123,7 +125,8 @@ class PerformanceDiagramPlot(BasePlot):
         self.ax.clabel(cs_bias, inline=True, fontsize=8, fmt='%.1f')
 
         # Perfect forecast line
-        self.ax.plot([0.01, 0.99], [0.01, 0.99], 'k-', linewidth=1.5, alpha=0.8)
+        self.ax.plot([0.01, 0.99], [0.01, 0.99],
+                     'k-', linewidth=1.5, alpha=0.8)
 
         # TDD Anchor: Test that contours are within 0-1 range.
 

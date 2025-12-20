@@ -38,3 +38,6 @@ docs = [
     "mkdocstrings[python]>=0.19",
     "pymdown-extensions>=9.0",
 ]
+
+[tool.ruff]
+exclude = ["examples"]

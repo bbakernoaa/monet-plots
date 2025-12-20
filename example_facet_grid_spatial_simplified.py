@@ -4,9 +4,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from monet_plots.plots.facet_grid import FacetGridPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
-from typing import List, Dict, Any, Union
+from typing import List
 
 # --- 1. Helper function to create the meta DataFrame ---
+
+
 def create_facet_grid_data(
     data_arrays: List[xr.DataArray],
     facet_attrs: List[str],
@@ -32,13 +34,14 @@ def create_facet_grid_data(
         records.append(record)
     return pd.DataFrame(records)
 
+
 # --- 2. Simulate heterogeneous data with attributes ---
 # Model A data (coarser resolution)
 lats_A = np.arange(30, 35, 1.0)
 lons_A = np.arange(-100, -95, 1.0)
 time_A = pd.to_datetime(['2023-01-01T00:00', '2023-01-01T06:00'])
 da_A_t0 = xr.DataArray(
-    np.random.rand(len(lats_A), len(lons_A)) * 50 + 273.15, # K
+    np.random.rand(len(lats_A), len(lons_A)) * 50 + 273.15,  # K
     coords={'lat': lats_A, 'lon': lons_A},
     dims=['lat', 'lon'],
     name='temperature_K'
@@ -47,7 +50,7 @@ da_A_t0.attrs['model'] = 'Model A'
 da_A_t0.attrs['time_label'] = time_A[0].strftime('%Y-%m-%d %H:%M')
 
 da_A_t1 = xr.DataArray(
-    np.random.rand(len(lats_A), len(lons_A)) * 50 + 273.15, # K
+    np.random.rand(len(lats_A), len(lons_A)) * 50 + 273.15,  # K
     coords={'lat': lats_A, 'lon': lons_A},
     dims=['lat', 'lon'],
     name='temperature_K'
@@ -61,7 +64,7 @@ lats_B = np.arange(30, 35, 0.5)
 lons_B = np.arange(-100, -95, 0.5)
 time_B = pd.to_datetime(['2023-01-01T03:00', '2023-01-01T09:00'])
 da_B_t0 = xr.DataArray(
-    np.random.rand(len(lats_B), len(lons_B)) * 30 + 280.15, # K
+    np.random.rand(len(lats_B), len(lons_B)) * 30 + 280.15,  # K
     coords={'lat': lats_B, 'lon': lons_B},
     dims=['lat', 'lon'],
     name='temperature_K'
@@ -70,7 +73,7 @@ da_B_t0.attrs['model'] = 'Model B'
 da_B_t0.attrs['time_label'] = time_B[0].strftime('%Y-%m-%d %H:%M')
 
 da_B_t1 = xr.DataArray(
-    np.random.rand(len(lats_B), len(lons_B)) * 30 + 280.15, # K
+    np.random.rand(len(lats_B), len(lons_B)) * 30 + 280.15,  # K
     coords={'lat': lats_B, 'lon': lons_B},
     dims=['lat', 'lon'],
     name='temperature_K'
@@ -88,16 +91,19 @@ meta_df = create_facet_grid_data(
 )
 
 # --- 4. Define a custom plotting function ---
+
+
 def plot_heterogeneous_spatial(data, **kwargs):
     # 'data' here is a DataFrame subset for a single facet.
     # It will have only one row in this setup.
-    
+
     # Extract the actual xarray.DataArray from the 'data_array' column
     da_to_plot = data['data_array'].iloc[0]
-    
+
     # Create and plot using SpatialImshowPlot
     plotter = SpatialImshowPlot(da_to_plot, **kwargs)
     plotter.plot()
+
 
 # --- 5. Create the FacetGridPlot using the Meta DataFrame ---
 grid = FacetGridPlot(
@@ -110,7 +116,8 @@ grid = FacetGridPlot(
 )
 
 # --- 6. Map the custom plotting function to the grid ---
-grid.map_dataframe(plot_heterogeneous_spatial, cmap='plasma', add_colorbar=True)
+grid.map_dataframe(plot_heterogeneous_spatial,
+                   cmap='plasma', add_colorbar=True)
 
 # --- 7. Set titles and adjust layout ---
 grid.set_titles(col_template="{col_name}", row_template="{row_name}")

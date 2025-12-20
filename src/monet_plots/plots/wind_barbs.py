@@ -1,11 +1,11 @@
 # src/monet_plots/plots/wind_barbs.py
 
-import matplotlib.pyplot as plt
 from .spatial import SpatialPlot
 from .. import tools
 import numpy as np
 from typing import Any
 import cartopy.crs as ccrs
+
 
 class WindBarbsPlot(SpatialPlot):
     """Create a barbs plot of wind on a map.
@@ -18,10 +18,10 @@ class WindBarbsPlot(SpatialPlot):
         Initialize the plot with data and map projection.
 
         Args:
-            ws (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray): 2D array of wind speeds.
-            wdir (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray): 2D array of wind directions.
+            ws (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray): 2D wind speeds.
+            wdir (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray): 2D wind directions.
             gridobj (object): Object with LAT and LON variables.
-            **kwargs: Keyword arguments passed to SpatialPlot for projection and features.
+            **kwargs: Keyword arguments for SpatialPlot.
         """
         super().__init__(*args, **kwargs)
         self.ws = np.asarray(ws)
@@ -38,5 +38,6 @@ class WindBarbsPlot(SpatialPlot):
         u, v = tools.wsdir2uv(self.ws, self.wdir)
         # Subsample the data for clarity
         skip = barb_kwargs.pop('skip', 15)
-        self.ax.barbs(lon[::skip, ::skip], lat[::skip, ::skip], u[::skip, ::skip], v[::skip, ::skip], **barb_kwargs)
+        self.ax.barbs(lon[::skip, ::skip], lat[::skip, ::skip],
+                      u[::skip, ::skip], v[::skip, ::skip], **barb_kwargs)
         return self.ax

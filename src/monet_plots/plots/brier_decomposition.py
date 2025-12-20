@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Any
 from ..verification_metrics import compute_brier_score_components
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
+
 
 class BrierScoreDecompositionPlot(BasePlot):
     """
@@ -40,7 +40,7 @@ class BrierScoreDecompositionPlot(BasePlot):
         Main plotting method.
 
         Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Input data with component columns or raw forecasts/observations.
+            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Input data.
             reliability_col/resolution_col/uncertainty_col (str): Pre-computed component columns.
             forecasts_col/observations_col (str, optional): Raw forecast probabilities and binary observations.
             n_bins (int): Bins for decomposition if raw data.
@@ -54,14 +54,16 @@ class BrierScoreDecompositionPlot(BasePlot):
             if label_col:
                 for name, group in df.groupby(label_col):
                     comps = compute_brier_score_components(
-                        np.asarray(group[forecasts_col]), np.asarray(group[observations_col]), n_bins
+                        np.asarray(group[forecasts_col]), np.asarray(
+                            group[observations_col]), n_bins
                     )
                     row = pd.Series(comps)
                     row['model'] = str(name)
                     components_list.append(row)
             else:
                 comps = compute_brier_score_components(
-                    np.asarray(df[forecasts_col]), np.asarray(df[observations_col]), n_bins
+                    np.asarray(df[forecasts_col]), np.asarray(
+                        df[observations_col]), n_bins
                 )
                 row = pd.Series(comps)
                 row['model'] = 'Model'
@@ -88,13 +90,17 @@ class BrierScoreDecompositionPlot(BasePlot):
         x = np.arange(len(labels))
         width = 0.25
 
-        self.ax.bar(x - width, df_plot[reliability_col], width, label='Reliability', color='red', alpha=0.8, **kwargs)
-        self.ax.bar(x, df_plot['resolution_plot'], width, label='Resolution (-)', color='green', alpha=0.8, **kwargs)
-        self.ax.bar(x + width, df_plot[uncertainty_col], width, label='Uncertainty', color='blue', alpha=0.8, **kwargs)
+        self.ax.bar(x - width, df_plot[reliability_col], width,
+                    label='Reliability', color='red', alpha=0.8, **kwargs)
+        self.ax.bar(x, df_plot['resolution_plot'], width,
+                    label='Resolution (-)', color='green', alpha=0.8, **kwargs)
+        self.ax.bar(x + width, df_plot[uncertainty_col], width,
+                    label='Uncertainty', color='blue', alpha=0.8, **kwargs)
 
         # Total Brier Score as line on top if available
         if 'brier_score' in df_plot.columns:
-            self.ax.plot(x, df_plot['brier_score'], 'ko-', linewidth=2, markersize=6, label='Brier Score')
+            self.ax.plot(x, df_plot['brier_score'], 'ko-',
+                         linewidth=2, markersize=6, label='Brier Score')
 
         self.ax.set_xticks(x)
         self.ax.set_xticklabels(labels, rotation=45, ha='right')

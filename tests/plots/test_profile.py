@@ -1,8 +1,9 @@
+from matplotlib.quiver import Barbs
 import pytest
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.quiver import Quiver
 from monet_plots.plots.profile import ProfilePlot, VerticalSlice, StickPlot, VerticalBoxPlot
+
 
 @pytest.fixture
 def clear_figures():
@@ -11,6 +12,7 @@ def clear_figures():
     yield
     plt.close('all')
 
+
 @pytest.fixture
 def sample_data_line():
     """Create sample data for a line plot."""
@@ -18,6 +20,7 @@ def sample_data_line():
         'x': np.linspace(0, 10, 100),
         'y': np.linspace(0, 10, 100) + np.random.rand(100)
     }
+
 
 @pytest.fixture
 def sample_data_contour():
@@ -28,12 +31,14 @@ def sample_data_contour():
     Z = np.sin(X) * np.cos(Y)
     return {'x': X, 'y': Y, 'z': Z}
 
+
 def test_profile_plot_line_creates_plot(clear_figures, sample_data_line):
     """Test that ProfilePlot creates a line plot."""
     plot = ProfilePlot(**sample_data_line)
     plot.plot()
     assert plot.ax is not None
     assert len(plot.ax.lines) > 0
+
 
 def test_profile_plot_contour_creates_plot(clear_figures, sample_data_contour):
     """Test that ProfilePlot creates a contour plot."""
@@ -42,12 +47,14 @@ def test_profile_plot_contour_creates_plot(clear_figures, sample_data_contour):
     assert plot.ax is not None
     assert len(plot.ax.collections) > 0
 
+
 def test_profile_plot_alt_adjust(clear_figures, sample_data_line):
     """Test that ProfilePlot adjusts altitude correctly."""
     alt_adjust = 5.0
     original_y = sample_data_line['y'].copy()
     plot = ProfilePlot(**sample_data_line, alt_adjust=alt_adjust)
     assert np.allclose(plot.y, original_y - alt_adjust)
+
 
 def test_VerticalBoxPlot_plot(clear_figures):
     """Test that VerticalBoxPlot creates a plot."""
@@ -67,7 +74,6 @@ def test_VerticalSlice_plot(clear_figures, sample_data_contour):
     assert plot.ax is not None
     assert len(plot.ax.collections) > 0
 
-from matplotlib.quiver import Quiver
 
 def test_StickPlot_plot(clear_figures):
     """Test that StickPlot creates a plot."""
@@ -77,4 +83,4 @@ def test_StickPlot_plot(clear_figures):
     plot = StickPlot(u, v, y)
     result = plot.plot()
     assert plot.ax is not None
-    assert isinstance(result, Quiver)
+    assert isinstance(result, Barbs)

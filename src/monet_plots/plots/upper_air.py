@@ -67,14 +67,16 @@ class UpperAir(SpatialPlot):
             Keyword arguments passed to the parent `plot` method.
         """
         if contour_kwargs is None:
-            contour_kwargs = {'levels': np.arange(0, 1.1, 0.1), 'cmap': 'viridis'}
+            contour_kwargs = {'levels': np.arange(0, 1.1, 0.1),
+                              'cmap': 'viridis'}
         if barb_kwargs is None:
             barb_kwargs = {}
 
         class GridObj:
             def __init__(self, lat, lon):
-                self.variables = {'LAT': lat[np.newaxis, np.newaxis, ...], 'LON': lon[np.newaxis, np.newaxis, ...]}
-        
+                self.variables = {'LAT': lat[np.newaxis, np.newaxis, ...],
+                                  'LON': lon[np.newaxis, np.newaxis, ...]}
+
         lon2d, lat2d = np.meshgrid(self.lon, self.lat)
         gridobj = GridObj(lat2d, lon2d)
 

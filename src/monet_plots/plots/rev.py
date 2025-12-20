@@ -1,10 +1,9 @@
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Optional, Union, List, Any
+from typing import Optional, List, Any
 from ..verification_metrics import compute_rev
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
+
 
 class RelativeEconomicValuePlot(BasePlot):
     """
@@ -49,7 +48,8 @@ class RelativeEconomicValuePlot(BasePlot):
 
         if climatology is None:
             total_events = df[counts_cols[0]].sum() + df[counts_cols[1]].sum()
-            total = total_events + df[counts_cols[2]].sum() + df[counts_cols[3]].sum()
+            total = total_events + df[counts_cols[2]
+                                      ].sum() + df[counts_cols[3]].sum()
             climatology = total_events / total if total > 0 else 0.5
 
         if cost_loss_ratios is None:
@@ -59,18 +59,23 @@ class RelativeEconomicValuePlot(BasePlot):
 
         if label_col:
             for name, group in df.groupby(label_col):
-                rev_values = self._calculate_rev(group, counts_cols, cost_loss_ratios, climatology)
-                self.ax.plot(cost_loss_ratios, rev_values, label=str(name), **kwargs)
+                rev_values = self._calculate_rev(
+                    group, counts_cols, cost_loss_ratios, climatology)
+                self.ax.plot(cost_loss_ratios, rev_values,
+                             label=str(name), **kwargs)
             self.ax.legend(loc='best')
         else:
-            rev_values = self._calculate_rev(df, counts_cols, cost_loss_ratios, climatology)
+            rev_values = self._calculate_rev(
+                df, counts_cols, cost_loss_ratios, climatology)
             self.ax.plot(cost_loss_ratios, rev_values, label='Model', **kwargs)
 
         self.ax.set_xlabel("Cost/Loss Ratio")
         self.ax.set_ylabel("Relative Economic Value (REV)")
         self.ax.set_ylim(-0.2, 1.05)
-        self.ax.axhline(0, color='k', linestyle='--', alpha=0.7, label='Climatology')
-        self.ax.axhline(1, color='gray', linestyle=':', alpha=0.7, label='Perfect')
+        self.ax.axhline(0, color='k', linestyle='--',
+                        alpha=0.7, label='Climatology')
+        self.ax.axhline(1, color='gray', linestyle=':',
+                        alpha=0.7, label='Perfect')
         self.ax.legend()
         self.ax.grid(True, alpha=0.3)
 

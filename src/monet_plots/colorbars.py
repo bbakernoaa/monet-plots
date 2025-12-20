@@ -46,11 +46,14 @@ def colorbar_index(ncolors, cmap, minval=None, maxval=None, dtype="int", basemap
         colorbar = plt.colorbar(mappable, format="%1.2g", ax=ax)
     colorbar.set_ticks(np.linspace(0, ncolors, ncolors))
     if (minval is None) & (maxval is not None):
-        colorbar.set_ticklabels(np.around(np.linspace(0, maxval, ncolors).astype(dtype), 2))
+        colorbar.set_ticklabels(
+            np.around(np.linspace(0, maxval, ncolors).astype(dtype), 2))
     elif (minval is None) & (maxval is None):
-        colorbar.set_ticklabels(np.around(np.linspace(0, ncolors, ncolors).astype(dtype), 2))
+        colorbar.set_ticklabels(
+            np.around(np.linspace(0, ncolors, ncolors).astype(dtype), 2))
     else:
-        colorbar.set_ticklabels(np.around(np.linspace(minval, maxval, ncolors).astype(dtype), 2))
+        colorbar.set_ticklabels(np.around(np.linspace(
+            minval, maxval, ncolors).astype(dtype), 2))
 
     return colorbar, cmap
 

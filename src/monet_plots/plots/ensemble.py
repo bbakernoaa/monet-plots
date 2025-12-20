@@ -1,7 +1,7 @@
 
-import matplotlib.pyplot as plt
 import numpy as np
 from .base import BasePlot
+
 
 class SpreadSkillPlot(BasePlot):
     """Create a spread-skill plot to evaluate ensemble forecast reliability.

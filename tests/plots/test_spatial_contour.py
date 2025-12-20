@@ -1,4 +1,3 @@
-import pytest
 import numpy as np
 import datetime
 from unittest.mock import MagicMock
@@ -22,7 +21,8 @@ def test_spatial_contour_plot():
     modelvar = np.random.rand(10, 10)
 
     # Create a SpatialContourPlot instance
-    plot = SpatialContourPlot(modelvar, mock_grid, datetime.datetime.now(), ncolors=10)
+    plot = SpatialContourPlot(
+        modelvar, mock_grid, datetime.datetime.now(), ncolors=10)
 
     # Call the plot method
     c = plot.plot(cmap='viridis', levels=np.arange(0, 1.1, 0.1))
@@ -74,7 +74,8 @@ def test_spatial_contour_plot_continuous():
     modelvar = np.random.rand(10, 10)
 
     # Create a SpatialContourPlot instance
-    plot = SpatialContourPlot(modelvar, mock_grid, datetime.datetime.now(), discrete=False, ncolors=10)
+    plot = SpatialContourPlot(
+        modelvar, mock_grid, datetime.datetime.now(), discrete=False, ncolors=10)
 
     # Call the plot method
     c = plot.plot(cmap='viridis', levels=np.arange(0, 1.1, 0.1))

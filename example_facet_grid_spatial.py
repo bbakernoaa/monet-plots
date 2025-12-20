@@ -35,19 +35,21 @@ ds = data.to_dataset()
 # 2. Define a plotting function for a single spatial plot
 # This function will be mapped to each facet.
 # It needs to accept a DataFrame (or similar) and the FacetGrid will pass the subsetted data.
+
+
 def plot_spatial_imshow(data, **kwargs):
     # The data passed to this function by map_dataframe will be a DataFrame
     # We need to convert it back to an xarray DataArray for SpatialImshowPlot
     # Assuming 'lat' and 'lon' are present in the DataFrame
-    
+
     # Reconstruct DataArray from DataFrame for plotting
     # This step might need adjustment based on your actual data structure
     # and how map_dataframe passes it. For simplicity, we'll assume
     # the DataFrame has 'lat', 'lon', and the variable 'temperature'.
-    
+
     # Get the variable name from the original dataset
     var_name = ds.data_vars[0] if isinstance(ds, xr.Dataset) else ds.name
-    
+
     # Create a temporary DataArray for plotting
     # Ensure 'lat' and 'lon' are correctly identified as coordinates
     temp_da = data.set_index(['lat', 'lon']).to_xarray()[var_name]
@@ -67,12 +69,13 @@ grid = FacetGridPlot(
     col='model',
     height=4,
     aspect=1.2,
-    cbar_label='Temperature' # This will be passed to the spatial plot
+    cbar_label='Temperature'  # This will be passed to the spatial plot
 )
 
 # 4. Map the spatial plotting function to the grid
 # Pass the variable name to plot_spatial_imshow
-grid.map_dataframe(plot_spatial_imshow, 'temperature', cmap='viridis', add_colorbar=True)
+grid.map_dataframe(plot_spatial_imshow, 'temperature',
+                   cmap='viridis', add_colorbar=True)
 
 # 5. Set titles and adjust layout
 grid.set_titles(col_template="{col_name}", row_template="{row_name}")

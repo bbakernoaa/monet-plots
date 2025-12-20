@@ -8,7 +8,6 @@ and xarray DataArrays/Datasets without forcing conversion to pandas.
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # Check if xarray is available
 try:
@@ -20,6 +19,7 @@ except ImportError:
 
 from monet_plots.plots.timeseries import TimeSeriesPlot
 from monet_plots.plot_utils import normalize_data
+
 
 def test_normalize_data():
     """Test the normalize_data function."""
@@ -62,6 +62,7 @@ def test_normalize_data():
 
     print("All normalize_data tests passed!\n")
 
+
 def test_timeseries_plot_pandas():
     """Test TimeSeriesPlot with pandas DataFrame."""
     print("Testing TimeSeriesPlot with pandas DataFrame...")
@@ -75,8 +76,9 @@ def test_timeseries_plot_pandas():
     })
 
     # Create and plot
-    plot = TimeSeriesPlot(df, x='time', y='obs', title="Pandas TimeSeries Test")
-    ax = plot.plot()
+    plot = TimeSeriesPlot(df, x='time', y='obs',
+                          title="Pandas TimeSeries Test")
+    plot.plot()
 
     # Save the plot
     plot.save("test_pandas_timeseries.png")
@@ -85,6 +87,7 @@ def test_timeseries_plot_pandas():
     # Clean up
     plot.close()
     print("✓ Pandas TimeSeries plot closed\n")
+
 
 def test_timeseries_plot_xarray():
     """Test TimeSeriesPlot with xarray DataArray."""
@@ -104,8 +107,9 @@ def test_timeseries_plot_xarray():
     )
 
     # Create and plot
-    plot = TimeSeriesPlot(da, x='time', y='obs', title="Xarray TimeSeries Test")
-    ax = plot.plot()
+    plot = TimeSeriesPlot(da, x='time', y='obs',
+                          title="Xarray TimeSeries Test")
+    plot.plot()
 
     # Save the plot
     plot.save("test_xarray_timeseries.png")
@@ -114,6 +118,7 @@ def test_timeseries_plot_xarray():
     # Clean up
     plot.close()
     print("✓ Xarray TimeSeries plot closed\n")
+
 
 def test_timeseries_plot_xarray_dataset():
     """Test TimeSeriesPlot with xarray Dataset."""
@@ -131,8 +136,9 @@ def test_timeseries_plot_xarray_dataset():
     }, coords={'time': dates})
 
     # Create and plot
-    plot = TimeSeriesPlot(ds, x='time', y='obs', title="Xarray Dataset TimeSeries Test")
-    ax = plot.plot()
+    plot = TimeSeriesPlot(ds, x='time', y='obs',
+                          title="Xarray Dataset TimeSeries Test")
+    plot.plot()
 
     # Save the plot
     plot.save("test_xarray_dataset_timeseries.png")
@@ -141,6 +147,7 @@ def test_timeseries_plot_xarray_dataset():
     # Clean up
     plot.close()
     print("✓ Xarray Dataset TimeSeries plot closed\n")
+
 
 if __name__ == "__main__":
     print("Starting xarray integration tests...\n")

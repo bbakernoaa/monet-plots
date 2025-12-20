@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 def split_by_threshold(data_list, alt_list, threshold_list):
     """
     Splits data into bins based on altitude thresholds.
@@ -17,7 +18,8 @@ def split_by_threshold(data_list, alt_list, threshold_list):
     df = pd.DataFrame(data={'data': data_list, 'alt': alt_list})
     output_list = []
     for i in range(1, len(threshold_list)):
-        df_here = df.data.loc[(df.alt > threshold_list[i-1]) & (df.alt <= threshold_list[i])]
+        df_here = df.data.loc[(df.alt > threshold_list[i-1]) &
+                              (df.alt <= threshold_list[i])]
         output_list.append(df_here.values)
     return output_list
 
@@ -36,6 +38,7 @@ def wsdir2uv(ws, wdir):
     u = -ws * np.sin(wdir * rad)
     v = -ws * np.cos(wdir * rad)
     return u, v
+
 
 def uv2wsdir(u, v):
     """Converts u and v components to wind speed and direction.

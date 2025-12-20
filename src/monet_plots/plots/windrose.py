@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from .. import plot_utils
 from .base import BasePlot
 
 
@@ -52,7 +51,8 @@ class Windrose(BasePlot):
         if isinstance(bins, int):
             bins = np.linspace(0, 360, bins + 1)
         if isinstance(rose_bins, int):
-            rose_bins = np.linspace(self.ws.min(), self.ws.max(), rose_bins + 1)
+            rose_bins = np.linspace(self.ws.min(), self.ws.max(),
+                                    rose_bins + 1)
 
         rose = pd.cut(self.ws, bins=rose_bins, right=True, include_lowest=True)
         angle = pd.cut(

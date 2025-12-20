@@ -1,10 +1,10 @@
 
-import matplotlib.pyplot as plt
 from scipy.stats import scoreatpercentile as score
 from .base import BasePlot
 from ..plot_utils import _set_outline_patch_alpha, to_dataframe
 from ..mapgen import draw_map
 from typing import Any
+
 
 class SpScatterBiasPlot(BasePlot):
     """Create a spatial scatter plot showing the bias (difference) between two columns in a DataFrame.
@@ -47,7 +47,8 @@ class SpScatterBiasPlot(BasePlot):
         if self.ax is None:
             self.ax = draw_map(**self.map_kwargs)
 
-        dfnew = self.df[["latitude", "longitude", self.col1, self.col2]].dropna().copy(deep=True)
+        dfnew = self.df[["latitude", "longitude",
+                         self.col1, self.col2]].dropna().copy(deep=True)
         dfnew["sp_diff"] = dfnew[self.col2] - dfnew[self.col1]
         top = score(dfnew["sp_diff"].abs(), per=95)
         if self.val_max is not None:

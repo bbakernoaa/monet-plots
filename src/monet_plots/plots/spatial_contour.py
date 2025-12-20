@@ -1,10 +1,10 @@
 # src/monet_plots/plots/spatial_contour.py
-import matplotlib.pyplot as plt
 from .spatial import SpatialPlot
 from ..colorbars import colorbar_index
 import numpy as np
 from typing import Any
 import cartopy.crs as ccrs
+
 
 class SpatialContourPlot(SpatialPlot):
     """Create a contour plot on a map with an optional discrete colorbar.
@@ -12,12 +12,13 @@ class SpatialContourPlot(SpatialPlot):
     This plot is useful for visualizing spatial data with continuous values.
     """
 
-    def __init__(self, modelvar: Any, gridobj, date=None, discrete: bool = True, ncolors: int = None, dtype: str = "int", *args, **kwargs):
+    def __init__(self, modelvar: Any, gridobj, date=None, discrete: bool = True,
+                 ncolors: int = None, dtype: str = "int", *args, **kwargs):
         """
         Initialize the plot with data and map projection.
 
         Args:
-            modelvar (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray): 2D model variable array to contour.
+            modelvar (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray): 2D model variable.
             gridobj (object): Object with LAT and LON variables.
             date (datetime.datetime): Date/time for the plot title.
             discrete (bool): If True, use a discrete colorbar.

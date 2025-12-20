@@ -97,6 +97,7 @@ _styles = {
     "default": {},  # Matplotlib default style
 }
 
+
 def set_style(context="default"):
     """
     Set the plotting style based on a predefined context.
@@ -118,9 +119,8 @@ def set_style(context="default"):
             f"Unknown style context: '{context}'. "
             f"Available contexts are: {', '.join(_styles.keys())}"
         )
-    
     plt.style.use(_styles[context])
+
 
 # Expose wiley_style for direct import if needed for backward compatibility
 wiley_style = _wiley_style
-

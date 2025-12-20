@@ -87,10 +87,12 @@ def plot_quick_imshow(
         projection = ccrs.PlateCarree()
     if map_kws is None:
         map_kws = {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
     plot_args = dict(cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
     # Remove 'ax' and 'transform' from kwargs to avoid multiple values error
-    plot_args.update({k: v for k, v in kwargs.items() if k not in ["ax", "transform"]})
+    plot_args.update({k: v for k, v in kwargs.items()
+                     if k not in ["ax", "transform"]})
     mesh = da.plot.imshow(ax=ax, transform=ccrs.PlateCarree(), **plot_args)
     # Map features
     if GeoAxes is not None and isinstance(ax, GeoAxes):
@@ -151,7 +153,8 @@ def plot_quick_imshow(
             )
             cbar = plt.colorbar(mesh, cax=cax, orientation="vertical")
         else:
-            cbar = plt.colorbar(mesh, ax=ax, orientation="vertical", pad=0.02, aspect=30)
+            cbar = plt.colorbar(
+                mesh, ax=ax, orientation="vertical", pad=0.02, aspect=30)
         cbar.ax.tick_params(labelsize=10)
         if cbar_label:
             cbar.set_label(cbar_label, fontsize=12)
@@ -169,7 +172,8 @@ def plot_quick_imshow(
         projection = ccrs.PlateCarree()
     if map_kws is None:
         map_kws = {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize)
     mesh = da.plot.imshow(ax=ax, transform=ccrs.PlateCarree(), **kwargs)
     if GeoAxes is not None and isinstance(ax, GeoAxes):
         coast_kws = map_kws.get("coastlines", {})
@@ -190,7 +194,8 @@ def plot_quick_imshow(
         if hasattr(gl, "right_labels"):
             gl.right_labels = False
     if colorbar:
-        cbar = plt.colorbar(mesh, ax=ax, orientation="vertical", pad=0.02, aspect=30)
+        cbar = plt.colorbar(
+            mesh, ax=ax, orientation="vertical", pad=0.02, aspect=30)
         cbar.ax.tick_params(labelsize=10)
     fig.tight_layout()
     return fig, ax
@@ -272,9 +277,11 @@ def plot_quick_map(
         projection = ccrs.PlateCarree()
     if map_kws is None:
         map_kws = {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
     plot_args = dict(cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
-    plot_args.update({k: v for k, v in kwargs.items() if k not in ["ax", "transform"]})
+    plot_args.update({k: v for k, v in kwargs.items()
+                     if k not in ["ax", "transform"]})
     mesh = da.plot(ax=ax, transform=ccrs.PlateCarree(), **plot_args)
     # Map features
     if GeoAxes is not None and isinstance(ax, GeoAxes):
@@ -335,7 +342,8 @@ def plot_quick_map(
             )
             cbar = plt.colorbar(mesh, cax=cax, orientation="vertical")
         else:
-            cbar = plt.colorbar(mesh, ax=ax, orientation="vertical", pad=0.02, aspect=30)
+            cbar = plt.colorbar(
+                mesh, ax=ax, orientation="vertical", pad=0.02, aspect=30)
         cbar.ax.tick_params(labelsize=10)
         if cbar_label:
             cbar.set_label(cbar_label, fontsize=12)
@@ -425,9 +433,11 @@ def plot_quick_contourf(
         projection = ccrs.PlateCarree()
     if map_kws is None:
         map_kws = {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
     plot_args = dict(cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
-    plot_args.update({k: v for k, v in kwargs.items() if k not in ["ax", "transform"]})
+    plot_args.update({k: v for k, v in kwargs.items()
+                     if k not in ["ax", "transform"]})
     mesh = da.plot.contourf(ax=ax, transform=ccrs.PlateCarree(), **plot_args)
     # Map features
     if GeoAxes is not None and isinstance(ax, GeoAxes):
@@ -488,7 +498,8 @@ def plot_quick_contourf(
             )
             cbar = plt.colorbar(mesh, cax=cax, orientation="vertical")
         else:
-            cbar = plt.colorbar(mesh, ax=ax, orientation="vertical", pad=0.02, aspect=30)
+            cbar = plt.colorbar(
+                mesh, ax=ax, orientation="vertical", pad=0.02, aspect=30)
         cbar.ax.tick_params(labelsize=10)
         if cbar_label:
             cbar.set_label(cbar_label, fontsize=12)
@@ -597,7 +608,8 @@ def facet_time_map(
     for i, t in enumerate(times):
         ax = axes[i]
         dat = da.sel({time_dim: t})
-        mesh = dat.plot(ax=ax, transform=ccrs.PlateCarree(), add_colorbar=False, **plot_args)
+        mesh = dat.plot(ax=ax, transform=ccrs.PlateCarree(),
+                        add_colorbar=False, **plot_args)
         # Map features
         if GeoAxes is not None and isinstance(ax, GeoAxes):
             coast_kws = map_kws.get("coastlines", {})
@@ -646,7 +658,7 @@ def facet_time_map(
         fig.colorbar(mesh, cax=cax, orientation="vertical", label=cbar_label)
     if suptitle:
         fig.suptitle(suptitle, fontsize=14, fontweight="bold")
-    
+
     # Export
     if export_path:
         if export_formats is None:
@@ -721,7 +733,8 @@ def plot_points_map(
         projection = ccrs.PlateCarree()
     if map_kws is None:
         map_kws = {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
     # Map features
     if GeoAxes is not None and isinstance(ax, GeoAxes):
         coast_kws = map_kws.get("coastlines", {})
@@ -833,7 +846,8 @@ def plot_lines_map(
         projection = ccrs.PlateCarree()
     if map_kws is None:
         map_kws = {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
     # Map features
     if GeoAxes is not None and isinstance(ax, GeoAxes):
         coast_kws = map_kws.get("coastlines", {})

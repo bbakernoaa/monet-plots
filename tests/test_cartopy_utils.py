@@ -10,7 +10,8 @@ def sample_da():
     """Create a sample xarray.DataArray for testing."""
     return xr.DataArray(
         np.random.rand(10, 10),
-        coords={'latitude': np.arange(30, 40), 'longitude': np.arange(-100, -90)},
+        coords={'latitude': np.arange(
+            30, 40), 'longitude': np.arange(-100, -90)},
         dims=['latitude', 'longitude']
     )
 

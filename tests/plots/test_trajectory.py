@@ -1,8 +1,8 @@
-import pytest
 import numpy as np
 from monet_plots.plots import TrajectoryPlot
 
 import pandas as pd
+
 
 def test_TrajectoryPlot():
     lon = np.linspace(-120, -80, 10)

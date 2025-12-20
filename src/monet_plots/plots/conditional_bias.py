@@ -1,9 +1,8 @@
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Optional, Union, Any
+from typing import Optional, Any
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
+
 
 class ConditionalBiasPlot(BasePlot):
     """
@@ -52,14 +51,17 @@ class ConditionalBiasPlot(BasePlot):
 
         if label_col:
             for name, group in df_plot.groupby(label_col):
-                self._plot_binned_bias(group, obs_col, 'bias', n_bins, label=str(name), **kwargs)
+                self._plot_binned_bias(
+                    group, obs_col, 'bias', n_bins, label=str(name), **kwargs)
             self.ax.legend(loc='best')
         else:
-            self._plot_binned_bias(df_plot, obs_col, 'bias', n_bins, label='Model', **kwargs)
+            self._plot_binned_bias(
+                df_plot, obs_col, 'bias', n_bins, label='Model', **kwargs)
 
-        self.ax.axhline(0, color='k', linestyle='--', linewidth=2, alpha=0.8, label='No Bias')
+        self.ax.axhline(0, color='k', linestyle='--',
+                        linewidth=2, alpha=0.8, label='No Bias')
         self.ax.legend()
-        self.ax.set_xlabel(f"Observed Value")
+        self.ax.set_xlabel("Observed Value")
         self.ax.set_ylabel("Mean Bias (Forecast - Observation)")
         self.ax.grid(True, alpha=0.3)
 
@@ -69,16 +71,18 @@ class ConditionalBiasPlot(BasePlot):
         """
         # Create bins
         bins = pd.cut(df[x_col], bins=n_bins, duplicates='drop')
-        binned = df.groupby(bins, observed=False)[y_col].agg(['mean', 'std', 'count']).reset_index()
-        binned['bin_center'] = binned[x_col].apply(lambda interval: interval.mid)
+        binned = df.groupby(bins, observed=False)[y_col].agg(
+            ['mean', 'std', 'count']).reset_index()
+        binned['bin_center'] = binned[x_col].apply(
+            lambda interval: interval.mid)
 
         # Filter bins with sufficient samples
         binned = binned[binned['count'] >= 5]  # Arbitrary threshold
 
         if len(binned) > 0:
             self.ax.errorbar(binned['bin_center'], binned['mean'],
-                           yerr=binned['std'], fmt='o-', capsize=5,
-                           label=label, **kwargs)
+                             yerr=binned['std'], fmt='o-', capsize=5,
+                             label=label, **kwargs)
 
 # TDD Anchors:
 # 1. test_zero_bias_line: Verify line exists at y=0.

@@ -1,6 +1,5 @@
 
 import monet_plots as mpl
-import monet_plots.plot_utils as pu
 import seaborn as sns
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -97,11 +96,8 @@ def categorical_plot(
 
 def categorical_timeseries(data, **kwargs):
     """Make a timeseries of categorical plots.
-    
+
     (Placeholder for future implementation)
     """
-    raise NotImplementedError("Categorical timeseries plots are not yet implemented.")
-
-    
-    
-    
+    raise NotImplementedError(
+        "Categorical timeseries plots are not yet implemented.")

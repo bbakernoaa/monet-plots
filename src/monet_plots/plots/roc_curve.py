@@ -1,10 +1,8 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Optional, Union, Any
+from typing import Optional, Any
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
 from ..verification_metrics import compute_auc
+
 
 class ROCCurvePlot(BasePlot):
     """
@@ -57,10 +55,12 @@ class ROCCurvePlot(BasePlot):
         if label_col:
             groups = df.groupby(label_col)
             for name, group in groups:
-                self._plot_single_curve(group, x_col, y_col, label=str(name), show_auc=show_auc, **kwargs)
+                self._plot_single_curve(group, x_col, y_col, label=str(
+                    name), show_auc=show_auc, **kwargs)
             self.ax.legend(loc='lower right')
         else:
-            self._plot_single_curve(df, x_col, y_col, label='Model', show_auc=show_auc, **kwargs)
+            self._plot_single_curve(
+                df, x_col, y_col, label='Model', show_auc=show_auc, **kwargs)
 
         # Formatting
         self.ax.set_xlim(0, 1)
