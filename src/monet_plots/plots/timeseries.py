@@ -119,11 +119,11 @@ class TimeSeriesStatsPlot(BasePlot):
         """Calculate statistics for pandas DataFrame."""
         results = {}
         for model_col in self.col2:
-            if stat == 'bias':
+            if stat == "bias":
                 stat_series = (df[model_col] - df[self.col1]).resample(freq).mean()
-            elif stat == 'rmse':
-                stat_series = ((df[model_col] - df[self.col1])**2).resample(freq).mean().apply(np.sqrt)
-            elif stat == 'corr':
+            elif stat == "rmse":
+                stat_series = ((df[model_col] - df[self.col1]) ** 2).resample(freq).mean().apply(np.sqrt)
+            elif stat == "corr":
                 stat_series = df[[self.col1, model_col]].resample(freq).corr().unstack()[self.col1][model_col]
             results[model_col] = stat_series
         return results
@@ -132,11 +132,11 @@ class TimeSeriesStatsPlot(BasePlot):
         """Calculate statistics for xarray Dataset."""
         results = {}
         for model_var in self.col2:
-            if stat == 'bias':
+            if stat == "bias":
                 stat_da = (ds[model_var] - ds[self.col1]).resample(time=freq).mean()
-            elif stat == 'rmse':
-                stat_da = ((ds[model_var] - ds[self.col1])**2).resample(time=freq).mean()**0.5
-            elif stat == 'corr':
+            elif stat == "rmse":
+                stat_da = ((ds[model_var] - ds[self.col1]) ** 2).resample(time=freq).mean() ** 0.5
+            elif stat == "corr":
                 # Xarray doesn't have a direct resampling correlation, so we use a workaround.
                 # This is a bit more complex and might need a dedicated library for efficiency.
                 # For now, we convert to DataFrame for this specific calculation.
@@ -156,7 +156,7 @@ class TimeSeriesStatsPlot(BasePlot):
             freq (str): The resampling frequency (e.g., 'H', 'D', 'W', 'M').
             **kwargs: Keyword arguments passed to the plot() method.
         """
-        if stat.lower() not in ['bias', 'rmse', 'corr']:
+        if stat.lower() not in ["bias", "rmse", "corr"]:
             raise ValueError(f"Statistic '{stat}' not supported. Use 'bias', 'rmse', or 'corr'.")
 
         plot_kwargs = {"marker": "o", "linestyle": "-"}
@@ -165,15 +165,15 @@ class TimeSeriesStatsPlot(BasePlot):
 
         if isinstance(self.data, pd.DataFrame):
             # Ensure 'time' is the index
-            if 'time' in self.data.columns:
-                self.data = self.data.set_index('time')
+            if "time" in self.data.columns:
+                self.data = self.data.set_index("time")
             if not isinstance(self.data.index, pd.DatetimeIndex):
                 raise ValueError("DataFrame must have a DatetimeIndex or a 'time' column.")
 
             stats_results = self._calculate_stats_pd(self.data, stat, freq)
             for model_col, stat_series in stats_results.items():
                 stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
-        else: # xarray.Dataset
+        else:  # xarray.Dataset
             stats_results = self._calculate_stats_xr(self.data, stat, freq)
             for model_var, stat_da in stats_results.items():
                 stat_da.plot(ax=self.ax, label=model_var, **plot_kwargs)

@@ -59,8 +59,8 @@ class TrajectoryPlot(BasePlot):
         # Timeseries plot
         ax1 = self.fig.add_subplot(gs[1, 0])
         ts_df = self.time.copy()
-        ts_df['obs'] = self.ts_data
-        timeseries = TimeSeriesPlot(data=ts_df, y='obs', ax=ax1, freq=kwargs.get("freq", "D"))
+        ts_df["obs"] = self.ts_data
+        timeseries = TimeSeriesPlot(data=ts_df, y="obs", ax=ax1, freq=kwargs.get("freq", "D"))
         timeseries.plot(**kwargs.get("timeseries_kwargs", {}))
 
         self.ax = [ax0, ax1]
