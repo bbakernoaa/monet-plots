@@ -34,9 +34,7 @@ def test_validate_dataframe():
 
 def test_validate_plot_parameters():
     """Test the validate_plot_parameters function."""
-    plot_utils.validate_plot_parameters(
-        "SpatialPlot", "plot", discrete=True, ncolors=10, plotargs={"cmap": "viridis"}
-    )
+    plot_utils.validate_plot_parameters("SpatialPlot", "plot", discrete=True, ncolors=10, plotargs={"cmap": "viridis"})
 
     with pytest.raises(TypeError):
         plot_utils.validate_plot_parameters("SpatialPlot", "plot", discrete="true")

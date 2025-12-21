@@ -40,8 +40,25 @@ docs = [
 ]
 
 [tool.ruff]
-exclude = ["examples"]
+exclude = ["examples", "docs"]
 
 [tool.flake8]
 extend-ignore = "C901"
-exclude = ["examples"]
+exclude = ["examples", "docs"]
+
+[tool.black]
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | examples
+  | docs
+)/
+'''

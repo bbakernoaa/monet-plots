@@ -55,9 +55,7 @@ class TaylorDiagramPlot(BasePlot):
         if self.dia is None:
             obsstd = self.df[self.col1].std()
             # Use self.fig which is created in BasePlot.__init__
-            self.dia = td.TaylorDiagram(
-                obsstd, scale=self.scale, fig=self.fig, rect=111, label=self.label1
-            )
+            self.dia = td.TaylorDiagram(obsstd, scale=self.scale, fig=self.fig, rect=111, label=self.label1)
             # Add contours and grid for the new diagram
             contours = self.dia.add_contours(colors="0.5")
             plt.clabel(contours, inline=1, fontsize=10)

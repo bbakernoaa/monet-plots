@@ -63,9 +63,7 @@ class ReliabilityDiagramPlot(BasePlot):
             bin_centers, obs_freq, bin_counts = compute_reliability_curve(
                 np.asarray(df[forecasts_col]), np.asarray(df[observations_col]), n_bins
             )
-            plot_data = pd.DataFrame(
-                {x_col: bin_centers, y_col: obs_freq, "count": bin_counts}
-            )
+            plot_data = pd.DataFrame({x_col: bin_centers, y_col: obs_freq, "count": bin_counts})
         else:
             validate_dataframe(df, required_columns=[x_col, y_col])
             plot_data = df
@@ -73,22 +71,16 @@ class ReliabilityDiagramPlot(BasePlot):
         # Draw Reference Lines
         self.ax.plot([0, 1], [0, 1], "k--", label="Perfect Reliability")
         if climatology is not None:
-            self.ax.axhline(
-                climatology, color="gray", linestyle=":", label="Climatology"
-            )
+            self.ax.axhline(climatology, color="gray", linestyle=":", label="Climatology")
             self._draw_skill_regions(climatology)
 
         # Plot Data
         if label_col:
             for name, group in plot_data.groupby(label_col):
-                self.ax.plot(
-                    group[x_col], group[y_col], marker="o", label=name, **kwargs
-                )
+                self.ax.plot(group[x_col], group[y_col], marker="o", label=name, **kwargs)
             self.ax.legend(loc="best")
         else:
-            self.ax.plot(
-                plot_data[x_col], plot_data[y_col], marker="o", label="Model", **kwargs
-            )
+            self.ax.plot(plot_data[x_col], plot_data[y_col], marker="o", label="Model", **kwargs)
 
         # Histogram Overlay (Sharpness)
         if show_hist and "count" in plot_data.columns:
@@ -114,9 +106,7 @@ class ReliabilityDiagramPlot(BasePlot):
         y_perfect = x
 
         # Shade skill region (above no-skill towards perfect)
-        self.ax.fill_between(
-            x, y_no_skill, y_perfect, alpha=0.1, color="green", label="Skill Region"
-        )
+        self.ax.fill_between(x, y_no_skill, y_perfect, alpha=0.1, color="green", label="Skill Region")
 
         # TDD Anchor: Test geometry of skill regions.
 
