@@ -1,9 +1,11 @@
+
 import pytest
 import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 from monet_plots.plots.spatial import SpatialPlot, SpatialTrack
-
+import cartopy.crs as ccrs
+from matplotlib.collections import PathCollection
 
 @pytest.fixture
 def clear_figures():
@@ -25,25 +27,43 @@ def sample_da():
         },
     )
 
-
-def test_spatial_plot_init(clear_figures, sample_da):
-    """Test SpatialPlot initialization."""
-    plot = SpatialPlot()
+def test_spatial_plot_instantiation(clear_figures):
+    """Test that SpatialPlot can be instantiated with a specific projection."""
+    projection = ccrs.LambertConformal()
+    plot = SpatialPlot(projection=projection)
     assert plot is not None
+    assert isinstance(plot.ax.projection, ccrs.LambertConformal)
 
-
-def test_spatial_plot_plot(clear_figures, sample_da):
-    """Test SpatialPlot plot method."""
-    plot = SpatialPlot()
-    # ax = plot.plot()  # SpatialPlot has no plot method
-    # assert ax is not None
-    assert plot.ax is not None
+def test_spatial_plot_draw_map(clear_figures):
+    """Test the SpatialPlot.draw_map classmethod."""
+    projection = ccrs.AlbersEqualArea()
+    fig, ax = plt.subplots(subplot_kw={"projection": projection})
+    initial_collection_count = len(ax.collections)
+    ax = SpatialPlot.draw_map(crs=projection, states=True, ax=ax)
+    assert ax is not None
+    assert isinstance(ax.projection, ccrs.AlbersEqualArea)
+    # Check if a new collection was added for the states feature
+    assert len(ax.collections) > initial_collection_count
 
 
 def test_SpatialTrack_plot(clear_figures):
-    """Test SpatialTrack plot method."""
+    """Test SpatialTrack plot method with assertions."""
     lon = np.linspace(-120, -80, 10)
     lat = np.linspace(30, 40, 10)
     data = np.random.rand(10)
-    plot = SpatialTrack(lon, lat, data)
-    plot.plot()
+    plot = SpatialTrack(longitude=lon, latitude=lat, data=data)
+    scatter = plot.plot()
+    assert isinstance(scatter, PathCollection)
+    # Check that the number of plotted points matches the input data
+    assert len(scatter.get_offsets()) == len(lon)
+
+def test_spatial_track_instantiation_no_args(clear_figures):
+    """Test that SpatialTrack can be instantiated without positional arguments."""
+    lon = np.linspace(-120, -80, 10)
+    lat = np.linspace(30, 40, 10)
+    data = np.random.rand(10)
+    try:
+        plot = SpatialTrack(longitude=lon, latitude=lat, data=data)
+        assert plot is not None
+    except TypeError:
+        pytest.fail("SpatialTrack instantiation failed with a TypeError, indicating the *args fix was not successful.")
