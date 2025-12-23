@@ -1,12 +1,11 @@
 # src/monet_plots/plots/spatial.py
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Tuple, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.typing import ArrayLike
@@ -389,7 +388,5 @@ class SpatialTrack(SpatialPlot):
         plot_kwargs = self._draw_features(**kwargs)
         plot_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        sc = self.ax.scatter(
-            self.longitude, self.latitude, c=self.data, **plot_kwargs
-        )
+        sc = self.ax.scatter(self.longitude, self.latitude, c=self.data, **plot_kwargs)
         return sc
