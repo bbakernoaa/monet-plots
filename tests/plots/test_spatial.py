@@ -47,3 +47,23 @@ def test_SpatialTrack_plot(clear_figures):
     data = np.random.rand(10)
     plot = SpatialTrack(lon, lat, data)
     plot.plot()
+
+
+def test_spatial_plot_draw_features(clear_figures):
+    """Test that cartopy features are added to the plot."""
+    # 1. The Logic (Instantiation)
+    plot = SpatialPlot(states=True, coastlines=True, countries=True)
+    initial_collections = len(plot.ax.collections)
+
+    # 2. The Proof (Validation)
+    plot._draw_features()
+    final_collections = len(plot.ax.collections)
+
+    # Assert that features were added
+    # Note: Cartopy may batch features, so we check for an increase
+    # rather than a specific number.
+    assert final_collections > initial_collections
+
+    # 3. The UI (Visualization)
+    # In a real scenario, you might save the plot to visually inspect it.
+    # plot.save("test_spatial_plot_with_features.png")
