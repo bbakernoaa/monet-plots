@@ -63,10 +63,19 @@ class PerformanceDiagramPlot(BasePlot):
         # TDD Anchor: Verify scatter points match input data coordinates
         if label_col:
             for name, group in df_plot.groupby(label_col):
-                self.ax.plot(group[x_col], group[y_col], marker="o", label=name, linestyle="none", **kwargs)
+                self.ax.plot(
+                    group[x_col],
+                    group[y_col],
+                    marker="o",
+                    label=name,
+                    linestyle="none",
+                    **kwargs,
+                )
             self.ax.legend(loc="best")
         else:
-            self.ax.plot(df_plot[x_col], df_plot[y_col], marker="o", linestyle="none", **kwargs)
+            self.ax.plot(
+                df_plot[x_col], df_plot[y_col], marker="o", linestyle="none", **kwargs
+            )
 
         # Formatting
         self.ax.set_xlim(0, 1)
@@ -112,12 +121,26 @@ class PerformanceDiagramPlot(BasePlot):
         bias = yy / xx
 
         # CSI contours (dashed, lightgray)
-        cs_csi = self.ax.contour(xx, yy, csi, levels=np.arange(0.1, 0.95, 0.1), colors="lightgray", linestyles="--", alpha=0.6)
+        cs_csi = self.ax.contour(
+            xx,
+            yy,
+            csi,
+            levels=np.arange(0.1, 0.95, 0.1),
+            colors="lightgray",
+            linestyles="--",
+            alpha=0.6,
+        )
         self.ax.clabel(cs_csi, inline=True, fontsize=8, fmt="%.1f")
 
         # Bias contours (dotted, darkgray)
         cs_bias = self.ax.contour(
-            xx, yy, bias, levels=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], colors="darkgray", linestyles=":", alpha=0.6
+            xx,
+            yy,
+            bias,
+            levels=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0],
+            colors="darkgray",
+            linestyles=":",
+            alpha=0.6,
         )
         self.ax.clabel(cs_bias, inline=True, fontsize=8, fmt="%.1f")
 

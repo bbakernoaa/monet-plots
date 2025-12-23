@@ -16,7 +16,9 @@ def clear_figures():
 @pytest.fixture
 def sample_data():
     """Create a sample DataFrame for testing."""
-    return pd.DataFrame({"pod": np.random.rand(10), "success_ratio": np.random.rand(10)})
+    return pd.DataFrame(
+        {"pod": np.random.rand(10), "success_ratio": np.random.rand(10)}
+    )
 
 
 def test_performance_diagram_plot(clear_figures, sample_data):

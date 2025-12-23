@@ -37,5 +37,11 @@ class WindQuiverPlot(SpatialPlot):
         lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
         u, v = tools.wsdir2uv(self.ws, self.wdir)
         # Subsample the data for clarity
-        quiv = self.ax.quiver(lon[::15, ::15], lat[::15, ::15], u[::15, ::15], v[::15, ::15], **quiver_kwargs)
+        quiv = self.ax.quiver(
+            lon[::15, ::15],
+            lat[::15, ::15],
+            u[::15, ::15],
+            v[::15, ::15],
+            **quiver_kwargs,
+        )
         return quiv

@@ -73,16 +73,23 @@ class UpperAir(SpatialPlot):
 
         class GridObj:
             def __init__(self, lat, lon):
-                self.variables = {"LAT": lat[np.newaxis, np.newaxis, ...], "LON": lon[np.newaxis, np.newaxis, ...]}
+                self.variables = {
+                    "LAT": lat[np.newaxis, np.newaxis, ...],
+                    "LON": lon[np.newaxis, np.newaxis, ...],
+                }
 
         lon2d, lat2d = np.meshgrid(self.lon, self.lat)
         gridobj = GridObj(lat2d, lon2d)
 
-        contour_plot = SpatialContourPlot(modelvar=self.hgt, gridobj=gridobj, date=self.date, ax=self.ax, fig=self.fig)
+        contour_plot = SpatialContourPlot(
+            modelvar=self.hgt, gridobj=gridobj, date=self.date, ax=self.ax, fig=self.fig
+        )
         contour_plot.plot(**contour_kwargs)
 
         from .. import tools
 
         ws, wdir = tools.uv2wsdir(self.u, self.v)
-        barb_plot = WindBarbsPlot(ws=ws, wdir=wdir, gridobj=gridobj, ax=self.ax, fig=self.fig)
+        barb_plot = WindBarbsPlot(
+            ws=ws, wdir=wdir, gridobj=gridobj, ax=self.ax, fig=self.fig
+        )
         barb_plot.plot(**barb_kwargs)

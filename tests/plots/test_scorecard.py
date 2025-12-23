@@ -16,7 +16,9 @@ def clear_figures():
 @pytest.fixture
 def sample_data():
     """Create a sample DataFrame for testing."""
-    return pd.DataFrame({"x": ["a", "b", "a", "b"], "y": ["c", "c", "d", "d"], "val": np.random.rand(4)})
+    return pd.DataFrame(
+        {"x": ["a", "b", "a", "b"], "y": ["c", "c", "d", "d"], "val": np.random.rand(4)}
+    )
 
 
 def test_scorecard_plot(clear_figures, sample_data):

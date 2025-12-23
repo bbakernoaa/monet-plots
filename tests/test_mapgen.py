@@ -43,5 +43,7 @@ def test_draw_map_extent(clear_figures):
 @pytest.mark.mpl_image_compare
 def test_draw_map_with_features(clear_figures):
     """Test that draw_map adds features like coastlines, states, and countries."""
-    fig, ax = draw_map(coastlines=True, states=True, countries=True, resolution="110m", return_fig=True)
+    fig, ax = draw_map(
+        coastlines=True, states=True, countries=True, resolution="110m", return_fig=True
+    )
     return fig

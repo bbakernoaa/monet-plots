@@ -62,11 +62,17 @@ class SpatialBiasScatterPlot(SpatialPlot):
         scatter_kwargs = self._draw_features(**kwargs)
 
         # Ensure we are working with a clean copy with no NaNs in relevant columns
-        new = self.df[["latitude", "longitude", self.col1, self.col2]].dropna().copy(deep=True)
+        new = (
+            self.df[["latitude", "longitude", self.col1, self.col2]]
+            .dropna()
+            .copy(deep=True)
+        )
 
         diff = new[self.col2] - new[self.col1]
         top = around(score(diff.abs(), per=95))
-        c, cmap = colorbar_index(self.ncolors, self.cmap, minval=top * -1, maxval=top, ax=self.ax)
+        c, cmap = colorbar_index(
+            self.ncolors, self.cmap, minval=top * -1, maxval=top, ax=self.ax
+        )
 
         c.ax.tick_params(labelsize=13)
         colors = diff

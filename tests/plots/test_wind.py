@@ -7,7 +7,10 @@ from monet_plots.plots.wind_quiver import WindQuiverPlot
 
 class GridObj:
     def __init__(self):
-        self.variables = {"LAT": np.random.rand(1, 1, 10, 10), "LON": np.random.rand(1, 1, 10, 10)}
+        self.variables = {
+            "LAT": np.random.rand(1, 1, 10, 10),
+            "LON": np.random.rand(1, 1, 10, 10),
+        }
 
 
 class Basemap:

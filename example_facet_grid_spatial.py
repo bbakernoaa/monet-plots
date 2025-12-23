@@ -58,12 +58,19 @@ def plot_spatial_imshow(data, **kwargs):
 # 3. Create the FacetGridPlot
 # We want 'time' as rows and 'model' as columns
 grid = FacetGridPlot(
-    ds, row="time", col="model", height=4, aspect=1.2, cbar_label="Temperature"  # This will be passed to the spatial plot
+    ds,
+    row="time",
+    col="model",
+    height=4,
+    aspect=1.2,
+    cbar_label="Temperature",  # This will be passed to the spatial plot
 )
 
 # 4. Map the spatial plotting function to the grid
 # Pass the variable name to plot_spatial_imshow
-grid.map_dataframe(plot_spatial_imshow, "temperature", cmap="viridis", add_colorbar=True)
+grid.map_dataframe(
+    plot_spatial_imshow, "temperature", cmap="viridis", add_colorbar=True
+)
 
 # 5. Set titles and adjust layout
 grid.set_titles(col_template="{col_name}", row_template="{row_name}")
