@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 import pandas as pd
-from typing import Any, Dict, Union, Optional
+from typing import Any, Optional
 
 # Optional xarray import - will be used if available
 try:
@@ -28,14 +28,14 @@ def to_dataframe(data: Any) -> pd.DataFrame:
         return data
 
     # Using hasattr to avoid direct dependency on xarray for users who don't have it installed.
-    if hasattr(data, 'to_dataframe'): # Works for both xarray DataArray and Dataset
+    if hasattr(data, "to_dataframe"):  # Works for both xarray DataArray and Dataset
         return data.to_dataframe()
 
     if isinstance(data, np.ndarray):
         if data.ndim == 1:
-            return pd.DataFrame(data, columns=['col_0'])
+            return pd.DataFrame(data, columns=["col_0"])
         elif data.ndim == 2:
-            return pd.DataFrame(data, columns=[f'col_{i}' for i in range(data.shape[1])])
+            return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
         else:
             raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
 
@@ -55,62 +55,62 @@ def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:
         TypeError: If parameter types are invalid
         ValueError: If parameter values are invalid
     """
-    if plot_class == 'SpatialPlot' and method == 'plot':
+    if plot_class == "SpatialPlot" and method == "plot":
         # Validate discrete parameter
-        if 'discrete' in kwargs:
-            discrete = kwargs['discrete']
+        if "discrete" in kwargs:
+            discrete = kwargs["discrete"]
             if not isinstance(discrete, bool):
                 raise TypeError(f"discrete parameter must be boolean, got {type(discrete).__name__}")
 
         # Validate ncolors parameter
-        if 'ncolors' in kwargs:
-            ncolors = kwargs['ncolors']
+        if "ncolors" in kwargs:
+            ncolors = kwargs["ncolors"]
             if not isinstance(ncolors, int):
                 raise TypeError(f"ncolors parameter must be integer, got {type(ncolors).__name__}")
             if ncolors <= 0 or ncolors > 1000:
                 raise ValueError(f"ncolors parameter must be between 1 and 1000, got {ncolors}")
 
         # Validate plotargs parameter
-        if 'plotargs' in kwargs and kwargs['plotargs'] is not None:
-            plotargs = kwargs['plotargs']
+        if "plotargs" in kwargs and kwargs["plotargs"] is not None:
+            plotargs = kwargs["plotargs"]
             if not isinstance(plotargs, dict):
                 raise TypeError(f"plotargs parameter must be dict, got {type(plotargs).__name__}")
 
             # Validate specific plotargs keys
-            if 'cmap' in plotargs:
-                cmap = plotargs['cmap']
+            if "cmap" in plotargs:
+                cmap = plotargs["cmap"]
                 # This would need actual colormap validation
                 if not isinstance(cmap, str):
                     raise TypeError(f"colormap must be string, got {type(cmap).__name__}")
 
-    elif plot_class == 'TimeSeriesPlot' and method == 'plot':
+    elif plot_class == "TimeSeriesPlot" and method == "plot":
         # Validate x parameter
-        if 'x' in kwargs:
-            x = kwargs['x']
+        if "x" in kwargs:
+            x = kwargs["x"]
             if not isinstance(x, str):
                 raise TypeError(f"x parameter must be string, got {type(x).__name__}")
 
         # Validate y parameter
-        if 'y' in kwargs:
-            y = kwargs['y']
+        if "y" in kwargs:
+            y = kwargs["y"]
             if not isinstance(y, str):
                 raise TypeError(f"y parameter must be string, got {type(y).__name__}")
 
         # Validate plotargs parameter
-        if 'plotargs' in kwargs and kwargs['plotargs'] is not None:
-            plotargs = kwargs['plotargs']
+        if "plotargs" in kwargs and kwargs["plotargs"] is not None:
+            plotargs = kwargs["plotargs"]
             if not isinstance(plotargs, dict):
                 raise TypeError(f"plotargs parameter must be dict, got {type(plotargs).__name__}")
 
         # Validate fillargs parameter
-        if 'fillargs' in kwargs and kwargs['fillargs'] is not None:
-            fillargs = kwargs['fillargs']
+        if "fillargs" in kwargs and kwargs["fillargs"] is not None:
+            fillargs = kwargs["fillargs"]
             if not isinstance(fillargs, dict):
                 raise TypeError(f"fillargs parameter must be dict, got {type(fillargs).__name__}")
 
             # Validate alpha in fillargs
-            if 'alpha' in fillargs:
-                alpha = fillargs['alpha']
+            if "alpha" in fillargs:
+                alpha = fillargs["alpha"]
                 if not isinstance(alpha, (int, float)):
                     raise TypeError(f"alpha must be numeric, got {type(alpha).__name__}")
                 if not 0 <= alpha <= 1:
@@ -133,11 +133,11 @@ def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None
         raise ValueError("data cannot be None")
 
     # Check if data has required attributes
-    if not hasattr(data, 'shape'):
+    if not hasattr(data, "shape"):
         raise TypeError("data must have a shape attribute")
 
     if required_dims:
-        if not hasattr(data, 'dims'):
+        if not hasattr(data, "dims"):
             raise TypeError("data must have dims attribute for dimension validation")
 
         for dim in required_dims:
@@ -160,7 +160,7 @@ def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None
     if df is None:
         raise ValueError("DataFrame cannot be None")
 
-    if not hasattr(df, 'columns'):
+    if not hasattr(df, "columns"):
         raise TypeError("object must have columns attribute")
 
     if required_columns:
@@ -193,9 +193,9 @@ def _normalize_data(data: Any) -> Any:
     """
     # Check if data is already an xarray object (preferred)
     if xr is not None:
-        if hasattr(xr, 'DataArray') and isinstance(data, xr.DataArray):
+        if hasattr(xr, "DataArray") and isinstance(data, xr.DataArray):
             return data
-        if hasattr(xr, 'Dataset') and isinstance(data, xr.Dataset):
+        if hasattr(xr, "Dataset") and isinstance(data, xr.Dataset):
             return data
 
     # Check if data is a pandas DataFrame
@@ -205,14 +205,14 @@ def _normalize_data(data: Any) -> Any:
     # Check if data is numpy array
     if isinstance(data, np.ndarray):
         if data.ndim == 1:
-            return pd.DataFrame(data, columns=['col_0'])
+            return pd.DataFrame(data, columns=["col_0"])
         elif data.ndim == 2:
-            return pd.DataFrame(data, columns=[f'col_{i}' for i in range(data.shape[1])])
+            return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
         else:
             raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
 
     # If xarray is available, check if data has xarray-like methods
-    if xr is not None and hasattr(data, 'to_dataset') and hasattr(data, 'to_dataframe'):
+    if xr is not None and hasattr(data, "to_dataset") and hasattr(data, "to_dataframe"):
         # Try to convert to xarray Dataset first
         try:
             return data.to_dataset()

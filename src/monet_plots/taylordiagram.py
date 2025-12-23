@@ -45,7 +45,7 @@ class TaylorDiagram:
     The Taylor diagram displays multiple statistical metrics in a single plot:
     - The radial distance from the origin represents the standard deviation
     - The azimuthal position represents the correlation coefficient
-    - The distance from the reference point represents the root-mean-square (RMS) difference
+    - The distance from the reference point represents the RMS difference
 
     This class creates a Taylor diagram in a polar plot, where:
     - r = standard deviation
@@ -61,20 +61,19 @@ class TaylorDiagram:
         Parameters
         ----------
         refstd : float
-            The reference standard deviation (e.g., from observations or a reference model)
+            The reference standard deviation (e.g., from observations)
             that other models will be compared against.
         scale : float, default 1.5
-            The maximum standard deviation shown on the plot, as a multiple of refstd.
-            For example, if refstd=2 and scale=1.5, the maximum standard deviation
-            displayed will be 3.0.
+            The maximum standard deviation shown on the plot, as a multiple
+            of refstd. For example, if refstd=2 and scale=1.5, the maximum
+            standard deviation displayed will be 3.0.
         fig : matplotlib.figure.Figure, optional
             Figure to use. If None, a new figure will be created.
         rect : int or tuple, default 111
-            Subplot specification (nrows, ncols, index) or 3-digit integer where
-            the digits represent nrows, ncols, and index in order.
+            Subplot specification (nrows, ncols, index) or 3-digit integer.
         label : str, default "_"
-            Label for the reference point. An underscore prefix makes the label not
-            appear in the legend.
+            Label for the reference point. An underscore prefix makes the label
+            not appear in the legend.
         """
 
         import mpl_toolkits.axisartist.floating_axes as FA
@@ -89,7 +88,7 @@ class TaylorDiagram:
         rlocs = np.concatenate((np.arange(10) / 10.0, [0.95, 0.99]))
         tlocs = np.arccos(rlocs)  # Conversion to polar angles
         gl1 = GF.FixedLocator(tlocs)  # Positions
-        tf1 = GF.DictFormatter(dict(list(zip(tlocs, list(map(str, rlocs))))))
+        tf1 = GF.DictFormatter(dict(zip(tlocs, list(map(str, rlocs)))))
 
         # Standard deviation axis extent
         self.smin = 0
@@ -131,14 +130,14 @@ class TaylorDiagram:
 
         # Add reference point and stddev contour
         print("Reference std:", self.refstd)
-        (l,) = self.ax.plot([0], self.refstd, "r*", ls="", ms=14, label=label, zorder=10)
+        (line,) = self.ax.plot([0], self.refstd, "r*", ls="", ms=14, label=label, zorder=10)
         t = np.linspace(0, np.pi / 2)
         r = np.zeros_like(t) + self.refstd
         self.ax.plot(t, r, "k--", label="_")
 
         # Collect sample points for latter use (e.g. legend)
-        self.samplePoints = [l]
-        
+        self.samplePoints = [line]
+
     @property
     def samples(self):
         """Property to provide compatibility with tests expecting 'samples' attribute."""
@@ -170,10 +169,10 @@ class TaylorDiagram:
         Points closer to the reference point indicate better agreement with
         the reference dataset.
         """
-        (l,) = self.ax.plot(np.arccos(corrcoef), stddev, *args, **kwargs)  # (theta,radius)
-        self.samplePoints.append(l)
+        (line,) = self.ax.plot(np.arccos(corrcoef), stddev, *args, **kwargs)  # (theta,radius)
+        self.samplePoints.append(line)
 
-        return l
+        return line
 
     @_sns_context
     def add_contours(self, levels=5, **kwargs):
@@ -239,7 +238,12 @@ if __name__ == "__main__":
     # Add samples to Taylor diagram
     for i, (stddev, corrcoef) in enumerate(samples):
         dia.add_sample(
-            stddev, corrcoef, marker="s", ls="", c=colors_[i], label="Model %d" % (i + 1)
+            stddev,
+            corrcoef,
+            marker="s",
+            ls="",
+            c=colors_[i],
+            label="Model %d" % (i + 1),
         )
 
     # Add RMS contours, and label them

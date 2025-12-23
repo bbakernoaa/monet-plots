@@ -61,10 +61,10 @@ def test_compute_brier_score_components():
     forecasts = np.array([0.1, 0.9])
     observations = np.array([0, 1])
     components = verification_metrics.compute_brier_score_components(forecasts, observations, n_bins=2)
-    assert 'reliability' in components
-    assert 'resolution' in components
-    assert 'uncertainty' in components
-    assert 'brier_score' in components
+    assert "reliability" in components
+    assert "resolution" in components
+    assert "uncertainty" in components
+    assert "brier_score" in components
 
 
 def test_compute_rank_histogram():

@@ -118,6 +118,7 @@ class StickPlot(BasePlot):
 
         return self.ax.barbs(self.x, self.y, self.u, self.v, **kwargs)
 
+
 class VerticalBoxPlot(BasePlot):
     """Vertical box plot."""
 

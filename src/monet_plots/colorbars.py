@@ -95,9 +95,7 @@ def cmap_discretize(cmap, N):
     indices = np.linspace(0, 1.0, N + 1)
     cdict = {}
     for ki, key in enumerate(("red", "green", "blue")):
-        cdict[key] = [
-            (indices[i], colors_rgba[i - 1, ki], colors_rgba[i, ki]) for i in range(N + 1)
-        ]
+        cdict[key] = [(indices[i], colors_rgba[i - 1, ki], colors_rgba[i, ki]) for i in range(N + 1)]
     # Return colormap object.
     return mcolors.LinearSegmentedColormap(cmap.name + "_%d" % N, cdict, 1024)
 

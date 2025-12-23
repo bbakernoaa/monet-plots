@@ -44,16 +44,16 @@ import numpy as np
 def smart_downsample(data, target_points=10000):
     """Intelligently downsample data to target point count."""
     total_points = np.prod(data.shape)
-    
+
     if total_points <= target_points:
         return data  # No downsampling needed
-    
+
     # Calculate downsampling factors
     downsample_factor = int(np.sqrt(total_points / target_points))
-    
+
     # Apply downsampling
     downsampled = data[::downsample_factor, ::downsample_factor]
-    
+
     return downsampled
 
 # Usage
@@ -424,10 +424,10 @@ def create_plot_with_lazy_loading(data_source, plot_config):
     """Create plot with lazy data loading."""
     # Load only necessary data
     data = load_data_lazily(data_source)
-    
+
     # Configure plot
     plot = SpatialPlot(**plot_config)
-    
+
     # Plot and save
     plot.plot(data)
     plot.save("lazy_loaded_plot.png")
@@ -458,14 +458,14 @@ def batch_create_plots(data_list, plot_configs):
     """Create multiple plots efficiently."""
     # Pre-process all data
     processed_data = [process_data(data) for data in data_list]
-    
+
     # Create all plots
     plots = []
     for data, config in zip(processed_data, plot_configs):
         plot = SpatialPlot(**config)
         plot.plot(data)
         plots.append(plot)
-    
+
     # Save all plots
     for i, plot in enumerate(plots):
         plot.save(f"batch_plot_{i}.png")

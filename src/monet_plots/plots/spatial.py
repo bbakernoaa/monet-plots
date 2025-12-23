@@ -1,9 +1,9 @@
 # src/monet_plots/plots/spatial.py
 
-import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from .base import BasePlot
+
 
 class SpatialPlot(BasePlot):
     """Base class for spatial plots using cartopy.
@@ -18,46 +18,50 @@ class SpatialPlot(BasePlot):
 
         Args:
             projection (ccrs.Projection): The cartopy projection for the map.
-            **kwargs: Additional keyword arguments for plotting, including cartopy features
-                      like 'coastlines', 'countries', 'states', 'borders', 'ocean',
-                      'land', 'rivers', 'lakes', 'gridlines'. These can be True for default
-                      styling or a dict for custom styling.
+            **kwargs: Keyword arguments for plotting, including cartopy
+                      features like 'coastlines', 'countries', 'states',
+                      'borders', 'ocean', 'land', 'rivers', 'lakes',
+                      'gridlines'.
         """
         # The 'projection' kwarg is passed to subplot creation via 'subplot_kw'.
-        subplot_kw = kwargs.pop('subplot_kw', {})
-        subplot_kw['projection'] = projection
-        
+        subplot_kw = kwargs.pop("subplot_kw", {})
+        subplot_kw["projection"] = projection
+
         # Separate BasePlot kwargs from feature kwargs
-        fig = kwargs.pop('fig', None)
-        ax = kwargs.pop('ax', None)
-        figsize = kwargs.pop('figsize', None)
+        fig = kwargs.pop("fig", None)
+        ax = kwargs.pop("ax", None)
+        figsize = kwargs.pop("figsize", None)
 
         base_plot_kwargs = {}
-        if fig: base_plot_kwargs['fig'] = fig
-        if ax: base_plot_kwargs['ax'] = ax
-        if figsize: base_plot_kwargs['figsize'] = figsize
-        if subplot_kw: base_plot_kwargs['subplot_kw'] = subplot_kw
+        if fig:
+            base_plot_kwargs["fig"] = fig
+        if ax:
+            base_plot_kwargs["ax"] = ax
+        if figsize:
+            base_plot_kwargs["figsize"] = figsize
+        if subplot_kw:
+            base_plot_kwargs["subplot_kw"] = subplot_kw
 
         super().__init__(*args, **base_plot_kwargs)
-        
+
         # Store feature kwargs passed at initialization
         self.feature_kwargs = kwargs
 
     def _draw_features(self, **kwargs):
         """Draw cartopy features on the map axes based on kwargs."""
-        # Combine kwargs from __init__ and the plot call, with plot() taking precedence
+        # Combine kwargs from __init__ and the plot call.
         combined_kwargs = {**self.feature_kwargs, **kwargs}
 
         # Define a mapping from keyword to cartopy feature
         feature_map = {
-            'coastlines': cfeature.COASTLINE,
-            'countries': cfeature.BORDERS.with_scale('50m'),
-            'states': cfeature.STATES.with_scale('50m'),
-            'borders': cfeature.BORDERS,
-            'ocean': cfeature.OCEAN,
-            'land': cfeature.LAND,
-            'rivers': cfeature.RIVERS,
-            'lakes': cfeature.LAKES,
+            "coastlines": cfeature.COASTLINE,
+            "countries": cfeature.BORDERS.with_scale("50m"),
+            "states": cfeature.STATES.with_scale("50m"),
+            "borders": cfeature.BORDERS,
+            "ocean": cfeature.OCEAN,
+            "land": cfeature.LAND,
+            "rivers": cfeature.RIVERS,
+            "lakes": cfeature.LAKES,
         }
 
         for key, feature in feature_map.items():
@@ -66,17 +70,17 @@ class SpatialPlot(BasePlot):
                 if isinstance(style, dict):
                     self.ax.add_feature(feature, **style)
                 elif style:  # If it's True, add with default style
-                    self.ax.add_feature(feature, edgecolor='black', linewidth=0.5)
+                    self.ax.add_feature(feature, edgecolor="black", linewidth=0.5)
 
         # Special handling for gridlines
-        if 'gridlines' in combined_kwargs:
-            gl_style = combined_kwargs.pop('gridlines')
+        if "gridlines" in combined_kwargs:
+            gl_style = combined_kwargs.pop("gridlines")
             if isinstance(gl_style, dict):
                 self.ax.gridlines(**gl_style)
             else:
-                self.ax.gridlines(draw_labels=True, linestyle='--', color='gray')
+                self.ax.gridlines(draw_labels=True, linestyle="--", color="gray")
 
-        # Return the remaining kwargs so they can be passed to the actual plotting function
+        # Return the remaining kwargs.
         return combined_kwargs
 
 
@@ -89,8 +93,8 @@ class SpatialTrack(SpatialPlot):
         Args:
             longitude (np.ndarray, pd.Series, xr.DataArray): Longitude values.
             latitude (np.ndarray, pd.Series, xr.DataArray): Latitude values.
-            data (np.ndarray, pd.Series, xr.DataArray): Data to use for coloring the track.
-            **kwargs: Additional keyword arguments passed to SpatialPlot.
+            data (np.ndarray, pd.Series, xr.DataArray): Data for coloring.
+            **kwargs: Keyword arguments passed to SpatialPlot.
         """
         super().__init__(*args, **kwargs)
         self.longitude = longitude
@@ -101,13 +105,13 @@ class SpatialTrack(SpatialPlot):
         """
         Plot the trajectory.
         Args:
-            **kwargs: Keyword arguments passed to `matplotlib.pyplot.scatter`.
+            **kwargs: Keyword arguments for `matplotlib.pyplot.scatter`.
         """
         if self.ax is None:
             self.ax = self.fig.add_subplot(projection=self.projection)
 
         plot_kwargs = self._draw_features(**kwargs)
-        plot_kwargs.setdefault('transform', ccrs.PlateCarree())
+        plot_kwargs.setdefault("transform", ccrs.PlateCarree())
 
         sc = self.ax.scatter(self.longitude, self.latitude, c=self.data, **plot_kwargs)
         return sc

@@ -11,10 +11,10 @@ The `monet_plots.base` module provides the foundational classes and functionalit
 ```python
 class BasePlot:
     """Abstract base class for all plot types in MONET Plots."""
-    
+
     def __init__(self, figsize=(8, 6), dpi=100, **kwargs):
         """Initialize a BasePlot instance.
-        
+
         Args:
             figsize (tuple): Figure size (width, height) in inches
             dpi (int): Dots per inch for the figure
@@ -40,11 +40,11 @@ Main plotting method that must be implemented by subclasses.
 ```python
 def plot(self, data, **kwargs):
     """Main plotting method.
-    
+
     Args:
         data: Input data to plot
         **kwargs: Additional plotting parameters
-        
+
     Returns:
         None
     """
@@ -58,12 +58,12 @@ Save the current plot to a file.
 ```python
 def save(self, filename, dpi=None, **kwargs):
     """Save the plot to a file.
-    
+
     Args:
         filename (str): Output filename
         dpi (int, optional): DPI for saved image. Defaults to Figure DPI
         **kwargs: Additional savefig parameters
-        
+
     Returns:
         None
     """
@@ -84,7 +84,7 @@ Close the plot and free memory.
 ```python
 def close(self):
     """Close the plot and free resources.
-    
+
     Returns:
         None
     """
@@ -106,12 +106,12 @@ Set the plot title.
 ```python
 def title(self, text, fontsize=14, **kwargs):
     """Set the plot title.
-    
+
     Args:
         text (str): Title text
         fontsize (int, optional): Font size. Defaults to 14
         **kwargs: Additional title parameters
-        
+
     Returns:
         Self for method chaining
     """
@@ -132,12 +132,12 @@ Set the x-axis label.
 ```python
 def xlabel(self, text, fontsize=12, **kwargs):
     """Set the x-axis label.
-    
+
     Args:
         text (str): X-axis label text
         fontsize (int, optional): Font size. Defaults to 12
         **kwargs: Additional label parameters
-        
+
     Returns:
         Self for method chaining
     """
@@ -158,12 +158,12 @@ Set the y-axis label.
 ```python
 def ylabel(self, text, fontsize=12, **kwargs):
     """Set the y-axis label.
-    
+
     Args:
         text (str): Y-axis label text
         fontsize (int, optional): Font size. Defaults to 12
         **kwargs: Additional label parameters
-        
+
     Returns:
         Self for method chaining
     """
@@ -184,11 +184,11 @@ Add a legend to the plot.
 ```python
 def legend(self, *args, **kwargs):
     """Add a legend to the plot.
-    
+
     Args:
         *args: Legend labels
         **kwargs: Additional legend parameters
-        
+
     Returns:
         Self for method chaining
     """
@@ -210,11 +210,11 @@ Toggle plot grid.
 ```python
 def grid(self, show=True, **kwargs):
     """Toggle plot grid.
-    
+
     Args:
         show (bool): Whether to show grid. Defaults to True
         **kwargs: Additional grid parameters
-        
+
     Returns:
         Self for method chaining
     """

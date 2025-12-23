@@ -1,11 +1,10 @@
-
 import matplotlib.pyplot as plt
-import seaborn as sns
 from numpy import corrcoef
 from .base import BasePlot
 from .. import taylordiagram as td
 from ..plot_utils import to_dataframe
 from typing import Any, Union, List
+
 
 class TaylorDiagramPlot(BasePlot):
     """Create a DataFrame-based Taylor diagram.
@@ -13,7 +12,17 @@ class TaylorDiagramPlot(BasePlot):
     A convenience wrapper for easily creating Taylor diagrams from DataFrames.
     """
 
-    def __init__(self, df: Any, col1: str = "obs", col2: Union[str, List[str]] = "model", label1: str = "OBS", scale: float = 1.5, dia=None, *args, **kwargs):
+    def __init__(
+        self,
+        df: Any,
+        col1: str = "obs",
+        col2: Union[str, List[str]] = "model",
+        label1: str = "OBS",
+        scale: float = 1.5,
+        dia=None,
+        *args,
+        **kwargs,
+    ):
         """
         Initialize the plot with data and diagram settings.
 
@@ -62,7 +71,7 @@ class TaylorDiagramPlot(BasePlot):
             self.dia.samplePoints,
             [p.get_label() for p in self.dia.samplePoints],
             numpoints=1,
-            loc='upper right'
+            loc="upper right",
         )
         self.fig.tight_layout()
         return self.dia

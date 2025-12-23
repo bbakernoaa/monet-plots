@@ -3,17 +3,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 from monet_plots.plots.ensemble import SpreadSkillPlot
 
+
 @pytest.fixture
 def clear_figures():
     """Clear all existing figures before and after a test."""
-    plt.close('all')
+    plt.close("all")
     yield
-    plt.close('all')
+    plt.close("all")
+
 
 @pytest.fixture
 def sample_data():
     """Create a sample DataFrame for testing."""
     return np.random.rand(10), np.random.rand(10)
+
 
 def test_spread_skill_plot(clear_figures, sample_data):
     """Test SpreadSkillPlot."""

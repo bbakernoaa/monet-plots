@@ -1,10 +1,10 @@
 # src/monet_plots/plots/timeseries.py
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from .base import BasePlot
 from ..plot_utils import normalize_data
 from typing import Any, Union, List, Optional
+
 
 class TimeSeriesPlot(BasePlot):
     """Create a timeseries plot with shaded error bounds.
@@ -13,12 +13,24 @@ class TimeSeriesPlot(BasePlot):
     shading for ±1 standard deviation around the mean.
     """
 
-    def __init__(self, df: Any, x: str = "time", y: str = "obs", plotargs: dict = {}, fillargs: dict = {"alpha": 0.2}, title: str = "", ylabel: Optional[str] = None, label: Optional[str] = None, *args, **kwargs):
+    def __init__(
+        self,
+        df: Any,
+        x: str = "time",
+        y: str = "obs",
+        plotargs: dict = {},
+        fillargs: dict = {"alpha": 0.2},
+        title: str = "",
+        ylabel: Optional[str] = None,
+        label: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
         """
         Initialize the plot with data and plot settings.
 
         Args:
-            df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): DataFrame with the data to plot.
+            df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): DataFrame with data.
             x (str): Column name for the x-axis (time).
             y (str): Column name for the y-axis (values).
             plotargs (dict): Arguments for the plot.
@@ -113,17 +125,12 @@ class TimeSeriesPlot(BasePlot):
         lower = lower.where(lower >= 0, 0)  # Ensure non-negative values
 
         # Plot the error bounds using the time coordinate values
-        self.ax.fill_between(
-            time_coord.values,
-            lower.values,
-            upper.values,
-            **self.fillargs
-        )
+        self.ax.fill_between(time_coord.values, lower.values, upper.values, **self.fillargs)
 
         # Set labels and title
         unit = "None"  # xarray doesn't have a direct units attribute like pandas
-        if hasattr(data[self.y], 'attrs') and 'units' in data[self.y].attrs:
-            unit = data[self.y].attrs['units']
+        if hasattr(data[self.y], "attrs") and "units" in data[self.y].attrs:
+            unit = data[self.y].attrs["units"]
 
         if self.ylabel is None:
             self.ax.set_ylabel(f"{self.y} ({unit})")
@@ -148,11 +155,11 @@ class TimeSeriesStatsPlot(BasePlot):
         Initialize the plot with data.
 
         Args:
-            df (pd.DataFrame, xr.Dataset, etc.): Data containing a time coordinate
-                and the columns to compare. Must be convertible to a pandas
+            df (pd.DataFrame, xr.Dataset, etc.): Data with a time coordinate
+                and columns to compare. Must be convertible to a pandas
                 DataFrame with a DatetimeIndex.
             col1 (str): Name of the first column (e.g., 'Obs').
-            col2 (str or list): Name of the second column(s) (e.g., 'Model' or ['Model1', 'Model2']).
+            col2 (str or list): Name of the second column(s) (e.g., 'Model').
             *args, **kwargs: Arguments passed to BasePlot.
         """
         super().__init__(*args, **kwargs)
@@ -206,17 +213,14 @@ class TimeSeriesStatsPlot(BasePlot):
             raise ValueError(f"Statistic '{stat}' not supported. Use one of {list(self.stats.keys())}")
 
         # Set default plot properties, allowing user to override
-        plot_kwargs = {
-            "grid": True,
-            "marker": "o",
-            "linestyle": "-"
-        }
+        plot_kwargs = {"grid": True, "marker": "o", "linestyle": "-"}
         # User-provided kwargs will override defaults but not the label
         plot_kwargs = {**plot_kwargs, **kwargs}
 
         for model_col in self.col2:
-            # Define a lambda to pass the current model column to the stat function
-            stat_func = lambda group: self.stats[stat.lower()](group, model_col)
+
+            def stat_func(group):
+                return self.stats[stat.lower()](group, model_col)
 
             # Resample and apply the chosen statistical function for the current model
             stat_series = self.df.resample(freq).apply(stat_func)

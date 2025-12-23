@@ -17,9 +17,9 @@ from monet_plots import colorbar_index
 
 # Create indexed colorbar
 cbar, cmap = colorbar_index(
-    ncolors=10, 
-    cmap='viridis', 
-    minval=0, 
+    ncolors=10,
+    cmap='viridis',
+    minval=0,
     maxval=100
 )
 ```
@@ -184,7 +184,7 @@ im = plot.ax.imshow(data, cmap='coolwarm')
 
 # Add colorbar with custom formatting
 cbar = add_colorbar(
-    plot.ax, 
+    plot.ax,
     im,
     label='Concentration (ppb)',
     orientation='horizontal',
@@ -380,7 +380,7 @@ plot = TimeSeriesPlot(figsize=(12, 6))
 for i in range(len(data) - 1):
     color_value = data['confidence'].iloc[i]
     plot.ax.plot(
-        data['date'].iloc[i:i+2], 
+        data['date'].iloc[i:i+2],
         data['temperature'].iloc[i:i+2],
         color=plt.cm.RdYlGn(color_value),
         linewidth=2

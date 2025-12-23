@@ -587,9 +587,7 @@ def facet_time_map(
     nrows = int(np.ceil(nt / ncols))
     if figsize is None:
         figsize = (4 * ncols, 3.5 * nrows)
-    fig, axes = plt.subplots(
-        nrows, ncols, subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi
-    )
+    fig, axes = plt.subplots(nrows, ncols, subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
     axes = np.atleast_1d(axes).flatten()
     plot_args = dict(cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
     plot_args.update(kwargs)
@@ -646,7 +644,7 @@ def facet_time_map(
         fig.colorbar(mesh, cax=cax, orientation="vertical", label=cbar_label)
     if suptitle:
         fig.suptitle(suptitle, fontsize=14, fontweight="bold")
-    
+
     # Export
     if export_path:
         if export_formats is None:

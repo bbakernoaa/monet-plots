@@ -38,3 +38,27 @@ docs = [
     "mkdocstrings[python]>=0.19",
     "pymdown-extensions>=9.0",
 ]
+
+[tool.ruff]
+exclude = ["examples", "docs"]
+
+[tool.flake8]
+extend-ignore = "C901"
+exclude = ["examples", "docs"]
+
+[tool.black]
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | examples
+  | docs
+)/
+'''
