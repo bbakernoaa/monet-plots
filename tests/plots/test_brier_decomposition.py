@@ -16,15 +16,11 @@ def clear_figures():
 @pytest.fixture
 def sample_data():
     """Create a sample DataFrame for testing."""
-    return pd.DataFrame(
-        {"forecasts": np.random.rand(100), "observations": np.random.randint(0, 2, 100)}
-    )
+    return pd.DataFrame({"forecasts": np.random.rand(100), "observations": np.random.randint(0, 2, 100)})
 
 
 def test_brier_decomposition_plot(clear_figures, sample_data):
     """Test BrierScoreDecompositionPlot."""
     plot = BrierScoreDecompositionPlot()
-    plot.plot(
-        data=sample_data, forecasts_col="forecasts", observations_col="observations"
-    )
+    plot.plot(data=sample_data, forecasts_col="forecasts", observations_col="observations")
     assert plot.ax is not None

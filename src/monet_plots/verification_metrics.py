@@ -2,9 +2,7 @@ import numpy as np
 from typing import Tuple, Union, Dict
 
 
-def compute_pod(
-    hits: Union[int, np.ndarray], misses: Union[int, np.ndarray]
-) -> Union[float, np.ndarray]:
+def compute_pod(hits: Union[int, np.ndarray], misses: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Calculates Probability of Detection (POD) or Hit Rate.
 
@@ -19,9 +17,7 @@ def compute_pod(
     )
 
 
-def compute_far(
-    hits: Union[int, np.ndarray], fa: Union[int, np.ndarray]
-) -> Union[float, np.ndarray]:
+def compute_far(hits: Union[int, np.ndarray], fa: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Calculates False Alarm Ratio (FAR).
 
@@ -36,9 +32,7 @@ def compute_far(
     )
 
 
-def compute_success_ratio(
-    hits: Union[int, np.ndarray], fa: Union[int, np.ndarray]
-) -> Union[float, np.ndarray]:
+def compute_success_ratio(hits: Union[int, np.ndarray], fa: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Calculates Success Ratio (SR).
 
@@ -92,9 +86,7 @@ def compute_frequency_bias(
     )
 
 
-def compute_pofd(
-    fa: Union[int, np.ndarray], cn: Union[int, np.ndarray]
-) -> Union[float, np.ndarray]:
+def compute_pofd(fa: Union[int, np.ndarray], cn: Union[int, np.ndarray]) -> Union[float, np.ndarray]:
     """
     Calculates Probability of False Detection (POFD).
 
@@ -161,9 +153,7 @@ def compute_reliability_curve(
     return bin_centers, np.array(observed_frequencies), np.array(bin_counts)
 
 
-def compute_brier_score_components(
-    forecasts: np.ndarray, observations: np.ndarray, n_bins: int = 10
-) -> Dict[str, float]:
+def compute_brier_score_components(forecasts: np.ndarray, observations: np.ndarray, n_bins: int = 10) -> Dict[str, float]:
     """
     Decomposes Brier Score into Reliability, Resolution, and Uncertainty.
 
@@ -173,9 +163,7 @@ def compute_brier_score_components(
     base_rate = float(np.mean(observations))
     uncertainty = base_rate * (1.0 - base_rate)
 
-    bin_centers, obs_freq, bin_counts = compute_reliability_curve(
-        forecasts, observations, n_bins
-    )
+    bin_centers, obs_freq, bin_counts = compute_reliability_curve(forecasts, observations, n_bins)
 
     # Filter out empty bins
     mask = ~np.isnan(obs_freq)
@@ -197,9 +185,7 @@ def compute_brier_score_components(
     }
 
 
-def compute_rank_histogram(
-    ensemble: np.ndarray, observations: np.ndarray
-) -> np.ndarray:
+def compute_rank_histogram(ensemble: np.ndarray, observations: np.ndarray) -> np.ndarray:
     """
     Computes rank histogram counts.
 

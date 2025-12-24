@@ -67,3 +67,26 @@ def test_spatial_plot_draw_features(clear_figures):
     # 3. The UI (Visualization)
     # In a real scenario, you might save the plot to visually inspect it.
     # plot.save("test_spatial_plot_with_features.png")
+
+
+def test_spatial_plot_draw_map_docstring_example(clear_figures):
+    """Test the example from the SpatialPlot.draw_map docstring.
+
+    This ensures the documented example works as expected.
+    """
+    # 1. The Logic (Implementation from Docstring)
+    from cartopy.mpl.geoaxes import GeoAxes
+
+    ax = SpatialPlot.draw_map(states=True, extent=[-125, -70, 25, 50])
+
+    # 2. The Proof (Validation)
+    # Assert that the axes is a GeoAxes object
+    assert isinstance(ax, GeoAxes)
+
+    # Assert that the 'states' feature was added.
+    # We check that at least one collection (the states) has been added.
+    assert len(ax.collections) > 0
+
+    # 3. The UI (Visualization)
+    # The plot is implicitly created and would be shown with plt.show()
+    # No need to save it in a test.

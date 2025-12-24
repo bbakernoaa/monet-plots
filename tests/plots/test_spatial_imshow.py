@@ -55,9 +55,7 @@ def test_spatial_imshow_plot_discrete_vmin_vmax(mock_grid):
     modelvar = np.random.rand(10, 10)
 
     # Create a SpatialImshow instance
-    plot = SpatialImshow(
-        modelvar, mock_grid, discrete=True, plotargs={"vmin": 0.1, "vmax": 0.9}
-    )
+    plot = SpatialImshow(modelvar, mock_grid, discrete=True, plotargs={"vmin": 0.1, "vmax": 0.9})
 
     # Call the plot method
     c = plot.plot()

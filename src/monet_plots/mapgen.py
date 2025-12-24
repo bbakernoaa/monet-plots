@@ -44,9 +44,7 @@ def _create_boundary_features(resolution):
     return states_provinces, counties
 
 
-def _add_boundary_features(
-    ax, coastlines, states, counties, countries, resolution, linewidth
-):
+def _add_boundary_features(ax, coastlines, states, counties, countries, resolution, linewidth):
     """Add boundary features to the map."""
     if coastlines:
         ax.coastlines(resolution, linewidth=linewidth)
