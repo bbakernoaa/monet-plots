@@ -63,7 +63,14 @@ class SpatialContourPlot(SpatialPlot):
             ncolors = self.ncolors
             if ncolors is None and levels is not None:
                 ncolors = len(levels) - 1
-            c, _ = colorbar_index(ncolors, cmap, minval=levels[0], maxval=levels[-1], dtype=self.dtype, ax=self.ax)
+            c, _ = colorbar_index(
+                ncolors,
+                cmap,
+                minval=levels[0],
+                maxval=levels[-1],
+                dtype=self.dtype,
+                ax=self.ax,
+            )
         else:
             c = self.fig.colorbar(mesh, ax=self.ax)
 

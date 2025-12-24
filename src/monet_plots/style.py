@@ -111,7 +111,10 @@ def set_style(context="default"):
         If an unknown context name is provided.
     """
     if context not in _styles:
-        raise ValueError(f"Unknown style context: '{context}'. " f"Available contexts are: {', '.join(_styles.keys())}")
+        raise ValueError(
+            f"Unknown style context: '{context}'. "
+            f"Available contexts are: {', '.join(_styles.keys())}"
+        )
 
     plt.style.use(_styles[context])
 

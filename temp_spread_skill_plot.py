@@ -14,7 +14,9 @@ plotter.plot(alpha=0.7, color="blue", s=50)
 
 # Save the plot
 plt.tight_layout()
-plt.savefig("/Users/barry/Documents/monet-plots/docs/examples/plots/spread_skill_plot.png")
+plt.savefig(
+    "/Users/barry/Documents/monet-plots/docs/examples/plots/spread_skill_plot.png"
+)
 plt.close(fig)
 
 print("Spread-skill plot generated and saved.")

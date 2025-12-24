@@ -16,7 +16,12 @@ def clear_figures():
 @pytest.fixture
 def sample_taylor_data():
     """Create a sample DataFrame for testing."""
-    return pd.DataFrame({"obs": np.linspace(0, 10, 100), "model": np.linspace(0, 10, 100) + np.random.rand(100)})
+    return pd.DataFrame(
+        {
+            "obs": np.linspace(0, 10, 100),
+            "model": np.linspace(0, 10, 100) + np.random.rand(100),
+        }
+    )
 
 
 def test_taylor_diagram_plot_creates_plot(clear_figures, sample_taylor_data):

@@ -129,12 +129,16 @@ def _setup_facet_grid(nt, ncols, projection, figsize=None, dpi=150):
     nrows = int(np.ceil(nt / ncols))
     if figsize is None:
         figsize = (4 * ncols, 3.5 * nrows)
-    fig, axes = plt.subplots(nrows, ncols, subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, axes = plt.subplots(
+        nrows, ncols, subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi
+    )
     axes = np.atleast_1d(axes).flatten()
     return fig, axes, nrows, ncols
 
 
-def _setup_single_facet_axis(ax, map_kws, xlabel=None, ylabel=None, xticks=None, yticks=None, title=None):
+def _setup_single_facet_axis(
+    ax, map_kws, xlabel=None, ylabel=None, xticks=None, yticks=None, title=None
+):
     """Set up a single facet axis with minimal features."""
     if not (GeoAxes is not None and isinstance(ax, GeoAxes)):
         return
@@ -263,7 +267,9 @@ def plot_quick_imshow(
     # Setup
     projection = _setup_map_projection(projection)
     map_kws = map_kws or {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi
+    )
 
     # Prepare plot arguments
     plot_args = dict(cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
@@ -367,7 +373,9 @@ def plot_quick_map(
     # Setup
     projection = _setup_map_projection(projection)
     map_kws = map_kws or {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi
+    )
 
     # Prepare plot arguments
     plot_args = dict(cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
@@ -471,7 +479,9 @@ def plot_quick_contourf(
     # Setup
     projection = _setup_map_projection(projection)
     map_kws = map_kws or {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi
+    )
 
     # Prepare plot arguments
     plot_args = dict(cmap=cmap, vmin=vmin, vmax=vmax, norm=norm)
@@ -682,7 +692,9 @@ def plot_points_map(
     # Setup
     projection = _setup_map_projection(projection)
     map_kws = map_kws or {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi
+    )
 
     # Add map features
     _add_map_features(ax, map_kws)
@@ -769,7 +781,9 @@ def plot_lines_map(
     # Setup
     projection = _setup_map_projection(projection)
     map_kws = map_kws or {}
-    fig, ax = plt.subplots(subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": projection}, figsize=figsize, dpi=dpi
+    )
 
     # Add map features
     _add_map_features(ax, map_kws)
