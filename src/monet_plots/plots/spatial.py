@@ -85,9 +85,7 @@ class SpatialPlot(BasePlot):
         self.ax.add_feature(cfeature.LAKES)
         self.ax.add_feature(cfeature.RIVERS)
 
-    def _add_coastlines(
-        self, coastlines_style: bool | Dict[str, Any], resolution: str
-    ) -> None:
+    def _add_coastlines(self, coastlines_style: bool | Dict[str, Any], resolution: str) -> None:
         """Add coastlines to the map axes.
 
         Parameters
@@ -100,15 +98,11 @@ class SpatialPlot(BasePlot):
         """
         if isinstance(coastlines_style, dict):
             linewidth = coastlines_style.pop("linewidth", 0.5)
-            self.ax.coastlines(
-                resolution=resolution, linewidth=linewidth, **coastlines_style
-            )
+            self.ax.coastlines(resolution=resolution, linewidth=linewidth, **coastlines_style)
         elif coastlines_style:
             self.ax.coastlines(resolution=resolution, linewidth=0.5)
 
-    def _add_counties(
-        self, counties_style: bool | Dict[str, Any], resolution: str
-    ) -> None:
+    def _add_counties(self, counties_style: bool | Dict[str, Any], resolution: str) -> None:
         """Add US counties to the map axes.
 
         Parameters
@@ -132,9 +126,7 @@ class SpatialPlot(BasePlot):
             else:
                 self.ax.add_feature(counties_feature, linewidth=0.5)
 
-    def _add_standard_features(
-        self, feature_map: Dict[str, cfeature.Feature], combined_kwargs: Dict[str, Any]
-    ) -> None:
+    def _add_standard_features(self, feature_map: Dict[str, cfeature.Feature], combined_kwargs: Dict[str, Any]) -> None:
         """Add a set of standard cartopy features from a predefined mapping.
 
         Parameters
@@ -309,9 +301,7 @@ class SpatialPlot(BasePlot):
 
         # Create SpatialPlot instance
         all_kwargs = {**feature_kwargs, **kwargs}
-        spatial_plot = cls(
-            projection=projection, resolution=resolution, figsize=figsize, **all_kwargs
-        )
+        spatial_plot = cls(projection=projection, resolution=resolution, figsize=figsize, **all_kwargs)
 
         # Draw the features
         spatial_plot._draw_features()

@@ -60,11 +60,7 @@ class SpScatterBiasPlot(BasePlot):
         if self.ax is None:
             self.ax = SpatialPlot.draw_map(**self.map_kwargs)
 
-        dfnew = (
-            self.df[["latitude", "longitude", self.col1, self.col2]]
-            .dropna()
-            .copy(deep=True)
-        )
+        dfnew = self.df[["latitude", "longitude", self.col1, self.col2]].dropna().copy(deep=True)
         dfnew["sp_diff"] = dfnew[self.col2] - dfnew[self.col1]
         top = score(dfnew["sp_diff"].abs(), per=95)
         if self.val_max is not None:

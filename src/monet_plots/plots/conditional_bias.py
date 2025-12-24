@@ -53,18 +53,12 @@ class ConditionalBiasPlot(BasePlot):
 
         if label_col:
             for name, group in df_plot.groupby(label_col):
-                self._plot_binned_bias(
-                    group, obs_col, "bias", n_bins, label=str(name), **kwargs
-                )
+                self._plot_binned_bias(group, obs_col, "bias", n_bins, label=str(name), **kwargs)
             self.ax.legend(loc="best")
         else:
-            self._plot_binned_bias(
-                df_plot, obs_col, "bias", n_bins, label="Model", **kwargs
-            )
+            self._plot_binned_bias(df_plot, obs_col, "bias", n_bins, label="Model", **kwargs)
 
-        self.ax.axhline(
-            0, color="k", linestyle="--", linewidth=2, alpha=0.8, label="No Bias"
-        )
+        self.ax.axhline(0, color="k", linestyle="--", linewidth=2, alpha=0.8, label="No Bias")
         self.ax.legend()
         self.ax.set_xlabel("Observed Value")
         self.ax.set_ylabel("Mean Bias (Forecast - Observation)")
@@ -76,11 +70,7 @@ class ConditionalBiasPlot(BasePlot):
         """
         # Create bins
         bins = pd.cut(df[x_col], bins=n_bins, duplicates="drop")
-        binned = (
-            df.groupby(bins, observed=False)[y_col]
-            .agg(["mean", "std", "count"])
-            .reset_index()
-        )
+        binned = df.groupby(bins, observed=False)[y_col].agg(["mean", "std", "count"]).reset_index()
         binned["bin_center"] = binned[x_col].apply(lambda interval: interval.mid)
 
         # Filter bins with sufficient samples

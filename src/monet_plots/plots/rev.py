@@ -60,15 +60,11 @@ class RelativeEconomicValuePlot(BasePlot):
 
         if label_col:
             for name, group in df.groupby(label_col):
-                rev_values = self._calculate_rev(
-                    group, counts_cols, cost_loss_ratios, climatology
-                )
+                rev_values = self._calculate_rev(group, counts_cols, cost_loss_ratios, climatology)
                 self.ax.plot(cost_loss_ratios, rev_values, label=str(name), **kwargs)
             self.ax.legend(loc="best")
         else:
-            rev_values = self._calculate_rev(
-                df, counts_cols, cost_loss_ratios, climatology
-            )
+            rev_values = self._calculate_rev(df, counts_cols, cost_loss_ratios, climatology)
             self.ax.plot(cost_loss_ratios, rev_values, label="Model", **kwargs)
 
         self.ax.set_xlabel("Cost/Loss Ratio")

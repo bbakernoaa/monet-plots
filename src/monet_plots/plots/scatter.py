@@ -56,18 +56,14 @@ class ScatterPlot(BasePlot):
         for y_col in self.y:
             if self.c is not None:
                 # Use plt.scatter for more control over color mapping
-                mappable = self.ax.scatter(
-                    self.df[self.x], self.df[y_col], c=self.df[self.c], **kwargs
-                )
+                mappable = self.ax.scatter(self.df[self.x], self.df[y_col], c=self.df[self.c], **kwargs)
                 if self.colorbar:
                     self.fig.colorbar(mappable, ax=self.ax)
                 # Add regression line manually
                 m, b = np.polyfit(self.df[self.x], self.df[y_col], 1)
                 self.ax.plot(self.df[self.x], m * self.df[self.x] + b, color="red")
             else:
-                sns.regplot(
-                    data=self.df, x=self.x, y=y_col, label=y_col, ax=self.ax, **kwargs
-                )
+                sns.regplot(data=self.df, x=self.x, y=y_col, label=y_col, ax=self.ax, **kwargs)
 
         if len(self.y) > 1 and self.c is None:
             self.ax.legend()
