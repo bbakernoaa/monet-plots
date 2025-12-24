@@ -9,9 +9,7 @@ from typing import List
 
 # --- 1. Helper function to create the meta DataFrame ---
 def create_facet_grid_data(
-    data_arrays: List[xr.DataArray],
-    facet_attrs: List[str],
-    data_var_name: str = "data_array",
+    data_arrays: List[xr.DataArray], facet_attrs: List[str], data_var_name: str = "data_array"
 ) -> pd.DataFrame:
     """
     Creates a pandas DataFrame suitable for FacetGridPlot from a list of xarray.DataArrays.
@@ -101,14 +99,7 @@ def plot_heterogeneous_spatial(data, **kwargs):
 
 
 # --- 5. Create the FacetGridPlot using the Meta DataFrame ---
-grid = FacetGridPlot(
-    meta_df,
-    row="time_label",
-    col="model",
-    height=4,
-    aspect=1.2,
-    cbar_label="Temperature (K)",
-)
+grid = FacetGridPlot(meta_df, row="time_label", col="model", height=4, aspect=1.2, cbar_label="Temperature (K)")
 
 # --- 6. Map the custom plotting function to the grid ---
 grid.map_dataframe(plot_heterogeneous_spatial, cmap="plasma", add_colorbar=True)

@@ -44,9 +44,7 @@ def _create_boundary_features(resolution):
     return states_provinces, counties
 
 
-def _add_boundary_features(
-    ax, coastlines, states, counties, countries, resolution, linewidth
-):
+def _add_boundary_features(ax, coastlines, states, counties, countries, resolution, linewidth):
     """Add boundary features to the map."""
     if coastlines:
         ax.coastlines(resolution, linewidth=linewidth)
@@ -89,11 +87,7 @@ def draw_map(
     """
     import warnings
 
-    warnings.warn(
-        "draw_map is deprecated. Use SpatialPlot.draw_map() instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
+    warnings.warn("draw_map is deprecated. Use SpatialPlot.draw_map() instead.", DeprecationWarning, stacklevel=2)
 
     from .plots.spatial import SpatialPlot
 

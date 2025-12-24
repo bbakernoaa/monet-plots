@@ -32,9 +32,7 @@ def generate_gallery_images():
                 full_python_code = "\n".join(python_code_blocks)
 
                 # Replace plt.show() with plt.savefig() to save the plot
-                full_python_code = full_python_code.replace(
-                    "plt.show()", f"plt.savefig('{output_image_path}')"
-                )
+                full_python_code = full_python_code.replace("plt.show()", f"plt.savefig('{output_image_path}')")
 
                 # Create a temporary script to execute
                 script_path = "temp_script.py"
@@ -44,12 +42,7 @@ def generate_gallery_images():
                 # Execute the script
                 print(f"Generating plot for {filename}...")
                 try:
-                    subprocess.run(
-                        ["python", script_path],
-                        check=True,
-                        capture_output=True,
-                        text=True,
-                    )
+                    subprocess.run(["python", script_path], check=True, capture_output=True, text=True)
                     print(f"Successfully generated {output_image_path}")
                 except subprocess.CalledProcessError as e:
                     print(f"Error generating plot for {filename}:")

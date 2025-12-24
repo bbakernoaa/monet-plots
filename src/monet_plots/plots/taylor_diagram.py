@@ -55,9 +55,7 @@ class TaylorDiagramPlot(BasePlot):
         if self.dia is None:
             obsstd = self.df[self.col1].std()
             # Use self.fig which is created in BasePlot.__init__
-            self.dia = td.TaylorDiagram(
-                obsstd, scale=self.scale, fig=self.fig, rect=111, label=self.label1
-            )
+            self.dia = td.TaylorDiagram(obsstd, scale=self.scale, fig=self.fig, rect=111, label=self.label1)
             # Add contours and grid for the new diagram
             contours = self.dia.add_contours(colors="0.5")
             plt.clabel(contours, inline=1, fontsize=10)
@@ -69,11 +67,6 @@ class TaylorDiagramPlot(BasePlot):
             cc = corrcoef(self.df[self.col1].values, self.df[model_col].values)[0, 1]
             self.dia.add_sample(model_std, cc, label=model_col, **kwargs)
 
-        self.fig.legend(
-            self.dia.samplePoints,
-            [p.get_label() for p in self.dia.samplePoints],
-            numpoints=1,
-            loc="upper right",
-        )
+        self.fig.legend(self.dia.samplePoints, [p.get_label() for p in self.dia.samplePoints], numpoints=1, loc="upper right")
         self.fig.tight_layout()
         return self.dia

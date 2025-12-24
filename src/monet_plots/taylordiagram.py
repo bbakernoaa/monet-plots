@@ -131,7 +131,7 @@ class TaylorDiagram:
 
         # Add reference point and stddev contour
         print("Reference std:", self.refstd)
-        (l,) = self.ax.plot(
+        (line,) = self.ax.plot(
             [0], self.refstd, "r*", ls="", ms=14, label=label, zorder=10
         )
         t = np.linspace(0, np.pi / 2)
@@ -139,7 +139,7 @@ class TaylorDiagram:
         self.ax.plot(t, r, "k--", label="_")
 
         # Collect sample points for latter use (e.g. legend)
-        self.samplePoints = [l]
+        self.samplePoints = [line]
 
     @property
     def samples(self):
@@ -172,12 +172,12 @@ class TaylorDiagram:
         Points closer to the reference point indicate better agreement with
         the reference dataset.
         """
-        (l,) = self.ax.plot(
+        (line,) = self.ax.plot(
             np.arccos(corrcoef), stddev, *args, **kwargs
         )  # (theta,radius)
-        self.samplePoints.append(l)
+        self.samplePoints.append(line)
 
-        return l
+        return line
 
     @_sns_context
     def add_contours(self, levels=5, **kwargs):

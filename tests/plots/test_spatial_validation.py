@@ -45,7 +45,7 @@ def test_spatial_track_docstring_example(clear_figures):
     lat = np.linspace(30, 45, 20)
     data = np.linspace(0, 100, 20)
     track_plot = SpatialTrack(lon, lat, data, states=True)
-    sc = track_plot.plot(cmap="viridis")
+    sc = track_plot.plot(cmap='viridis')
 
     # --- The Proof (Validation) ---
     assert isinstance(sc, PathCollection), "The return type must be a PathCollection."

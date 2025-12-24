@@ -35,9 +35,7 @@ def to_dataframe(data: Any) -> pd.DataFrame:
         if data.ndim == 1:
             return pd.DataFrame(data, columns=["col_0"])
         elif data.ndim == 2:
-            return pd.DataFrame(
-                data, columns=[f"col_{i}" for i in range(data.shape[1])]
-            )
+            return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
         else:
             raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
 
@@ -49,20 +47,14 @@ def _validate_spatial_plot_params(kwargs):
     if "discrete" in kwargs:
         discrete = kwargs["discrete"]
         if not isinstance(discrete, bool):
-            raise TypeError(
-                f"discrete parameter must be boolean, got {type(discrete).__name__}"
-            )
+            raise TypeError(f"discrete parameter must be boolean, got {type(discrete).__name__}")
 
     if "ncolors" in kwargs:
         ncolors = kwargs["ncolors"]
         if not isinstance(ncolors, int):
-            raise TypeError(
-                f"ncolors parameter must be integer, got {type(ncolors).__name__}"
-            )
+            raise TypeError(f"ncolors parameter must be integer, got {type(ncolors).__name__}")
         if ncolors <= 0 or ncolors > 1000:
-            raise ValueError(
-                f"ncolors parameter must be between 1 and 1000, got {ncolors}"
-            )
+            raise ValueError(f"ncolors parameter must be between 1 and 1000, got {ncolors}")
 
     _validate_plotargs(kwargs.get("plotargs"))
 
@@ -87,9 +79,7 @@ def _validate_plotargs(plotargs):
     """Validate plotargs parameter."""
     if plotargs is not None:
         if not isinstance(plotargs, dict):
-            raise TypeError(
-                f"plotargs parameter must be dict, got {type(plotargs).__name__}"
-            )
+            raise TypeError(f"plotargs parameter must be dict, got {type(plotargs).__name__}")
 
         if "cmap" in plotargs:
             cmap = plotargs["cmap"]
@@ -101,9 +91,7 @@ def _validate_fillargs(fillargs):
     """Validate fillargs parameter."""
     if fillargs is not None:
         if not isinstance(fillargs, dict):
-            raise TypeError(
-                f"fillargs parameter must be dict, got {type(fillargs).__name__}"
-            )
+            raise TypeError(f"fillargs parameter must be dict, got {type(fillargs).__name__}")
 
         if "alpha" in fillargs:
             alpha = fillargs["alpha"]
@@ -157,9 +145,7 @@ def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None
 
         for dim in required_dims:
             if dim not in data.dims:
-                raise ValueError(
-                    f"required dimension '{dim}' not found in data dimensions {data.dims}"
-                )
+                raise ValueError(f"required dimension '{dim}' not found in data dimensions {data.dims}")
 
 
 def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None:

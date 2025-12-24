@@ -18,13 +18,7 @@ def sample_da():
 @pytest.fixture
 def sample_df():
     """Create a sample pandas.DataFrame for testing."""
-    return pd.DataFrame(
-        {
-            "latitude": np.arange(30, 40),
-            "longitude": np.arange(-100, -90),
-            "value": np.random.rand(10),
-        }
-    )
+    return pd.DataFrame({"latitude": np.arange(30, 40), "longitude": np.arange(-100, -90), "value": np.random.rand(10)})
 
 
 def test_plot_quick_imshow(sample_da):

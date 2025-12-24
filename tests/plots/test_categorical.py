@@ -19,19 +19,13 @@ def sample_da():
     return xr.DataArray(
         np.random.rand(10, 3),
         dims=("instance", "category"),
-        coords={
-            "instance": np.arange(10),
-            "category": ["A", "B", "C"],
-            "site": ("instance", ["site1"] * 5 + ["site2"] * 5),
-        },
+        coords={"instance": np.arange(10), "category": ["A", "B", "C"], "site": ("instance", ["site1"] * 5 + ["site2"] * 5)},
     )
 
 
 def test_categorical_plot_bar(clear_figures, sample_da):
     """Test that categorical_plot creates a bar plot."""
-    fig, ax = categorical_plot(
-        sample_da, x="category", y=sample_da.name or "value", kind="bar"
-    )
+    fig, ax = categorical_plot(sample_da, x="category", y=sample_da.name or "value", kind="bar")
     assert fig is not None
     assert ax is not None
     # Check if there are bars in the plot
@@ -40,9 +34,7 @@ def test_categorical_plot_bar(clear_figures, sample_da):
 
 def test_categorical_plot_violin(clear_figures, sample_da):
     """Test that categorical_plot creates a violin plot."""
-    fig, ax = categorical_plot(
-        sample_da, x="category", y=sample_da.name or "value", kind="violin"
-    )
+    fig, ax = categorical_plot(sample_da, x="category", y=sample_da.name or "value", kind="violin")
     assert fig is not None
     assert ax is not None
     # Check if there are violins in the plot
@@ -51,9 +43,7 @@ def test_categorical_plot_violin(clear_figures, sample_da):
 
 def test_categorical_plot_hue(clear_figures, sample_da):
     """Test that categorical_plot works with hue."""
-    fig, ax = categorical_plot(
-        sample_da, x="category", y=sample_da.name or "value", hue="site", kind="bar"
-    )
+    fig, ax = categorical_plot(sample_da, x="category", y=sample_da.name or "value", hue="site", kind="bar")
     assert fig is not None
     assert ax is not None
     assert len(ax.flatten()[0].patches) > 0

@@ -17,8 +17,7 @@ def clear_figures():
 def sample_data():
     """Create a sample DataFrame for testing."""
     return pd.DataFrame(
-        {"temp": np.random.rand(10), "pressure": np.random.rand(10)},
-        index=pd.to_datetime(np.arange(10), unit="D"),
+        {"temp": np.random.rand(10), "pressure": np.random.rand(10)}, index=pd.to_datetime(np.arange(10), unit="D")
     )
 
 

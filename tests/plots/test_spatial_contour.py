@@ -12,10 +12,7 @@ def test_spatial_contour_plot():
 
     # Create a mock grid object
     mock_grid = MagicMock()
-    mock_grid.variables = {
-        "LAT": np.random.rand(1, 1, 10, 10),
-        "LON": np.random.rand(1, 1, 10, 10),
-    }
+    mock_grid.variables = {"LAT": np.random.rand(1, 1, 10, 10), "LON": np.random.rand(1, 1, 10, 10)}
 
     # Create a sample model variable
     modelvar = np.random.rand(10, 10)
@@ -38,10 +35,7 @@ def test_spatial_contour_plot_no_date():
 
     # Create a mock grid object
     mock_grid = MagicMock()
-    mock_grid.variables = {
-        "LAT": np.random.rand(1, 1, 10, 10),
-        "LON": np.random.rand(1, 1, 10, 10),
-    }
+    mock_grid.variables = {"LAT": np.random.rand(1, 1, 10, 10), "LON": np.random.rand(1, 1, 10, 10)}
 
     # Create a sample model variable
     modelvar = np.random.rand(10, 10)
@@ -64,18 +58,13 @@ def test_spatial_contour_plot_continuous():
 
     # Create a mock grid object
     mock_grid = MagicMock()
-    mock_grid.variables = {
-        "LAT": np.random.rand(1, 1, 10, 10),
-        "LON": np.random.rand(1, 1, 10, 10),
-    }
+    mock_grid.variables = {"LAT": np.random.rand(1, 1, 10, 10), "LON": np.random.rand(1, 1, 10, 10)}
 
     # Create a sample model variable
     modelvar = np.random.rand(10, 10)
 
     # Create a SpatialContourPlot instance
-    plot = SpatialContourPlot(
-        modelvar, mock_grid, datetime.datetime.now(), discrete=False, ncolors=10
-    )
+    plot = SpatialContourPlot(modelvar, mock_grid, datetime.datetime.now(), discrete=False, ncolors=10)
 
     # Call the plot method
     c = plot.plot(cmap="viridis", levels=np.arange(0, 1.1, 0.1))

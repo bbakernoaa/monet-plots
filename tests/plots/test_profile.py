@@ -2,12 +2,7 @@ import pytest
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.quiver import Quiver
-from monet_plots.plots.profile import (
-    ProfilePlot,
-    VerticalSlice,
-    StickPlot,
-    VerticalBoxPlot,
-)
+from monet_plots.plots.profile import ProfilePlot, VerticalSlice, StickPlot, VerticalBoxPlot
 
 
 @pytest.fixture
@@ -21,10 +16,7 @@ def clear_figures():
 @pytest.fixture
 def sample_data_line():
     """Create sample data for a line plot."""
-    return {
-        "x": np.linspace(0, 10, 100),
-        "y": np.linspace(0, 10, 100) + np.random.rand(100),
-    }
+    return {"x": np.linspace(0, 10, 100), "y": np.linspace(0, 10, 100) + np.random.rand(100)}
 
 
 @pytest.fixture

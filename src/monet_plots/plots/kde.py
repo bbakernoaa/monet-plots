@@ -31,9 +31,7 @@ class KDEPlot(BasePlot):
     def plot(self, **kwargs):
         """Generate the KDE plot."""
         with sns.axes_style("ticks"):
-            self.ax = sns.kdeplot(
-                data=self.df, x=self.x, y=self.y, ax=self.ax, label=self.label, **kwargs
-            )
+            self.ax = sns.kdeplot(data=self.df, x=self.x, y=self.y, ax=self.ax, label=self.label, **kwargs)
             if self.title:
                 self.ax.set_title(self.title)
             sns.despine()

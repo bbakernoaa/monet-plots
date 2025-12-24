@@ -38,11 +38,5 @@ class WindBarbsPlot(SpatialPlot):
         u, v = tools.wsdir2uv(self.ws, self.wdir)
         # Subsample the data for clarity
         skip = barb_kwargs.pop("skip", 15)
-        self.ax.barbs(
-            lon[::skip, ::skip],
-            lat[::skip, ::skip],
-            u[::skip, ::skip],
-            v[::skip, ::skip],
-            **barb_kwargs,
-        )
+        self.ax.barbs(lon[::skip, ::skip], lat[::skip, ::skip], u[::skip, ::skip], v[::skip, ::skip], **barb_kwargs)
         return self.ax
