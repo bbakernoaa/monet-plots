@@ -49,24 +49,69 @@ def test_SpatialTrack_plot(clear_figures):
     plot.plot()
 
 
-def test_spatial_plot_draw_features(clear_figures):
-    """Test that cartopy features are added to the plot."""
-    # 1. The Logic (Instantiation)
-    plot = SpatialPlot(states=True, coastlines=True, countries=True)
+def test_spatial_plot_draw_features_data_driven(clear_figures):
+    """Test the data-driven feature drawing mechanism.
+
+    This test validates that when keyword arguments (e.g., `states=True`)
+    are passed to the SpatialPlot constructor, the corresponding cartopy
+    features are correctly added to the GeoAxes object.
+    """
+    # 1. The Logic (Implementation)
+    # Instantiate the plot with several features enabled.
+    plot = SpatialPlot(
+        states=True,
+        coastlines=True,
+        countries=True,
+        land=True,
+        ocean=True,
+        resolution="110m",
+    )
     initial_collections = len(plot.ax.collections)
 
     # 2. The Proof (Validation)
+    # The _draw_features method is called to render the map elements.
     plot._draw_features()
     final_collections = len(plot.ax.collections)
 
-    # Assert that features were added
-    # Note: Cartopy may batch features, so we check for an increase
-    # rather than a specific number.
+    # Assert that the number of collections on the axes has increased,
+    # which confirms that cartopy features have been added. The exact number
+    # can vary, so we check for a significant increase.
     assert final_collections > initial_collections
+    assert (
+        final_collections >= 5
+    )  # Expect at least 5 features to be added
 
-    # 3. The UI (Visualization)
-    # In a real scenario, you might save the plot to visually inspect it.
-    # plot.save("test_spatial_plot_with_features.png")
+
+def test_spatial_plot_feature_styling(clear_figures):
+    """Test that feature styling kwargs are correctly applied.
+
+    This test ensures that when a style dictionary is passed for a feature
+    (e.g., `states={"linewidth": 2, "edgecolor": "red"}`), the style is
+    applied to the corresponding cartopy feature.
+    """
+    # 1. The Logic (Implementation)
+    # Define a custom style for the 'states' feature.
+    custom_style = {"linewidth": 2, "edgecolor": "red"}
+    plot = SpatialPlot(states=custom_style, resolution="110m")
+
+    # 2. The Proof (Validation)
+    # Draw the features to apply the styling.
+    plot._draw_features()
+
+    # The most reliable way to check is to inspect the LineCollection
+    # created by the feature. We look for one with our custom style.
+    found_match = False
+    for collection in plot.ax.collections:
+        # Check if the collection's properties match our custom style.
+        # This is a bit of an internal detail, but it's a robust check.
+        if (
+            collection.get_linewidth()[0] == custom_style["linewidth"]
+            and collection.get_edgecolor()[0][0] == 1.0
+        ):  # Red channel
+            found_match = True
+            break
+
+    assert found_match, "Failed to find a feature with the specified custom style."
 
 
 def test_spatial_plot_draw_map_docstring_example(clear_figures):

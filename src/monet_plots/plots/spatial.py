@@ -71,101 +71,78 @@ class SpatialPlot(BasePlot):
 
         super().__init__(fig=fig, ax=ax, **base_plot_kwargs)
 
-    def _add_natural_earth_features(self) -> None:
-        """Add standard Natural Earth features to the axes.
+    def _get_feature_registry(self, resolution: str) -> Dict[str, Any]:
+        """Return a registry of functions to add cartopy features.
 
-        This method adds the following features at the default scale:
-        - OCEAN
-        - LAND
-        - LAKES
-        - RIVERS
-        """
-        self.ax.add_feature(cfeature.OCEAN)
-        self.ax.add_feature(cfeature.LAND)
-        self.ax.add_feature(cfeature.LAKES)
-        self.ax.add_feature(cfeature.RIVERS)
-
-    def _add_coastlines(self, coastlines_style: bool | Dict[str, Any], resolution: str) -> None:
-        """Add coastlines to the map axes.
+        This approach centralizes feature management, making it easier to
+        add new features and maintain existing ones.
 
         Parameters
         ----------
-        coastlines_style : bool or Dict[str, Any]
-            If True, adds default coastlines. If a dict, it is used as
-            keyword arguments for `ax.coastlines()`.
         resolution : str
-            The resolution for the coastlines feature (e.g., '10m', '50m').
-        """
-        if isinstance(coastlines_style, dict):
-            linewidth = coastlines_style.pop("linewidth", 0.5)
-            self.ax.coastlines(resolution=resolution, linewidth=linewidth, **coastlines_style)
-        elif coastlines_style:
-            self.ax.coastlines(resolution=resolution, linewidth=0.5)
+            The resolution for the cartopy features (e.g., '10m', '50m').
 
-    def _add_counties(self, counties_style: bool | Dict[str, Any], resolution: str) -> None:
-        """Add US counties to the map axes.
-
-        Parameters
-        ----------
-        counties_style : bool or Dict[str, Any]
-            If True, adds default counties. If a dict, it is used as
-            keyword arguments for `ax.add_feature()`.
-        resolution : str
-            The resolution for the counties feature (e.g., '10m', '50m').
+        Returns
+        -------
+        Dict[str, Any]
+            A dictionary mapping feature names to the corresponding cartopy
+            feature objects or methods.
         """
-        if counties_style:
-            counties_feature = cfeature.NaturalEarthFeature(
+        # Lazy import to avoid circular dependencies if this were ever needed.
+        # For now, it's just a clean way to organize.
+        from cartopy.feature import BORDERS, LAKES, LAND, OCEAN, RIVERS, STATES
+
+        feature_mapping = {
+            # Special handling for ax.coastlines
+            "coastlines": self.ax.coastlines,
+            # Natural Earth Features
+            "countries": BORDERS.with_scale(resolution),
+            "states": STATES.with_scale(resolution),
+            "borders": BORDERS,
+            "ocean": OCEAN,
+            "land": LAND,
+            "rivers": RIVERS,
+            "lakes": LAKES,
+            # Special case for counties
+            "counties": cfeature.NaturalEarthFeature(
                 category="cultural",
                 name="admin_2_counties",
                 scale=resolution,
                 facecolor="none",
                 edgecolor="k",
-            )
-            if isinstance(counties_style, dict):
-                self.ax.add_feature(counties_feature, **counties_style)
-            else:
-                self.ax.add_feature(counties_feature, linewidth=0.5)
+            ),
+            # Special handling for ax.gridlines
+            "gridlines": self.ax.gridlines,
+        }
+        return feature_mapping
 
-    def _add_standard_features(self, feature_map: Dict[str, cfeature.Feature], combined_kwargs: Dict[str, Any]) -> None:
-        """Add a set of standard cartopy features from a predefined mapping.
-
-        Parameters
-        ----------
-        feature_map : Dict[str, cfeature.Feature]
-            A dictionary mapping a feature name (e.g., "states") to a
-            `cartopy.feature.Feature` object.
-        combined_kwargs : Dict[str, Any]
-            A dictionary of keyword arguments where keys matching the `feature_map`
-            are used to style the corresponding feature.
-        """
-        for key, feature in feature_map.items():
-            if key in combined_kwargs:
-                style = combined_kwargs.pop(key)
-                if isinstance(style, dict):
-                    self.ax.add_feature(feature, **style)
-                elif style:
-                    self.ax.add_feature(feature, edgecolor="black", linewidth=0.5)
-
-    def _add_gridlines(self, gl_style: bool | Dict[str, Any]) -> None:
-        """Add gridlines to the map axes.
+    @staticmethod
+    def _get_style(style: bool | Dict[str, Any], defaults: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        """Helper to derive a style dictionary for a feature.
 
         Parameters
         ----------
-        gl_style : bool or Dict[str, Any]
-            If True, adds default gridlines. If a dict, it is used as
-            keyword arguments for `ax.gridlines()`.
+        style : bool or Dict[str, Any]
+            The user-provided style. If True, use defaults. If a dict, use it.
+        defaults : Dict[str, Any], optional
+            The default style to apply if `style` is True, by default None.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The resolved keyword arguments for styling.
         """
-        if isinstance(gl_style, dict):
-            self.ax.gridlines(**gl_style)
-        else:
-            self.ax.gridlines(draw_labels=True, linestyle="--", color="gray")
+        if isinstance(style, dict):
+            return style
+        if style and defaults:
+            return defaults
+        return {}
 
     def _draw_features(self, **kwargs: Any) -> Dict[str, Any]:
-        """Draw cartopy features on the map axes.
+        """Draw cartopy features on the map axes using a data-driven approach.
 
-        This method combines keyword arguments from the class initialization
-        and the current plot call, then draws the corresponding cartopy
-        features on the map.
+        This method iterates through a feature registry, drawing features that
+        are requested either in the class constructor or in the plot call.
 
         Parameters
         ----------
@@ -176,51 +153,47 @@ class SpatialPlot(BasePlot):
         Returns
         -------
         Dict[str, Any]
-            The remaining keyword arguments that were not used to draw features.
+            The remaining keyword arguments that were not used for features.
         """
-        # Combine kwargs from __init__ and the plot call, with plot() taking precedence
         combined_kwargs = {**self.feature_kwargs, **kwargs}
-
-        # Get resolution from kwargs or use instance default
         resolution = combined_kwargs.pop("resolution", self.resolution)
+        feature_registry = self._get_feature_registry(resolution)
 
-        # Handle natural earth features first
+        # If natural_earth is True, enable a standard set of features
         if combined_kwargs.pop("natural_earth", False):
-            self._add_natural_earth_features()
+            for feature in ["ocean", "land", "lakes", "rivers"]:
+                combined_kwargs.setdefault(feature, True)
 
-        # Handle coastlines
-        if "coastlines" in combined_kwargs:
-            self._add_coastlines(combined_kwargs.pop("coastlines"), resolution)
+        # Main feature-drawing loop
+        for key, feature_or_method in feature_registry.items():
+            if key in combined_kwargs:
+                style_arg = combined_kwargs.pop(key)
+                if not style_arg:  # Allows for `coastlines=False`
+                    continue
 
-        # Handle counties
-        if "counties" in combined_kwargs:
-            self._add_counties(combined_kwargs.pop("counties"), resolution)
+                # Determine default styles based on the feature
+                defaults = {}
+                if key in ["coastlines", "counties", "states", "countries", "borders"]:
+                    defaults = {"linewidth": 0.5, "edgecolor": "black"}
+                elif key == "gridlines":
+                    defaults = {"draw_labels": True, "linestyle": "--", "color": "gray"}
 
-        # Define feature mapping
-        feature_map = {
-            "countries": cfeature.BORDERS.with_scale(resolution),
-            "states": cfeature.STATES.with_scale(resolution),
-            "borders": cfeature.BORDERS,
-            "ocean": cfeature.OCEAN,
-            "land": cfeature.LAND,
-            "rivers": cfeature.RIVERS,
-            "lakes": cfeature.LAKES,
-        }
+                style_kwargs = self._get_style(style_arg, defaults)
 
-        # Add standard features
-        self._add_standard_features(feature_map, combined_kwargs)
+                # Draw the feature
+                if callable(feature_or_method):  # ax.coastlines or ax.gridlines
+                    if key == "coastlines":
+                        style_kwargs["resolution"] = resolution
+                    feature_or_method(**style_kwargs)
+                else:  # cfeature.Feature object
+                    self.ax.add_feature(feature_or_method, **style_kwargs)
 
-        # Handle gridlines
-        if "gridlines" in combined_kwargs:
-            self._add_gridlines(combined_kwargs.pop("gridlines"))
-
-        # Handle extent
+        # Handle extent after features are drawn
         if "extent" in combined_kwargs:
             extent = combined_kwargs.pop("extent")
             if extent is not None:
                 self.ax.set_extent(extent)
 
-        # Return remaining kwargs
         return combined_kwargs
 
     @classmethod
