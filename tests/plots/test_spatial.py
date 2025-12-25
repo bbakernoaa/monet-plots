@@ -77,9 +77,7 @@ def test_spatial_plot_draw_features_data_driven(clear_figures):
     # which confirms that cartopy features have been added. The exact number
     # can vary, so we check for a significant increase.
     assert final_collections > initial_collections
-    assert (
-        final_collections >= 5
-    )  # Expect at least 5 features to be added
+    assert final_collections >= 5  # Expect at least 5 features to be added
 
 
 def test_spatial_plot_feature_styling(clear_figures):

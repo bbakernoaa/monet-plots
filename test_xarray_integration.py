@@ -27,7 +27,9 @@ def test_normalize_data():
     print("Testing normalize_data function...")
 
     # Test with pandas DataFrame
-    df = pd.DataFrame({"time": pd.date_range("2023-01-01", periods=10), "value": np.random.randn(10)})
+    df = pd.DataFrame(
+        {"time": pd.date_range("2023-01-01", periods=10), "value": np.random.randn(10)}
+    )
     result = normalize_data(df)
     print(f"✓ Pandas DataFrame normalized: {type(result)}")
     assert isinstance(result, pd.DataFrame)
@@ -101,7 +103,9 @@ def test_timeseries_plot_xarray():
 
     # Create sample xarray data
     dates = pd.date_range("2023-01-01", periods=100, freq="H")
-    da = xr.DataArray(np.random.normal(0, 1, 100), dims=["time"], coords={"time": dates}, name="obs")
+    da = xr.DataArray(
+        np.random.normal(0, 1, 100), dims=["time"], coords={"time": dates}, name="obs"
+    )
 
     # Create and plot
     plot = TimeSeriesPlot(da, x="time", y="obs", title="Xarray TimeSeries Test")

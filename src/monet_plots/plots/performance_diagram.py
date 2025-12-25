@@ -73,7 +73,9 @@ class PerformanceDiagramPlot(BasePlot):
                 )
             self.ax.legend(loc="best")
         else:
-            self.ax.plot(df_plot[x_col], df_plot[y_col], marker="o", linestyle="none", **kwargs)
+            self.ax.plot(
+                df_plot[x_col], df_plot[y_col], marker="o", linestyle="none", **kwargs
+            )
 
         # Formatting
         self.ax.set_xlim(0, 1)

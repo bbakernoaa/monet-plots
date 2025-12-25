@@ -32,7 +32,9 @@ def generate_gallery_images():
                 full_python_code = "\n".join(python_code_blocks)
 
                 # Replace plt.show() with plt.savefig() to save the plot
-                full_python_code = full_python_code.replace("plt.show()", f"plt.savefig('{output_image_path}')")
+                full_python_code = full_python_code.replace(
+                    "plt.show()", f"plt.savefig('{output_image_path}')"
+                )
 
                 # Create a temporary script to execute
                 script_path = "temp_script.py"

@@ -62,19 +62,29 @@ class RankHistogramPlot(BasePlot):
 
         if label_col:
             for name, group in df.groupby(label_col):
-                counts = group[rank_col].value_counts().reindex(np.arange(num_bins), fill_value=0)
+                counts = (
+                    group[rank_col]
+                    .value_counts()
+                    .reindex(np.arange(num_bins), fill_value=0)
+                )
                 total = counts.sum()
                 freq = counts / total if normalize else counts
-                self.ax.bar(counts.index, freq.values, label=str(name), alpha=0.7, **kwargs)
+                self.ax.bar(
+                    counts.index, freq.values, label=str(name), alpha=0.7, **kwargs
+                )
             self.ax.legend()
         else:
-            counts = df[rank_col].value_counts().reindex(np.arange(num_bins), fill_value=0)
+            counts = (
+                df[rank_col].value_counts().reindex(np.arange(num_bins), fill_value=0)
+            )
             total = counts.sum()
             freq = counts / total if normalize else counts
             self.ax.bar(counts.index, freq.values, alpha=0.7, **kwargs)
 
         # Expected uniform line
-        self.ax.axhline(expected, color="k", linestyle="--", linewidth=2, label="Expected (Uniform)")
+        self.ax.axhline(
+            expected, color="k", linestyle="--", linewidth=2, label="Expected (Uniform)"
+        )
         self.ax.legend()
 
         # Formatting

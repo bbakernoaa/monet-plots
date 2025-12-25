@@ -18,7 +18,9 @@ def split_by_threshold(data_list, alt_list, threshold_list):
     df = pd.DataFrame(data={"data": data_list, "alt": alt_list})
     output_list = []
     for i in range(1, len(threshold_list)):
-        df_here = df.data.loc[(df.alt > threshold_list[i - 1]) & (df.alt <= threshold_list[i])]
+        df_here = df.data.loc[
+            (df.alt > threshold_list[i - 1]) & (df.alt <= threshold_list[i])
+        ]
         output_list.append(df_here.values)
     return output_list
 

@@ -68,7 +68,9 @@ grid = FacetGridPlot(
 
 # 4. Map the spatial plotting function to the grid
 # Pass the variable name to plot_spatial_imshow
-grid.map_dataframe(plot_spatial_imshow, "temperature", cmap="viridis", add_colorbar=True)
+grid.map_dataframe(
+    plot_spatial_imshow, "temperature", cmap="viridis", add_colorbar=True
+)
 
 # 5. Set titles and adjust layout
 grid.set_titles(col_template="{col_name}", row_template="{row_name}")

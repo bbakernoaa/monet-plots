@@ -14,7 +14,9 @@ def test_reliability_diagram_plot_pre_binned():
 def test_reliability_diagram_plot_raw_data():
     """Test the ReliabilityDiagramPlot plot method with raw data."""
     plot = ReliabilityDiagramPlot()
-    data = pd.DataFrame({"forecasts": np.random.rand(100), "observations": np.random.randint(0, 2, 100)})
+    data = pd.DataFrame(
+        {"forecasts": np.random.rand(100), "observations": np.random.randint(0, 2, 100)}
+    )
     plot.plot(data, forecasts_col="forecasts", observations_col="observations")
     assert plot.ax is not None
 
