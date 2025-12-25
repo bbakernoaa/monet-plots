@@ -117,7 +117,9 @@ class SpatialPlot(BasePlot):
         return feature_mapping
 
     @staticmethod
-    def _get_style(style: bool | Dict[str, Any], defaults: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    def _get_style(
+        style: bool | Dict[str, Any], defaults: Dict[str, Any] | None = None
+    ) -> Dict[str, Any]:
         """Helper to derive a style dictionary for a feature.
 
         Parameters
@@ -137,6 +139,46 @@ class SpatialPlot(BasePlot):
         if style and defaults:
             return defaults
         return {}
+
+    def _draw_single_feature(
+        self,
+        key: str,
+        feature_or_method: Any,
+        style_arg: bool | Dict[str, Any],
+        resolution: str,
+    ) -> None:
+        """Draw a single cartopy feature on the axes.
+
+        Parameters
+        ----------
+        key : str
+            The name of the feature (e.g., 'states').
+        feature_or_method : Any
+            The cartopy feature object or a method like `ax.coastlines`.
+        style_arg : bool or Dict[str, Any]
+            The user-provided style for the feature.
+        resolution : str
+            The resolution to use for scalable features.
+        """
+        if not style_arg:  # Allows for `coastlines=False`
+            return
+
+        # Determine default styles based on the feature
+        defaults = {}
+        if key in ["coastlines", "counties", "states", "countries", "borders"]:
+            defaults = {"linewidth": 0.5, "edgecolor": "black"}
+        elif key == "gridlines":
+            defaults = {"draw_labels": True, "linestyle": "--", "color": "gray"}
+
+        style_kwargs = self._get_style(style_arg, defaults)
+
+        # Draw the feature
+        if callable(feature_or_method):  # ax.coastlines or ax.gridlines
+            if key == "coastlines":
+                style_kwargs["resolution"] = resolution
+            feature_or_method(**style_kwargs)
+        else:  # cfeature.Feature object
+            self.ax.add_feature(feature_or_method, **style_kwargs)
 
     def _draw_features(self, **kwargs: Any) -> Dict[str, Any]:
         """Draw cartopy features on the map axes using a data-driven approach.
@@ -168,25 +210,7 @@ class SpatialPlot(BasePlot):
         for key, feature_or_method in feature_registry.items():
             if key in combined_kwargs:
                 style_arg = combined_kwargs.pop(key)
-                if not style_arg:  # Allows for `coastlines=False`
-                    continue
-
-                # Determine default styles based on the feature
-                defaults = {}
-                if key in ["coastlines", "counties", "states", "countries", "borders"]:
-                    defaults = {"linewidth": 0.5, "edgecolor": "black"}
-                elif key == "gridlines":
-                    defaults = {"draw_labels": True, "linestyle": "--", "color": "gray"}
-
-                style_kwargs = self._get_style(style_arg, defaults)
-
-                # Draw the feature
-                if callable(feature_or_method):  # ax.coastlines or ax.gridlines
-                    if key == "coastlines":
-                        style_kwargs["resolution"] = resolution
-                    feature_or_method(**style_kwargs)
-                else:  # cfeature.Feature object
-                    self.ax.add_feature(feature_or_method, **style_kwargs)
+                self._draw_single_feature(key, feature_or_method, style_arg, resolution)
 
         # Handle extent after features are drawn
         if "extent" in combined_kwargs:
@@ -274,7 +298,9 @@ class SpatialPlot(BasePlot):
 
         # Create SpatialPlot instance
         all_kwargs = {**feature_kwargs, **kwargs}
-        spatial_plot = cls(projection=projection, resolution=resolution, figsize=figsize, **all_kwargs)
+        spatial_plot = cls(
+            projection=projection, resolution=resolution, figsize=figsize, **all_kwargs
+        )
 
         # Draw the features
         spatial_plot._draw_features()
