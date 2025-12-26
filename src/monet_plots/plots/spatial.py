@@ -1,6 +1,7 @@
 # src/monet_plots/plots/spatial.py
 from __future__ import annotations
 
+import warnings
 from typing import Any, Dict, List, Literal, Tuple, Union
 
 import cartopy.crs as ccrs
@@ -54,7 +55,13 @@ class SpatialPlot(BasePlot):
         ax: plt.Axes | None = None,
         **kwargs: Any,
     ):
-        """Initialize the spatial plot."""
+        """Initialize the spatial plot.
+
+        Note
+        ----
+        For interactive use, it is recommended to create a `SpatialPlot`
+        instance using the `SpatialPlot.create_map()` class method.
+        """
         # The 'projection' kwarg is passed to subplot creation via 'subplot_kw'.
         subplot_kw = kwargs.pop("subplot_kw", {})
         subplot_kw["projection"] = projection
@@ -180,17 +187,21 @@ class SpatialPlot(BasePlot):
         else:  # cfeature.Feature object
             self.ax.add_feature(feature_or_method, **style_kwargs)
 
-    def _draw_features(self, **kwargs: Any) -> Dict[str, Any]:
-        """Draw cartopy features on the map axes using a data-driven approach.
+    def add_features(self, **kwargs: Any) -> Dict[str, Any]:
+        """Add cartopy features to the map axes.
 
-        This method iterates through a feature registry, drawing features that
-        are requested either in the class constructor or in the plot call.
+        This method provides a flexible interface to add and style common
+        cartopy features like coastlines, states, and gridlines. Features can
+        be enabled with a boolean flag (e.g., `coastlines=True`) or styled
+        with a dictionary (e.g., `states=dict(linewidth=2)`).
 
         Parameters
         ----------
         **kwargs : Any
-            Keyword arguments for features to draw (e.g., `coastlines=True`).
-            These take precedence over `__init__` kwargs.
+            Keyword arguments controlling the features to be added. Common
+            options include `coastlines`, `states`, `countries`, `ocean`,
+            `land`, `lakes`, `rivers`, `borders`, and `gridlines`.
+            The `extent` keyword is also supported to set the map boundaries.
 
         Returns
         -------
@@ -221,6 +232,47 @@ class SpatialPlot(BasePlot):
         return combined_kwargs
 
     @classmethod
+    def create_map(
+        cls,
+        *,
+        projection: ccrs.Projection = ccrs.PlateCarree(),
+        fig_kw: Dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> "SpatialPlot":
+        """Create a SpatialPlot instance with a map projection.
+
+        This is the recommended factory method for creating a map. It
+        initializes the plot with a specified projection and then adds map
+        features based on keyword arguments.
+
+        Parameters
+        ----------
+        projection : ccrs.Projection, optional
+            The cartopy projection for the map, by default ccrs.PlateCarree().
+        fig_kw : Dict[str, Any], optional
+            Keyword arguments passed to `plt.figure()`, by default None.
+        **kwargs : Any
+            Keyword arguments for map features (e.g., `coastlines=True`,
+            `states=True`, `extent=[-125, -70, 25, 50]`).
+
+        Returns
+        -------
+        SpatialPlot
+            An instance of the SpatialPlot class with the map drawn.
+
+        Examples
+        --------
+        >>> import matplotlib.pyplot as plt
+        >>> from monet_plots.plots.spatial import SpatialPlot
+        >>> plot = SpatialPlot.create_map(states=True, extent=[-125, -70, 25, 50])
+        >>> plt.show()
+        """
+        fig_kw = fig_kw or {}
+        plot = cls(projection=projection, **fig_kw)
+        plot.add_features(**kwargs)
+        return plot
+
+    @classmethod
     def draw_map(
         cls,
         *,
@@ -237,11 +289,11 @@ class SpatialPlot(BasePlot):
         return_fig: bool = False,
         **kwargs: Any,
     ) -> plt.Axes | Tuple[plt.Figure, plt.Axes]:
-        """Draw a map with Cartopy (legacy compatibility method).
+        """Draw a map with Cartopy.
 
-        Creates a map with configurable features. This method is maintained for
-        compatibility with the legacy `draw_map` function. The recommended
-        approach is to instantiate `SpatialPlot` directly.
+        .. deprecated:: TBD
+           Use :meth:`create_map` instead. This method is maintained for
+           backward compatibility and will be removed in a future version.
 
         Parameters
         ----------
@@ -281,12 +333,17 @@ class SpatialPlot(BasePlot):
         --------
         >>> import matplotlib.pyplot as plt
         >>> from monet_plots.plots.spatial import SpatialPlot
-        >>> ax = SpatialPlot.draw_map(states=True, extent=[-125, -70, 25, 50])
+        >>> plot = SpatialPlot.create_map(states=True, extent=[-125, -70, 25, 50])
         >>> plt.show()
         """
-        projection = crs or ccrs.PlateCarree()
+        warnings.warn(
+            "`draw_map` is deprecated and will be removed in a future version. "
+            "Please use `SpatialPlot.create_map()` instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
 
-        # Prepare feature kwargs
+        # Prepare feature kwargs for the new factory
         feature_kwargs = {
             "natural_earth": natural_earth,
             "coastlines": {"linewidth": linewidth} if coastlines else False,
@@ -294,21 +351,23 @@ class SpatialPlot(BasePlot):
             "counties": {"linewidth": linewidth} if counties else False,
             "countries": {"linewidth": linewidth} if countries else False,
             "extent": extent,
+            "resolution": resolution,
         }
 
-        # Create SpatialPlot instance
+        # Create the plot using the new factory
         all_kwargs = {**feature_kwargs, **kwargs}
-        spatial_plot = cls(
-            projection=projection, resolution=resolution, figsize=figsize, **all_kwargs
+        fig_kw = {"figsize": figsize} if "figsize" in all_kwargs else {}
+        if "figsize" in all_kwargs:
+            del all_kwargs["figsize"]
+
+        plot = cls.create_map(
+            projection=crs or ccrs.PlateCarree(), fig_kw=fig_kw, **all_kwargs
         )
 
-        # Draw the features
-        spatial_plot._draw_features()
-
         if return_fig:
-            return spatial_plot.fig, spatial_plot.ax
+            return plot.fig, plot.ax
         else:
-            return spatial_plot.ax
+            return plot.ax
 
 
 class SpatialTrack(SpatialPlot):
@@ -374,7 +433,7 @@ class SpatialTrack(SpatialPlot):
         >>> sc = track_plot.plot(cmap='viridis')
         >>> plt.show()
         """
-        plot_kwargs = self._draw_features(**kwargs)
+        plot_kwargs = self.add_features(**kwargs)
         plot_kwargs.setdefault("transform", ccrs.PlateCarree())
 
         sc = self.ax.scatter(self.longitude, self.latitude, c=self.data, **plot_kwargs)

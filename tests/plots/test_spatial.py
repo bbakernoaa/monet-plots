@@ -69,8 +69,8 @@ def test_spatial_plot_draw_features_data_driven(clear_figures):
     initial_collections = len(plot.ax.collections)
 
     # 2. The Proof (Validation)
-    # The _draw_features method is called to render the map elements.
-    plot._draw_features()
+    # The add_features method is called to render the map elements.
+    plot.add_features()
     final_collections = len(plot.ax.collections)
 
     # Assert that the number of collections on the axes has increased,
@@ -94,7 +94,7 @@ def test_spatial_plot_feature_styling(clear_figures):
 
     # 2. The Proof (Validation)
     # Draw the features to apply the styling.
-    plot._draw_features()
+    plot.add_features()
 
     # The most reliable way to check is to inspect the LineCollection
     # created by the feature. We look for one with our custom style.
@@ -133,3 +133,26 @@ def test_spatial_plot_draw_map_docstring_example(clear_figures):
     # 3. The UI (Visualization)
     # The plot is implicitly created and would be shown with plt.show()
     # No need to save it in a test.
+
+
+def test_spatialplot_create_map(clear_figures):
+    """Test the SpatialPlot.create_map factory method.
+
+    This test ensures that the new, recommended factory method correctly
+    creates a SpatialPlot instance and adds the specified features.
+    """
+    # 1. The Logic (Implementation)
+    # Use the factory to create a plot with states and an extent.
+    plot = SpatialPlot.create_map(states=True, extent=[-125, -70, 25, 50])
+
+    # 2. The Proof (Validation)
+    # Assert that the returned object is a SpatialPlot instance.
+    assert isinstance(plot, SpatialPlot)
+
+    # Assert that the underlying axes is a GeoAxes object.
+    from cartopy.mpl.geoaxes import GeoAxes
+    assert isinstance(plot.ax, GeoAxes)
+
+    # Assert that the 'states' feature was added.
+    # The number of collections should be greater than zero.
+    assert len(plot.ax.collections) > 0
