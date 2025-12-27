@@ -371,50 +371,86 @@ class SpatialPlot(BasePlot):
 
 
 class SpatialTrack(SpatialPlot):
-    """Plot a trajectory on a map, with points colored by a variable.
+    """Plot a trajectory from an xarray.DataArray on a map.
 
-    This class is useful for visualizing paths, such as flight trajectories
-    or pollutant tracks, where a variable (e.g., altitude, concentration)
-    is plotted along the path.
+    This class provides an xarray-native interface for visualizing paths,
+    such as flight trajectories or pollutant tracks, where a variable
+    (e.g., altitude, concentration) is plotted along the path.
 
     Parameters
     ----------
-    longitude : DataHint
-        Longitude values for the track points. Can be a pandas Series,
-        xarray DataArray, or numpy array.
-    latitude : DataHint
-        Latitude values for the track points.
-    data : DataHint
-        Data values used for coloring the track points.
+    data : xr.DataArray
+        An xarray DataArray containing the trajectory data. The DataArray
+        must have coordinates corresponding to longitude and latitude.
+    lon_coord : str, optional
+        The name of the longitude coordinate in the DataArray, by default "lon".
+    lat_coord : str, optional
+        The name of the latitude coordinate in the DataArray, by default "lat".
     **kwargs : Any
-        Additional keyword arguments passed to `SpatialPlot`.
+        Additional keyword arguments passed to `SpatialPlot` (e.g., `states=True`).
     """
 
     def __init__(
         self,
-        longitude: DataHint,
-        latitude: DataHint,
-        data: DataHint,
+        data: xr.DataArray,
+        *,
+        lon_coord: str = "lon",
+        lat_coord: str = "lat",
         **kwargs: Any,
     ):
-        """Initialize the spatial track plot."""
+        """Initialize the spatial track plot.
+
+        This constructor validates the input DataArray to ensure it contains
+        the required coordinate variables for plotting. It also updates the
+        data's provenance by appending to its history attribute.
+
+        Parameters
+        ----------
+        data : xr.DataArray
+            The dataset for the plot.
+        lon_coord : str, optional
+            Name of the longitude coordinate.
+        lat_coord : str, optional
+            Name of the latitude coordinate.
+        **kwargs : Any
+            Additional keyword arguments for `SpatialPlot`.
+
+        Raises
+        ------
+        TypeError
+            If the input `data` is not an `xarray.DataArray`.
+        ValueError
+            If the specified longitude or latitude coordinates are not found.
+        """
         super().__init__(**kwargs)
-        self.longitude = longitude
-        self.latitude = latitude
+        if not isinstance(data, xr.DataArray):
+            raise TypeError("Input 'data' must be an xarray.DataArray.")
+        if lon_coord not in data.coords:
+            raise ValueError(f"Longitude coordinate '{lon_coord}' not found in DataArray.")
+        if lat_coord not in data.coords:
+            raise ValueError(f"Latitude coordinate '{lat_coord}' not found in DataArray.")
+
         self.data = data
+        self.lon_coord = lon_coord
+        self.lat_coord = lat_coord
+
+        # Scientific Hygiene: Update history attribute for provenance
+        history = self.data.attrs.get("history", "")
+        self.data.attrs["history"] = f"Plotted with monet-plots.SpatialTrack; {history}"
 
     def plot(self, **kwargs: Any) -> plt.Artist:
         """Plot the trajectory on the map.
 
         The track is rendered as a scatter plot, where each point is colored
-        according to the `data` values provided during initialization.
+        according to the `data` values. Keyword arguments are passed to both
+        the feature-adding methods and `ax.scatter`.
 
         Parameters
         ----------
         **kwargs : Any
-            Keyword arguments passed to `matplotlib.pyplot.scatter`.
+            Keyword arguments passed to `add_features` and `matplotlib.pyplot.scatter`.
             A `transform` keyword (e.g., `transform=ccrs.PlateCarree()`)
-            is highly recommended.
+            is highly recommended for geospatial accuracy.
 
         Returns
         -------
@@ -424,17 +460,38 @@ class SpatialTrack(SpatialPlot):
         Examples
         --------
         >>> import numpy as np
+        >>> import xarray as xr
         >>> import matplotlib.pyplot as plt
         >>> from monet_plots.plots.spatial import SpatialTrack
+        >>>
+        >>> # 1. Create a sample xarray.DataArray
+        >>> time = np.arange(20)
         >>> lon = np.linspace(-120, -80, 20)
         >>> lat = np.linspace(30, 45, 20)
-        >>> data = np.linspace(0, 100, 20)
-        >>> track_plot = SpatialTrack(lon, lat, data, states=True)
-        >>> sc = track_plot.plot(cmap='viridis')
+        >>> concentration = np.linspace(0, 100, 20)
+        >>> da = xr.DataArray(
+        ...     concentration,
+        ...     dims=['time'],
+        ...     coords={
+        ...         'time': time,
+        ...         'lon': ('time', lon),
+        ...         'lat': ('time', lat)
+        ...     },
+        ...     name='O3_concentration',
+        ...     attrs={'units': 'ppb'}
+        ... )
+        >>>
+        >>> # 2. Create and render the plot
+        >>> track_plot = SpatialTrack(da, states=True, counties=True)
+        >>> sc = track_plot.plot(cmap='viridis', transform=ccrs.PlateCarree())
+        >>> plt.colorbar(sc, label="O3 Concentration (ppb)")
         >>> plt.show()
         """
         plot_kwargs = self.add_features(**kwargs)
         plot_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        sc = self.ax.scatter(self.longitude, self.latitude, c=self.data, **plot_kwargs)
+        longitude = self.data[self.lon_coord]
+        latitude = self.data[self.lat_coord]
+
+        sc = self.ax.scatter(longitude, latitude, c=self.data.values, **plot_kwargs)
         return sc
