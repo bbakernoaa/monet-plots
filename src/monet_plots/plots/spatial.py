@@ -426,9 +426,13 @@ class SpatialTrack(SpatialPlot):
         if not isinstance(data, xr.DataArray):
             raise TypeError("Input 'data' must be an xarray.DataArray.")
         if lon_coord not in data.coords:
-            raise ValueError(f"Longitude coordinate '{lon_coord}' not found in DataArray.")
+            raise ValueError(
+                f"Longitude coordinate '{lon_coord}' not found in DataArray."
+            )
         if lat_coord not in data.coords:
-            raise ValueError(f"Latitude coordinate '{lat_coord}' not found in DataArray.")
+            raise ValueError(
+                f"Latitude coordinate '{lat_coord}' not found in DataArray."
+            )
 
         self.data = data
         self.lon_coord = lon_coord

@@ -5,12 +5,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from monet_plots.plots.spatial import SpatialPlot, SpatialTrack
 
+
 @pytest.fixture
 def clear_figures():
     """Clear all existing figures before and after a test."""
     plt.close("all")
     yield
     plt.close("all")
+
 
 @pytest.fixture
 def sample_da():
@@ -24,6 +26,7 @@ def sample_da():
         },
     )
 
+
 @pytest.fixture
 def sample_dataarray():
     """Create a sample xarray.DataArray for testing."""
@@ -33,16 +36,13 @@ def sample_dataarray():
     concentration = np.linspace(0, 100, 20)
     da = xr.DataArray(
         concentration,
-        dims=['time'],
-        coords={
-            'time': time,
-            'lon': ('time', lon),
-            'lat': ('time', lat)
-        },
-        name='O3_concentration',
-        attrs={'units': 'ppb'}
+        dims=["time"],
+        coords={"time": time, "lon": ("time", lon), "lat": ("time", lat)},
+        name="O3_concentration",
+        attrs={"units": "ppb"},
     )
     return da
+
 
 def test_spatial_plot_init(clear_figures, sample_da):
     """Test SpatialPlot initialization."""
@@ -92,6 +92,7 @@ def test_spatial_plot_feature_styling(clear_figures):
 def test_spatial_plot_draw_map_docstring_example(clear_figures):
     """Test the example from the SpatialPlot.draw_map docstring."""
     from cartopy.mpl.geoaxes import GeoAxes
+
     ax = SpatialPlot.draw_map(states=True, extent=[-125, -70, 25, 50])
     assert isinstance(ax, GeoAxes)
     assert len(ax.collections) > 0
@@ -102,6 +103,7 @@ def test_spatialplot_create_map(clear_figures):
     plot = SpatialPlot.create_map(states=True, extent=[-125, -70, 25, 50])
     assert isinstance(plot, SpatialPlot)
     from cartopy.mpl.geoaxes import GeoAxes
+
     assert isinstance(plot.ax, GeoAxes)
     assert len(plot.ax.collections) > 0
 
@@ -114,28 +116,36 @@ def test_spatialtrack_init_success(sample_dataarray):
     assert track_plot.lat_coord == "lat"
     assert "history" in track_plot.data.attrs
 
+
 def test_spatialtrack_init_invalid_data_type():
     """Test that SpatialTrack raises TypeError for invalid data types."""
     with pytest.raises(TypeError, match="Input 'data' must be an xarray.DataArray."):
         SpatialTrack(np.zeros(5))
 
+
 def test_spatialtrack_init_missing_lon_coord(sample_dataarray):
     """Test that SpatialTrack raises ValueError for missing longitude coordinate."""
     data_missing_lon = sample_dataarray.drop_vars("lon")
-    with pytest.raises(ValueError, match="Longitude coordinate 'lon' not found in DataArray."):
+    with pytest.raises(
+        ValueError, match="Longitude coordinate 'lon' not found in DataArray."
+    ):
         SpatialTrack(data_missing_lon)
+
 
 def test_spatialtrack_init_missing_lat_coord(sample_dataarray):
     """Test that SpatialTrack raises ValueError for missing latitude coordinate."""
     data_missing_lat = sample_dataarray.drop_vars("lat")
-    with pytest.raises(ValueError, match="Latitude coordinate 'lat' not found in DataArray."):
+    with pytest.raises(
+        ValueError, match="Latitude coordinate 'lat' not found in DataArray."
+    ):
         SpatialTrack(data_missing_lat)
+
 
 def test_spatialtrack_plot_runs(sample_dataarray):
     """Test that the plot method runs without errors."""
     track_plot = SpatialTrack(sample_dataarray, states=True)
     try:
-        sc = track_plot.plot(cmap='viridis')
+        sc = track_plot.plot(cmap="viridis")
         assert sc is not None
         plt.close(track_plot.fig)
     except Exception as e:
