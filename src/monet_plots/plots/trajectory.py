@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 import matplotlib.pyplot as plt
+import xarray as xr
 
 from .base import BasePlot
 from .spatial import SpatialTrack
@@ -17,8 +18,8 @@ class TrajectoryPlot(BasePlot):
         longitude: t.Any,
         latitude: t.Any,
         data: t.Any,
-        time: t.Any,
-        ts_data: t.Any,
+        df: t.Any,
+        ts_variable: str,
         *args: t.Any,
         **kwargs: t.Any,
     ) -> None:
@@ -28,8 +29,8 @@ class TrajectoryPlot(BasePlot):
             longitude: Longitude values for the spatial track.
             latitude: Latitude values for the spatial track.
             data: Data to use for coloring the track.
-            time: Time values for the timeseries.
-            ts_data: Data for the timeseries.
+            df: pandas DataFrame for the timeseries.
+            ts_variable: Name of the variable to plot in the timeseries.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
         """
@@ -37,8 +38,9 @@ class TrajectoryPlot(BasePlot):
         self.longitude = longitude
         self.latitude = latitude
         self.data = data
-        self.time = time
-        self.ts_data = ts_data
+        self.df = df
+        self.ts_variable = ts_variable
+        self.time = df.index
 
     def plot(self, **kwargs: t.Any) -> None:
         """
@@ -53,12 +55,25 @@ class TrajectoryPlot(BasePlot):
 
         # Spatial track plot
         ax0 = self.fig.add_subplot(gs[0, 0], projection=kwargs.get("projection"))
-        spatial_track = SpatialTrack(self.longitude, self.latitude, self.data, ax=ax0)
+
+        # Create an xarray.DataArray for the spatial track
+        da = xr.DataArray(
+            self.data,
+            dims=['time'],
+            coords={
+                'time': self.time,
+                'lon': ('time', self.longitude),
+                'lat': ('time', self.latitude)
+            },
+            name='track_data'
+        )
+
+        spatial_track = SpatialTrack(da, ax=ax0)
         spatial_track.plot(**kwargs.get("spatial_track_kwargs", {}))
 
         # Timeseries plot
         ax1 = self.fig.add_subplot(gs[1, 0])
-        timeseries = TimeSeriesPlot(df=self.time, y=self.ts_data, ax=ax1)
+        timeseries = TimeSeriesPlot(df=self.df, y=self.ts_variable, ax=ax1)
         timeseries.plot(**kwargs.get("timeseries_kwargs", {}))
 
         self.ax = [ax0, ax1]

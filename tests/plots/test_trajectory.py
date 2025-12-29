@@ -10,7 +10,6 @@ def test_TrajectoryPlot():
     data = np.random.rand(10)
     time = pd.to_datetime(np.arange(10), unit="D")
     ts_data = np.random.rand(10)
-    df = pd.DataFrame({"time": time, "value": ts_data})
-    df.variable = "value"
+    df = pd.DataFrame({"value": ts_data}, index=time)
     plot = TrajectoryPlot(lon, lat, data, df, "value")
     plot.plot()

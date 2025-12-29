@@ -38,13 +38,29 @@ def test_spatial_track_docstring_example(clear_figures):
     """
     # --- The Logic (from docstring example) ---
     import numpy as np
+    import xarray as xr
     from monet_plots.plots.spatial import SpatialTrack
     from matplotlib.collections import PathCollection
 
+    # 1. Create a sample xarray.DataArray
+    time = np.arange(20)
     lon = np.linspace(-120, -80, 20)
     lat = np.linspace(30, 45, 20)
-    data = np.linspace(0, 100, 20)
-    track_plot = SpatialTrack(lon, lat, data, states=True)
+    concentration = np.linspace(0, 100, 20)
+    da = xr.DataArray(
+        concentration,
+        dims=['time'],
+        coords={
+            'time': time,
+            'lon': ('time', lon),
+            'lat': ('time', lat)
+        },
+        name='O3_concentration',
+        attrs={'units': 'ppb'}
+    )
+
+    # 2. Create and render the plot
+    track_plot = SpatialTrack(da, states=True)
     sc = track_plot.plot(cmap="viridis")
 
     # --- The Proof (Validation) ---

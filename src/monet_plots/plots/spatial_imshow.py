@@ -41,7 +41,7 @@ class SpatialImshow(SpatialPlot):
 
     def plot(self, **kwargs):
         """Generate the spatial imshow plot."""
-        imshow_kwargs = self._draw_features(**kwargs)
+        imshow_kwargs = self.add_features(**kwargs)
         imshow_kwargs.update(self.plotargs)
 
         lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
