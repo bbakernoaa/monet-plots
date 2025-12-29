@@ -49,14 +49,10 @@ def test_spatial_track_docstring_example(clear_figures):
     concentration = np.linspace(0, 100, 20)
     da = xr.DataArray(
         concentration,
-        dims=['time'],
-        coords={
-            'time': time,
-            'lon': ('time', lon),
-            'lat': ('time', lat)
-        },
-        name='O3_concentration',
-        attrs={'units': 'ppb'}
+        dims=["time"],
+        coords={"time": time, "lon": ("time", lon), "lat": ("time", lat)},
+        name="O3_concentration",
+        attrs={"units": "ppb"},
     )
 
     # 2. Create and render the plot

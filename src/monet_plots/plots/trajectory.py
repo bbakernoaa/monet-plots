@@ -59,13 +59,13 @@ class TrajectoryPlot(BasePlot):
         # Create an xarray.DataArray for the spatial track
         da = xr.DataArray(
             self.data,
-            dims=['time'],
+            dims=["time"],
             coords={
-                'time': self.time,
-                'lon': ('time', self.longitude),
-                'lat': ('time', self.latitude)
+                "time": self.time,
+                "lon": ("time", self.longitude),
+                "lat": ("time", self.latitude),
             },
-            name='track_data'
+            name="track_data",
         )
 
         spatial_track = SpatialTrack(da, ax=ax0)
