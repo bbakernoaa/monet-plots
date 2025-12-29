@@ -30,7 +30,7 @@ class WindBarbsPlot(SpatialPlot):
 
     def plot(self, **kwargs):
         """Generate the wind barbs plot."""
-        barb_kwargs = self._draw_features(**kwargs)
+        barb_kwargs = self.add_features(**kwargs)
         barb_kwargs.setdefault("transform", ccrs.PlateCarree())
 
         lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()

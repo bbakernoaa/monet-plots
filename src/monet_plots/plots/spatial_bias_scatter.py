@@ -59,7 +59,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
         """Generate the spatial bias scatter plot."""
         from numpy import around
 
-        scatter_kwargs = self._draw_features(**kwargs)
+        scatter_kwargs = self.add_features(**kwargs)
 
         # Ensure we are working with a clean copy with no NaNs in relevant columns
         new = (

@@ -46,7 +46,7 @@ class SpatialContourPlot(SpatialPlot):
     def plot(self, **kwargs):
         """Generate the spatial contour plot."""
         # Draw map features and get remaining kwargs for contourf
-        plot_kwargs = self._draw_features(**kwargs)
+        plot_kwargs = self.add_features(**kwargs)
 
         lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
         lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()

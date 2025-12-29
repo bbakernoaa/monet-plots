@@ -62,10 +62,20 @@ class TimeSeriesPlot(BasePlot):
 
     def _plot_dataframe(self, **kwargs):
         """Generate the timeseries plot from pandas DataFrame (original implementation)."""
-        self.df.index = self.df[self.x]
-        df = self.df.drop(columns=self.x).reset_index()
-        m = df.groupby("time").mean(numeric_only=True)
-        e = df.groupby("time").std(numeric_only=True)
+        df = self.df.copy()
+        time_col = self.x
+
+        if time_col not in df.columns:
+            # If the time identifier is not in columns, assume it is the index.
+            # To use groupby, we need it as a column.
+            if df.index.name != time_col:
+                # If the index is unnamed, it will be named 'index' after reset.
+                # So we name it to what we expect.
+                df.index.name = time_col
+            df = df.reset_index()
+
+        m = df.groupby(time_col).mean(numeric_only=True)
+        e = df.groupby(time_col).std(numeric_only=True)
         variable = self.y
         if df.columns.isin(["units"]).max():
             unit = df.units
@@ -81,8 +91,11 @@ class TimeSeriesPlot(BasePlot):
             m.rename(columns={self.y: self.label}, inplace=True)
         else:
             self.label = self.y
+
+        # The index of m is now the time_col
         m[self.label].plot(ax=self.ax, **self.plotargs)
-        self.ax.fill_between(m[self.label].index, lower, upper, **self.fillargs)
+        self.ax.fill_between(m.index, lower, upper, **self.fillargs)
+
         if self.ylabel is None:
             self.ax.set_ylabel(variable + " (" + unit + ")")
         else:
