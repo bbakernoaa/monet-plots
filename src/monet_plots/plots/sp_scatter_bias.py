@@ -1,11 +1,12 @@
-from scipy.stats import scoreatpercentile as score
-from .base import BasePlot
-from ..plot_utils import _set_outline_patch_alpha, to_dataframe
-from .spatial import SpatialPlot
 from typing import Any
 
+from scipy.stats import scoreatpercentile as score
 
-class SpScatterBiasPlot(BasePlot):
+from ..plot_utils import _set_outline_patch_alpha, to_dataframe
+from .spatial import SpatialPlot
+
+
+class SpScatterBiasPlot(SpatialPlot):
     """Create a spatial scatter plot showing the bias (difference) between two columns in a DataFrame.
 
     The point size is scaled by the magnitude of the difference between col2 and col1,
@@ -18,47 +19,66 @@ class SpScatterBiasPlot(BasePlot):
         df: Any,
         col1: str,
         col2: str,
+        *,
         outline: bool = False,
         tight: bool = True,
         global_map: bool = True,
-        map_kwargs: dict = {},
-        cbar_kwargs: dict = {},
-        val_max: float = None,
-        val_min: float = None,
-        *args,
-        **kwargs,
+        cbar_kwargs: dict | None = None,
+        val_max: float | None = None,
+        val_min: float | None = None,
+        **kwargs: Any,
     ):
-        """
-        Initialize the plot with data and map projection.
+        """Initialize the plot with data and map features.
 
-        Args:
-            df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): DataFrame with latitude, longitude, and data columns.
-            col1 (str): Name of the first column (reference value).
-            col2 (str): Name of the second column (comparison value).
-            outline (bool): Whether to show the map outline.
-            tight (bool): Whether to apply tight_layout.
-            global_map (bool): Whether to set global map boundaries.
-            map_kwargs (dict): Keyword arguments for draw_map.
-            cbar_kwargs (dict): Keyword arguments for colorbar customization.
-            val_max (float, optional): Maximum value for color scaling.
-            val_min (float, optional): Minimum value for color scaling.
+        Parameters
+        ----------
+        df : pd.DataFrame, np.ndarray, xr.Dataset, or xr.DataArray
+            The input data containing latitude, longitude, and data columns.
+        col1 : str
+            Name of the first column (reference value).
+        col2 : str
+            Name of the second column (comparison value).
+        outline : bool, optional
+            Whether to show the map outline, by default False.
+        tight : bool, optional
+            Whether to apply `tight_layout`, by default True.
+        global_map : bool, optional
+            Whether to set global map boundaries, by default True.
+        cbar_kwargs : dict, optional
+            Keyword arguments for colorbar customization.
+        val_max : float, optional
+            Maximum value for color scaling.
+        val_min : float, optional
+            Minimum value for color scaling.
+        **kwargs : Any
+            Additional keyword arguments passed to `SpatialPlot` for map
+            creation (e.g., `projection`, `extent`, `states=True`).
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.df = to_dataframe(df)
         self.col1 = col1
         self.col2 = col2
         self.outline = outline
         self.tight = tight
         self.global_map = global_map
-        self.map_kwargs = map_kwargs
-        self.cbar_kwargs = cbar_kwargs
+        self.cbar_kwargs = cbar_kwargs or {}
         self.val_max = val_max
         self.val_min = val_min
 
-    def plot(self, **kwargs):
-        """Generate the spatial scatter bias plot."""
-        if self.ax is None:
-            self.ax = SpatialPlot.draw_map(**self.map_kwargs)
+    def plot(self, **kwargs: Any):
+        """Generate the spatial scatter bias plot.
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Keyword arguments passed to `add_features` and `ax.scatter`.
+
+        Returns
+        -------
+        plt.Axes
+            The matplotlib Axes object containing the plot.
+        """
+        plot_kwargs = self.add_features(**kwargs)
 
         dfnew = (
             self.df[["latitude", "longitude", self.col1, self.col2]]
@@ -73,16 +93,18 @@ class SpScatterBiasPlot(BasePlot):
         dfnew["sp_diff_size"] = dfnew["sp_diff"].abs() / top * 100.0
         dfnew.loc[dfnew["sp_diff_size"] > 300, "sp_diff_size"] = 300.0
 
+        # Ensure colorbar is managed by pandas/matplotlib
+        plot_kwargs.setdefault("colorbar", True)
+
         dfnew.plot.scatter(
             x="longitude",
             y="latitude",
-            c=dfnew["sp_diff"],
-            s=dfnew["sp_diff_size"],
+            c="sp_diff",
+            s="sp_diff_size",
             vmin=-1 * top,
             vmax=top,
             ax=self.ax,
-            colorbar=True,
-            **kwargs,
+            **plot_kwargs,
         )
 
         if not self.outline:
@@ -91,8 +113,7 @@ class SpScatterBiasPlot(BasePlot):
             if isinstance(self.ax, GeoAxes):
                 _set_outline_patch_alpha(self.ax)
         if self.global_map:
-            self.ax.set_xlim([-180, 180])
-            self.ax.set_ylim([-90, 90])
+            self.ax.set_global()
         if self.tight:
             self.fig.tight_layout(pad=0)
 

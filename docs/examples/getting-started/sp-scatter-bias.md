@@ -57,7 +57,11 @@ plot = SpScatterBiasPlot(
     col1='reference_value',
     col2='comparison_value',
     figsize=(10, 8),
-    map_kwargs={'projection': ccrs.PlateCarree(), 'extent': [-125, -65, 15, 55]} # Focus on North America
+    projection=ccrs.PlateCarree(),
+    extent=[-125, -65, 15, 55], # Focus on North America
+    coastlines=True,
+    countries=True,
+    states=True
 )
 plot.plot(
     cmap='RdBu_r', # Red-Blue colormap, reversed for positive=red, negative=blue
@@ -68,7 +72,6 @@ plot.plot(
 
 # 3. Add titles and labels
 plot.ax.set_title("Spatial Bias Plot: Comparison vs. Reference")
-# Map elements (coastlines, borders) are added by default via draw_map
 
 plt.tight_layout()
 plt.show()
@@ -80,10 +83,10 @@ A geographical map of North America will be displayed. Scatter points will be pl
 
 ### Key Concepts
 
--   **`SpScatterBiasPlot`**: The class used to generate spatial scatter bias plots.
+-   **`SpScatterBiasPlot`**: The class used to generate spatial scatter bias plots, which inherits from `SpatialPlot`.
 -   **`col1`**: The name of the column containing the reference values.
 -   **`col2`**: The name of the column containing the comparison values.
--   **`map_kwargs`**: A dictionary to pass arguments to `monet_plots.mapgen.draw_map`, allowing customization of the map projection and extent.
+-   **Map Customization**: Map features like `projection`, `extent`, `states`, `coastlines`, etc., are passed directly to the `SpScatterBiasPlot` constructor.
 -   **Point Size and Color**: Point size visually emphasizes the magnitude of the bias, while color indicates its sign (over- or under-prediction).
 
 ## Example 2: Customizing Map and Plot Appearance
@@ -95,7 +98,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 from monet_plots.plots.sp_scatter_bias import SpScatterBiasPlot
 
 # 1. Prepare sample data (same as Example 1)
@@ -119,11 +121,12 @@ plot = SpScatterBiasPlot(
     col2='comparison_value',
     figsize=(12, 10),
     # Custom map projection and features
-    map_kwargs={
-        'projection': ccrs.AlbersEqualArea(central_longitude=-98, central_latitude=38),
-        'extent': [-125, -65, 15, 55],
-        'features': [cfeature.STATES, cfeature.BORDERS, cfeature.COASTLINE, cfeature.LAKES]
-    },
+    projection=ccrs.AlbersEqualArea(central_longitude=-98, central_latitude=38),
+    extent=[-125, -65, 15, 55],
+    states={"linewidth": 0.5, "edgecolor": "black"},
+    countries={"linewidth": 0.75, "edgecolor": "black"},
+    coastlines=True,
+    lakes=True,
     val_min=-2, # Set explicit min/max for color scaling
     val_max=2
 )
@@ -136,7 +139,6 @@ plot.plot(
 
 # 3. Add titles and labels
 plot.ax.set_title("Customized Spatial Bias Plot (Albers Equal Area)", fontsize=16)
-# Map elements (coastlines, borders) are added by default via draw_map
 
 plt.tight_layout()
 plt.show()
@@ -148,6 +150,6 @@ A spatial scatter bias plot similar to Example 1, but with a different map proje
 
 ### Key Concepts
 
--   **`map_kwargs['projection']`**: Allows specifying any `cartopy.crs` projection for the map.
--   **`map_kwargs['features']`**: A list of `cartopy.feature` objects to add to the map (e.g., `cfeature.STATES`, `cfeature.LAKES`).
+-   **Direct Map Arguments**: `projection`, `extent`, and feature keywords (e.g., `states`, `lakes`) are passed directly to the constructor.
+-   **Styling Features**: Map features can be styled by passing a dictionary of keyword arguments (e.g., `states=dict(linewidth=2)`).
 -   **`val_min` and `val_max`**: Explicitly set the minimum and maximum values for the color scale, which can be useful for comparing multiple plots with consistent color ranges.

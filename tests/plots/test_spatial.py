@@ -89,15 +89,6 @@ def test_spatial_plot_feature_styling(clear_figures):
     assert found_match, "Failed to find a feature with the specified custom style."
 
 
-def test_spatial_plot_draw_map_docstring_example(clear_figures):
-    """Test the example from the SpatialPlot.draw_map docstring."""
-    from cartopy.mpl.geoaxes import GeoAxes
-
-    ax = SpatialPlot.draw_map(states=True, extent=[-125, -70, 25, 50])
-    assert isinstance(ax, GeoAxes)
-    assert len(ax.collections) > 0
-
-
 def test_spatialplot_create_map(clear_figures):
     """Test the SpatialPlot.create_map factory method."""
     plot = SpatialPlot.create_map(states=True, extent=[-125, -70, 25, 50])
