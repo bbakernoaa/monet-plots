@@ -43,7 +43,9 @@ def test_sp_scatter_bias_plot_with_map_features(clear_figures, sample_data):
     plot = SpScatterBiasPlot(df=sample_data, col1="col1", col2="col2", states=True)
     ax = plot.plot()
     assert ax is not None
-    assert len(ax.collections) > 1, "Expected more than one collection when adding states"
+    assert len(ax.collections) > 1, (
+        "Expected more than one collection when adding states"
+    )
 
 
 def test_sp_scatter_bias_plot_custom_projection(clear_figures, sample_data):
