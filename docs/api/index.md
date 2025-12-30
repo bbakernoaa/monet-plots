@@ -8,8 +8,6 @@ This is the API reference for MONET Plots.
 
 ::: monet_plots.colorbars
 
-::: monet_plots.mapgen
-
 ::: monet_plots.plot_utils
 
 ::: monet_plots.plots
