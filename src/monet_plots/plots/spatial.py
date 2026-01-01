@@ -394,39 +394,74 @@ class SpatialTrack(SpatialPlot):
 
     def __init__(
         self,
-        longitude,
-        latitude=None,
-        data=None,
-        *args,
+        data: xr.DataArray,
+        *,
         lon_coord: str = "lon",
         lat_coord: str = "lat",
-        **kwargs,
+        **kwargs: Any,
     ):
+        """Initialize the SpatialTrack plot.
+
+        Parameters
+        ----------
+        data : xr.DataArray
+            An xarray DataArray containing the trajectory data. It must have
+            coordinates for longitude and latitude.
+        lon_coord : str, optional
+            The name of the longitude coordinate in `data`, by default "lon".
+        lat_coord : str, optional
+            The name of the latitude coordinate in `data`, by default "lat".
+        **kwargs : Any
+            Additional keyword arguments passed to the `SpatialPlot` base class
+            (e.g., `projection`, `states=True`).
+
+        Raises
+        ------
+        TypeError
+            If the input `data` is not an `xarray.DataArray`.
+        ValueError
+            If the specified `lon_coord` or `lat_coord` are not found in the
+            DataArray's coordinates.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> import xarray as xr
+        >>>
+        >>> # Create a sample xarray.DataArray for the trajectory
+        >>> time_dim = np.arange(10)
+        >>> lon_path = np.linspace(-100, -90, 10)
+        >>> lat_path = np.linspace(35, 45, 10)
+        >>> concentration = np.sin(np.linspace(0, np.pi, 10)) * 100
+        >>>
+        >>> da = xr.DataArray(
+        ...     concentration,
+        ...     dims=['time'],
+        ...     coords={
+        ...         'time': time_dim,
+        ...         'lon': ('time', lon_path),
+        ...         'lat': ('time', lat_path)
+        ...     },
+        ...     name='pollutant_concentration',
+        ...     attrs={'units': 'ug/m3'}
+        ... )
+        >>>
+        >>> # `da` can now be passed to SpatialTrack
+        >>> # track_plot = SpatialTrack(da)
         """
-        Accepts (lon, lat, data) arrays or a single xarray.DataArray for compatibility with tests and other spatial plots.
-        """
-        import xarray as xr
-        super().__init__(*args, **kwargs)
-        if latitude is None and data is None:
-            # xarray.DataArray usage
-            if not isinstance(longitude, xr.DataArray):
-                raise TypeError("Input 'data' must be an xarray.DataArray.")
-            if lon_coord not in longitude.coords:
-                raise ValueError(f"Longitude coordinate '{lon_coord}' not found in DataArray.")
-            if lat_coord not in longitude.coords:
-                raise ValueError(f"Latitude coordinate '{lat_coord}' not found in DataArray.")
-            self.data = longitude
-            self.lon_coord = lon_coord
-            self.lat_coord = lat_coord
-        else:
-            # Accepts (lon, lat, data)
-            lon = np.asarray(longitude)
-            lat = np.asarray(latitude)
-            values = np.asarray(data)
-            coords = {"time": np.arange(len(lon)), "lon": ("time", lon), "lat": ("time", lat)}
-            self.data = xr.DataArray(values, dims=["time"], coords=coords, name="track_data")
-            self.lon_coord = "lon"
-            self.lat_coord = "lat"
+        super().__init__(**kwargs)
+
+        if not isinstance(data, xr.DataArray):
+            raise TypeError("Input 'data' must be an xarray.DataArray.")
+        if lon_coord not in data.coords:
+            raise ValueError(f"Longitude coordinate '{lon_coord}' not found in DataArray.")
+        if lat_coord not in data.coords:
+            raise ValueError(f"Latitude coordinate '{lat_coord}' not found in DataArray.")
+
+        self.data = data
+        self.lon_coord = lon_coord
+        self.lat_coord = lat_coord
+
         # Update history attribute for provenance
         history = self.data.attrs.get("history", "")
         self.data.attrs["history"] = f"Plotted with monet-plots.SpatialTrack; {history}"
