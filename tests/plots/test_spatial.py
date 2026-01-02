@@ -110,7 +110,7 @@ def test_spatialplot_create_map(clear_figures):
 
 def test_spatialtrack_init_success(sample_dataarray):
     """Test successful initialization of SpatialTrack."""
-    track_plot = SpatialTrack(sample_dataarray, states=True)
+    track_plot = SpatialTrack(data=sample_dataarray, states=True)
     assert track_plot.data is sample_dataarray
     assert track_plot.lon_coord == "lon"
     assert track_plot.lat_coord == "lat"
@@ -120,7 +120,7 @@ def test_spatialtrack_init_success(sample_dataarray):
 def test_spatialtrack_init_invalid_data_type():
     """Test that SpatialTrack raises TypeError for invalid data types."""
     with pytest.raises(TypeError, match="Input 'data' must be an xarray.DataArray."):
-        SpatialTrack(np.zeros(5))
+        SpatialTrack(data=np.zeros(5))
 
 
 def test_spatialtrack_init_missing_lon_coord(sample_dataarray):
@@ -129,7 +129,7 @@ def test_spatialtrack_init_missing_lon_coord(sample_dataarray):
     with pytest.raises(
         ValueError, match="Longitude coordinate 'lon' not found in DataArray."
     ):
-        SpatialTrack(data_missing_lon)
+        SpatialTrack(data=data_missing_lon)
 
 
 def test_spatialtrack_init_missing_lat_coord(sample_dataarray):
@@ -138,15 +138,33 @@ def test_spatialtrack_init_missing_lat_coord(sample_dataarray):
     with pytest.raises(
         ValueError, match="Latitude coordinate 'lat' not found in DataArray."
     ):
-        SpatialTrack(data_missing_lat)
+        SpatialTrack(data=data_missing_lat)
 
 
 def test_spatialtrack_plot_runs(sample_dataarray):
     """Test that the plot method runs without errors."""
-    track_plot = SpatialTrack(sample_dataarray, states=True)
+    track_plot = SpatialTrack(data=sample_dataarray, states=True)
     try:
         sc = track_plot.plot(cmap="viridis")
         assert sc is not None
         plt.close(track_plot.fig)
     except Exception as e:
         pytest.fail(f"SpatialTrack.plot() raised an exception: {e}")
+
+
+def test_spatialtrack_history_attribute_updated(sample_dataarray):
+    """Test that the history attribute is correctly updated."""
+    # Test case 1: No pre-existing history
+    da_no_history = sample_dataarray.copy()
+    if "history" in da_no_history.attrs:
+        del da_no_history.attrs["history"]
+    track_plot = SpatialTrack(data=da_no_history)
+    assert "history" in track_plot.data.attrs
+    assert "Plotted with monet-plots.SpatialTrack" in track_plot.data.attrs["history"]
+
+    # Test case 2: Pre-existing history
+    da_with_history = sample_dataarray.copy()
+    da_with_history.attrs["history"] = "Initial analysis step."
+    track_plot_2 = SpatialTrack(data=da_with_history)
+    assert "Initial analysis step." in track_plot_2.data.attrs["history"]
+    assert "Plotted with monet-plots.SpatialTrack" in track_plot_2.data.attrs["history"]
