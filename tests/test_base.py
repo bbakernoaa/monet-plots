@@ -1,4 +1,3 @@
-import pytest
 import matplotlib.pyplot as plt
 from monet_plots.plots.base import BasePlot
 
