@@ -1,7 +1,6 @@
 # src/monet_plots/plots/spatial.py
 from __future__ import annotations
 
-import warnings
 from typing import Any, Dict, Literal, Union
 
 import cartopy.crs as ccrs
@@ -274,103 +273,6 @@ class SpatialPlot(BasePlot):
         plot.add_features(**kwargs)
         return plot
 
-    @classmethod
-    def draw_map(
-        cls,
-        *,
-        crs: ccrs.Projection | None = None,
-        natural_earth: bool = False,
-        coastlines: bool = True,
-        states: bool = False,
-        counties: bool = False,
-        countries: bool = True,
-        resolution: Literal["10m", "50m", "110m"] = "10m",
-        extent: list[float] | None = None,
-        figsize: tuple[float, float] = (10, 5),
-        linewidth: float = 0.25,
-        return_fig: bool = False,
-        **kwargs: Any,
-    ) -> plt.Axes | tuple[plt.Figure, plt.Axes]:
-        """Draw a map with Cartopy.
-
-        .. deprecated:: TBD
-           Use :meth:`create_map` instead. This method is maintained for
-           backward compatibility and will be removed in a future version.
-
-        Parameters
-        ----------
-        crs : cartopy.crs.Projection, optional
-            The map projection. Default is PlateCarree.
-        natural_earth : bool
-            Whether to add Natural Earth features (ocean, land, etc.).
-            Default is False.
-        coastlines : bool
-            Whether to add coastlines. Default is True.
-        states : bool
-            Whether to add US states/provinces. Default is False.
-        counties : bool
-            Whether to add US counties. Default is False.
-        countries : bool
-            Whether to add country borders. Default is True.
-        resolution : {"10m", "50m", "110m"}
-            Resolution of Natural Earth features. Default is "10m".
-        extent : list[float], optional
-            Map extent as [lon_min, lon_max, lat_min, lat_max].
-        figsize : tuple
-            Figure size (width, height). Default is (10, 5).
-        linewidth : float
-            Line width for vector features. Default is 0.25.
-        return_fig : bool
-            If True, return the figure and axes objects. Default is False.
-        **kwargs : Any
-            Additional arguments passed to `plt.subplots()`.
-
-        Returns
-        -------
-        plt.Axes or tuple[plt.Figure, plt.Axes]
-            The matplotlib Axes object, or a tuple of (Figure, Axes) if
-            `return_fig` is True.
-
-        Examples
-        --------
-        >>> import matplotlib.pyplot as plt
-        >>> from monet_plots.plots.spatial import SpatialPlot
-        >>> plot = SpatialPlot.create_map(states=True, extent=[-125, -70, 25, 50])
-        >>> plt.show()
-        """
-        warnings.warn(
-            "`draw_map` is deprecated and will be removed in a future version. "
-            "Please use `SpatialPlot.create_map()` instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-
-        # Prepare feature kwargs for the new factory
-        feature_kwargs = {
-            "natural_earth": natural_earth,
-            "coastlines": {"linewidth": linewidth} if coastlines else False,
-            "states": {"linewidth": linewidth} if states else False,
-            "counties": {"linewidth": linewidth} if counties else False,
-            "countries": {"linewidth": linewidth} if countries else False,
-            "extent": extent,
-            "resolution": resolution,
-        }
-
-        # Create the plot using the new factory
-        all_kwargs = {**feature_kwargs, **kwargs}
-        fig_kw = {"figsize": figsize} if "figsize" in all_kwargs else {}
-        if "figsize" in all_kwargs:
-            del all_kwargs["figsize"]
-
-        plot = cls.create_map(
-            projection=crs or ccrs.PlateCarree(), fig_kw=fig_kw, **all_kwargs
-        )
-
-        if return_fig:
-            return plot.fig, plot.ax
-        else:
-            return plot.ax
-
 
 class SpatialTrack(SpatialPlot):
     """Plot a trajectory from an xarray.DataArray on a map.
@@ -406,15 +308,20 @@ class SpatialTrack(SpatialPlot):
         Accepts (lon, lat, data) arrays or a single xarray.DataArray for compatibility with tests and other spatial plots.
         """
         import xarray as xr
+
         super().__init__(*args, **kwargs)
         if latitude is None and data is None:
             # xarray.DataArray usage
             if not isinstance(longitude, xr.DataArray):
                 raise TypeError("Input 'data' must be an xarray.DataArray.")
             if lon_coord not in longitude.coords:
-                raise ValueError(f"Longitude coordinate '{lon_coord}' not found in DataArray.")
+                raise ValueError(
+                    f"Longitude coordinate '{lon_coord}' not found in DataArray."
+                )
             if lat_coord not in longitude.coords:
-                raise ValueError(f"Latitude coordinate '{lat_coord}' not found in DataArray.")
+                raise ValueError(
+                    f"Latitude coordinate '{lat_coord}' not found in DataArray."
+                )
             self.data = longitude
             self.lon_coord = lon_coord
             self.lat_coord = lat_coord
@@ -423,8 +330,14 @@ class SpatialTrack(SpatialPlot):
             lon = np.asarray(longitude)
             lat = np.asarray(latitude)
             values = np.asarray(data)
-            coords = {"time": np.arange(len(lon)), "lon": ("time", lon), "lat": ("time", lat)}
-            self.data = xr.DataArray(values, dims=["time"], coords=coords, name="track_data")
+            coords = {
+                "time": np.arange(len(lon)),
+                "lon": ("time", lon),
+                "lat": ("time", lat),
+            }
+            self.data = xr.DataArray(
+                values, dims=["time"], coords=coords, name="track_data"
+            )
             self.lon_coord = "lon"
             self.lat_coord = "lat"
         # Update history attribute for provenance
