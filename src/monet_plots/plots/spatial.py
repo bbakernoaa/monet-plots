@@ -233,43 +233,46 @@ class SpatialPlot(BasePlot):
         return combined_kwargs
 
     @classmethod
-    def create_map(
+    def from_projection(
         cls,
-        *,
         projection: ccrs.Projection = ccrs.PlateCarree(),
-        fig_kw: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> "SpatialPlot":
-        """Create a SpatialPlot instance with a map projection.
-
+        """Create a `SpatialPlot` instance from a map projection.
         This is the recommended factory method for creating a map. It
         initializes the plot with a specified projection and then adds map
         features based on keyword arguments.
-
         Parameters
         ----------
         projection : ccrs.Projection
             The cartopy projection for the map. Default is ccrs.PlateCarree().
-        fig_kw : dict[str, Any], optional
-            Keyword arguments passed to `plt.figure()`.
         **kwargs : Any
             Keyword arguments for map features (e.g., `coastlines=True`,
             `states=True`, `extent=[-125, -70, 25, 50]`).
-
         Returns
         -------
         SpatialPlot
             An instance of the SpatialPlot class with the map drawn.
-
         Examples
         --------
         >>> import matplotlib.pyplot as plt
         >>> from monet_plots.plots.spatial import SpatialPlot
-        >>> plot = SpatialPlot.create_map(states=True, extent=[-125, -70, 25, 50])
+        >>> plot = SpatialPlot.from_projection(
+        ...     projection=ccrs.LambertConformal(),
+        ...     states=True,
+        ...     extent=[-125, -70, 25, 50],
+        ... )
         >>> plt.show()
         """
-        fig_kw = fig_kw or {}
-        plot = cls(projection=projection, **fig_kw)
+        # Separate feature kwargs from figure kwargs
+        fig_kwargs = {
+            "figsize": kwargs.pop("figsize") for k in ["figsize"] if k in kwargs
+        }
+
+        # Create the plot instance
+        plot = cls(projection=projection, **fig_kwargs)
+
+        # Add features and return
         plot.add_features(**kwargs)
         return plot
 
@@ -291,11 +294,9 @@ class SpatialPlot(BasePlot):
         **kwargs: Any,
     ) -> plt.Axes | tuple[plt.Figure, plt.Axes]:
         """Draw a map with Cartopy.
-
         .. deprecated:: TBD
-           Use :meth:`create_map` instead. This method is maintained for
+           Use :meth:`from_projection` instead. This method is maintained for
            backward compatibility and will be removed in a future version.
-
         Parameters
         ----------
         crs : cartopy.crs.Projection, optional
@@ -323,23 +324,21 @@ class SpatialPlot(BasePlot):
             If True, return the figure and axes objects. Default is False.
         **kwargs : Any
             Additional arguments passed to `plt.subplots()`.
-
         Returns
         -------
         plt.Axes or tuple[plt.Figure, plt.Axes]
             The matplotlib Axes object, or a tuple of (Figure, Axes) if
             `return_fig` is True.
-
         Examples
         --------
         >>> import matplotlib.pyplot as plt
         >>> from monet_plots.plots.spatial import SpatialPlot
-        >>> plot = SpatialPlot.create_map(states=True, extent=[-125, -70, 25, 50])
+        >>> ax = SpatialPlot.draw_map(states=True, extent=[-125, -70, 25, 50])
         >>> plt.show()
         """
         warnings.warn(
             "`draw_map` is deprecated and will be removed in a future version. "
-            "Please use `SpatialPlot.create_map()` instead.",
+            "Please use `SpatialPlot.from_projection()` instead.",
             FutureWarning,
             stacklevel=2,
         )
@@ -353,16 +352,13 @@ class SpatialPlot(BasePlot):
             "countries": {"linewidth": linewidth} if countries else False,
             "extent": extent,
             "resolution": resolution,
+            "figsize": figsize,
+            **kwargs,
         }
 
         # Create the plot using the new factory
-        all_kwargs = {**feature_kwargs, **kwargs}
-        fig_kw = {"figsize": figsize} if "figsize" in all_kwargs else {}
-        if "figsize" in all_kwargs:
-            del all_kwargs["figsize"]
-
-        plot = cls.create_map(
-            projection=crs or ccrs.PlateCarree(), fig_kw=fig_kw, **all_kwargs
+        plot = cls.from_projection(
+            projection=crs or ccrs.PlateCarree(), **feature_kwargs
         )
 
         if return_fig:
@@ -373,11 +369,9 @@ class SpatialPlot(BasePlot):
 
 class SpatialTrack(SpatialPlot):
     """Plot a trajectory from an xarray.DataArray on a map.
-
     This class provides an xarray-native interface for visualizing paths,
     such as flight trajectories or pollutant tracks, where a variable
     (e.g., altitude, concentration) is plotted along the path.
-
     Parameters
     ----------
     data : xr.DataArray
@@ -388,7 +382,8 @@ class SpatialTrack(SpatialPlot):
     lat_coord : str, optional
         The name of the latitude coordinate in the DataArray, by default "lat".
     **kwargs : Any
-        Additional keyword arguments passed to `SpatialPlot` (e.g., `states=True`).
+        Additional keyword arguments passed to `SpatialPlot.from_projection`
+        (e.g., `states=True`, `projection=ccrs.LambertConformal()`).
     """
 
     def __init__(
@@ -400,7 +395,6 @@ class SpatialTrack(SpatialPlot):
         **kwargs: Any,
     ):
         """Initialize the SpatialTrack plot.
-
         Parameters
         ----------
         data : xr.DataArray
@@ -411,10 +405,8 @@ class SpatialTrack(SpatialPlot):
         lat_coord : str
             Name of the latitude coordinate in the DataArray. Default is 'lat'.
         **kwargs : Any
-            Additional keyword arguments passed to the parent `SpatialPlot`.
+            Additional keyword arguments passed to `SpatialPlot.from_projection`.
         """
-        super().__init__(**kwargs)
-
         if not isinstance(data, xr.DataArray):
             raise TypeError("Input 'data' must be an xarray.DataArray.")
         if lon_coord not in data.coords:
@@ -426,39 +418,39 @@ class SpatialTrack(SpatialPlot):
                 f"Latitude coordinate '{lat_coord}' not found in DataArray."
             )
 
+        # Create the map using the factory, passing feature kwargs
+        plot = SpatialPlot.from_projection(**kwargs)
+        self.fig = plot.fig
+        self.ax = plot.ax
+
+        # Set data and update history for provenance
         self.data = data
         self.lon_coord = lon_coord
         self.lat_coord = lat_coord
-
-        # Update history attribute for provenance
         history = self.data.attrs.get("history", "")
         self.data.attrs["history"] = f"Plotted with monet-plots.SpatialTrack; {history}"
 
     def plot(self, **kwargs: Any) -> plt.Artist:
         """Plot the trajectory on the map.
-
         The track is rendered as a scatter plot, where each point is colored
-        according to the `data` values. Keyword arguments are passed to both
-        the feature-adding methods and `ax.scatter`.
-
+        according to the `data` values.
         Parameters
         ----------
         **kwargs : Any
-            Keyword arguments passed to `add_features` and `matplotlib.pyplot.scatter`.
+            Keyword arguments passed to `matplotlib.pyplot.scatter`.
             A `transform` keyword (e.g., `transform=ccrs.PlateCarree()`)
             is highly recommended for geospatial accuracy.
-
         Returns
         -------
         plt.Artist
             The scatter plot artist created by `ax.scatter`.
-
         Examples
         --------
         >>> import numpy as np
         >>> import xarray as xr
         >>> import matplotlib.pyplot as plt
         >>> from monet_plots.plots.spatial import SpatialTrack
+        >>> import cartopy.crs as ccrs
         >>>
         >>> # 1. Create a sample xarray.DataArray
         >>> time = np.arange(20)
@@ -477,17 +469,21 @@ class SpatialTrack(SpatialPlot):
         ...     attrs={'units': 'ppb'}
         ... )
         >>>
-        >>> # 2. Create and render the plot
-        >>> track_plot = SpatialTrack(da, states=True, counties=True)
+        >>> # 2. Create the plot and render the data
+        >>> track_plot = SpatialTrack(
+        ...     da,
+        ...     projection=ccrs.LambertConformal(),
+        ...     states=True,
+        ...     extent=[-125, -70, 25, 50],
+        ... )
         >>> sc = track_plot.plot(cmap='viridis', transform=ccrs.PlateCarree())
         >>> plt.colorbar(sc, label="O3 Concentration (ppb)")
         >>> plt.show()
         """
-        plot_kwargs = self.add_features(**kwargs)
-        plot_kwargs.setdefault("transform", ccrs.PlateCarree())
+        kwargs.setdefault("transform", ccrs.PlateCarree())
 
         longitude = self.data[self.lon_coord]
         latitude = self.data[self.lat_coord]
 
-        sc = self.ax.scatter(longitude, latitude, c=self.data.values, **plot_kwargs)
+        sc = self.ax.scatter(longitude, latitude, c=self.data.values, **kwargs)
         return sc

@@ -1,4 +1,5 @@
 # tests/plots/test_spatial.py
+import cartopy.crs as ccrs
 import pytest
 import xarray as xr
 import numpy as np
@@ -98,14 +99,20 @@ def test_spatial_plot_draw_map_docstring_example(clear_figures):
     assert len(ax.collections) > 0
 
 
-def test_spatialplot_create_map(clear_figures):
-    """Test the SpatialPlot.create_map factory method."""
-    plot = SpatialPlot.create_map(states=True, extent=[-125, -70, 25, 50])
-    assert isinstance(plot, SpatialPlot)
-    from cartopy.mpl.geoaxes import GeoAxes
+def test_spatial_plot_from_projection(clear_figures):
+    """Test the from_projection factory to ensure it creates a map with the
+    correct projection and adds features as expected."""
+    # 1. The Logic (Implementation)
+    plot = SpatialPlot.from_projection(
+        projection=ccrs.LambertConformal(), states=True, coastlines=True
+    )
+    # Force a draw to update collections
+    plot.fig.canvas.draw()
 
-    assert isinstance(plot.ax, GeoAxes)
-    assert len(plot.ax.collections) > 0
+    # 2. The Proof (Validation)
+    assert isinstance(plot.ax.projection, ccrs.LambertConformal)
+    # Check that both states and coastlines were added
+    assert len(plot.ax.collections) >= 2
 
 
 def test_spatialtrack_init_success(sample_dataarray):
