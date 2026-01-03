@@ -27,11 +27,13 @@ def test_conditional_bias_plot(clear_figures, sample_data):
 
 
 def test_conditional_bias_plot_with_label_col(clear_figures):
-    df = pd.DataFrame({
-        "obs": np.random.rand(100),
-        "fcst": np.random.rand(100),
-        "group": np.random.choice(["A", "B"], size=100)
-    })
+    df = pd.DataFrame(
+        {
+            "obs": np.random.rand(100),
+            "fcst": np.random.rand(100),
+            "group": np.random.choice(["A", "B"], size=100),
+        }
+    )
     plot = ConditionalBiasPlot()
     plot.plot(data=df, obs_col="obs", fcst_col="fcst", label_col="group")
     # Should have a legend for groups
@@ -76,8 +78,8 @@ def test_conditional_bias_zero_bias_line(clear_figures, sample_data):
     plot.plot(data=sample_data, obs_col="obs", fcst_col="fcst")
     # Check for a horizontal line at y=0
     found = any(
-        getattr(line, "get_ydata", lambda: [])()[0] == 0 and
-        all(y == 0 for y in line.get_ydata())
+        getattr(line, "get_ydata", lambda: [])()[0] == 0
+        and all(y == 0 for y in line.get_ydata())
         for line in plot.ax.get_lines()
     )
     assert found
