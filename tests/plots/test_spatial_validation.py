@@ -26,9 +26,13 @@ def test_from_projection_docstring_example(clear_figures):
     plot = SpatialPlot.from_projection(land=True, extent=[-125, -70, 25, 50])
 
     # --- The Proof (Validation) ---
-    assert isinstance(plot, SpatialPlot), "The return type must be a SpatialPlot object."
+    assert isinstance(plot, SpatialPlot), (
+        "The return type must be a SpatialPlot object."
+    )
     assert isinstance(plot.ax, Axes), "The plot must have a valid Axes attribute."
-    assert plot.feature_kwargs.get("land") is True, "Feature kwargs should be processed."
+    assert plot.feature_kwargs.get("land") is True, (
+        "Feature kwargs should be processed."
+    )
 
 
 def test_spatial_track_docstring_example(clear_figures):

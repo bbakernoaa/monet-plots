@@ -1,7 +1,6 @@
 # src/monet_plots/plots/spatial.py
 from __future__ import annotations
 
-import warnings
 from typing import Any, Dict, Literal, Union
 
 import cartopy.crs as ccrs
@@ -265,9 +264,7 @@ class SpatialPlot(BasePlot):
         >>> plt.show()
         """
         # Separate feature kwargs from figure kwargs
-        fig_kwargs = {
-            "figsize": kwargs.pop(k) for k in ["figsize"] if k in kwargs
-        }
+        fig_kwargs = {"figsize": kwargs.pop(k) for k in ["figsize"] if k in kwargs}
 
         # Create the plot instance, passing all kwargs to be stored
         plot = cls(projection=projection, **fig_kwargs, **kwargs)
@@ -275,6 +272,7 @@ class SpatialPlot(BasePlot):
         # Add features and return
         plot.add_features()
         return plot
+
 
 class SpatialTrack(SpatialPlot):
     """Plot a trajectory from an xarray.DataArray on a map.
