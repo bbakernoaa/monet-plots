@@ -38,7 +38,7 @@ class SpScatterBiasPlot(BasePlot):
             outline (bool): Whether to show the map outline.
             tight (bool): Whether to apply tight_layout.
             global_map (bool): Whether to set global map boundaries.
-            map_kwargs (dict): Keyword arguments for draw_map.
+            map_kwargs (dict): Keyword arguments for SpatialPlot.from_projection.
             cbar_kwargs (dict): Keyword arguments for colorbar customization.
             val_max (float, optional): Maximum value for color scaling.
             val_min (float, optional): Minimum value for color scaling.
@@ -58,7 +58,9 @@ class SpScatterBiasPlot(BasePlot):
     def plot(self, **kwargs):
         """Generate the spatial scatter bias plot."""
         if self.ax is None:
-            self.ax = SpatialPlot.draw_map(**self.map_kwargs)
+            plot = SpatialPlot.from_projection(**self.map_kwargs)
+            self.ax = plot.ax
+            self.fig = plot.fig
 
         dfnew = (
             self.df[["latitude", "longitude", self.col1, self.col2]]

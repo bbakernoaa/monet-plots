@@ -68,7 +68,7 @@ plot.plot(
 
 # 3. Add titles and labels
 plot.ax.set_title("Spatial Bias Plot: Comparison vs. Reference")
-# Map elements (coastlines, borders) are added by default via draw_map
+# Map elements (coastlines, borders) are added by default by the SpatialPlot class
 
 plt.tight_layout()
 plt.show()
@@ -83,7 +83,7 @@ A geographical map of North America will be displayed. Scatter points will be pl
 -   **`SpScatterBiasPlot`**: The class used to generate spatial scatter bias plots.
 -   **`col1`**: The name of the column containing the reference values.
 -   **`col2`**: The name of the column containing the comparison values.
--   **`map_kwargs`**: A dictionary to pass arguments to `monet_plots.mapgen.draw_map`, allowing customization of the map projection and extent.
+-   **`map_kwargs`**: A dictionary to pass arguments to `monet_plots.plots.spatial.SpatialPlot.from_projection`, allowing customization of the map projection, features, and extent.
 -   **Point Size and Color**: Point size visually emphasizes the magnitude of the bias, while color indicates its sign (over- or under-prediction).
 
 ## Example 2: Customizing Map and Plot Appearance
@@ -136,7 +136,7 @@ plot.plot(
 
 # 3. Add titles and labels
 plot.ax.set_title("Customized Spatial Bias Plot (Albers Equal Area)", fontsize=16)
-# Map elements (coastlines, borders) are added by default via draw_map
+# Map elements (coastlines, borders) are added by default by the SpatialPlot class
 
 plt.tight_layout()
 plt.show()

@@ -90,13 +90,18 @@ def test_spatial_plot_feature_styling(clear_figures):
     assert found_match, "Failed to find a feature with the specified custom style."
 
 
-def test_spatial_plot_draw_map_docstring_example(clear_figures):
-    """Test the example from the SpatialPlot.draw_map docstring."""
-    from cartopy.mpl.geoaxes import GeoAxes
+def test_spatial_plot_from_projection_docstring_example(clear_figures):
+    """Test the example from the SpatialPlot.from_projection docstring."""
+    plot = SpatialPlot.from_projection(
+        projection=ccrs.LambertConformal(),
+        states=True,
+        extent=[-125, -70, 25, 50],
+    )
+    # Force draw to update collections
+    plot.fig.canvas.draw()
 
-    ax = SpatialPlot.draw_map(states=True, extent=[-125, -70, 25, 50])
-    assert isinstance(ax, GeoAxes)
-    assert len(ax.collections) > 0
+    assert isinstance(plot, SpatialPlot)
+    assert len(plot.ax.collections) >= 1
 
 
 def test_spatial_plot_from_projection(clear_figures):

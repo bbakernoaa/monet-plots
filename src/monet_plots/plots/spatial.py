@@ -266,106 +266,15 @@ class SpatialPlot(BasePlot):
         """
         # Separate feature kwargs from figure kwargs
         fig_kwargs = {
-            "figsize": kwargs.pop("figsize") for k in ["figsize"] if k in kwargs
+            "figsize": kwargs.pop(k) for k in ["figsize"] if k in kwargs
         }
 
-        # Create the plot instance
-        plot = cls(projection=projection, **fig_kwargs)
+        # Create the plot instance, passing all kwargs to be stored
+        plot = cls(projection=projection, **fig_kwargs, **kwargs)
 
         # Add features and return
-        plot.add_features(**kwargs)
+        plot.add_features()
         return plot
-
-    @classmethod
-    def draw_map(
-        cls,
-        *,
-        crs: ccrs.Projection | None = None,
-        natural_earth: bool = False,
-        coastlines: bool = True,
-        states: bool = False,
-        counties: bool = False,
-        countries: bool = True,
-        resolution: Literal["10m", "50m", "110m"] = "10m",
-        extent: list[float] | None = None,
-        figsize: tuple[float, float] = (10, 5),
-        linewidth: float = 0.25,
-        return_fig: bool = False,
-        **kwargs: Any,
-    ) -> plt.Axes | tuple[plt.Figure, plt.Axes]:
-        """Draw a map with Cartopy.
-        .. deprecated:: TBD
-           Use :meth:`from_projection` instead. This method is maintained for
-           backward compatibility and will be removed in a future version.
-        Parameters
-        ----------
-        crs : cartopy.crs.Projection, optional
-            The map projection. Default is PlateCarree.
-        natural_earth : bool
-            Whether to add Natural Earth features (ocean, land, etc.).
-            Default is False.
-        coastlines : bool
-            Whether to add coastlines. Default is True.
-        states : bool
-            Whether to add US states/provinces. Default is False.
-        counties : bool
-            Whether to add US counties. Default is False.
-        countries : bool
-            Whether to add country borders. Default is True.
-        resolution : {"10m", "50m", "110m"}
-            Resolution of Natural Earth features. Default is "10m".
-        extent : list[float], optional
-            Map extent as [lon_min, lon_max, lat_min, lat_max].
-        figsize : tuple
-            Figure size (width, height). Default is (10, 5).
-        linewidth : float
-            Line width for vector features. Default is 0.25.
-        return_fig : bool
-            If True, return the figure and axes objects. Default is False.
-        **kwargs : Any
-            Additional arguments passed to `plt.subplots()`.
-        Returns
-        -------
-        plt.Axes or tuple[plt.Figure, plt.Axes]
-            The matplotlib Axes object, or a tuple of (Figure, Axes) if
-            `return_fig` is True.
-        Examples
-        --------
-        >>> import matplotlib.pyplot as plt
-        >>> from monet_plots.plots.spatial import SpatialPlot
-        >>> ax = SpatialPlot.draw_map(states=True, extent=[-125, -70, 25, 50])
-        >>> plt.show()
-        """
-        warnings.warn(
-            "`draw_map` is deprecated and will be removed in a future version. "
-            "Please use `SpatialPlot.from_projection()` instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-
-        # Prepare feature kwargs for the new factory
-        feature_kwargs = {
-            "natural_earth": natural_earth,
-            "coastlines": {"linewidth": linewidth} if coastlines else False,
-            "states": {"linewidth": linewidth} if states else False,
-            "counties": {"linewidth": linewidth} if counties else False,
-            "countries": {"linewidth": linewidth} if countries else False,
-            "extent": extent,
-            "resolution": resolution,
-            "figsize": figsize,
-            **kwargs,
-        }
-
-        # Create the plot using the new factory
-        plot = cls.from_projection(
-            projection=crs or ccrs.PlateCarree(), **feature_kwargs
-        )
-
-        if return_fig:
-            return plot.fig, plot.ax
-        else:
-            return plot.ax
-
 
 class SpatialTrack(SpatialPlot):
     """Plot a trajectory from an xarray.DataArray on a map.

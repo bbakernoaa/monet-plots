@@ -82,7 +82,8 @@ def draw_map(
     """Draw a map with Cartopy.
 
     .. deprecated::
-        This function is deprecated. Use `SpatialPlot.draw_map()` instead.
+        This function is deprecated and will be removed in a future version.
+        Use `monet_plots.plots.spatial.SpatialPlot.from_projection` instead.
 
     Creates a map using Cartopy with configurable features like coastlines,
     borders, and natural earth elements.
@@ -90,24 +91,32 @@ def draw_map(
     import warnings
 
     warnings.warn(
-        "draw_map is deprecated. Use SpatialPlot.draw_map() instead.",
-        DeprecationWarning,
+        "`monet_plots.mapgen.draw_map` is deprecated and will be removed "
+        "in a future version. Use `monet_plots.plots.spatial.SpatialPlot.from_projection` "
+        "instead.",
+        FutureWarning,
         stacklevel=2,
     )
 
     from .plots.spatial import SpatialPlot
 
-    return SpatialPlot.draw_map(
-        crs=crs,
-        natural_earth=natural_earth,
-        coastlines=coastlines,
-        states=states,
-        counties=counties,
-        countries=countries,
-        resolution=resolution,
-        extent=extent,
-        figsize=figsize,
-        linewidth=linewidth,
-        return_fig=return_fig,
+    feature_kwargs = {
+        "natural_earth": natural_earth,
+        "coastlines": {"linewidth": linewidth} if coastlines else False,
+        "states": {"linewidth": linewidth} if states else False,
+        "counties": {"linewidth": linewidth} if counties else False,
+        "countries": {"linewidth": linewidth} if countries else False,
+        "extent": extent,
+        "resolution": resolution,
+        "figsize": figsize,
         **kwargs,
+    }
+
+    plot = SpatialPlot.from_projection(
+        projection=crs or ccrs.PlateCarree(), **feature_kwargs
     )
+
+    if return_fig:
+        return plot.fig, plot.ax
+    else:
+        return plot.ax
