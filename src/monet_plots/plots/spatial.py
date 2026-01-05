@@ -25,20 +25,6 @@ class SpatialPlot(BasePlot):
     the setup of cartopy axes and the addition of common map features like
     coastlines, states, and gridlines.
 
-    Parameters
-    ----------
-    projection : ccrs.Projection
-        The cartopy projection for the map. Default is ccrs.PlateCarree().
-    resolution : {"10m", "50m", "110m"}
-        The default resolution for cartopy features. Default is "50m".
-    fig : plt.Figure, optional
-        An existing matplotlib Figure object. If None, a new one is created.
-    ax : plt.Axes, optional
-        An existing matplotlib Axes object. If None, a new one is created.
-    **kwargs : Any
-        Additional keyword arguments for `monet_plots.plots.base.BasePlot`
-        (e.g., `figsize`) and cartopy features (e.g., `coastlines=True`).
-
     Attributes
     ----------
     resolution : str
@@ -55,13 +41,42 @@ class SpatialPlot(BasePlot):
         fig: plt.Figure | None = None,
         ax: plt.Axes | None = None,
         **kwargs: Any,
-    ):
+    ) -> None:
         """Initialize the spatial plot.
+
+        Parameters
+        ----------
+        projection : ccrs.Projection, optional
+            The cartopy projection for the map, by default ccrs.PlateCarree().
+        resolution : {"10m", "50m", "110m"}, optional
+            The default resolution for cartopy features, by default "50m".
+        fig : plt.Figure | None, optional
+            An existing matplotlib Figure object. If None, a new one is
+            created, by default None.
+        ax : plt.Axes | None, optional
+            An existing matplotlib Axes object. If None, a new one is created,
+            by default None.
+        **kwargs : Any
+            Additional keyword arguments for
+            `monet_plots.plots.base.BasePlot` (e.g., `figsize`) and
+            cartopy features (e.g., `coastlines=True`).
 
         Notes
         -----
         For interactive use, it is recommended to create a `SpatialPlot`
-        instance using the `SpatialPlot.create_map()` class method.
+        instance using the `SpatialPlot.from_projection()` class method, which
+        is the designated factory.
+
+        Attributes
+        ----------
+        fig : plt.Figure
+            The matplotlib Figure object.
+        ax : plt.Axes
+            The matplotlib Axes (or GeoAxes) object.
+        resolution : str
+            The resolution for cartopy features (e.g., '50m').
+        feature_kwargs : dict[str, Any]
+            Keyword arguments for features passed during initialization.
         """
         # The 'projection' kwarg is passed to subplot creation via 'subplot_kw'.
         subplot_kw = kwargs.pop("subplot_kw", {})
@@ -189,25 +204,52 @@ class SpatialPlot(BasePlot):
             self.ax.add_feature(feature_or_method, **style_kwargs)
 
     def add_features(self, **kwargs: Any) -> dict[str, Any]:
-        """Add cartopy features to the map axes.
+        """Add and style cartopy features on the map axes.
 
-        This method provides a flexible interface to add and style common
-        cartopy features like coastlines, states, and gridlines. Features can
-        be enabled with a boolean flag (e.g., `coastlines=True`) or styled
-        with a dictionary (e.g., `states=dict(linewidth=2)`).
+        This method provides a flexible, data-driven interface to add common
+        map features. Features can be enabled with a boolean flag (e.g.,
+        `coastlines=True`) or styled with a dictionary of keyword arguments
+        (e.g., `states=dict(linewidth=2, edgecolor='red')`).
+
+        The `extent` keyword is also supported to set the map boundaries.
 
         Parameters
         ----------
         **kwargs : Any
-            Keyword arguments controlling the features to add. Common
-            options include `coastlines`, `states`, `countries`, `ocean`,
-            `land`, `lakes`, `rivers`, `borders`, and `gridlines`.
-            The `extent` keyword is also supported to set the map boundaries.
+            Keyword arguments controlling the features to add and their
+            styles. Common options include `coastlines`, `states`,
+            `countries`, `ocean`, `land`, `lakes`, `rivers`, `borders`,
+            and `gridlines`.
 
         Returns
         -------
         dict[str, Any]
-            The remaining keyword arguments that were not used for features.
+            A dictionary of the keyword arguments that were not used for
+            adding features. This can be useful for passing remaining
+            arguments to other functions.
+
+        Examples
+        --------
+        >>> import matplotlib.pyplot as plt
+        >>> import cartopy.crs as ccrs
+        >>> from monet_plots.plots.spatial import SpatialPlot
+        >>>
+        >>> # Create a map with default features
+        >>> plot = SpatialPlot.from_projection(
+        ...     projection=ccrs.LambertConformal(),
+        ...     figsize=(10, 5),
+        ...     states=True,
+        ...     coastlines=True,
+        ...     countries=True,
+        ...     extent=[-125, -65, 25, 50]
+        ... )
+        >>>
+        >>> # Style the states with a dictionary
+        >>> unused_kwargs = plot.add_features(
+        ...     states=dict(linewidth=1.5, edgecolor='blue')
+        ... )
+        >>> print(f"Unused kwargs: {unused_kwargs}")
+        >>> plt.show()
         """
         combined_kwargs = {**self.feature_kwargs, **kwargs}
         resolution = combined_kwargs.pop("resolution", self.resolution)

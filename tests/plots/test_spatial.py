@@ -99,6 +99,26 @@ def test_spatial_plot_draw_map_docstring_example(clear_figures):
     assert len(ax.collections) > 0
 
 
+def test_add_features_docstring_example(clear_figures):
+    """Test the example from the add_features docstring."""
+    plot = SpatialPlot.from_projection(
+        projection=ccrs.LambertConformal(),
+        figsize=(10, 5),
+        states=True,
+        coastlines=True,
+        countries=True,
+        extent=[-125, -65, 25, 50],
+        resolution="110m",
+    )
+    initial_collections = len(plot.ax.collections)
+
+    # Style the states with a dictionary
+    unused_kwargs = plot.add_features(states=dict(linewidth=1.5, edgecolor="blue"))
+
+    assert "states" not in unused_kwargs
+    assert len(plot.ax.collections) > initial_collections
+
+
 def test_spatial_plot_from_projection(clear_figures):
     """Test the from_projection factory to ensure it creates a map with the
     correct projection and adds features as expected."""
