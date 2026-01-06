@@ -324,10 +324,10 @@ class SpatialPlot(BasePlot):
         *,
         crs: ccrs.Projection | None = None,
         natural_earth: bool = False,
-        coastlines: bool = True,
-        states: bool = False,
-        counties: bool = False,
-        countries: bool = True,
+        coastlines: bool | dict = True,
+        states: bool | dict = False,
+        counties: bool | dict = False,
+        countries: bool | dict = True,
         resolution: Literal["10m", "50m", "110m"] = "10m",
         extent: list[float] | None = None,
         figsize: tuple[float, float] = (10, 5),
@@ -346,14 +346,22 @@ class SpatialPlot(BasePlot):
         natural_earth : bool
             Whether to add Natural Earth features (ocean, land, etc.).
             Default is False.
-        coastlines : bool
-            Whether to add coastlines. Default is True.
-        states : bool
-            Whether to add US states/provinces. Default is False.
-        counties : bool
-            Whether to add US counties. Default is False.
-        countries : bool
-            Whether to add country borders. Default is True.
+        coastlines : bool or dict
+            Whether to add coastlines. If True, default styles are used.
+            If a dict, it is passed as keyword arguments for styling.
+            Default is True.
+        states : bool or dict
+            Whether to add US states/provinces. If True, default styles
+            are used. If a dict, it is passed as keyword arguments for
+            styling. Default is False.
+        counties : bool or dict
+            Whether to add US counties. If True, default styles are used.
+            If a dict, it is passed as keyword arguments for styling.
+            Default is False.
+        countries : bool or dict
+            Whether to add country borders. If True, default styles are
+            used. If a dict, it is passed as keyword arguments for styling.
+            Default is True.
         resolution : {"10m", "50m", "110m"}
             Resolution of Natural Earth features. Default is "10m".
         extent : list[float], optional
@@ -385,13 +393,19 @@ class SpatialPlot(BasePlot):
             stacklevel=2,
         )
 
+        # Helper to create style dicts, preserving user-provided dicts
+        def _get_style_arg(arg_val, default_lw):
+            if isinstance(arg_val, dict):
+                return arg_val
+            return {"linewidth": default_lw} if arg_val else False
+
         # Prepare feature kwargs for the new factory
         feature_kwargs = {
             "natural_earth": natural_earth,
-            "coastlines": {"linewidth": linewidth} if coastlines else False,
-            "states": {"linewidth": linewidth} if states else False,
-            "counties": {"linewidth": linewidth} if counties else False,
-            "countries": {"linewidth": linewidth} if countries else False,
+            "coastlines": _get_style_arg(coastlines, linewidth),
+            "states": _get_style_arg(states, linewidth),
+            "counties": _get_style_arg(counties, linewidth),
+            "countries": _get_style_arg(countries, linewidth),
             "extent": extent,
             "resolution": resolution,
             "figsize": figsize,
