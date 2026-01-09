@@ -1,4 +1,5 @@
 # tests/plots/test_spatial.py
+from unittest.mock import patch
 import cartopy.crs as ccrs
 import pytest
 import xarray as xr
@@ -195,3 +196,35 @@ def test_spatialtrack_history_attribute_updated(sample_dataarray):
     track_plot_2 = SpatialTrack(data=da_with_history)
     assert "Initial analysis step." in track_plot_2.data.attrs["history"]
     assert "Plotted with monet-plots.SpatialTrack" in track_plot_2.data.attrs["history"]
+
+
+def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
+    """Test that SpatialTrack.plot passes a dask array to matplotlib."""
+    dask = pytest.importorskip("dask")
+    import dask.array as da
+
+    # 1. The Logic (Create lazy data)
+    time = np.arange(20)
+    lon = np.linspace(-120, -80, 20)
+    lat = np.linspace(30, 45, 20)
+    concentration = da.from_array(np.linspace(0, 100, 20), chunks=(10,))
+    da_lazy = xr.DataArray(
+        concentration,
+        dims=["time"],
+        coords={"time": time, "lon": ("time", lon), "lat": ("time", lat)},
+        name="O3_concentration_lazy",
+    )
+
+    # 2. The Proof (Instantiate and plot, spying on the scatter call)
+    track_plot = SpatialTrack(data=da_lazy, states=True, resolution="110m")
+
+    with patch.object(track_plot.ax, "scatter") as mock_scatter:
+        track_plot.plot()
+        # 3. The Validation
+        mock_scatter.assert_called_once()
+        args, kwargs = mock_scatter.call_args
+        c_arg = kwargs.get("c")
+
+        # Ensure 'c' is an xarray.DataArray wrapping a dask array
+        assert isinstance(c_arg, xr.DataArray), "The 'c' argument is not a DataArray."
+        assert isinstance(c_arg.data, dask.array.Array), "The underlying data is not a dask array."
