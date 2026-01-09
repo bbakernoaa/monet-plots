@@ -527,5 +527,5 @@ class SpatialTrack(SpatialPlot):
         longitude = self.data[self.lon_coord]
         latitude = self.data[self.lat_coord]
 
-        sc = self.ax.scatter(longitude, latitude, c=self.data.values, **kwargs)
+        sc = self.ax.scatter(longitude, latitude, c=self.data, **kwargs)
         return sc
