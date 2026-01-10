@@ -5,6 +5,7 @@ import pytest
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
+from cartopy.mpl.geoaxes import GeoAxes
 from monet_plots.plots.spatial import SpatialPlot, SpatialTrack
 
 
@@ -93,8 +94,6 @@ def test_spatial_plot_feature_styling(clear_figures):
 
 def test_spatial_plot_draw_map_docstring_example(clear_figures):
     """Test the example from the SpatialPlot.draw_map docstring."""
-    from cartopy.mpl.geoaxes import GeoAxes
-
     ax = SpatialPlot.draw_map(states=True, extent=[-125, -70, 25, 50])
     assert isinstance(ax, GeoAxes)
     assert len(ax.collections) > 0
@@ -230,3 +229,29 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
         assert isinstance(
             c_arg.data, dask.array.Array
         ), "The underlying data is not a dask array."
+
+
+def test_spatial_track_inheritance_and_provenance(sample_dataarray):
+    """Test SpatialTrack correctly inherits from SpatialPlot and tracks provenance."""
+    # 1. ARRANGE: Add pre-existing history for a robust test
+    sample_dataarray.attrs["history"] = "Original data."
+
+    # 2. ACT: Create the plot instance
+    track_plot = SpatialTrack(
+        data=sample_dataarray,
+        projection=ccrs.LambertConformal(),
+        states=True,
+    )
+
+    # 3. ASSERT: Validate initialization, inheritance, and provenance
+    assert isinstance(track_plot, SpatialPlot), "Should be a SpatialPlot subclass"
+    assert isinstance(track_plot.ax, GeoAxes), "Axes should be a GeoAxes instance"
+    assert track_plot.data is sample_dataarray, "Data attribute should be set correctly"
+    # Force draw to ensure collections are updated
+    track_plot.fig.canvas.draw()
+    assert len(track_plot.ax.collections) > 0, "Cartopy features should be added"
+
+    # Validate provenance tracking
+    history = track_plot.data.attrs["history"]
+    assert "Plotted with monet-plots.SpatialTrack" in history
+    assert "Original data." in history

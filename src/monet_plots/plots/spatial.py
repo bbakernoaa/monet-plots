@@ -411,21 +411,21 @@ class SpatialPlot(BasePlot):
 
 class SpatialTrack(SpatialPlot):
     """Plot a trajectory from an xarray.DataArray on a map.
+
     This class provides an xarray-native interface for visualizing paths,
     such as flight trajectories or pollutant tracks, where a variable
     (e.g., altitude, concentration) is plotted along the path.
-    Parameters
+
+    It inherits from :class:`SpatialPlot` to provide the underlying map canvas.
+
+    Attributes
     ----------
     data : xr.DataArray
-        An xarray DataArray containing the trajectory data. The DataArray
-        must have coordinates corresponding to longitude and latitude.
-    lon_coord : str, optional
-        The name of the longitude coordinate in the DataArray, by default "lon".
-    lat_coord : str, optional
-        The name of the latitude coordinate in the DataArray, by default "lat".
-    **kwargs : Any
-        Additional keyword arguments passed to `SpatialPlot.from_projection`
-        (e.g., `states=True`, `projection=ccrs.LambertConformal()`).
+        The trajectory data being plotted.
+    lon_coord : str
+        The name of the longitude coordinate in the DataArray.
+    lat_coord : str
+        The name of the latitude coordinate in the DataArray.
     """
 
     def __init__(
@@ -437,17 +437,24 @@ class SpatialTrack(SpatialPlot):
         **kwargs: Any,
     ):
         """Initialize the SpatialTrack plot.
+
+        This constructor validates the input data and sets up the map canvas
+        by initializing the parent `SpatialPlot` and adding map features.
+
         Parameters
         ----------
         data : xr.DataArray
             The input trajectory data. Must be an xarray DataArray with
             coordinates for longitude and latitude.
-        lon_coord : str
-            Name of the longitude coordinate in the DataArray. Default is 'lon'.
-        lat_coord : str
-            Name of the latitude coordinate in the DataArray. Default is 'lat'.
+        lon_coord : str, optional
+            Name of the longitude coordinate in the DataArray, by default 'lon'.
+        lat_coord : str, optional
+            Name of the latitude coordinate in the DataArray, by default 'lat'.
         **kwargs : Any
-            Additional keyword arguments passed to `SpatialPlot.from_projection`.
+            Keyword arguments passed to :class:`SpatialPlot`. These control
+            the map projection, figure size, and cartopy features. For example:
+            `projection=ccrs.LambertConformal()`, `figsize=(10, 8)`,
+            `states=True`, `extent=[-125, -70, 25, 50]`.
         """
         if not isinstance(data, xr.DataArray):
             raise TypeError("Input 'data' must be an xarray.DataArray.")
@@ -460,10 +467,11 @@ class SpatialTrack(SpatialPlot):
                 f"Latitude coordinate '{lat_coord}' not found in DataArray."
             )
 
-        # Create the map using the factory, passing feature kwargs
-        plot = SpatialPlot.from_projection(**kwargs)
-        self.fig = plot.fig
-        self.ax = plot.ax
+        # Initialize the parent SpatialPlot to create the map canvas
+        super().__init__(**kwargs)
+
+        # Draw features passed as kwargs (e.g., states=True)
+        self.add_features()
 
         # Set data and update history for provenance
         self.data = data
