@@ -1,11 +1,10 @@
-import matplotlib.pyplot as plt
 from scipy.stats import scoreatpercentile as score
 import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 from .spatial import SpatialPlot
 from ..colorbars import colorbar_index
 from ..plot_utils import to_dataframe
 from typing import Any
+
 
 class SpatialBiasScatterPlot(SpatialPlot):
     """Create a spatial scatter plot showing bias between model and observations.
@@ -14,7 +13,20 @@ class SpatialBiasScatterPlot(SpatialPlot):
     by the absolute magnitude of this difference, making larger biases more visible.
     """
 
-    def __init__(self, df: Any, col1: str, col2: str, projection=ccrs.PlateCarree(), vmin: float = None, vmax: float = None, ncolors: int = 15, fact: float = 1.5, cmap: str = "RdBu_r", *args, **kwargs):
+    def __init__(
+        self,
+        df: Any,
+        col1: str,
+        col2: str,
+        projection=ccrs.PlateCarree(),
+        vmin: float = None,
+        vmax: float = None,
+        ncolors: int = 15,
+        fact: float = 1.5,
+        cmap: str = "RdBu_r",
+        *args,
+        **kwargs,
+    ):
         """
         Initialize the plot with data and map projection.
 
@@ -47,14 +59,20 @@ class SpatialBiasScatterPlot(SpatialPlot):
         """Generate the spatial bias scatter plot."""
         from numpy import around
 
-        scatter_kwargs = self._draw_features(**kwargs)
+        scatter_kwargs = self.add_features(**kwargs)
 
         # Ensure we are working with a clean copy with no NaNs in relevant columns
-        new = self.df[["latitude", "longitude", self.col1, self.col2]].dropna().copy(deep=True)
+        new = (
+            self.df[["latitude", "longitude", self.col1, self.col2]]
+            .dropna()
+            .copy(deep=True)
+        )
 
         diff = new[self.col2] - new[self.col1]
         top = around(score(diff.abs(), per=95))
-        c, cmap = colorbar_index(self.ncolors, self.cmap, minval=top * -1, maxval=top, ax=self.ax)
+        c, cmap = colorbar_index(
+            self.ncolors, self.cmap, minval=top * -1, maxval=top, ax=self.ax
+        )
 
         c.ax.tick_params(labelsize=13)
         colors = diff
@@ -69,7 +87,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
             vmin=-1.0 * top,
             vmax=top,
             cmap=cmap,
-            transform=ccrs.PlateCarree(), # Tell cartopy the data is in lat/lon
+            transform=ccrs.PlateCarree(),  # Tell cartopy the data is in lat/lon
             edgecolors="k",
             linewidths=0.25,
             alpha=0.7,

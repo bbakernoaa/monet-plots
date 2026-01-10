@@ -5,14 +5,15 @@ import typing as t
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from .. import plot_utils
 from .base import BasePlot
 
 
 class Meteogram(BasePlot):
     """Meteogram plot."""
 
-    def __init__(self, *, df: pd.DataFrame, variables: list[str], **kwargs: t.Any) -> None:
+    def __init__(
+        self, *, df: pd.DataFrame, variables: list[str], **kwargs: t.Any
+    ) -> None:
         """
         Parameters
         ----------
@@ -46,4 +47,3 @@ class Meteogram(BasePlot):
                 plt.setp(ax.get_xticklabels(), visible=False)
 
         self.ax = self.fig.get_axes()
-

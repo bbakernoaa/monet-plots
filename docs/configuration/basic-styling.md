@@ -139,8 +139,8 @@ plot.xlabel("Longitude (degrees)")
 plot.ylabel("Latitude (degrees)")
 
 # Add subtitle
-plot.ax.text(0.5, 0.95, "Regional Analysis", 
-            transform=plot.ax.transAxes, 
+plot.ax.text(0.5, 0.95, "Regional Analysis",
+            transform=plot.ax.transAxes,
             ha='center', fontsize=11, style='italic')
 
 plot.save("custom_labels.png")
@@ -260,7 +260,7 @@ colors = plt.cm.Set3(np.linspace(0, 1, len(categories)))
 
 for i, (category, color) in enumerate(zip(categories, colors)):
     subset = df[df['category'] == category]
-    plot.ax.scatter(subset['x'], subset['y'], 
+    plot.ax.scatter(subset['x'], subset['y'],
                    color=color, label=category, s=50, alpha=0.7)
 
 plot.ax.legend(title="Categories")
@@ -363,7 +363,7 @@ colors = plt.cm.get_cmap('tab10', len(categories))
 
 for i, category in enumerate(categories):
     subset = df[df['category'] == category]
-    plot.ax.scatter(subset['x'], subset['y'], 
+    plot.ax.scatter(subset['x'], subset['y'],
                    color=colors(i), label=category, s=50, alpha=0.7)
 
 plot.ax.legend(title="Categories")
