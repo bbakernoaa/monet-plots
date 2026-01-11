@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-from typing import TYPE_CHECKING
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -10,19 +9,15 @@ from .. import tools
 from .base import BasePlot
 
 
-if TYPE_CHECKING:
-    import xarray as xr
-
-
 class ProfilePlot(BasePlot):
     """Profile or cross-section plot."""
 
     def __init__(
         self,
         *,
-        x: t.Union[np.ndarray, "xr.DataArray"],
-        y: t.Union[np.ndarray, "xr.DataArray"],
-        z: t.Union[np.ndarray, "xr.DataArray", None] = None,
+        x: np.ndarray,
+        y: np.ndarray,
+        z: np.ndarray | None = None,
         alt_adjust: float | None = None,
         **kwargs: t.Any,
     ) -> None:
@@ -41,15 +36,6 @@ class ProfilePlot(BasePlot):
             Keyword arguments passed to the parent class.
         """
         super().__init__(**kwargs)
-
-        # If xarray objects are passed, extract their values.
-        if hasattr(x, "values"):
-            x = x.values
-        if hasattr(y, "values"):
-            y = y.values
-        if hasattr(z, "values"):
-            z = z.values
-
         self.x = x
         if alt_adjust is not None:
             self.y = y - alt_adjust

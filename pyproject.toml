@@ -40,7 +40,6 @@ docs = [
     "mkdocs-material>=8.5",
     "mkdocstrings[python]>=0.19",
     "pymdown-extensions>=9.0",
-    "mkdocs-gallery",
 ]
 
 [tool.ruff]

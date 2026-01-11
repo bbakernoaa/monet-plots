@@ -71,7 +71,7 @@ class TrajectoryPlot(BasePlot):
 
         # Timeseries plot
         ax1 = self.fig.add_subplot(gs[1, 0])
-        timeseries = TimeSeriesPlot(data=self.time, y=self.ts_data, ax=ax1)
+        timeseries = TimeSeriesPlot(df=self.time, y=self.ts_data, ax=ax1)
         timeseries.plot(**kwargs.get("timeseries_kwargs", {}))
 
         self.ax = [ax0, ax1]

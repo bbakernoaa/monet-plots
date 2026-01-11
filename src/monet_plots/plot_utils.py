@@ -332,20 +332,3 @@ def _set_outline_patch_alpha(ax, alpha=0):
             break
     else:
         warnings.warn("unable to set outline_patch alpha", stacklevel=2)
-
-
-def _squeeze_and_validate_coords(coord_array):
-    """Squeeze and validate coordinate arrays.
-
-    This function handles the logic for correctly extracting 1D or 2D
-    coordinate arrays from potentially multi-dimensional inputs.
-    """
-    import numpy as np
-
-    coord = np.asarray(coord_array)
-    if coord.ndim == 4:
-        return coord[0, 0, :, :].squeeze()
-    elif coord.ndim in [1, 2]:
-        return coord
-    else:
-        raise TypeError(f"Inputs x and y must be 1D or 2D, not {coord.ndim}D")

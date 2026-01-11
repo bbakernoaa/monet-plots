@@ -28,12 +28,12 @@ def sample_data():
 
 def test_timeseries_plot_init(clear_figures, sample_data):
     """Test TimeSeriesPlot initialization."""
-    plot = TimeSeriesPlot(data=sample_data, x="time", y="obs")
+    plot = TimeSeriesPlot(df=sample_data, x="time", y="obs")
     assert plot is not None
 
 
 def test_timeseries_plot_plot(clear_figures, sample_data):
     """Test TimeSeriesPlot plot method."""
-    plot = TimeSeriesPlot(data=sample_data, x="time", y="obs")
+    plot = TimeSeriesPlot(df=sample_data, x="time", y="obs")
     ax = plot.plot()
     assert ax is not None

@@ -3,7 +3,6 @@
 from .spatial import SpatialPlot
 from .. import tools
 import numpy as np
-from ..plot_utils import _squeeze_and_validate_coords
 from typing import Any
 import cartopy.crs as ccrs
 
@@ -34,14 +33,9 @@ class WindBarbsPlot(SpatialPlot):
         barb_kwargs = self.add_features(**kwargs)
         barb_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        lat = _squeeze_and_validate_coords(self.gridobj.variables["LAT"])
-        lon = _squeeze_and_validate_coords(self.gridobj.variables["LON"])
+        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
+        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
         u, v = tools.wsdir2uv(self.ws, self.wdir)
-
-        # Handle 1D or 2D coordinates
-        if lon.ndim == 1 and lat.ndim == 1:
-            lon, lat = np.meshgrid(lon, lat)
-
         # Subsample the data for clarity
         skip = barb_kwargs.pop("skip", 15)
         self.ax.barbs(

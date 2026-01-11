@@ -1,7 +1,6 @@
 from .spatial import SpatialPlot
 from ..colorbars import colorbar_index
 import numpy as np
-from ..plot_utils import _squeeze_and_validate_coords
 from typing import Any
 import cartopy.crs as ccrs
 
@@ -45,8 +44,8 @@ class SpatialImshow(SpatialPlot):
         imshow_kwargs = self.add_features(**kwargs)
         imshow_kwargs.update(self.plotargs)
 
-        lat = _squeeze_and_validate_coords(self.gridobj.variables["LAT"])
-        lon = _squeeze_and_validate_coords(self.gridobj.variables["LON"])
+        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
+        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
 
         # imshow requires the extent [lon_min, lon_max, lat_min, lat_max]
         extent = [lon.min(), lon.max(), lat.min(), lat.max()]
