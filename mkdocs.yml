@@ -15,7 +15,7 @@ plugins:
         python:
           paths: [src]
   - gallery:
-      examples_dirs: examples
+      examples_dirs: examples/gallery
       gallery_dirs: docs/gallery
 nav:
   - Home: index.md
