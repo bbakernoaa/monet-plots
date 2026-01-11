@@ -333,6 +333,7 @@ def _set_outline_patch_alpha(ax, alpha=0):
     else:
         warnings.warn("unable to set outline_patch alpha", stacklevel=2)
 
+
 def _squeeze_and_validate_coords(coord_array):
     """Squeeze and validate coordinate arrays.
 
@@ -340,6 +341,7 @@ def _squeeze_and_validate_coords(coord_array):
     coordinate arrays from potentially multi-dimensional inputs.
     """
     import numpy as np
+
     coord = np.asarray(coord_array)
     if coord.ndim == 4:
         return coord[0, 0, :, :].squeeze()
