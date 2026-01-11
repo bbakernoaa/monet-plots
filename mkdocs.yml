@@ -14,47 +14,12 @@ plugins:
       handlers:
         python:
           paths: [src]
+  - gallery:
+      examples_dirs: examples
+      gallery_dirs: docs/gallery
 nav:
   - Home: index.md
-  - Getting Started:
-    - Basic Plotting: examples/getting-started/basic-plotting.md
-    - Brier Decomposition: examples/getting-started/brier-decomposition.md
-    - Categorical: examples/getting-started/categorical.md
-    - Conditional Bias: examples/getting-started/conditional-bias.md
-    - Ensemble: examples/getting-started/ensemble.md
-    - Facet Grid: examples/getting-started/facet-grid.md
-    - KDE: examples/getting-started/kde.md
-    - Meteogram: examples/getting-started/meteogram.md
-    - Performance Diagram: examples/getting-started/performance-diagram.md
-    - Profile: examples/getting-started/profile.md
-    - Rank Histogram: examples/getting-started/rank-histogram.md
-    - Reliability Diagram: examples/getting-started/reliability-diagram.md
-    - REV: examples/getting-started/rev.md
-    - ROC Curve: examples/getting-started/roc-curve.md
-    - Scatter: examples/getting-started/scatter.md
-    - Scorecard: examples/getting-started/scorecard.md
-    - SP Scatter Bias: examples/getting-started/sp-scatter-bias.md
-    - Spatial Bias Scatter: examples/getting-started/spatial-bias-scatter.md
-    - Spatial Contour: examples/getting-started/spatial-contour.md
-    - Spatial Imshow: examples/getting-started/spatial-imshow.md
-    - Spatial: examples/getting-started/spatial.md
-    - Taylor Diagram: examples/getting-started/taylor-diagram.md
-    - Timeseries: examples/getting-started/timeseries.md
-    - Upper Air: examples/getting-started/upper-air.md
-    - Wind Barbs: examples/getting-started/wind-barbs.md
-    - Wind Quiver: examples/getting-started/wind-quiver.md
-    - Windrose: examples/getting-started/windrose.md
-  - Examples:
-    - Xarray Weather Example: examples/xarray_weather_example.ipynb
-    - GRIB Data Example: examples/grib_data_example.ipynb
-    - ROMS Ocean Example: examples/roms_ocean_example.ipynb
-    - KDE Plot Example: examples/kde_plot_example.ipynb
-    - Scatter Plot Example: examples/scatter_plot_example.ipynb
-    - Taylor Diagram Plot Example: examples/taylor_diagram_plot_example.ipynb
-    - Facet Grid Plot Example: examples/facet_grid_plot_example.ipynb
-    - Wind Plots Example: examples/wind_plots_example.ipynb
-    - Spatial Bias Scatter Plot Example: examples/spatial_bias_scatter_plot_example.ipynb
-    - Spatial Contour Plot Example: examples/spatial_contour_plot_example.ipynb
+  - Gallery: gallery/
   - API Reference:
     - API Home: api/index.md
     - Spatial Plots: plots/spatial.md
