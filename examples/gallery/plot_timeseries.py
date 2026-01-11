@@ -18,18 +18,15 @@ from data import create_dataset
 ds = create_dataset()
 
 # 2. Select data for a single point
-# Extract the temperature at the lowest level for a specific lat/lon
-# and convert it to a pandas DataFrame, which is the expected input
-# for the current version of TimeSeriesPlot.
+# Extract the temperature at the lowest level for a specific lat/lon.
+# The TimeSeriesPlot can now handle this xarray.DataArray directly.
 da = ds["temperature"].isel(level=0, latitude=5, longitude=5)
-df = da.to_dataframe().reset_index()
-
 
 # 3. Create a TimeSeriesPlot instance and plot the data
 fig, ax = plt.subplots(figsize=(10, 6))
-plot = TimeSeriesPlot(ax=ax, data=df)
+# Pass the DataArray directly to the plot class
+plot = TimeSeriesPlot(ax=ax, data=da, y="temperature")
 plot.plot(
-    columns=["temperature"],
     label="Surface Temperature",
     color="blue",
     marker="o",

@@ -15,7 +15,7 @@ class TimeSeriesPlot(BasePlot):
 
     def __init__(
         self,
-        df: Any,
+        data: Any,
         x: str = "time",
         y: str = "obs",
         plotargs: dict = {},
@@ -41,7 +41,7 @@ class TimeSeriesPlot(BasePlot):
             *args, **kwargs: Arguments passed to BasePlot.
         """
         super().__init__(*args, **kwargs)
-        self.df = normalize_data(df)
+        self.df = normalize_data(data)
         self.x = x
         self.y = y
         self.plotargs = plotargs
@@ -97,45 +97,43 @@ class TimeSeriesPlot(BasePlot):
         """Generate the timeseries plot from xarray DataArray or Dataset."""
         import xarray as xr
 
-        # Ensure we have the right data structure
-        if isinstance(self.df, xr.DataArray):
-            # Convert DataArray to Dataset for easier handling
-            data = self.df.to_dataset(name=self.y)
+        # Ensure we are working with a DataArray
+        if isinstance(self.df, xr.Dataset):
+            da = self.df[self.y]
         else:
-            data = self.df
+            da = self.df
 
         # Set default fill alpha if not provided
         if "alpha" not in self.fillargs:
             self.fillargs["alpha"] = 0.2
 
-        # Use xarray's built-in plotting capabilities
-        # For time series, we can use the plot method with error shading
+        # Calculate mean and std dev across all dimensions except time
+        time_dim = self.x
+        other_dims = [dim for dim in da.dims if dim != time_dim]
+
+        mean_da = da.mean(dim=other_dims)
+        std_da = da.std(dim=other_dims)
+
+        upper = mean_da + std_da
+        lower = mean_da - std_da
+        lower = lower.where(lower >= 0, 0)
+
+        # Plot the mean time series
         if self.label is not None:
-            data[self.y].plot(ax=self.ax, label=self.label, **self.plotargs)
+            mean_da.plot(ax=self.ax, label=self.label, **self.plotargs)
         else:
-            data[self.y].plot(ax=self.ax, **self.plotargs)
+            mean_da.plot(ax=self.ax, **self.plotargs)
 
-        # Calculate and plot error bounds
-        # Use the time coordinate directly from the data
-        time_coord = data[self.y].coords[self.x]
-        mean_data = data[self.y].mean(dim=self.x)
-        std_data = data[self.y].std(dim=self.x)
-        upper = mean_data + std_data
-        lower = mean_data - std_data
-        lower = lower.where(lower >= 0, 0)  # Ensure non-negative values
-
-        # Plot the error bounds using the time coordinate values
+        # Add the shaded error bounds
         self.ax.fill_between(
-            time_coord.values, lower.values, upper.values, **self.fillargs
+            mean_da[time_dim].values, lower.values, upper.values, **self.fillargs
         )
 
         # Set labels and title
-        unit = "None"  # xarray doesn't have a direct units attribute like pandas
-        if hasattr(data[self.y], "attrs") and "units" in data[self.y].attrs:
-            unit = data[self.y].attrs["units"]
+        unit = da.attrs.get("units", "None")
 
         if self.ylabel is None:
-            self.ax.set_ylabel(f"{self.y} ({unit})")
+            self.ax.set_ylabel(f"{da.name or self.y} ({unit})")
         else:
             self.ax.set_ylabel(self.label)
 

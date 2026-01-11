@@ -15,9 +15,9 @@ class ProfilePlot(BasePlot):
     def __init__(
         self,
         *,
-        x: np.ndarray,
-        y: np.ndarray,
-        z: np.ndarray | None = None,
+        x: t.Union[np.ndarray, "xr.DataArray"],
+        y: t.Union[np.ndarray, "xr.DataArray"],
+        z: t.Union[np.ndarray, "xr.DataArray", None] = None,
         alt_adjust: float | None = None,
         **kwargs: t.Any,
     ) -> None:
@@ -36,6 +36,15 @@ class ProfilePlot(BasePlot):
             Keyword arguments passed to the parent class.
         """
         super().__init__(**kwargs)
+
+        # If xarray objects are passed, extract their values.
+        if hasattr(x, "values"):
+            x = x.values
+        if hasattr(y, "values"):
+            y = y.values
+        if hasattr(z, "values"):
+            z = z.values
+
         self.x = x
         if alt_adjust is not None:
             self.y = y - alt_adjust
