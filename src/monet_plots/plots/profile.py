@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import typing as t
+from typing import TYPE_CHECKING
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from .. import tools
 from .base import BasePlot
+
+
+if TYPE_CHECKING:
+    import xarray as xr
 
 
 class ProfilePlot(BasePlot):

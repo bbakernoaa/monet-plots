@@ -226,9 +226,9 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
 
         # Ensure 'c' is an xarray.DataArray wrapping a dask array
         assert isinstance(c_arg, xr.DataArray), "The 'c' argument is not a DataArray."
-        assert isinstance(c_arg.data, dask.array.Array), (
-            "The underlying data is not a dask array."
-        )
+        assert isinstance(
+            c_arg.data, dask.array.Array
+        ), "The underlying data is not a dask array."
 
 
 def test_spatial_track_inheritance_and_provenance(sample_dataarray):
