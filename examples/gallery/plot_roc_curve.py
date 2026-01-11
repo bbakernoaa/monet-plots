@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from monet_plots.plots.roc_curve import ROCCurve
+from monet_plots.plots.roc_curve import ROCCurvePlot
 
 # 1. Create synthetic probabilistic forecast data
 np.random.seed(42)
@@ -20,16 +20,25 @@ forecast_prob = np.random.rand(n_samples)
 # Corresponding binary observations (e.g., did the gust occur?)
 observed_binary = (forecast_prob > np.random.rand(n_samples)).astype(int)
 
-df = pd.DataFrame(
-    {"forecast_prob": forecast_prob, "observed_binary": observed_binary}
-)
 
-# 2. Create and display the plot
+# 2. Calculate POD and POFD for a range of thresholds
+thresholds = np.linspace(0, 1, 21)
+roc_data = []
+for thresh in thresholds:
+    forecast_binary = (forecast_prob >= thresh).astype(int)
+    hits = np.sum((forecast_binary == 1) & (observed_binary == 1))
+    misses = np.sum((forecast_binary == 0) & (observed_binary == 1))
+    false_alarms = np.sum((forecast_binary == 1) & (observed_binary == 0))
+    correct_negatives = np.sum((forecast_binary == 0) & (observed_binary == 0))
+    pod = hits / (hits + misses) if (hits + misses) > 0 else 0
+    pofd = false_alarms / (false_alarms + correct_negatives) if (false_alarms + correct_negatives) > 0 else 0
+    roc_data.append({"threshold": thresh, "pod": pod, "pofd": pofd})
+
+roc_df = pd.DataFrame(roc_data)
+
+# 3. Create and display the plot
 fig, ax = plt.subplots(figsize=(8, 8))
-plot = ROCCurve(ax=ax, data=df)
-plot.plot(
-    prob_col="forecast_prob",
-    obs_col="observed_binary",
-    title="ROC Curve for a Synthetic Forecast",
-)
+plot = ROCCurvePlot(ax=ax, fig=fig)
+plot.plot(data=roc_df, x_col="pofd", y_col="pod")
+ax.set_title("ROC Curve for a Synthetic Forecast")
 plt.show()

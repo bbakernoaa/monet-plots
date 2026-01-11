@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from monet_plots.plots.scatter import Scatter
+from monet_plots.plots.scatter import ScatterPlot
 from data import create_dataset
 
 # 1. Create synthetic data for model vs. observation comparison
@@ -27,19 +27,23 @@ df = pd.DataFrame({'observation': obs, 'model': mod})
 
 # 2. Create and display the scatter plot
 fig, ax = plt.subplots(figsize=(8, 8))
-plot = Scatter(ax=ax, data=df)
-plot.plot(
+plot = ScatterPlot(
+    df=df,
     x="observation",
     y="model",
-    xlabel=f"Observed Temperature ({ds['temperature'].attrs['units']})",
-    ylabel=f"Modeled Temperature ({ds['temperature'].attrs['units']})",
     title="Model vs. Observation Scatter Plot",
+    ax=ax,
+    fig=fig,
 )
+plot.plot()
+ax.set_xlabel(f"Observed Temperature ({ds['temperature'].attrs['units']})")
+ax.set_ylabel(f"Modeled Temperature ({ds['temperature'].attrs['units']})")
 
 # 3. Add a 1-to-1 line for reference
-plot.add_one_to_one()
-
-# 4. Add a linear regression line
-plot.add_regression()
+x_lim = ax.get_xlim()
+y_lim = ax.get_ylim()
+ax.plot([min(x_lim[0], y_lim[0]), max(x_lim[1], y_lim[1])],
+        [min(x_lim[0], y_lim[0]), max(x_lim[1], y_lim[1])],
+        color='black', linestyle='--')
 
 plt.show()

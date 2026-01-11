@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from monet_plots.plots.brier_decomposition import BrierDecomposition
+from monet_plots.plots.brier_decomposition import BrierScoreDecompositionPlot
 
 # 1. Create synthetic probabilistic forecast data
 np.random.seed(42)
@@ -26,11 +26,11 @@ df = pd.DataFrame(
 
 # 2. Create and display the plot
 fig, ax = plt.subplots(figsize=(8, 6))
-plot = BrierDecomposition(ax=ax, data=df)
+plot = BrierScoreDecompositionPlot(ax=ax, fig=fig)
 plot.plot(
-    prob_col="forecast_prob",
-    obs_col="observed_binary",
-    bins=np.linspace(0, 1, 11),  # 10 bins from 0 to 1
-    title="Brier Decomposition of a Synthetic Forecast",
+    data=df,
+    forecasts_col="forecast_prob",
+    observations_col="observed_binary",
+    n_bins=10,
 )
 plt.show()

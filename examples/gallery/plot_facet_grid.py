@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from monet_plots.plots.facet_grid import FacetGrid
+from monet_plots.plots.facet_grid import FacetGridPlot
 
 # 1. Create a synthetic dataset with multiple categories
 np.random.seed(42)
@@ -25,8 +25,8 @@ df = pd.DataFrame({
 # 2. Create and display the plot
 # We will create a grid of scatter plots, with each column representing a
 # 'season' and each row representing a 'category'.
-plot = FacetGrid(data=df, row='category', col='season')
-plot.map(sns.scatterplot, 'x', 'y')
-plot.add_legend()
+plot = FacetGridPlot(data=df, row='category', col='season')
+plot.map_dataframe(sns.scatterplot, 'x', 'y')
+plot.grid.add_legend()
 plt.suptitle('Facet Grid of Scatter Plots by Season and Category', y=1.02)
 plt.show()

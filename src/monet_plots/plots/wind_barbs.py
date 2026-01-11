@@ -33,8 +33,8 @@ class WindBarbsPlot(SpatialPlot):
         barb_kwargs = self.add_features(**kwargs)
         barb_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
-        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+        lat = np.asarray(self.gridobj.variables["LAT"])
+        lon = np.asarray(self.gridobj.variables["LON"])
         u, v = tools.wsdir2uv(self.ws, self.wdir)
         # Subsample the data for clarity
         skip = barb_kwargs.pop("skip", 15)

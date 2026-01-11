@@ -48,8 +48,8 @@ class SpatialContourPlot(SpatialPlot):
         # Draw map features and get remaining kwargs for contourf
         plot_kwargs = self.add_features(**kwargs)
 
-        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
-        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+        lat = np.asarray(self.gridobj.variables["LAT"])
+        lon = np.asarray(self.gridobj.variables["LON"])
 
         # Data is in lat/lon, so specify transform
         plot_kwargs.setdefault("transform", ccrs.PlateCarree())

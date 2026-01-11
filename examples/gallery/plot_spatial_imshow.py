@@ -21,24 +21,23 @@ ds = create_dataset()
 # We will use the surface ozone concentration
 ozone_surface = ds["ozone"].isel(time=0, level=0)
 
-# 3. Create a SpatialImshow instance and plot the data
+
+# 3. Create a grid object for the plot
+class Grid:
+    def __init__(self, ds):
+        self.variables = {"LAT": ds.latitude, "LON": ds.longitude}
+
+
+grid = Grid(ds)
+
+
+# 4. Create a SpatialImshow instance and plot the data
 fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={"projection": ccrs.Mercator()})
+plot = SpatialImshow(modelvar=ozone_surface, gridobj=grid, ax=ax, fig=fig)
 
-# The `extent` is automatically inferred from the data's longitude and latitude
-# coordinates.
-plot = SpatialImshow(
-    ax=ax,
-    data=ozone_surface,
-    longitude=ds.longitude,
-    latitude=ds.latitude,
-)
-
-# 4. Plot the data using imshow
-# The `transform` argument is crucial to tell cartopy that the data's
-# coordinates are in a PlateCarree (lat/lon) projection.
-plot.imshow(
-    cbar_kwargs={"label": f"Surface Ozone ({ozone_surface.attrs['units']})"}
-)
+# 5. Plot the data using imshow
+cbar = plot.plot()
+cbar.set_label(f"Surface Ozone ({ozone_surface.attrs['units']})")
 
 # 5. Add geographic features
 plot.add_features("coastline", "states", "countries")

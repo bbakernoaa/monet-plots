@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from monet_plots.plots.performance_diagram import PerformanceDiagram
+from monet_plots.plots.performance_diagram import PerformanceDiagramPlot
 
 # 1. Create synthetic categorical forecast data
 # This represents a series of forecasts and their corresponding observations
@@ -34,9 +34,11 @@ df = pd.DataFrame(data, columns=["model", "hits", "misses", "false_alarms", "cor
 
 # 2. Create and display the plot
 fig, ax = plt.subplots(figsize=(8, 8))
-plot = PerformanceDiagram(ax=ax, data=df)
+plot = PerformanceDiagramPlot(ax=ax, fig=fig)
 plot.plot(
+    data=df,
+    counts_cols=["hits", "misses", "false_alarms", "correct_negatives"],
     label_col="model",
-    title="Performance Diagram for Multiple Forecast Models",
 )
+ax.set_title("Performance Diagram for Multiple Forecast Models")
 plt.show()

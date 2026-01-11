@@ -22,7 +22,10 @@ df['wind_speed'] = np.random.rand(n_times) * 15
 df['precipitation'] = np.random.power(0.5, n_times) * 10
 
 # 2. Create and display the plot
-plot = Meteogram(data=df)
-fig = plot.plot()
-fig.suptitle("Meteogram for a Single Location", y=1.0)
+plot = Meteogram(
+    df=df,
+    variables=["temperature", "pressure", "wind_speed", "precipitation"],
+)
+plot.plot()
+plt.suptitle("Meteogram for a Single Location", y=1.02)
 plt.show()

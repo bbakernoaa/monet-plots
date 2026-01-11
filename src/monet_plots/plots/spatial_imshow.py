@@ -44,8 +44,8 @@ class SpatialImshow(SpatialPlot):
         imshow_kwargs = self.add_features(**kwargs)
         imshow_kwargs.update(self.plotargs)
 
-        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
-        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+        lat = np.asarray(self.gridobj.variables["LAT"])
+        lon = np.asarray(self.gridobj.variables["LON"])
 
         # imshow requires the extent [lon_min, lon_max, lat_min, lat_max]
         extent = [lon.min(), lon.max(), lat.min(), lat.max()]

@@ -11,7 +11,7 @@ or temperature fields.
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 
-from monet_plots.plots.spatial_contour import SpatialContour
+from monet_plots.plots.spatial_contour import SpatialContourPlot
 from data import create_dataset
 
 # 1. Create the synthetic dataset
@@ -21,13 +21,27 @@ ds = create_dataset()
 # We will use the temperature at the 850 hPa level
 temp_850 = ds["temperature"].sel(level=850).isel(time=0)
 
-# 3. Create a SpatialContour instance and plot the data
-fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={"projection": ccrs.LambertConformal()})
-plot = SpatialContour(ax=ax, data=temp_850, longitude=ds.longitude, latitude=ds.latitude)
 
-# 4. Plot the contours
-plot.contour(
-    cbar_kwargs={"label": f"850 hPa Temperature ({temp_850.attrs['units']})"}
+# 3. Create a grid object for the plot
+class Grid:
+    def __init__(self, ds):
+        self.variables = {"LAT": ds.latitude, "LON": ds.longitude}
+
+
+grid = Grid(ds)
+
+# 4. Create a SpatialContourPlot instance and plot the data
+fig, ax = plt.subplots(
+    figsize=(10, 8), subplot_kw={"projection": ccrs.LambertConformal()}
+)
+plot = SpatialContourPlot(
+    modelvar=temp_850, gridobj=grid, ax=ax, fig=fig, discrete=False
+)
+
+# 5. Plot the contours
+plot.plot(
+    levels=15,
+    cmap="viridis",
 )
 
 # 5. Add geographic features

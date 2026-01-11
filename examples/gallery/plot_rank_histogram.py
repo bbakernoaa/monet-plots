@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from monet_plots.plots.rank_histogram import RankHistogram
+from monet_plots.plots.rank_histogram import RankHistogramPlot
 
 # 1. Create synthetic ensemble forecast data and corresponding observations
 np.random.seed(42)
@@ -20,19 +20,18 @@ n_members = 11  # Number of ensemble members
 ensemble_forecasts = np.random.randn(n_samples, n_members) * 5 + 280
 
 # Generate corresponding "truth" observations
-# A well-calibrated ensemble should have the truth fall within its spread
 observations = np.random.randn(n_samples) * 4.5 + 280.5
 
-# Combine into a DataFrame
-df = pd.DataFrame(ensemble_forecasts, columns=[f"member_{i}" for i in range(n_members)])
-df['observation'] = observations
 
-# 2. Create and display the plot
+# 2. Calculate the rank of the observation within the ensemble
+all_data = np.hstack([ensemble_forecasts, observations[:, np.newaxis]])
+ranks = np.apply_along_axis(lambda x: np.searchsorted(np.sort(x), x[-1]), 1, all_data)
+rank_df = pd.DataFrame({"rank": ranks})
+
+
+# 3. Create and display the plot
 fig, ax = plt.subplots(figsize=(8, 6))
-plot = RankHistogram(ax=ax, data=df)
-plot.plot(
-    obs_col="observation",
-    ensemble_cols=[f"member_{i}" for i in range(n_members)],
-    title="Rank Histogram of Ensemble Forecast",
-)
+plot = RankHistogramPlot(ax=ax, fig=fig)
+plot.plot(data=rank_df, rank_col="rank", n_members=n_members)
+ax.set_title("Rank Histogram of Ensemble Forecast")
 plt.show()
