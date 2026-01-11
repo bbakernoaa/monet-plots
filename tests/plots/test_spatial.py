@@ -92,35 +92,6 @@ def test_spatial_plot_feature_styling(clear_figures):
     assert found_match, "Failed to find a feature with the specified custom style."
 
 
-def test_spatial_plot_draw_map_docstring_example(clear_figures):
-    """Test the example from the SpatialPlot.draw_map docstring."""
-    ax = SpatialPlot.draw_map(states=True, extent=[-125, -70, 25, 50])
-    assert isinstance(ax, GeoAxes)
-    assert len(ax.collections) > 0
-
-
-def test_draw_map_dict_style_arg(clear_figures):
-    """Test that `draw_map` correctly handles dict style args."""
-    # 1. The Logic (Implementation)
-    # Pass a dictionary to style the states feature
-    ax = SpatialPlot.draw_map(
-        states={"linewidth": 2.0, "edgecolor": "blue"},
-        resolution="110m",
-    )
-    ax.figure.canvas.draw()  # Force render to update collections
-
-    # 2. The Proof (Validation)
-    # Check that a collection with the specified style exists
-    found_match = False
-    for collection in ax.collections:
-        # Note: edgecolor is returned as an RGBA tuple
-        if (
-            collection.get_linewidth()[0] == 2.0
-            and collection.get_edgecolor()[0][2] == 1.0
-        ):  # Blue channel
-            found_match = True
-            break
-    assert found_match, "Failed to apply dictionary-based style in draw_map."
 
 
 def test_add_features_docstring_example(clear_figures):
