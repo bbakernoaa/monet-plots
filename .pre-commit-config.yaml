@@ -16,4 +16,4 @@ repos:
         args: [--fix,--verbose]
       # Run the formatter.
       - id: ruff-format
-      - args: ["--diff"]
+        args: ["--diff"]
