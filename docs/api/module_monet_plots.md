@@ -46,7 +46,6 @@ print(monet_plots.__email__)
 | [`taylordiagram`](../taylordiagram) | Taylor diagram functionality |
 | [`plot_utils`](../plot_utils) | Common plotting utilities |
 | [`cartopy_utils`](../cartopy_utils) | Cartopy integration utilities |
-| [`mapgen`](../mapgen) | Map generation utilities |
 
 ## Package Attributes
 
