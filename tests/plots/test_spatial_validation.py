@@ -1,8 +1,6 @@
 # tests/plots/test_spatial_validation.py
 import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
 import pytest
-from monet_plots.plots.spatial import SpatialPlot
 
 
 @pytest.fixture

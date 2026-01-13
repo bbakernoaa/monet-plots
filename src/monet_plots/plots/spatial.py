@@ -1,7 +1,6 @@
 # src/monet_plots/plots/spatial.py
 from __future__ import annotations
 
-import warnings
 from typing import Any, Dict, Literal, Union
 
 import cartopy.crs as ccrs
@@ -317,6 +316,7 @@ class SpatialPlot(BasePlot):
         # Add features and return
         plot.add_features(**kwargs)
         return plot
+
 
 class SpatialTrack(SpatialPlot):
     """Plot a trajectory from an xarray.DataArray on a map.
