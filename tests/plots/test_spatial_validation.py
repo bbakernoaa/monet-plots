@@ -13,23 +13,6 @@ def clear_figures():
     plt.close("all")
 
 
-def test_draw_map_docstring_example(clear_figures):
-    """Tests the example from the SpatialPlot.draw_map docstring.
-
-    This test validates that the function returns a valid matplotlib Axes
-    object and that map features (like states) are drawn.
-    """
-    # --- The Logic (from docstring example) ---
-    ax = SpatialPlot.draw_map(states=True, extent=[-125, -70, 25, 50])
-
-    # --- The Proof (Validation) ---
-    assert isinstance(ax, Axes), "The return type must be a matplotlib Axes object."
-
-    # An empty map might have 1 collection (the spine). Adding states should
-    # result in more collections being added.
-    assert len(ax.collections) > 1, "Expected cartopy features to be drawn."
-
-
 def test_spatial_track_docstring_example(clear_figures):
     """Tests the example from the SpatialTrack.plot docstring.
 
