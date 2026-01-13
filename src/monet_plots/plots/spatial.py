@@ -348,7 +348,7 @@ class SpatialTrack(SpatialPlot):
         """Initialize the SpatialTrack plot.
 
         This constructor validates the input data and sets up the map canvas
-        by initializing the parent `SpatialPlot` and adding map features.
+        by initializing the parent `SpatialPlot`.
 
         Parameters
         ----------
@@ -360,10 +360,9 @@ class SpatialTrack(SpatialPlot):
         lat_coord : str, optional
             Name of the latitude coordinate in the DataArray, by default 'lat'.
         **kwargs : Any
-            Keyword arguments passed to :class:`SpatialPlot`. These control
-            the map projection, figure size, and cartopy features. For example:
-            `projection=ccrs.LambertConformal()`, `figsize=(10, 8)`,
-            `states=True`, `extent=[-125, -70, 25, 50]`.
+            Keyword arguments passed to :class:`SpatialPlot` to control the
+            map projection and figure size. For example:
+            `projection=ccrs.LambertConformal()`, `figsize=(10, 8)`.
         """
         if not isinstance(data, xr.DataArray):
             raise TypeError("Input 'data' must be an xarray.DataArray.")
@@ -379,9 +378,6 @@ class SpatialTrack(SpatialPlot):
         # Initialize the parent SpatialPlot to create the map canvas
         super().__init__(**kwargs)
 
-        # Draw features passed as kwargs (e.g., states=True)
-        self.add_features()
-
         # Set data and update history for provenance
         self.data = data
         self.lon_coord = lon_coord
@@ -390,13 +386,17 @@ class SpatialTrack(SpatialPlot):
         self.data.attrs["history"] = f"Plotted with monet-plots.SpatialTrack; {history}"
 
     def plot(self, **kwargs: Any) -> plt.Artist:
-        """Plot the trajectory on the map.
+        """Plot the trajectory and map features on the map.
         The track is rendered as a scatter plot, where each point is colored
-        according to the `data` values.
+        according to the `data` values. This method also draws cartopy
+        features like coastlines or states.
         Parameters
         ----------
         **kwargs : Any
-            Keyword arguments passed to `matplotlib.pyplot.scatter`.
+            Keyword arguments are dynamically passed to two places:
+            1.  `monet_plots.plots.spatial.SpatialPlot.add_features` for
+                map styling (e.g., `states=True`, `extent=[...]`).
+            2.  `matplotlib.pyplot.scatter` for data styling (e.g., `cmap`).
             A `transform` keyword (e.g., `transform=ccrs.PlateCarree()`)
             is highly recommended for geospatial accuracy.
         Returns
@@ -428,21 +428,30 @@ class SpatialTrack(SpatialPlot):
         ...     attrs={'units': 'ppb'}
         ... )
         >>>
-        >>> # 2. Create the plot and render the data
+        >>> # 2. Initialize the plot object (no rendering yet)
         >>> track_plot = SpatialTrack(
         ...     da,
         ...     projection=ccrs.LambertConformal(),
+        ... )
+        >>>
+        >>> # 3. Render the data and map features
+        >>> sc = track_plot.plot(
         ...     states=True,
         ...     extent=[-125, -70, 25, 50],
+        ...     cmap='viridis',
+        ...     transform=ccrs.PlateCarree()
         ... )
-        >>> sc = track_plot.plot(cmap='viridis', transform=ccrs.PlateCarree())
         >>> plt.colorbar(sc, label="O3 Concentration (ppb)")
         >>> plt.show()
         """
-        kwargs.setdefault("transform", ccrs.PlateCarree())
+        # Draw map features first, consuming relevant kwargs
+        scatter_kwargs = self.add_features(**kwargs)
+
+        # Set transform default for the scatter plot
+        scatter_kwargs.setdefault("transform", ccrs.PlateCarree())
 
         longitude = self.data[self.lon_coord]
         latitude = self.data[self.lat_coord]
 
-        sc = self.ax.scatter(longitude, latitude, c=self.data, **kwargs)
+        sc = self.ax.scatter(longitude, latitude, c=self.data, **scatter_kwargs)
         return sc

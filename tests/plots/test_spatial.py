@@ -130,11 +130,37 @@ def test_spatial_plot_from_projection(clear_figures):
 
 def test_spatialtrack_init_success(sample_dataarray):
     """Test successful initialization of SpatialTrack."""
-    track_plot = SpatialTrack(data=sample_dataarray, states=True)
+    track_plot = SpatialTrack(data=sample_dataarray)
     assert track_plot.data is sample_dataarray
     assert track_plot.lon_coord == "lon"
     assert track_plot.lat_coord == "lat"
     assert "history" in track_plot.data.attrs
+    # With the refactor, init should not draw features
+    assert len(track_plot.ax.collections) == 0
+
+
+def test_spatialtrack_plot_draws_features_and_data(sample_dataarray, clear_figures):
+    """Test that the plot method now draws map features and data."""
+    # 1. ARRANGE: Initialize the plot object without any rendering
+    track_plot = SpatialTrack(
+        data=sample_dataarray,
+        projection=ccrs.LambertConformal(),
+        resolution="110m",
+    )
+    assert len(track_plot.ax.collections) == 0  # Should be empty initially
+
+    # 2. ACT: Call the plot method to render features and data
+    sc = track_plot.plot(states=True, coastlines=True, cmap="viridis")
+    track_plot.fig.canvas.draw()  # Force render
+
+    # 3. ASSERT: Verify that both features and data are drawn
+    assert sc is not None, "Scatter artist should be returned"
+    assert len(track_plot.ax.collections) > 0, "Cartopy features should be added"
+    # The scatter plot adds a PathCollection
+    assert any(
+        isinstance(c, plt.matplotlib.collections.PathCollection)
+        for c in track_plot.ax.collections
+    )
 
 
 def test_spatialtrack_init_invalid_data_type():
@@ -163,9 +189,9 @@ def test_spatialtrack_init_missing_lat_coord(sample_dataarray):
 
 def test_spatialtrack_plot_runs(sample_dataarray):
     """Test that the plot method runs without errors."""
-    track_plot = SpatialTrack(data=sample_dataarray, states=True)
+    track_plot = SpatialTrack(data=sample_dataarray)
     try:
-        sc = track_plot.plot(cmap="viridis")
+        sc = track_plot.plot(states=True, cmap="viridis")
         assert sc is not None
         plt.close(track_plot.fig)
     except Exception as e:
@@ -208,10 +234,10 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
     )
 
     # 2. The Proof (Instantiate and plot, spying on the scatter call)
-    track_plot = SpatialTrack(data=da_lazy, states=True, resolution="110m")
+    track_plot = SpatialTrack(data=da_lazy, resolution="110m")
 
     with patch.object(track_plot.ax, "scatter") as mock_scatter:
-        track_plot.plot()
+        track_plot.plot(states=True)
         # 3. The Validation
         mock_scatter.assert_called_once()
         args, kwargs = mock_scatter.call_args
@@ -233,8 +259,8 @@ def test_spatial_track_inheritance_and_provenance(sample_dataarray):
     track_plot = SpatialTrack(
         data=sample_dataarray,
         projection=ccrs.LambertConformal(),
-        states=True,
     )
+    track_plot.plot(states=True)
 
     # 3. ASSERT: Validate initialization, inheritance, and provenance
     assert isinstance(track_plot, SpatialPlot), "Should be a SpatialPlot subclass"
