@@ -93,8 +93,8 @@ class SpatialPlot(BasePlot):
 
         super().__init__(fig=fig, ax=ax, **base_plot_kwargs)
 
-    def _get_feature_registry(self, resolution: str) -> dict[str, Any]:
-        """Return a registry of functions to add cartopy features.
+    def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:
+        """Return a registry of cartopy features and their default styles.
 
         This approach centralizes feature management, making it easier to
         add new features and maintain existing ones.
@@ -106,35 +106,45 @@ class SpatialPlot(BasePlot):
 
         Returns
         -------
-        dict[str, Any]
-            A dictionary mapping feature names to the corresponding cartopy
-            feature objects or methods.
+        dict[str, dict[str, Any]]
+            A dictionary mapping feature names to a specification dictionary
+            containing the feature object and its default styling.
         """
-        # Lazy import to avoid circular dependencies if this were ever needed.
-        # For now, it's just a clean way to organize.
         from cartopy.feature import BORDERS, LAKES, LAND, OCEAN, RIVERS, STATES
 
+        # Define default styles in one place for consistency
+        line_defaults = {"linewidth": 0.5, "edgecolor": "black"}
+        gridline_defaults = {"draw_labels": True, "linestyle": "--", "color": "gray"}
+
         feature_mapping = {
-            # Special handling for ax.coastlines
-            "coastlines": self.ax.coastlines,
-            # Natural Earth Features
-            "countries": BORDERS.with_scale(resolution),
-            "states": STATES.with_scale(resolution),
-            "borders": BORDERS,
-            "ocean": OCEAN,
-            "land": LAND,
-            "rivers": RIVERS,
-            "lakes": LAKES,
-            # Special case for counties
-            "counties": cfeature.NaturalEarthFeature(
-                category="cultural",
-                name="admin_2_counties",
-                scale=resolution,
-                facecolor="none",
-                edgecolor="k",
-            ),
-            # Special handling for ax.gridlines
-            "gridlines": self.ax.gridlines,
+            "coastlines": {"feature": self.ax.coastlines, "defaults": line_defaults},
+            "countries": {
+                "feature": BORDERS.with_scale(resolution),
+                "defaults": line_defaults,
+            },
+            "states": {
+                "feature": STATES.with_scale(resolution),
+                "defaults": line_defaults,
+            },
+            "borders": {"feature": BORDERS, "defaults": line_defaults},
+            "ocean": {"feature": OCEAN, "defaults": {}},
+            "land": {"feature": LAND, "defaults": {}},
+            "rivers": {"feature": RIVERS, "defaults": {}},
+            "lakes": {"feature": LAKES, "defaults": {}},
+            "counties": {
+                "feature": cfeature.NaturalEarthFeature(
+                    category="cultural",
+                    name="admin_2_counties",
+                    scale=resolution,
+                    facecolor="none",
+                    edgecolor="k",
+                ),
+                "defaults": line_defaults,
+            },
+            "gridlines": {
+                "feature": self.ax.gridlines,
+                "defaults": gridline_defaults,
+            },
         }
         return feature_mapping
 
@@ -159,14 +169,15 @@ class SpatialPlot(BasePlot):
         if isinstance(style, dict):
             return style
         if style and defaults:
-            return defaults
+            # Return a copy to prevent modifying the defaults dictionary in place
+            return defaults.copy()
         return {}
 
     def _draw_single_feature(
         self,
         key: str,
-        feature_or_method: Any,
         style_arg: bool | dict[str, Any],
+        feature_spec: dict[str, Any],
         resolution: str,
     ) -> None:
         """Draw a single cartopy feature on the axes.
@@ -175,27 +186,21 @@ class SpatialPlot(BasePlot):
         ----------
         key : str
             The name of the feature (e.g., 'states').
-        feature_or_method : Any
-            The cartopy feature object or a method like `ax.coastlines`.
         style_arg : bool or dict[str, Any]
             The user-provided style for the feature.
+        feature_spec : dict[str, Any]
+            A dictionary containing the feature object and default styles.
         resolution : str
             The resolution to use for scalable features.
         """
         if not style_arg:  # Allows for `coastlines=False`
             return
 
-        # Determine default styles based on the feature
-        defaults = {}
-        if key in ["coastlines", "counties", "states", "countries", "borders"]:
-            defaults = {"linewidth": 0.5, "edgecolor": "black"}
-        elif key == "gridlines":
-            defaults = {"draw_labels": True, "linestyle": "--", "color": "gray"}
-
-        style_kwargs = self._get_style(style_arg, defaults)
+        style_kwargs = self._get_style(style_arg, feature_spec["defaults"])
+        feature_or_method = feature_spec["feature"]
 
         # Draw the feature
-        if callable(feature_or_method):  # ax.coastlines or ax.gridlines
+        if callable(feature_or_method):  # e.g., ax.coastlines
             if key == "coastlines":
                 style_kwargs["resolution"] = resolution
             feature_or_method(**style_kwargs)
@@ -260,10 +265,10 @@ class SpatialPlot(BasePlot):
                 combined_kwargs.setdefault(feature, True)
 
         # Main feature-drawing loop
-        for key, feature_or_method in feature_registry.items():
+        for key, feature_spec in feature_registry.items():
             if key in combined_kwargs:
                 style_arg = combined_kwargs.pop(key)
-                self._draw_single_feature(key, feature_or_method, style_arg, resolution)
+                self._draw_single_feature(key, style_arg, feature_spec, resolution)
 
         # Handle extent after features are drawn
         if "extent" in combined_kwargs:
