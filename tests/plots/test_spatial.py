@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 import xarray as xr
 from cartopy.mpl.geoaxes import GeoAxes
-from matplotlib.collections import LineCollection
 
 from monet_plots.plots.spatial import SpatialPlot, SpatialTrack
 
@@ -28,9 +27,7 @@ def test_spatial_plot_init_default():
 
 def test_spatial_plot_init_custom_fig_ax():
     """Test SpatialPlot initialization with existing figure and axes."""
-    fig, ax = plt.subplots(
-        subplot_kw={"projection": ccrs.LambertConformal()}
-    )
+    fig, ax = plt.subplots(subplot_kw={"projection": ccrs.LambertConformal()})
     plot = SpatialPlot(fig=fig, ax=ax)
     assert plot.fig is fig
     assert plot.ax is ax
@@ -116,6 +113,7 @@ def test_natural_earth_convenience_flag(spatial_plot):
 
 # --- SpatialTrack Tests ---
 
+
 @pytest.fixture
 def sample_trajectory_data():
     """Create a sample xarray.DataArray for trajectory plots."""
@@ -125,14 +123,10 @@ def sample_trajectory_data():
     data = np.linspace(0, 50, 10)
     da = xr.DataArray(
         data,
-        dims=['time'],
-        coords={
-            'time': time,
-            'lon': ('time', lon),
-            'lat': ('time', lat)
-        },
-        name='O3',
-        attrs={'units': 'ppb'}
+        dims=["time"],
+        coords={"time": time, "lon": ("time", lon), "lat": ("time", lat)},
+        name="O3",
+        attrs={"units": "ppb"},
     )
     return da
 
@@ -147,10 +141,10 @@ def test_spatial_track_init(sample_trajectory_data):
 def test_spatial_track_missing_coords(sample_trajectory_data):
     """Test that SpatialTrack raises ValueError for missing coordinates."""
     with pytest.raises(ValueError, match="Longitude coordinate 'longitude' not found"):
-        SpatialTrack(sample_trajectory_data, lon_coord='longitude')
+        SpatialTrack(sample_trajectory_data, lon_coord="longitude")
 
     with pytest.raises(ValueError, match="Latitude coordinate 'latitude' not found"):
-        SpatialTrack(sample_trajectory_data, lat_coord='latitude')
+        SpatialTrack(sample_trajectory_data, lat_coord="latitude")
 
 
 def test_spatial_track_plot_method(sample_trajectory_data):
@@ -161,5 +155,7 @@ def test_spatial_track_plot_method(sample_trajectory_data):
     assert isinstance(scatter_artist, plt.Artist)
     # Check if data is correctly passed to the scatter plot
     # Note: this is an indirect check
-    assert len(scatter_artist.get_offsets()) == len(sample_trajectory_data['time'])
-    np.testing.assert_array_equal(scatter_artist.get_array(), sample_trajectory_data.values)
+    assert len(scatter_artist.get_offsets()) == len(sample_trajectory_data["time"])
+    np.testing.assert_array_equal(
+        scatter_artist.get_array(), sample_trajectory_data.values
+    )
