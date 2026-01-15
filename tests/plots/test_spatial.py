@@ -77,11 +77,13 @@ def test_add_features_disabled(spatial_plot):
     assert len(spatial_plot.ax.collections) == initial_collections
 
 
-def test_from_projection_factory():
-    """Test the from_projection classmethod factory."""
-    # This tests if the factory correctly creates an instance and adds features
-    plot = SpatialPlot.from_projection(
-        projection=ccrs.AlbersEqualArea(),
+def test_spatial_plot_workflow():
+    """Test the standard workflow: init -> add_features."""
+    # 1. Initialize the plot
+    plot = SpatialPlot(projection=ccrs.AlbersEqualArea())
+
+    # 2. Add features
+    plot.add_features(
         states=True,
         countries=True,
         extent=[-120, -70, 20, 50],

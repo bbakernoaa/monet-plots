@@ -39,9 +39,14 @@ class SpatialPlot(BasePlot):
         resolution: Literal["10m", "50m", "110m"] = "50m",
         fig: plt.Figure | None = None,
         ax: plt.Axes | None = None,
-        **kwargs: Any,
+        figsize: tuple[float, float] | None = None,
+        subplot_kw: dict[str, Any] | None = None,
     ) -> None:
-        """Initialize the spatial plot.
+        """Initialize the spatial plot canvas.
+
+        This constructor's primary role is to set up the matplotlib Figure and
+        the cartopy GeoAxes. It does not draw any map features; for that,
+        use the `add_features` method.
 
         Parameters
         ----------
@@ -55,16 +60,12 @@ class SpatialPlot(BasePlot):
         ax : plt.Axes | None, optional
             An existing matplotlib Axes object. If None, a new one is created,
             by default None.
-        **kwargs : Any
-            Additional keyword arguments for
-            `monet_plots.plots.base.BasePlot` (e.g., `figsize`) and
-            cartopy features (e.g., `coastlines=True`).
-
-        Notes
-        -----
-        For interactive use, it is recommended to create a `SpatialPlot`
-        instance using the `SpatialPlot.from_projection()` class method, which
-        is the designated factory.
+        figsize : tuple[float, float] | None, optional
+             Width, height in inches. If not provided, the matplotlib default
+             will be used.
+        subplot_kw : dict[str, Any] | None, optional
+            Keyword arguments passed to `fig.add_subplot`, by default None.
+            The 'projection' is added to these keywords automatically.
 
         Attributes
         ----------
@@ -73,25 +74,18 @@ class SpatialPlot(BasePlot):
         ax : plt.Axes
             The matplotlib Axes (or GeoAxes) object.
         resolution : str
-            The resolution for cartopy features (e.g., '50m').
-        feature_kwargs : dict[str, Any]
-            Keyword arguments for features passed during initialization.
+            The default resolution for cartopy features.
         """
-        # The 'projection' kwarg is passed to subplot creation via 'subplot_kw'.
-        subplot_kw = kwargs.pop("subplot_kw", {})
-        subplot_kw["projection"] = projection
+        # Ensure 'projection' is correctly passed to subplot creation.
+        current_subplot_kw = subplot_kw.copy() if subplot_kw else {}
+        current_subplot_kw["projection"] = projection
 
-        # Extract kwargs for BasePlot.
-        # Assumes that any kwargs not used by plt.subplots are feature kwargs.
-        base_plot_kwargs: Dict[str, Any] = {"subplot_kw": subplot_kw}
-        if "figsize" in kwargs:
-            base_plot_kwargs["figsize"] = kwargs.pop("figsize")
-
-        # The remaining kwargs are for features
-        self.feature_kwargs = kwargs
         self.resolution = resolution
 
-        super().__init__(fig=fig, ax=ax, **base_plot_kwargs)
+        # Initialize the base plot, which creates the figure and axes.
+        super().__init__(
+            fig=fig, ax=ax, figsize=figsize, subplot_kw=current_subplot_kw
+        )
 
     def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:
         """Return a registry of cartopy features and their default styles.
@@ -238,45 +232,48 @@ class SpatialPlot(BasePlot):
         >>> import cartopy.crs as ccrs
         >>> from monet_plots.plots.spatial import SpatialPlot
         >>>
-        >>> # Create a map with default features
-        >>> plot = SpatialPlot.from_projection(
+        >>> # 1. Create the plot canvas by initializing the class
+        >>> plot = SpatialPlot(
         ...     projection=ccrs.LambertConformal(),
         ...     figsize=(10, 5),
+        ... )
+        >>>
+        >>> # 2. Add features to the map
+        >>> _ = plot.add_features(
         ...     states=True,
         ...     coastlines=True,
         ...     countries=True,
-        ...     extent=[-125, -65, 25, 50]
+        ...     extent=[-125, -65, 25, 50],
         ... )
         >>>
-        >>> # Style the states with a dictionary
+        >>> # 3. Style the states with a dictionary, overwriting the previous call
         >>> unused_kwargs = plot.add_features(
         ...     states=dict(linewidth=1.5, edgecolor='blue')
         ... )
         >>> print(f"Unused kwargs: {unused_kwargs}")
         >>> plt.show()
         """
-        combined_kwargs = {**self.feature_kwargs, **kwargs}
-        resolution = combined_kwargs.pop("resolution", self.resolution)
+        resolution = kwargs.pop("resolution", self.resolution)
         feature_registry = self._get_feature_registry(resolution)
 
         # If natural_earth is True, enable a standard set of features
-        if combined_kwargs.pop("natural_earth", False):
+        if kwargs.pop("natural_earth", False):
             for feature in ["ocean", "land", "lakes", "rivers"]:
-                combined_kwargs.setdefault(feature, True)
+                kwargs.setdefault(feature, True)
 
         # Main feature-drawing loop
         for key, feature_spec in feature_registry.items():
-            if key in combined_kwargs:
-                style_arg = combined_kwargs.pop(key)
+            if key in kwargs:
+                style_arg = kwargs.pop(key)
                 self._draw_single_feature(key, style_arg, feature_spec, resolution)
 
         # Handle extent after features are drawn
-        if "extent" in combined_kwargs:
-            extent = combined_kwargs.pop("extent")
+        if "extent" in kwargs:
+            extent = kwargs.pop("extent")
             if extent is not None:
                 self.ax.set_extent(extent)
 
-        return combined_kwargs
+        return kwargs
 
     @classmethod
     def from_projection(
@@ -310,16 +307,18 @@ class SpatialPlot(BasePlot):
         ... )
         >>> plt.show()
         """
-        # Separate feature kwargs from figure kwargs
-        fig_kwargs = {
-            "figsize": kwargs.pop("figsize") for k in ["figsize"] if k in kwargs
-        }
+        # Define the keys that belong to the constructor
+        init_keys = ["resolution", "fig", "ax", "figsize", "subplot_kw"]
+
+        # Separate constructor kwargs from feature kwargs
+        init_kwargs = {k: v for k, v in kwargs.items() if k in init_keys}
+        feature_kwargs = {k: v for k, v in kwargs.items() if k not in init_keys}
 
         # Create the plot instance
-        plot = cls(projection=projection, **fig_kwargs)
+        plot = cls(projection=projection, **init_kwargs)
 
         # Add features and return
-        plot.add_features(**kwargs)
+        plot.add_features(**feature_kwargs)
         return plot
 
 
@@ -381,11 +380,18 @@ class SpatialTrack(SpatialPlot):
                 f"Latitude coordinate '{lat_coord}' not found in DataArray."
             )
 
+        # Define the keys that belong to the parent constructor
+        init_keys = ["projection", "resolution", "fig", "ax", "figsize", "subplot_kw"]
+
+        # Separate constructor kwargs from feature kwargs
+        init_kwargs = {k: v for k, v in kwargs.items() if k in init_keys}
+        feature_kwargs = {k: v for k, v in kwargs.items() if k not in init_keys}
+
         # Initialize the parent SpatialPlot to create the map canvas
-        super().__init__(**kwargs)
+        super().__init__(**init_kwargs)
 
         # Draw features passed as kwargs (e.g., states=True)
-        self.add_features()
+        self.add_features(**feature_kwargs)
 
         # Set data and update history for provenance
         self.data = data
@@ -433,13 +439,15 @@ class SpatialTrack(SpatialPlot):
         ...     attrs={'units': 'ppb'}
         ... )
         >>>
-        >>> # 2. Create the plot and render the data
+        >>> # 2. Initialize the plot with map features
         >>> track_plot = SpatialTrack(
         ...     da,
         ...     projection=ccrs.LambertConformal(),
         ...     states=True,
         ...     extent=[-125, -70, 25, 50],
         ... )
+        >>>
+        >>> # 3. Plot the data
         >>> sc = track_plot.plot(cmap='viridis', transform=ccrs.PlateCarree())
         >>> plt.colorbar(sc, label="O3 Concentration (ppb)")
         >>> plt.show()
