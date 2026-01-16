@@ -1,7 +1,7 @@
 # src/monet_plots/plots/spatial.py
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, Union
+from typing import Any, Literal, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -83,9 +83,7 @@ class SpatialPlot(BasePlot):
         self.resolution = resolution
 
         # Initialize the base plot, which creates the figure and axes.
-        super().__init__(
-            fig=fig, ax=ax, figsize=figsize, subplot_kw=current_subplot_kw
-        )
+        super().__init__(fig=fig, ax=ax, figsize=figsize, subplot_kw=current_subplot_kw)
 
     def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:
         """Return a registry of cartopy features and their default styles.
