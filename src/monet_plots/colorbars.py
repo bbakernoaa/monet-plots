@@ -1,6 +1,173 @@
 """Colorbar helper functions"""
 
 import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib.colors as mcolors
+from matplotlib.ticker import MaxNLocator
+
+
+def get_linear_scale(
+    data, cmap="viridis", vmin=None, vmax=None, p_min=None, p_max=None
+):
+    """
+    Get a linear colormap and normalization object.
+
+    Parameters
+    ----------
+    data : array-like
+        The data to scale.
+    cmap : str or matplotlib.colors.Colormap, optional
+        The colormap to use, by default "viridis".
+    vmin : float, optional
+        Minimum value for the scale. If None, uses min(data) or p_min.
+    vmax : float, optional
+        Maximum value for the scale. If None, uses max(data) or p_max.
+    p_min : float, optional
+        Percentile for minimum value (0-100).
+    p_max : float, optional
+        Percentile for maximum value (0-100).
+
+    Returns
+    -------
+    tuple
+        (colormap, Normalize)
+    """
+    if p_min is not None:
+        vmin = np.nanpercentile(data, p_min)
+    if p_max is not None:
+        vmax = np.nanpercentile(data, p_max)
+
+    if vmin is None:
+        vmin = np.nanmin(data)
+    if vmax is None:
+        vmax = np.nanmax(data)
+
+    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    if isinstance(cmap, str):
+        cmap = plt.get_cmap(cmap)
+
+    return cmap, norm
+
+
+def get_diverging_scale(data, cmap="RdBu_r", center=0, span=None, p_span=None):
+    """
+    Get a diverging colormap and normalization object centered at a value.
+
+    Parameters
+    ----------
+    data : array-like
+        The data to scale.
+    cmap : str or matplotlib.colors.Colormap, optional
+        The colormap to use, by default "RdBu_r".
+    center : float, optional
+        The value to center the scale at, by default 0.
+    span : float, optional
+        The absolute range from the center (center +/- span).
+    p_span : float, optional
+        The percentile of absolute differences from center to use as span.
+
+    Returns
+    -------
+    tuple
+        (colormap, Normalize)
+    """
+    if span is not None:
+        pass
+    elif p_span is not None:
+        diff = np.abs(data - center)
+        span = np.nanpercentile(diff, p_span)
+    else:
+        span = np.nanmax(np.abs(data - center))
+
+    vmin = center - span
+    vmax = center + span
+
+    norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
+    if isinstance(cmap, str):
+        cmap = plt.get_cmap(cmap)
+
+    return cmap, norm
+
+
+def get_discrete_scale(
+    data, cmap="viridis", n_levels=10, vmin=None, vmax=None, extend="both"
+):
+    """
+    Get a discrete colormap and BoundaryNorm with 'nice' numbers.
+
+    Parameters
+    ----------
+    data : array-like
+        The data to scale.
+    cmap : str or matplotlib.colors.Colormap, optional
+        The colormap to use, by default "viridis".
+    n_levels : int, optional
+        Target number of discrete levels, by default 10.
+    vmin : float, optional
+        Minimum value for the scale.
+    vmax : float, optional
+        Maximum value for the scale.
+    extend : str, optional
+        Whether to extend the scale ('neither', 'both', 'min', 'max'),
+        by default "both".
+
+    Returns
+    -------
+    tuple
+        (colormap, BoundaryNorm)
+    """
+    if vmin is None:
+        vmin = np.nanmin(data)
+    if vmax is None:
+        vmax = np.nanmax(data)
+
+    locator = MaxNLocator(nbins=n_levels, steps=[1, 2, 2.5, 5, 10])
+    levels = locator.tick_values(vmin, vmax)
+
+    if isinstance(cmap, str):
+        cmap_obj = plt.get_cmap(cmap)
+    else:
+        cmap_obj = cmap
+
+    n_colors = len(levels) - 1
+    discrete_cmap = cmap_discretize(cmap_obj, n_colors)
+
+    norm = mcolors.BoundaryNorm(levels, ncolors=discrete_cmap.N, extend=extend)
+
+    return discrete_cmap, norm
+
+
+def get_log_scale(data, cmap="viridis", vmin=None, vmax=None):
+    """
+    Get a logarithmic colormap and normalization object.
+
+    Parameters
+    ----------
+    data : array-like
+        The data to scale.
+    cmap : str or matplotlib.colors.Colormap, optional
+        The colormap to use, by default "viridis".
+    vmin : float, optional
+        Minimum value for the scale (>0).
+    vmax : float, optional
+        Maximum value for the scale.
+
+    Returns
+    -------
+    tuple
+        (colormap, LogNorm)
+    """
+    data_positive = data[data > 0]
+    if vmin is None:
+        vmin = np.nanmin(data_positive) if data_positive.size > 0 else 1e-1
+    if vmax is None:
+        vmax = np.nanmax(data)
+
+    norm = mcolors.LogNorm(vmin=vmin, vmax=vmax)
+    if isinstance(cmap, str):
+        cmap = plt.get_cmap(cmap)
+
+    return cmap, norm
 
 
 def colorbar_index(

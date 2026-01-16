@@ -271,6 +271,39 @@ def normalize_data(data: Any) -> Any:
     return _normalize_data(data)
 
 
+def get_plot_kwargs(cmap: Any = None, norm: Any = None, **kwargs: Any) -> dict:
+    """
+    Helper to prepare keyword arguments for plotting functions.
+
+    This function handles cases where `cmap` might be a tuple of
+    (colormap, norm) returned by the scaling tools in `colorbars.py`.
+
+    Parameters
+    ----------
+    cmap : Any, optional
+        Colormap name, object, or (colormap, norm) tuple.
+    norm : Any, optional
+        Normalization object.
+    **kwargs : Any
+        Additional keyword arguments.
+
+    Returns
+    -------
+    dict
+        A dictionary of keyword arguments suitable for matplotlib plotting functions.
+    """
+    if isinstance(cmap, tuple) and len(cmap) == 2:
+        kwargs["cmap"] = cmap[0]
+        kwargs["norm"] = cmap[1]
+    elif cmap is not None:
+        kwargs["cmap"] = cmap
+
+    if norm is not None:
+        kwargs["norm"] = norm
+
+    return kwargs
+
+
 def _dynamic_fig_size(obj):
     """Try to determine a generic figure size based on the shape of obj
 

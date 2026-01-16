@@ -400,14 +400,19 @@ class SpatialTrack(SpatialPlot):
 
     def plot(self, **kwargs: Any) -> plt.Artist:
         """Plot the trajectory on the map.
+
         The track is rendered as a scatter plot, where each point is colored
         according to the `data` values.
+
         Parameters
         ----------
         **kwargs : Any
             Keyword arguments passed to `matplotlib.pyplot.scatter`.
             A `transform` keyword (e.g., `transform=ccrs.PlateCarree()`)
             is highly recommended for geospatial accuracy.
+            The `cmap` argument can be a string, a Colormap object, or a
+            (colormap, norm) tuple from the scaling tools in `colorbars.py`.
+
         Returns
         -------
         plt.Artist
@@ -445,15 +450,22 @@ class SpatialTrack(SpatialPlot):
         ...     extent=[-125, -70, 25, 50],
         ... )
         >>>
-        >>> # 3. Plot the data
-        >>> sc = track_plot.plot(cmap='viridis', transform=ccrs.PlateCarree())
+        >>> # 3. Plot the data using scaling tools
+        >>> from monet_plots.colorbars import get_linear_scale
+        >>> cmap_norm = get_linear_scale(da, cmap='viridis', p_max=95)
+        >>> sc = track_plot.plot(cmap=cmap_norm, transform=ccrs.PlateCarree())
         >>> plt.colorbar(sc, label="O3 Concentration (ppb)")
         >>> plt.show()
         """
+        from ..plot_utils import get_plot_kwargs
+
         kwargs.setdefault("transform", ccrs.PlateCarree())
 
         longitude = self.data[self.lon_coord]
         latitude = self.data[self.lat_coord]
 
-        sc = self.ax.scatter(longitude, latitude, c=self.data, **kwargs)
+        # Use get_plot_kwargs to handle (cmap, norm) tuples
+        final_kwargs = get_plot_kwargs(c=self.data, **kwargs)
+
+        sc = self.ax.scatter(longitude, latitude, **final_kwargs)
         return sc

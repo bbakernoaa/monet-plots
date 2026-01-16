@@ -1,8 +1,9 @@
 from scipy.stats import scoreatpercentile as score
 import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
 from .spatial import SpatialPlot
-from ..colorbars import colorbar_index
-from ..plot_utils import to_dataframe
+from ..colorbars import get_discrete_scale
+from ..plot_utils import to_dataframe, get_plot_kwargs
 from typing import Any
 
 
@@ -59,6 +60,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
         """Generate the spatial bias scatter plot."""
         from numpy import around
 
+        # Separate feature kwargs from scatter kwargs
         scatter_kwargs = self.add_features(**kwargs)
 
         # Ensure we are working with a clean copy with no NaNs in relevant columns
@@ -70,27 +72,37 @@ class SpatialBiasScatterPlot(SpatialPlot):
 
         diff = new[self.col2] - new[self.col1]
         top = around(score(diff.abs(), per=95))
-        c, cmap = colorbar_index(
-            self.ncolors, self.cmap, minval=top * -1, maxval=top, ax=self.ax
+
+        # Use new scaling tools
+        cmap, norm = get_discrete_scale(
+            diff, cmap=self.cmap, n_levels=self.ncolors, vmin=-top, vmax=top
         )
 
+        # Create colorbar
+        mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+        c = self.ax.figure.colorbar(mappable, ax=self.ax, format="%1.2g")
         c.ax.tick_params(labelsize=13)
+
         colors = diff
         ss = diff.abs() / top * 100.0
         ss[ss > 300] = 300.0
 
-        self.ax.scatter(
-            new.longitude.values,
-            new.latitude.values,
-            c=colors,
-            s=ss,
-            vmin=-1.0 * top,
-            vmax=top,
+        # Prepare scatter kwargs
+        final_scatter_kwargs = get_plot_kwargs(
             cmap=cmap,
-            transform=ccrs.PlateCarree(),  # Tell cartopy the data is in lat/lon
+            norm=norm,
+            s=ss,
+            c=colors,
+            transform=ccrs.PlateCarree(),
             edgecolors="k",
             linewidths=0.25,
             alpha=0.7,
             **scatter_kwargs,
+        )
+
+        self.ax.scatter(
+            new.longitude.values,
+            new.latitude.values,
+            **final_scatter_kwargs,
         )
         return c
