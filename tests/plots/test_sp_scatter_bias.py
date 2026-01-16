@@ -35,7 +35,9 @@ def test_sp_scatter_bias_plot_from_dataframe(sample_dataframe: pd.DataFrame):
 
     # Check that data has been plotted by verifying collections were added.
     # A scatter plot adds a PathCollection.
-    assert len(plot_instance.ax.collections) > 0, "Scatter plot should add a collection."
+    assert len(plot_instance.ax.collections) > 0, (
+        "Scatter plot should add a collection."
+    )
 
     # The CLI Command to run this test:
     # python -m pytest tests/plots/test_sp_scatter_bias.py

@@ -85,11 +85,7 @@ class SpScatterBiasPlot(SpatialPlot):
             The matplotlib axes object containing the plot.
         """
         df_proc = to_dataframe(df)
-        dfnew = (
-            df_proc[["latitude", "longitude", col1, col2]]
-            .dropna()
-            .copy(deep=True)
-        )
+        dfnew = df_proc[["latitude", "longitude", col1, col2]].dropna().copy(deep=True)
         dfnew["sp_diff"] = dfnew[col2] - dfnew[col1]
         top = score(dfnew["sp_diff"].abs(), per=95)
         if val_max is not None:
