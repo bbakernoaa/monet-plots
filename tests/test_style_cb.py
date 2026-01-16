@@ -1,5 +1,6 @@
 from monet_plots.style import CB_COLORS, CB_MARKERS
 
+
 def test_cb_constants():
     assert len(CB_COLORS) == 8
     assert CB_COLORS[0] == "#000000"

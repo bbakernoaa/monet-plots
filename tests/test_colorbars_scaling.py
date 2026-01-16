@@ -7,6 +7,7 @@ from monet_plots.colorbars import (
     get_log_scale,
 )
 
+
 def test_get_linear_scale():
     data = np.array([0, 1, 2, 3, 4, 5])
     cmap, norm = get_linear_scale(data, vmin=1, vmax=4)
@@ -18,6 +19,7 @@ def test_get_linear_scale():
     cmap, norm = get_linear_scale(data, p_min=10, p_max=90)
     assert norm.vmin == np.percentile(data, 10)
     assert norm.vmax == np.percentile(data, 90)
+
 
 def test_get_diverging_scale():
     data = np.array([-10, 0, 5])
@@ -37,6 +39,7 @@ def test_get_diverging_scale():
     assert norm.vmin == -expected_span
     assert norm.vmax == expected_span
 
+
 def test_get_discrete_scale():
     data = np.array([0, 10.5, 20.1, 35.6])
     cmap, norm = get_discrete_scale(data, n_levels=5)
@@ -46,7 +49,10 @@ def test_get_discrete_scale():
     assert norm.boundaries[-1] >= 35.6
     # Check if they are "nice" (multiples of 1, 2, 2.5, 5, 10)
     diffs = np.diff(norm.boundaries)
-    assert np.all(np.isclose(diffs, diffs[0])) # Should be equal intervals for MaxNLocator
+    assert np.all(
+        np.isclose(diffs, diffs[0])
+    )  # Should be equal intervals for MaxNLocator
+
 
 def test_get_log_scale():
     data = np.array([0.1, 1, 10, 100])
