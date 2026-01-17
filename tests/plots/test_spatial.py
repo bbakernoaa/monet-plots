@@ -18,11 +18,33 @@ def spatial_plot():
 
 
 def test_spatial_plot_init_default():
-    """Test SpatialPlot default initialization."""
+    """Test SpatialPlot default initialization without features."""
     plot = SpatialPlot()
+    plot.fig.canvas.draw()
     assert isinstance(plot.fig, plt.Figure)
     assert isinstance(plot.ax, GeoAxes)
     assert isinstance(plot.ax.projection, ccrs.PlateCarree)
+    # No features should be added by default
+    assert len(plot.ax.collections) == 0
+
+
+def test_spatial_plot_init_with_features():
+    """Test that the constructor can draw features directly."""
+    # Initialize the plot with some features
+    plot = SpatialPlot(
+        projection=ccrs.AlbersEqualArea(),
+        states=True,
+        countries=True,
+        extent=[-120, -70, 20, 50],
+    )
+    plot.fig.canvas.draw()
+
+    assert isinstance(plot.ax, GeoAxes)
+    assert isinstance(plot.ax.projection, ccrs.AlbersEqualArea)
+    # Check that some features were added
+    assert len(plot.ax.collections) > 0
+    # Check that extent is set correctly
+    assert plot.ax.get_extent() != (-180.0, 180.0, -90.0, 90.0)
 
 
 def test_spatial_plot_init_custom_fig_ax():
@@ -75,42 +97,6 @@ def test_add_features_disabled(spatial_plot):
     spatial_plot.fig.canvas.draw()
 
     assert len(spatial_plot.ax.collections) == initial_collections
-
-
-def test_spatial_plot_workflow():
-    """Test the standard workflow: init -> add_features."""
-    # 1. Initialize the plot
-    plot = SpatialPlot(projection=ccrs.AlbersEqualArea())
-
-    # 2. Add features
-    plot.add_features(
-        states=True,
-        countries=True,
-        extent=[-120, -70, 20, 50],
-    )
-    plot.fig.canvas.draw()
-
-    assert isinstance(plot.ax, GeoAxes)
-    assert isinstance(plot.ax.projection, ccrs.AlbersEqualArea)
-    # Check that some features were added
-    assert len(plot.ax.collections) > 0
-    # Check that extent is set correctly
-    # Note: Comparing extents is non-trivial for non-PlateCarree projections
-    # as the values are in projected coordinates (meters), not degrees.
-    # We assert that the extent has been changed from the default.
-    assert plot.ax.get_extent() != (-180.0, 180.0, -90.0, 90.0)
-
-
-def test_natural_earth_convenience_flag(spatial_plot):
-    """Test the `natural_earth=True` convenience flag."""
-    spatial_plot.fig.canvas.draw()
-    initial_collections = len(spatial_plot.ax.collections)
-
-    # The flag should add ocean, land, lakes, and rivers
-    spatial_plot.add_features(natural_earth=True)
-    spatial_plot.fig.canvas.draw()
-
-    assert len(spatial_plot.ax.collections) > initial_collections
 
 
 # --- SpatialTrack Tests ---

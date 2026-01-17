@@ -36,24 +36,22 @@ class SpatialPlot(BasePlot):
         self,
         *,
         projection: ccrs.Projection = ccrs.PlateCarree(),
-        resolution: Literal["10m", "50m", "110m"] = "50m",
         fig: plt.Figure | None = None,
         ax: plt.Axes | None = None,
         figsize: tuple[float, float] | None = None,
         subplot_kw: dict[str, Any] | None = None,
+        **kwargs: Any,
     ) -> None:
-        """Initialize the spatial plot canvas.
+        """Initialize the spatial plot and draw map features.
 
-        This constructor's primary role is to set up the matplotlib Figure and
-        the cartopy GeoAxes. It does not draw any map features; for that,
-        use the `add_features` method.
+        This constructor sets up the matplotlib Figure and cartopy GeoAxes,
+        and provides a single interface to draw common map features like
+        coastlines and states.
 
         Parameters
         ----------
         projection : ccrs.Projection, optional
             The cartopy projection for the map, by default ccrs.PlateCarree().
-        resolution : {"10m", "50m", "110m"}, optional
-            The default resolution for cartopy features, by default "50m".
         fig : plt.Figure | None, optional
             An existing matplotlib Figure object. If None, a new one is
             created, by default None.
@@ -66,6 +64,11 @@ class SpatialPlot(BasePlot):
         subplot_kw : dict[str, Any] | None, optional
             Keyword arguments passed to `fig.add_subplot`, by default None.
             The 'projection' is added to these keywords automatically.
+        **kwargs : Any
+            Keyword arguments for map features, passed to `add_features`.
+            Common options include `coastlines`, `states`, `countries`,
+            `ocean`, `land`, `lakes`, `rivers`, `borders`, `gridlines`,
+            `extent`, and `resolution`.
 
         Attributes
         ----------
@@ -75,15 +78,32 @@ class SpatialPlot(BasePlot):
             The matplotlib Axes (or GeoAxes) object.
         resolution : str
             The default resolution for cartopy features.
+
+        Examples
+        --------
+        >>> import matplotlib.pyplot as plt
+        >>> import cartopy.crs as ccrs
+        >>> from monet_plots.plots.spatial import SpatialPlot
+        >>>
+        >>> # Create a map with states and a specific extent
+        >>> plot = SpatialPlot(
+        ...     projection=ccrs.LambertConformal(),
+        ...     states=True,
+        ...     extent=[-125, -70, 25, 50],
+        ... )
+        >>> plt.show()
         """
         # Ensure 'projection' is correctly passed to subplot creation.
         current_subplot_kw = subplot_kw.copy() if subplot_kw else {}
         current_subplot_kw["projection"] = projection
 
-        self.resolution = resolution
+        self.resolution = kwargs.pop("resolution", "50m")
 
         # Initialize the base plot, which creates the figure and axes.
         super().__init__(fig=fig, ax=ax, figsize=figsize, subplot_kw=current_subplot_kw)
+
+        # Add features from kwargs
+        self.add_features(**kwargs)
 
     def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:
         """Return a registry of cartopy features and their default styles.
@@ -230,21 +250,17 @@ class SpatialPlot(BasePlot):
         >>> import cartopy.crs as ccrs
         >>> from monet_plots.plots.spatial import SpatialPlot
         >>>
-        >>> # 1. Create the plot canvas by initializing the class
+        >>> # Create a plot with features enabled in the constructor
         >>> plot = SpatialPlot(
         ...     projection=ccrs.LambertConformal(),
         ...     figsize=(10, 5),
-        ... )
-        >>>
-        >>> # 2. Add features to the map
-        >>> _ = plot.add_features(
         ...     states=True,
         ...     coastlines=True,
         ...     countries=True,
         ...     extent=[-125, -65, 25, 50],
         ... )
         >>>
-        >>> # 3. Style the states with a dictionary, overwriting the previous call
+        >>> # Style the states with a dictionary using add_features
         >>> unused_kwargs = plot.add_features(
         ...     states=dict(linewidth=1.5, edgecolor='blue')
         ... )
@@ -272,53 +288,6 @@ class SpatialPlot(BasePlot):
                 self.ax.set_extent(extent)
 
         return kwargs
-
-    @classmethod
-    def from_projection(
-        cls,
-        projection: ccrs.Projection = ccrs.PlateCarree(),
-        **kwargs: Any,
-    ) -> "SpatialPlot":
-        """Create a `SpatialPlot` instance from a map projection.
-        This is the recommended factory method for creating a map. It
-        initializes the plot with a specified projection and then adds map
-        features based on keyword arguments.
-        Parameters
-        ----------
-        projection : ccrs.Projection
-            The cartopy projection for the map. Default is ccrs.PlateCarree().
-        **kwargs : Any
-            Keyword arguments for map features (e.g., `coastlines=True`,
-            `states=True`, `extent=[-125, -70, 25, 50]`).
-        Returns
-        -------
-        SpatialPlot
-            An instance of the SpatialPlot class with the map drawn.
-        Examples
-        --------
-        >>> import matplotlib.pyplot as plt
-        >>> from monet_plots.plots.spatial import SpatialPlot
-        >>> plot = SpatialPlot.from_projection(
-        ...     projection=ccrs.LambertConformal(),
-        ...     states=True,
-        ...     extent=[-125, -70, 25, 50],
-        ... )
-        >>> plt.show()
-        """
-        # Define the keys that belong to the constructor
-        init_keys = ["resolution", "fig", "ax", "figsize", "subplot_kw"]
-
-        # Separate constructor kwargs from feature kwargs
-        init_kwargs = {k: v for k, v in kwargs.items() if k in init_keys}
-        feature_kwargs = {k: v for k, v in kwargs.items() if k not in init_keys}
-
-        # Create the plot instance
-        plot = cls(projection=projection, **init_kwargs)
-
-        # Add features and return
-        plot.add_features(**feature_kwargs)
-        return plot
-
 
 class SpatialTrack(SpatialPlot):
     """Plot a trajectory from an xarray.DataArray on a map.
@@ -378,18 +347,9 @@ class SpatialTrack(SpatialPlot):
                 f"Latitude coordinate '{lat_coord}' not found in DataArray."
             )
 
-        # Define the keys that belong to the parent constructor
-        init_keys = ["projection", "resolution", "fig", "ax", "figsize", "subplot_kw"]
-
-        # Separate constructor kwargs from feature kwargs
-        init_kwargs = {k: v for k, v in kwargs.items() if k in init_keys}
-        feature_kwargs = {k: v for k, v in kwargs.items() if k not in init_keys}
-
-        # Initialize the parent SpatialPlot to create the map canvas
-        super().__init__(**init_kwargs)
-
-        # Draw features passed as kwargs (e.g., states=True)
-        self.add_features(**feature_kwargs)
+        # Initialize the parent SpatialPlot, which creates the map canvas
+        # and draws features from the keyword arguments.
+        super().__init__(**kwargs)
 
         # Set data and update history for provenance
         self.data = data
