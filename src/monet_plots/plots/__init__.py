@@ -13,6 +13,7 @@ from .spatial_imshow import SpatialImshow
 from .sp_scatter_bias import SpScatterBiasPlot
 from .profile import ProfilePlot, VerticalSlice, StickPlot, VerticalBoxPlot
 from .trajectory import TrajectoryPlot
+from .ridgeline import RidgelinePlot
 
 # New Verification Plots
 from .performance_diagram import PerformanceDiagramPlot
@@ -45,6 +46,7 @@ __all__ = [
     "StickPlot",
     "VerticalBoxPlot",
     "TrajectoryPlot",
+    "RidgelinePlot",
     "PerformanceDiagramPlot",
     "ROCCurvePlot",
     "ReliabilityDiagramPlot",
