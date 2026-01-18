@@ -122,14 +122,16 @@ class SpatialPlot(BasePlot):
             A dictionary mapping feature names to a specification dictionary
             containing the feature object and its default styling.
         """
-        from cartopy.feature import BORDERS, LAKES, LAND, OCEAN, RIVERS, STATES
+        from cartopy.feature import BORDERS, COASTLINE, LAKES, LAND, OCEAN, RIVERS, STATES
 
         # Define default styles in one place for consistency
-        line_defaults = {"linewidth": 0.5, "edgecolor": "black"}
-        gridline_defaults = {"draw_labels": True, "linestyle": "--", "color": "gray"}
+        line_defaults = {"linewidth": 0.5, "edgecolor": "black", "facecolor": "none"}
 
         feature_mapping = {
-            "coastlines": {"feature": self.ax.coastlines, "defaults": line_defaults},
+            "coastlines": {
+                "feature": COASTLINE.with_scale(resolution),
+                "defaults": line_defaults,
+            },
             "countries": {
                 "feature": BORDERS.with_scale(resolution),
                 "defaults": line_defaults,
@@ -138,24 +140,22 @@ class SpatialPlot(BasePlot):
                 "feature": STATES.with_scale(resolution),
                 "defaults": line_defaults,
             },
-            "borders": {"feature": BORDERS, "defaults": line_defaults},
-            "ocean": {"feature": OCEAN, "defaults": {}},
-            "land": {"feature": LAND, "defaults": {}},
-            "rivers": {"feature": RIVERS, "defaults": {}},
-            "lakes": {"feature": LAKES, "defaults": {}},
+            "borders": {
+                "feature": BORDERS.with_scale(resolution),
+                "defaults": line_defaults,
+            },
+            "ocean": {"feature": OCEAN.with_scale(resolution), "defaults": {}},
+            "land": {"feature": LAND.with_scale(resolution), "defaults": {}},
+            "rivers": {"feature": RIVERS.with_scale(resolution), "defaults": {}},
+            "lakes": {"feature": LAKES.with_scale(resolution), "defaults": {}},
             "counties": {
                 "feature": cfeature.NaturalEarthFeature(
                     category="cultural",
                     name="admin_2_counties",
                     scale=resolution,
                     facecolor="none",
-                    edgecolor="k",
                 ),
                 "defaults": line_defaults,
-            },
-            "gridlines": {
-                "feature": self.ax.gridlines,
-                "defaults": gridline_defaults,
             },
         }
         return feature_mapping
@@ -186,38 +186,23 @@ class SpatialPlot(BasePlot):
         return {}
 
     def _draw_single_feature(
-        self,
-        key: str,
-        style_arg: bool | dict[str, Any],
-        feature_spec: dict[str, Any],
-        resolution: str,
+        self, style_arg: bool | dict[str, Any], feature_spec: dict[str, Any]
     ) -> None:
         """Draw a single cartopy feature on the axes.
 
         Parameters
         ----------
-        key : str
-            The name of the feature (e.g., 'states').
         style_arg : bool or dict[str, Any]
             The user-provided style for the feature.
         feature_spec : dict[str, Any]
             A dictionary containing the feature object and default styles.
-        resolution : str
-            The resolution to use for scalable features.
         """
         if not style_arg:  # Allows for `coastlines=False`
             return
 
         style_kwargs = self._get_style(style_arg, feature_spec["defaults"])
-        feature_or_method = feature_spec["feature"]
-
-        # Draw the feature
-        if callable(feature_or_method):  # e.g., ax.coastlines
-            if key == "coastlines":
-                style_kwargs["resolution"] = resolution
-            feature_or_method(**style_kwargs)
-        else:  # cfeature.Feature object
-            self.ax.add_feature(feature_or_method, **style_kwargs)
+        feature = feature_spec["feature"]
+        self.ax.add_feature(feature, **style_kwargs)
 
     def add_features(self, **kwargs: Any) -> dict[str, Any]:
         """Add and style cartopy features on the map axes.
@@ -279,7 +264,16 @@ class SpatialPlot(BasePlot):
         for key, feature_spec in feature_registry.items():
             if key in kwargs:
                 style_arg = kwargs.pop(key)
-                self._draw_single_feature(key, style_arg, feature_spec, resolution)
+                self._draw_single_feature(style_arg, feature_spec)
+
+        # Handle gridlines separately, as they are not a 'feature' but an
+        # operation on the axes.
+        if "gridlines" in kwargs:
+            gridline_style = kwargs.pop("gridlines")
+            if gridline_style:  # Allows for `gridlines=False`
+                gridline_defaults = {"draw_labels": True, "linestyle": "--", "color": "gray"}
+                gridline_kwargs = self._get_style(gridline_style, gridline_defaults)
+                self.ax.gridlines(**gridline_kwargs)
 
         # Handle extent after features are drawn
         if "extent" in kwargs:
