@@ -71,7 +71,7 @@ class DiurnalErrorPlot(BasePlot):
         elif self.metric == "error":
             self.df["val"] = np.abs(self.df[self.mod_col] - self.df[self.obs_col])
         else:
-             raise ValueError("metric must be 'bias' or 'error'")
+            raise ValueError("metric must be 'bias' or 'error'")
 
     def plot(self, cmap: str = "RdBu_r", **kwargs):
         """Generate the diurnal error heatmap."""
@@ -79,7 +79,13 @@ class DiurnalErrorPlot(BasePlot):
             index="second_val", columns="hour", values="val", aggfunc="mean"
         )
 
-        sns.heatmap(pivot_df, ax=self.ax, cmap=cmap, center=0 if self.metric == "bias" else None, **kwargs)
+        sns.heatmap(
+            pivot_df,
+            ax=self.ax,
+            cmap=cmap,
+            center=0 if self.metric == "bias" else None,
+            **kwargs,
+        )
 
         self.ax.set_xlabel("Hour of Day")
         self.ax.set_ylabel(self.second_label)

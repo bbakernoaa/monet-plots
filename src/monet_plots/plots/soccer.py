@@ -146,8 +146,10 @@ class SoccerPlot(BasePlot):
         if self.label_col is not None:
             for i, txt in enumerate(self.df[self.label_col]):
                 self.ax.annotate(
-                    txt, (self.bias_data.iloc[i], self.error_data.iloc[i]),
-                    xytext=(5, 5), textcoords='offset points'
+                    txt,
+                    (self.bias_data.iloc[i], self.error_data.iloc[i]),
+                    xytext=(5, 5),
+                    textcoords="offset points",
                 )
 
         # Setup axes

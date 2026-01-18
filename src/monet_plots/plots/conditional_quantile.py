@@ -62,8 +62,14 @@ class ConditionalQuantilePlot(BasePlot):
 
         # Plotting
         if show_points:
-             self.ax.scatter(self.df[self.obs_col], self.df[self.mod_col],
-                            alpha=0.3, s=10, color='grey', label='Data')
+            self.ax.scatter(
+                self.df[self.obs_col],
+                self.df[self.mod_col],
+                alpha=0.3,
+                s=10,
+                color="grey",
+                label="Data",
+            )
 
         # Plot 1:1 line
         lims = [
@@ -78,13 +84,24 @@ class ConditionalQuantilePlot(BasePlot):
             label = f"{int(q*100)}th percentile"
             linestyle = "-" if q == 0.5 else "--"
             linewidth = 2 if q == 0.5 else 1
-            self.ax.plot(bin_midpoints, quantile_vals[q], label=label,
-                         color=colors[i], linestyle=linestyle, linewidth=linewidth)
+            self.ax.plot(
+                bin_midpoints,
+                quantile_vals[q],
+                label=label,
+                color=colors[i],
+                linestyle=linestyle,
+                linewidth=linewidth,
+            )
 
         # Shading between quantiles if there are at least 2 (e.g. 25th and 75th)
         if 0.25 in self.quantiles and 0.75 in self.quantiles:
-             self.ax.fill_between(bin_midpoints, quantile_vals[0.25], quantile_vals[0.75],
-                                  color='blue', alpha=0.1)
+            self.ax.fill_between(
+                bin_midpoints,
+                quantile_vals[0.25],
+                quantile_vals[0.75],
+                color="blue",
+                alpha=0.1,
+            )
 
         self.ax.set_xlabel(f"Observed: {self.obs_col}")
         self.ax.set_ylabel(f"Modeled: {self.mod_col}")

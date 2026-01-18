@@ -40,7 +40,7 @@ class BivariatePolarPlot(BasePlot):
         if "subplot_kw" not in kwargs:
             kwargs["subplot_kw"] = {"projection": "polar"}
         elif "projection" not in kwargs["subplot_kw"]:
-             kwargs["subplot_kw"]["projection"] = "polar"
+            kwargs["subplot_kw"]["projection"] = "polar"
 
         super().__init__(**kwargs)
         self.df = to_dataframe(data).dropna(subset=[ws_col, wd_col, val_col])
@@ -49,7 +49,9 @@ class BivariatePolarPlot(BasePlot):
         self.val_col = val_col
         self.ws_max = ws_max or self.df[ws_col].max()
 
-    def plot(self, n_bins_ws: int = 10, n_bins_wd: int = 36, cmap: str = "viridis", **kwargs):
+    def plot(
+        self, n_bins_ws: int = 10, n_bins_wd: int = 36, cmap: str = "viridis", **kwargs
+    ):
         """
         Generate the bivariate polar plot.
 
@@ -63,7 +65,7 @@ class BivariatePolarPlot(BasePlot):
         # Matplotlib's polar axis by default has 0 at East.
         # To make 0 North, we can use:
         self.ax.set_theta_zero_location("N")
-        self.ax.set_theta_direction(-1) # Clockwise
+        self.ax.set_theta_direction(-1)  # Clockwise
 
         # Binning
         ws_bins = np.linspace(0, self.ws_max, n_bins_ws + 1)
@@ -72,17 +74,17 @@ class BivariatePolarPlot(BasePlot):
         # We can use np.histogram2d
         # Note: wd_bins is in radians
         H, xedges, yedges = np.histogram2d(
-            theta_rad, self.df[self.ws_col],
+            theta_rad,
+            self.df[self.ws_col],
             bins=[wd_bins, ws_bins],
-            weights=self.df[self.val_col]
+            weights=self.df[self.val_col],
         )
         Counts, _, _ = np.histogram2d(
-            theta_rad, self.df[self.ws_col],
-            bins=[wd_bins, ws_bins]
+            theta_rad, self.df[self.ws_col], bins=[wd_bins, ws_bins]
         )
 
         # Calculate mean
-        with np.errstate(divide='ignore', invalid='ignore'):
+        with np.errstate(divide="ignore", invalid="ignore"):
             Z = H / Counts
 
         # Meshgrid for plotting

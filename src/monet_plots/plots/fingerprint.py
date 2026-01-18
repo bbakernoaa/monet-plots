@@ -67,11 +67,11 @@ class FingerprintPlot(BasePlot):
         elif scale == "date":
             self.df[target_col] = t.date
         else:
-             # Try to use it as a direct column if not a known scale
-             if scale in self.df.columns:
-                 self.df[target_col] = self.df[scale]
-             else:
-                 raise ValueError(f"Unknown temporal scale: {scale}")
+            # Try to use it as a direct column if not a known scale
+            if scale in self.df.columns:
+                self.df[target_col] = self.df[scale]
+            else:
+                raise ValueError(f"Unknown temporal scale: {scale}")
 
     def plot(self, cmap: str = "viridis", **kwargs):
         """Generate the fingerprint heatmap."""

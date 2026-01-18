@@ -13,7 +13,7 @@ def test_curtain_plot():
     da = xr.DataArray(data, coords=[levels, times], dims=["level", "time"], name="conc")
 
     plot = CurtainPlot(da)
-    ax = plot.plot(kind='pcolormesh')
+    ax = plot.plot(kind="pcolormesh")
     assert isinstance(ax, plt.Axes)
     assert ax.get_xlabel() == "time"
     assert ax.get_ylabel() == "level"
@@ -26,7 +26,7 @@ def test_curtain_plot_contourf():
     data = np.random.rand(5, 10)
     da = xr.DataArray(data, coords=[levels, times], dims=["level", "dist"], name="conc")
 
-    plot = CurtainPlot(da, x='dist', y='level')
-    ax = plot.plot(kind='contourf')
+    plot = CurtainPlot(da, x="dist", y="level")
+    ax = plot.plot(kind="contourf")
     assert isinstance(ax, plt.Axes)
     plt.close(plot.fig)

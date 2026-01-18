@@ -54,12 +54,14 @@ class CurtainPlot(BasePlot):
             if hasattr(self.data, "to_array"):
                 da = self.data.to_array()
             else:
-                raise TypeError("CurtainPlot requires xarray-like data with 2 dimensions.")
+                raise TypeError(
+                    "CurtainPlot requires xarray-like data with 2 dimensions."
+                )
         else:
             da = self.data
 
         if da.ndim != 2:
-             raise ValueError(f"CurtainPlot requires 2D data, got {da.ndim}D.")
+            raise ValueError(f"CurtainPlot requires 2D data, got {da.ndim}D.")
 
         # Determine x and y if not provided
         if self.x is None:
