@@ -25,6 +25,12 @@ from .scorecard import ScorecardPlot
 from .rev import RelativeEconomicValuePlot
 from .conditional_bias import ConditionalBiasPlot
 from .ensemble import SpreadSkillPlot
+from .soccer import SoccerPlot
+from .curtain import CurtainPlot
+from .diurnal_error import DiurnalErrorPlot
+from .fingerprint import FingerprintPlot
+from .polar import BivariatePolarPlot
+from .conditional_quantile import ConditionalQuantilePlot
 
 __all__ = [
     "BasePlot",
@@ -56,4 +62,10 @@ __all__ = [
     "RelativeEconomicValuePlot",
     "ConditionalBiasPlot",
     "SpreadSkillPlot",
+    "SoccerPlot",
+    "CurtainPlot",
+    "DiurnalErrorPlot",
+    "FingerprintPlot",
+    "BivariatePolarPlot",
+    "ConditionalQuantilePlot",
 ]

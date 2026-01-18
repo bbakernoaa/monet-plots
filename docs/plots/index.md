@@ -21,6 +21,12 @@ The following verification plots are available. Each link directs to a page deta
 | [`RelativeEconomicValuePlot`](./rev) | Evaluates the economic value of forecasts by comparing them against reference forecasts. | [`Relative Economic Value (REV)`](./rev) |
 | [`ConditionalBiasPlot`](./conditional_bias) | Shows bias conditioned on forecast value, helping to identify systematic over/under-forecasting for certain outcomes. | [`Conditional Bias`](./conditional_bias) |
 | [`CategoricalPlot`](./categorical) | Creates grouped bar or violin plots for categorical data. | [`Categorical Plot`](./categorical) |
+| [`SoccerPlot`](./soccer) | Plots model bias against error with optional target/criteria zones. | [`Soccer Plot`](./soccer) |
+| [`CurtainPlot`](./curtain) | Shows a 2D cross-section of data, typically altitude vs time/distance. | [`Vertical Curtain Plot`](./curtain) |
+| [`DiurnalErrorPlot`](./diurnal_error) | Visualizes model error by hour of day and another temporal dimension. | [`Diurnal Error Heat Map`](./diurnal_error) |
+| [`FingerprintPlot`](./fingerprint) | Displays temporal patterns across two different scales (e.g., hour vs day). | [`Fingerprint Plot`](./fingerprint) |
+| [`BivariatePolarPlot`](./polar) | Analyzes variable dependence on wind speed and wind direction. | [`Bivariate Polar Plot`](./polar) |
+| [`ConditionalQuantilePlot`](./conditional_quantile) | Plots modeled value quantiles conditioned on observed value bins. | [`Conditional Quantile Plot`](./conditional_quantile) |
 
 ## Usage and Style Guidelines
 

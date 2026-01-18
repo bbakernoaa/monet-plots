@@ -27,6 +27,12 @@ print(monet_plots.__email__)
 | Wind Quiver | [`WindQuiverPlot`](../plots/wind) | Wind vector plots |
 | Wind Barbs | [`WindBarbsPlot`](../plots/wind) | Wind barb plots |
 | Facet Grid | [`FacetGridPlot`](../plots/facet_grid) | Multi-panel figure layouts |
+| Soccer | [`SoccerPlot`](../plots/soccer) | Model bias vs error plots |
+| Curtain | [`CurtainPlot`](../plots/curtain) | Vertical cross-section plots |
+| Diurnal Error | [`DiurnalErrorPlot`](../plots/diurnal_error) | Heat maps of error by hour |
+| Fingerprint | [`FingerprintPlot`](../plots/fingerprint) | Heat maps for temporal patterns |
+| Polar | [`BivariatePolarPlot`](../plots/polar) | Concentration vs wind speed/direction |
+| Conditional Quantile | [`ConditionalQuantilePlot`](../plots/conditional_quantile) | Quantiles conditioned on observations |
 
 ### Style Configuration
 
