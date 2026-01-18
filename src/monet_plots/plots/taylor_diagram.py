@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from numpy import corrcoef
+import monet_stats
 from .base import BasePlot
 from .. import taylordiagram as td
 from ..plot_utils import to_dataframe
@@ -66,7 +66,9 @@ class TaylorDiagramPlot(BasePlot):
         # Loop through each model column and add it to the diagram
         for model_col in self.col2:
             model_std = self.df[model_col].std()
-            cc = corrcoef(self.df[self.col1].values, self.df[model_col].values)[0, 1]
+            cc = monet_stats.pearsonr(
+                self.df[self.col1].values, self.df[model_col].values
+            )
             self.dia.add_sample(model_std, cc, label=model_col, **kwargs)
 
         self.fig.legend(

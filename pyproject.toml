@@ -25,6 +25,7 @@ dependencies = [
     "scipy",
     "numpy",
     "statsmodels",
+    "monet-stats",
 ]
 
 [project.urls]

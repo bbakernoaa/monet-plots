@@ -1,5 +1,17 @@
+"""
+Verification Metrics for MONET-plots.
+
+This module provides verification metrics for atmospheric model evaluation.
+MONET-stats is the primary source for standard metrics (e.g., MB, RMSE, Pearson R).
+This module provides:
+1. "From-counts" versions of categorical metrics (POD, FAR, etc.) used by plots
+   that work with pre-computed contingency tables.
+2. Specialized metrics (ROC, AUC, Reliability) not currently in MONET-stats.
+"""
+
 import numpy as np
 from typing import Tuple, Union, Dict
+import monet_stats
 
 
 def compute_pod(
@@ -201,7 +213,7 @@ def compute_rank_histogram(
     ensemble: np.ndarray, observations: np.ndarray
 ) -> np.ndarray:
     """
-    Computes rank histogram counts.
+    Computes rank histogram counts using MONET-stats.
 
     Args:
         ensemble: Shape (n_samples, n_members)
@@ -210,17 +222,8 @@ def compute_rank_histogram(
     Returns:
         Array of counts for each rank (length n_members + 1)
     """
-    n_samples, n_members = ensemble.shape
-    ranks = np.zeros(n_samples, dtype=int)
-
-    for i in range(n_samples):
-        # Count how many ensemble members are less than observation
-        # Ties handling: random or specific logic? Standard is usually <
-        # Here we implement standard count of members < observation
-        ranks[i] = np.sum(ensemble[i] < observations[i])
-
-    counts = np.bincount(ranks, minlength=n_members + 1)
-    return counts
+    # MONET-stats expects (n_members, n_samples)
+    return monet_stats.rank_histogram(ensemble.T, observations)
 
 
 def compute_rev(

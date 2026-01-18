@@ -1,6 +1,7 @@
 # src/monet_plots/plots/timeseries.py
 import pandas as pd
 import numpy as np
+import monet_stats
 from .base import BasePlot
 from ..plot_utils import normalize_data
 from typing import Any, Union, List, Optional
@@ -189,16 +190,16 @@ class TimeSeriesStatsPlot(BasePlot):
         }
 
     def _calculate_bias(self, group, col2_name):
-        """Calculate mean bias for a group."""
-        return (group[col2_name] - group[self.col1]).mean()
+        """Calculate mean bias for a group using MONET-stats."""
+        return monet_stats.MB(group[self.col1].values, group[col2_name].values)
 
     def _calculate_rmse(self, group, col2_name):
-        """Calculate Root Mean Square Error for a group."""
-        return np.sqrt(np.mean((group[col2_name] - group[self.col1]) ** 2))
+        """Calculate Root Mean Square Error for a group using MONET-stats."""
+        return monet_stats.RMSE(group[self.col1].values, group[col2_name].values)
 
-    def _calculate_corr(self, group):
-        """Calculate Pearson correlation for a group."""
-        return group[[self.col1, self.col2]].corr().iloc[0, 1]
+    def _calculate_corr(self, group, col2_name):
+        """Calculate Pearson correlation for a group using MONET-stats."""
+        return monet_stats.pearsonr(group[self.col1].values, group[col2_name].values)
 
     def plot(self, stat: str = "bias", freq: str = "D", **kwargs):
         """
