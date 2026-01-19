@@ -24,9 +24,12 @@ class BasePlot:
             **kwargs: Additional keyword arguments for `plt.subplots`.
         """
         plt.style.use(wiley_style)
-        if fig is not None and ax is not None:
-            self.fig = fig
+        if ax is not None:
             self.ax = ax
+            if fig is not None:
+                self.fig = fig
+            else:
+                self.fig = ax.figure
         else:
             self.fig, self.ax = plt.subplots(**kwargs)
 
