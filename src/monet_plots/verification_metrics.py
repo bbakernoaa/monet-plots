@@ -249,8 +249,10 @@ def compute_rev(
 
     # Alternatively, use sample base rate if climatology not provided,
     # but usually climatology is external or sample-based.
-    # Here we assume the contingency table reflects the performance at a specific threshold.
-    # Ideally, for a curve, we need hits/misses/fa/cn at EACH threshold corresponding to the optimal decision for a given C/L.
+    # Here we assume the contingency table reflects the performance at a specific
+    # threshold.
+    # Ideally, for a curve, we need hits/misses/fa/cn at EACH threshold corresponding
+    # to the optimal decision for a given C/L.
     # But often REV is calculated for a fixed system against varying users (C/L).
 
     # Expense Forecast = Cost * (Hits + False Alarms) + Loss * Misses

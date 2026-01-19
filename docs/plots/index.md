@@ -68,4 +68,4 @@ All plot classes follow the same core structure:
 3.  **Customization**: Use methods like `.ax.set_title()` or global configuration.
 4.  **Output**: Save the figure using `.save()` and close with `.close()`.
 
-For more details on styling, please see the [Configuration Guide](../../configuration/index.md).
+For more details on styling, please see the [Configuration Guide](../configuration/index.md).

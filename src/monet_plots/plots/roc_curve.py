@@ -85,7 +85,8 @@ class ROCCurvePlot(BasePlot):
             label += f" (AUC={auc:.3f})"
         4. self.ax.plot(x, y, label=label, **kwargs)
         """
-        # TDD Anchor: Test AUC calculation against sklearn.metrics.auc or manual known values.
+        # TDD Anchor: Test AUC calculation against sklearn.metrics.auc or manual known
+        # values.
         # TDD Anchor: Ensure sorting is applied correctly.
 
         df_sorted = df.sort_values(by=x_col).dropna(subset=[x_col, y_col])

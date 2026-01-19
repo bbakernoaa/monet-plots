@@ -45,7 +45,8 @@ class SpatialBiasScatterPlot(SpatialPlot):
             cmap (str or Colormap): Colormap for bias values.
             **kwargs: Additional keyword arguments for plotting, including cartopy features
                       like 'coastlines', 'countries', 'states', 'borders', 'ocean',
-                      'land', 'rivers', 'lakes', 'gridlines'. These can be True for default styling or a dict for
+                      'land', 'rivers', 'lakes', 'gridlines'. These can be True for
+                      default styling or a dict for
                       custom styling.
         """
         super().__init__(*args, projection=projection, **kwargs)

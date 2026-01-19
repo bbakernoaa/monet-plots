@@ -324,7 +324,8 @@ def plot_quick_map(
     **kwargs,
 ):
     """
-    Create a publication-quality map plot of the data using Cartopy and xarray's default plot method.
+    Create a publication-quality map plot of the data using Cartopy and xarray's
+    default plot method.
 
     Parameters
     ----------

@@ -57,6 +57,7 @@ nav:
     - Colorbars: api/colorbars.md
     - Taylor Diagram: api/taylordiagram.md
     - Plot Types: plots/index.md
+    - Ridgeline Plot: plots/ridgeline.md
   - Configuration: configuration/index.md
   - Performance: performance/index.md
   - Troubleshooting: troubleshooting/index.md
