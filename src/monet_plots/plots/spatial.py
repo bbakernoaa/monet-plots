@@ -192,6 +192,63 @@ class SpatialPlot(BasePlot):
             "figsize": figsize,
             **kwargs,
         }
+        return feature_mapping
+
+    @staticmethod
+    def _get_style(
+        style: bool | dict[str, Any], defaults: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Get a style dictionary for a feature.
+
+        Parameters
+        ----------
+        style : bool or dict[str, Any]
+            The user-provided style. If True, use defaults. If a dict, use it.
+        defaults : dict[str, Any], optional
+            The default style to apply if `style` is True.
+
+        Returns
+        -------
+        dict[str, Any]
+            The resolved keyword arguments for styling.
+        """
+        if isinstance(style, dict):
+            return style
+        if style and defaults:
+            return defaults
+        return {}
+
+    def _draw_single_feature(
+        self,
+        key: str,
+        feature_or_method: Any,
+        style_arg: bool | dict[str, Any],
+        resolution: str,
+    ) -> None:
+        """Draw a single cartopy feature on the axes.
+
+        Parameters
+        ----------
+        key : str
+            The name of the feature (e.g., 'states').
+        feature_or_method : Any
+            The cartopy feature object or a method like `ax.coastlines`.
+        style_arg : bool or dict[str, Any]
+            The user-provided style for the feature.
+        resolution : str
+            The resolution to use for scalable features.
+        """
+        if not style_arg:  # Allows for `coastlines=False`
+            return
+
+        # Determine default styles based on the feature
+        defaults = {}
+        if key in ["coastlines", "counties", "states", "countries", "borders"]:
+            defaults = {"linewidth": 0.5, "edgecolor": "black"}
+        elif key == "gridlines":
+            defaults = {"draw_labels": True, "linestyle": "--", "color": "gray"}
+
+        style_kwargs = self._get_style(style_arg, defaults)
 
         # Create the plot
         plot = cls(projection=crs or ccrs.PlateCarree(), **feature_kwargs)

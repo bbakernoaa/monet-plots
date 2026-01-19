@@ -36,6 +36,8 @@ def sample_da():
             "longitude": np.arange(-100, -90),
         },
     )
+    return da
+
 
 
 @pytest.fixture
