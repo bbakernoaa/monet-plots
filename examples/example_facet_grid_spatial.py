@@ -1,3 +1,10 @@
+"""
+Facet Grid Spatial
+==================
+
+This example demonstrates Facet Grid Spatial.
+"""
+
 import xarray as xr
 import numpy as np
 import pandas as pd
