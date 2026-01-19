@@ -1,3 +1,10 @@
+"""
+Polar
+=====
+
+This example demonstrates how to create a Polar.
+"""
+
 import pandas as pd
 import numpy as np
 from monet_plots.plots.polar import BivariatePolarPlot

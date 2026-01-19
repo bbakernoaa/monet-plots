@@ -585,6 +585,6 @@ except Exception as e:
 
 **Related Resources**:
 
-- [Style Configuration](./style) - Plot styling and themes
-- [Base API](./base) - Core plotting functionality
-- [Examples](../examples) - Practical usage examples
+- [Style Configuration](./style.md) - Plot styling and themes
+- [Base API](./base.md) - Core plotting functionality
+- [Examples](../examples/index.md) - Practical usage examples

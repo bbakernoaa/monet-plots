@@ -1,3 +1,10 @@
+"""
+Facet Grid Spatial
+==================
+
+This example demonstrates how to create a Facet Grid Spatial.
+"""
+
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -31,10 +38,13 @@ ds = data.to_dataset()
 # 2. Define a plotting function for a single spatial plot
 # This function will be mapped to each facet.
 # It needs to accept a DataFrame (or similar) and the FacetGrid will pass the subsetted data.
-def plot_spatial_imshow(data, **kwargs):
+def plot_spatial_imshow(*args, **kwargs):
     # The data passed to this function by map_dataframe will be a DataFrame
     # We need to convert it back to an xarray DataArray for SpatialImshowPlot
     # Assuming 'lat' and 'lon' are present in the DataFrame
+
+    # Seaborn passes the data as the first argument OR as a keyword argument 'data'
+    data = kwargs.pop("data", args[0] if args else None)
 
     # Reconstruct DataArray from DataFrame for plotting
     # This step might need adjustment based on your actual data structure
@@ -42,14 +52,14 @@ def plot_spatial_imshow(data, **kwargs):
     # the DataFrame has 'lat', 'lon', and the variable 'temperature'.
 
     # Get the variable name from the original dataset
-    var_name = ds.data_vars[0] if isinstance(ds, xr.Dataset) else ds.name
+    var_name = "temperature"
 
     # Create a temporary DataArray for plotting
     # Ensure 'lat' and 'lon' are correctly identified as coordinates
     temp_da = data.set_index(["lat", "lon"]).to_xarray()[var_name]
 
     # Create and plot using SpatialImshowPlot
-    plotter = SpatialImshowPlot(temp_da, **kwargs)
+    plotter = SpatialImshowPlot(temp_da, gridobj=None, **kwargs)
     plotter.plot()
     # The figure and axes are managed by FacetGrid, so we don't call plotter.show() or plotter.save() here.
     # We just ensure the plot is drawn on the current active axes, which FacetGrid handles.
@@ -63,7 +73,6 @@ grid = FacetGridPlot(
     col="model",
     height=4,
     aspect=1.2,
-    cbar_label="Temperature",  # This will be passed to the spatial plot
 )
 
 # 4. Map the spatial plotting function to the grid

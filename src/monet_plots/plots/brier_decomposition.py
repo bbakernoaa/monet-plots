@@ -10,17 +10,9 @@ class BrierScoreDecompositionPlot(BasePlot):
     """
     Brier Score Decomposition Plot.
 
-    Visualizes the components of the Brier Score: Reliability, Resolution, and Uncertainty.
+    Visualizes the components of the Brier Score: Reliability,
+    Resolution, and Uncertainty.
     BS = Reliability - Resolution + Uncertainty
-
-    Functional Requirements:
-    1. Stacked or Grouped Bar chart for the 3 components.
-    2. Support multiple models/regions comparison.
-    3. Optionally plot total Brier Score.
-
-    Edge Cases:
-    - Negative Resolution (should not happen in theory but possible in sample).
-    - Missing components in input data.
     """
 
     def __init__(self, fig=None, ax=None, **kwargs):
@@ -42,14 +34,16 @@ class BrierScoreDecompositionPlot(BasePlot):
         Main plotting method.
 
         Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray):
-                Input data with component columns or raw forecasts/observations.
-            reliability_col/resolution_col/uncertainty_col (str): Pre-computed component columns.
-            forecasts_col/observations_col (str, optional): Raw forecast probabilities and binary observations.
+            data: Input data.
+            reliability_col/resolution_col/uncertainty_col (str):
+                Pre-computed component columns.
+            forecasts_col/observations_col (str, optional):
+                Raw forecast probabilities and binary observations.
             n_bins (int): Bins for decomposition if raw data.
-            label_col (str, optional): Grouping column (x-axis labels/models).
+            label_col (str, optional): Grouping column.
             **kwargs: Matplotlib kwargs.
         """
+        title = kwargs.pop("title", "Brier Score Decomposition")
         df = to_dataframe(data)
         # Compute components if raw data provided
         if forecasts_col and observations_col:
@@ -138,10 +132,5 @@ class BrierScoreDecompositionPlot(BasePlot):
         self.ax.set_xticklabels(labels, rotation=45, ha="right")
         self.ax.legend(loc="best")
         self.ax.set_ylabel("Brier Score Components")
-        self.ax.set_title("Brier Score Decomposition")
+        self.ax.set_title(title)
         self.ax.grid(True, alpha=0.3)
-
-
-# TDD Anchors:
-# 1. test_component_sum: Verify Rel - Res + Unc matches Total BS (if provided).
-# 2. test_grouped_plotting: Verify x-ticks match labels.

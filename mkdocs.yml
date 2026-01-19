@@ -1,5 +1,5 @@
 site_name: MONET Plots
-repo_url: https://github.com/pypa/sampleproject
+repo_url: https://github.com/noaa-oar-arl/monet-plots
 theme:
   name: material
 markdown_extensions:
@@ -14,6 +14,9 @@ plugins:
       handlers:
         python:
           paths: [src]
+  - gallery:
+      examples_dirs: examples
+      gallery_dirs: docs/gallery
 nav:
   - Home: index.md
   - Getting Started:
@@ -44,31 +47,17 @@ nav:
     - Wind Barbs: examples/getting-started/wind-barbs.md
     - Wind Quiver: examples/getting-started/wind-quiver.md
     - Windrose: examples/getting-started/windrose.md
-  - Examples:
-    - Xarray Weather Example: examples/xarray_weather_example.ipynb
-    - GRIB Data Example: examples/grib_data_example.ipynb
-    - ROMS Ocean Example: examples/roms_ocean_example.ipynb
-    - KDE Plot Example: examples/kde_plot_example.ipynb
-    - Scatter Plot Example: examples/scatter_plot_example.ipynb
-    - Taylor Diagram Plot Example: examples/taylor_diagram_plot_example.ipynb
-    - Facet Grid Plot Example: examples/facet_grid_plot_example.ipynb
-    - Wind Plots Example: examples/wind_plots_example.ipynb
-    - Spatial Bias Scatter Plot Example: examples/spatial_bias_scatter_plot_example.ipynb
-    - Spatial Contour Plot Example: examples/spatial_contour_plot_example.ipynb
+    - Xarray Integration: examples/getting-started/xarray-integration.md
+  - Examples Gallery: gallery/index.md
   - API Reference:
     - API Home: api/index.md
-    - Spatial Plots: plots/spatial.md
-    - Spatial Bias Scatter Plots: plots/spatial_bias_scatter.md
-    - Spatial Contour Plots: plots/spatial_contour.md
-    - Xarray Spatial Plots: plots/xarray_spatial.md
-    - Time Series Plots: plots/timeseries.md
-    - Taylor Diagrams: plots/taylor.md
-    - KDE Plots: plots/kde.md
-    - Scatter Plots: plots/scatter.md
-    - Wind Plots: plots/wind.md
-    - Facet Grids: plots/facet_grid.md
-    - Profile Plots: plots/profile.md
-    - Trajectory Plots: plots/trajectory.md
+    - Base Plot: api/base.md
+    - Plot Utils: api/plot_utils.md
+    - Style: api/style.md
+    - Colorbars: api/colorbars.md
+    - Taylor Diagram: api/taylordiagram.md
+    - Plot Types: plots/index.md
+    - Ridgeline Plot: plots/ridgeline.md
   - Configuration: configuration/index.md
   - Performance: performance/index.md
   - Troubleshooting: troubleshooting/index.md

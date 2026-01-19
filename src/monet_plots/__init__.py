@@ -18,7 +18,7 @@ from .plots.scorecard import ScorecardPlot
 from .plots.rev import RelativeEconomicValuePlot
 from .plots.conditional_bias import ConditionalBiasPlot
 from .plots.ensemble import SpreadSkillPlot
-from .plots.spatial_imshow import SpatialImshow
+from .plots.spatial_imshow import SpatialImshowPlot
 from .plots.sp_scatter_bias import SpScatterBiasPlot
 from .plots.windrose import Windrose
 from .plots.meteogram import Meteogram
@@ -45,7 +45,7 @@ __all__ = [
     "RelativeEconomicValuePlot",
     "ConditionalBiasPlot",
     "SpreadSkillPlot",
-    "SpatialImshow",
+    "SpatialImshowPlot",
     "SpScatterBiasPlot",
     "Windrose",
     "Meteogram",

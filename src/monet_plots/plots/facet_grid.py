@@ -27,7 +27,7 @@ class FacetGridPlot(BasePlot):
         """Initializes the facet grid.
 
         Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): The data to plot.
+            data: The data to plot.
             row (str, optional): Variable to map to row facets. Defaults to None
             col (str, optional): Variable to map to column facets. Defaults to None
             hue (str, optional): Variable to map to color mapping. Defaults to None
@@ -36,17 +36,10 @@ class FacetGridPlot(BasePlot):
             aspect (float, optional): Aspect ratio of each facet. Defaults to 1
             **kwargs: Additional keyword arguments to pass to `FacetGrid`.
         """
-        # Apply Wiley style - this is the key functionality from BasePlot
+        # Apply Wiley style
         plt.style.use(wiley_style)
 
-        # Initialize BasePlot with general figure parameters
-        super().__init__(**kwargs)
-
-        # Convert data to pandas DataFrame
-        data = to_dataframe(data)
-
-        # Store the data and facet parameters
-        self.data = data
+        # Store facet parameters
         self.row = row
         self.col = col
         self.hue = hue
@@ -54,9 +47,12 @@ class FacetGridPlot(BasePlot):
         self.height = height
         self.aspect = aspect
 
+        # Convert data to pandas DataFrame and ensure coordinates are columns
+        self.data = to_dataframe(data).reset_index()
+
         # Create the FacetGrid (this creates its own figure)
         self.grid = sns.FacetGrid(
-            data,
+            self.data,
             row=self.row,
             col=self.col,
             hue=self.hue,
@@ -66,9 +62,9 @@ class FacetGridPlot(BasePlot):
             **kwargs,
         )
 
-        # Update the figure reference to the one from the grid since seaborn creates its own
-        self.fig = self.grid.fig
-        self.ax = None  # FacetGrid handles multiple axes internally
+        # Initialize BasePlot with the figure and first axes from the grid
+        axes = self.grid.axes.flatten()
+        super().__init__(fig=self.grid.fig, ax=axes[0])
 
         # For compatibility with tests, also store as 'g'
         self.g = self.grid
@@ -105,19 +101,12 @@ class FacetGridPlot(BasePlot):
         """Plots the data using the FacetGrid.
 
         Args:
-            plot_func (function, optional): The plotting function to use. If None, uses the default plotting behavior.
+            plot_func (function, optional): The plotting function to use.
             *args: Positional arguments to pass to the plotting function.
             **kwargs: Keyword arguments to pass to the plotting function.
         """
         if plot_func is not None:
-            # Map the provided plotting function to the grid
             self.grid.map(plot_func, *args, **kwargs)
-        else:
-            # Default behavior: map a simple plot function if no specific function is provided
-            # For xarray DataArrays, we can use the default plot method
-            # The default is to call the default plot method on the data
-            # This is typically used after FacetGrid is set up
-            pass  # The FacetGrid is already created, user would typically call map after this
 
     def close(self):
         """Closes the plot."""

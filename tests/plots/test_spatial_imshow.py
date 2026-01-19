@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from unittest.mock import MagicMock
-from monet_plots.plots.spatial_imshow import SpatialImshow
+from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 
 
 @pytest.fixture
@@ -16,12 +16,12 @@ def mock_grid():
 
 
 def test_spatial_imshow_plot(mock_grid):
-    """Test the SpatialImshow plot method."""
+    """Test the SpatialImshowPlot plot method."""
     # Create a sample model variable
     modelvar = np.random.rand(10, 10)
 
-    # Create a SpatialImshow instance
-    plot = SpatialImshow(modelvar, mock_grid)
+    # Create a SpatialImshowPlot instance
+    plot = SpatialImshowPlot(modelvar, mock_grid)
 
     # Call the plot method
     c = plot.plot()
@@ -33,12 +33,12 @@ def test_spatial_imshow_plot(mock_grid):
 
 
 def test_spatial_imshow_plot_discrete(mock_grid):
-    """Test the SpatialImshow plot method with a discrete colorbar."""
+    """Test the SpatialImshowPlot plot method with a discrete colorbar."""
     # Create a sample model variable
     modelvar = np.random.rand(10, 10)
 
-    # Create a SpatialImshow instance
-    plot = SpatialImshow(modelvar, mock_grid, discrete=True)
+    # Create a SpatialImshowPlot instance
+    plot = SpatialImshowPlot(modelvar, mock_grid, discrete=True)
 
     # Call the plot method
     c = plot.plot()
@@ -50,12 +50,12 @@ def test_spatial_imshow_plot_discrete(mock_grid):
 
 
 def test_spatial_imshow_plot_discrete_vmin_vmax(mock_grid):
-    """Test the SpatialImshow plot method with a discrete colorbar and vmin/vmax."""
+    """Test the SpatialImshowPlot plot method with a discrete colorbar and vmin/vmax."""
     # Create a sample model variable
     modelvar = np.random.rand(10, 10)
 
-    # Create a SpatialImshow instance
-    plot = SpatialImshow(
+    # Create a SpatialImshowPlot instance
+    plot = SpatialImshowPlot(
         modelvar, mock_grid, discrete=True, plotargs={"vmin": 0.1, "vmax": 0.9}
     )
 

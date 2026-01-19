@@ -309,6 +309,6 @@ plot.plot(data)
 
 **Related Resources**:
 
-- [Plot Types API](../plots) - Specific plot type implementations
+- [Plot Types API](../plots/index.md) - Specific plot type implementations
 - [Style Configuration](../style) - Customizing plot appearance
-- [Examples](../examples) - Practical usage examples
+- [Examples](../examples/index.md) - Practical usage examples

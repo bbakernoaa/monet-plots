@@ -23,7 +23,7 @@ from .sp_scatter_bias import SpScatterBiasPlot
 from .spatial import SpatialPlot, SpatialTrack
 from .spatial_bias_scatter import SpatialBiasScatterPlot
 from .spatial_contour import SpatialContourPlot
-from .spatial_imshow import SpatialImshow
+from .spatial_imshow import SpatialImshowPlot
 from .taylor_diagram import TaylorDiagramPlot
 from .timeseries import TimeSeriesPlot
 from .trajectory import TrajectoryPlot
@@ -43,7 +43,7 @@ __all__ = [
     "FacetGridPlot",
     "SpatialBiasScatterPlot",
     "SpatialContourPlot",
-    "SpatialImshow",
+    "SpatialImshowPlot",
     "SpScatterBiasPlot",
     "ProfilePlot",
     "VerticalSlice",

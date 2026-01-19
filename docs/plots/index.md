@@ -1,40 +1,71 @@
-# Verification Plots Documentation
+# Plot Types Documentation
 
 ## Overview
 
-This document serves as the central index for all available **Verification Plots** within the MONET Plots system. These plots are specifically designed to evaluate model forecast quality against observations across various statistical and spatial domains. They provide critical insights into bias, reliability, skill, and resolution, adhering to best practices in meteorological and statistical verification.
+This document serves as the central index for all available plot types within the MONET Plots system. These plots are categorized into groups based on their primary use case.
 
-For detailed instructions on each plot's usage, customization, and underlying methodology, refer to the individual documentation pages listed below.
+## Verification Plots
 
-## Available Verification Plots
-
-The following verification plots are available. Each link directs to a page detailing its usage, configuration, and interpretation.
+These plots are specifically designed to evaluate model forecast quality against observations.
 
 | Plot Name | Description | Documentation Link |
 | :--- | :--- | :--- |
-| [`PerformanceDiagramPlot`](./performance_diagram) | Analyzes forecast performance across various thresholds, often combining skill and bias metrics. | [`Performance Diagram`](./performance_diagram) |
-| [`ROCCurvePlot`](./roc_curve) | Generates a Receiver Operating Characteristic (ROC) curve to visualize the trade-off between hit rate and false alarm rate. | [`ROC Curve`](./roc_curve) |
-| [`ReliabilityDiagramPlot`](./reliability_diagram) | Assesses calibration by comparing forecast probability against observed relative frequency. | [`Reliability Diagram`](./reliability_diagram) |
-| [`RankHistogramPlot`](./rank_histogram) | Evaluates whether forecast ensembles are properly spread by analyzing the rank of observations within the ensemble members. | [`Rank Histogram`](./rank_histogram) |
-| [`BrierScoreDecompositionPlot`](./brier_decomposition) | Decomposes the Brier Score into components representing uncertainty, resolution, and reliability. | [`Brier Score Decomposition`](./brier_decomposition) |
-| [`ScorecardPlot`](./scorecard) | Provides a tabular or graphical summary of key verification statistics for quick assessment. | [`Scorecard`](./scorecard) |
-| [`RelativeEconomicValuePlot`](./rev) | Evaluates the economic value of forecasts by comparing them against reference forecasts. | [`Relative Economic Value (REV)`](./rev) |
-| [`ConditionalBiasPlot`](./conditional_bias) | Shows bias conditioned on forecast value, helping to identify systematic over/under-forecasting for certain outcomes. | [`Conditional Bias`](./conditional_bias) |
-| [`CategoricalPlot`](./categorical) | Creates grouped bar or violin plots for categorical data. | [`Categorical Plot`](./categorical) |
-| [`SoccerPlot`](./soccer) | Plots model bias against error with optional target/criteria zones. | [`Soccer Plot`](./soccer) |
-| [`CurtainPlot`](./curtain) | Shows a 2D cross-section of data, typically altitude vs time/distance. | [`Vertical Curtain Plot`](./curtain) |
-| [`DiurnalErrorPlot`](./diurnal_error) | Visualizes model error by hour of day and another temporal dimension. | [`Diurnal Error Heat Map`](./diurnal_error) |
-| [`FingerprintPlot`](./fingerprint) | Displays temporal patterns across two different scales (e.g., hour vs day). | [`Fingerprint Plot`](./fingerprint) |
-| [`BivariatePolarPlot`](./polar) | Analyzes variable dependence on wind speed and wind direction. | [`Bivariate Polar Plot`](./polar) |
-| [`ConditionalQuantilePlot`](./conditional_quantile) | Plots modeled value quantiles conditioned on observed value bins. | [`Conditional Quantile Plot`](./conditional_quantile) |
+| [`PerformanceDiagramPlot`](./performance_diagram.md) | Analyzes forecast performance across POD, Success Ratio, and CSI. | [`Performance Diagram`](./performance_diagram.md) |
+| [`ROCCurvePlot`](./roc_curve.md) | Visualizes the trade-off between hit rate and false alarm rate. | [`ROC Curve`](./roc_curve.md) |
+| [`ReliabilityDiagramPlot`](./reliability_diagram.md) | Assesses calibration of probabilistic forecasts. | [`Reliability Diagram`](./reliability_diagram.md) |
+| [`RankHistogramPlot`](./rank_histogram.md) | Evaluates ensemble spread and reliability. | [`Rank Histogram`](./rank_histogram.md) |
+| [`BrierScoreDecompositionPlot`](./brier_decomposition.md) | Decomposes Brier Score into components. | [`Brier Score Decomposition`](./brier_decomposition.md) |
+| [`ScorecardPlot`](./scorecard.md) | Summary of key verification statistics. | [`Scorecard`](./scorecard.md) |
+| [`RelativeEconomicValuePlot`](./rev.md) | Evaluates the economic value of forecasts. | [`Relative Economic Value (REV)`](./rev.md) |
+| [`ConditionalBiasPlot`](./conditional_bias.md) | Shows bias conditioned on forecast value. | [`Conditional Bias`](./conditional_bias.md) |
+| [`SoccerPlot`](./soccer.md) | Plots model bias against error with target zones. | [`Soccer Plot`](./soccer.md) |
+| [`ConditionalQuantilePlot`](./conditional_quantile.md) | Modeled value quantiles conditioned on observations. | [`Conditional Quantile Plot`](./conditional_quantile.md) |
+
+## Spatial Plots
+
+Specialized plots for visualizing geospatial data on maps.
+
+| Plot Name | Description | Documentation Link |
+| :--- | :--- | :--- |
+| [`SpatialPlot`](./spatial.md) | Base class for geospatial plots with cartopy support. | [`Spatial Plot`](./spatial.md) |
+| [`SpatialContourPlot`](./spatial_contour.md) | 2D contour plots on a geographical map. | [`Spatial Contour`](./spatial_contour.md) |
+| [`SpatialImshowPlot`](./spatial_imshow.md) | Gridded spatial data displayed as an image on a map. | [`Spatial Imshow`](./spatial_imshow.md) |
+| [`SpatialBiasScatterPlot`](./spatial_bias_scatter.md) | Geographical distribution of bias with points. | [`Spatial Bias Scatter`](./spatial_bias_scatter.md) |
+| [`SpScatterBiasPlot`](./sp_scatter_bias.md) | Alternative spatial bias visualization. | [`SP Scatter Bias`](./sp_scatter_bias.md) |
+
+## Basic & Statistical Plots
+
+Fundamental plot types for general data analysis.
+
+| Plot Name | Description | Documentation Link |
+| :--- | :--- | :--- |
+| [`TimeSeriesPlot`](./timeseries.md) | Plot data over time with statistical bands. | [`Time Series Plot`](./timeseries.md) |
+| [`ScatterPlot`](./scatter.md) | Relationship between two variables with regression. | [`Scatter Plot`](./scatter.md) |
+| [`KDEPlot`](./kde.md) | Kernel density estimation for probability distributions. | [`KDE Plot`](./kde.md) |
+| [`CategoricalPlot`](./categorical.md) | Bar or violin plots for categorical data. | [`Categorical Plot`](./categorical.md) |
+| [`RidgelinePlot`](./ridgeline.md) | Distribution curves for several groups (joyplot). | [`Ridgeline Plot`](./ridgeline.md) |
+| [`TaylorDiagramPlot`](./taylor_diagram.md) | Summarizes standard deviation, correlation, and RMSE. | [`Taylor Diagram`](./taylor_diagram.md) |
+| [`FacetGridPlot`](./facet_grid.md) | Multi-panel figure layouts using Seaborn. | [`Facet Grid`](./facet_grid.md) |
+
+## Meteorological & Specialized Plots
+
+| Plot Name | Description | Documentation Link |
+| :--- | :--- | :--- |
+| [`WindQuiverPlot`](./wind.md) | Wind vector arrows indicating direction and magnitude. | [`Wind Quiver`](./wind.md) |
+| [`WindBarbsPlot`](./wind_barbs.md) | Conventional meteorological wind barbs. | [`Wind Barbs`](./wind_barbs.md) |
+| [`CurtainPlot`](./curtain.md) | Vertical cross-section (altitude vs time/distance). | [`Vertical Curtain Plot`](./curtain.md) |
+| [`DiurnalErrorPlot`](./diurnal_error.md) | Heat map of model error by hour of day. | [`Diurnal Error Plot`](./diurnal_error.md) |
+| [`FingerprintPlot`](./fingerprint.md) | Temporal patterns across two different scales. | [`Fingerprint Plot`](./fingerprint.md) |
+| [`BivariatePolarPlot`](./polar.md) | Dependence on wind speed and direction. | [`Bivariate Polar Plot`](./polar.md) |
+| [`ProfilePlot`](./profile.md) | Vertical atmospheric profiles. | [`Profile Plot`](./profile.md) |
 
 ## Usage and Style Guidelines
 
-All verification plots follow the same core structure:
+All plot classes follow the same core structure:
 
-1.  **Initialization**: Instantiate the plot class (e.g., `PerformanceDiagramPlot(...)`).
-2.  **Plotting**: Call the main rendering method, passing in the required observation and forecast data.
-3.  **Customization**: Use methods like `.title()`, `.xlabel()`, or global configuration to style the plot.
-4.  **Output**: Save the figure using `.save()` and always remember to close it with `.close()` to manage memory effectively, as documented in the [API Reference](./api/base).
+1.  **Initialization**: Instantiate the plot class (e.g., `TimeSeriesPlot(df, ...)`).
+2.  **Plotting**: Call the main `.plot()` method.
+3.  **Customization**: Use methods like `.ax.set_title()` or global configuration.
+4.  **Output**: Save the figure using `.save()` and close with `.close()`.
 
-For more details on styling, please see the [Configuration Guide](./configuration).
+For more details on styling, please see the [Configuration Guide](../configuration/index.md).
