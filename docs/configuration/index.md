@@ -13,7 +13,7 @@ MONET Plots provides extensive customization options while maintaining default p
 
 | Configuration Level | Difficulty | Use Case |
 |---------------------|------------|----------|
-| [Basic Styling](./basic-styling) | Beginner | Quick appearance changes |
+| [Basic Styling](./basic-styling.md) | Beginner | Quick appearance changes |
 | [Custom Styles](./custom-styles) | Intermediate | Project-specific themes |
 | [Advanced Customization](./advanced-customization) | Advanced | Full control over plots |
 | [Performance Tuning](./performance-tuning) | Intermediate | Optimization settings |
@@ -48,7 +48,7 @@ MONET Plots follows a configuration hierarchy:
 
 ## Navigation
 
-- [Basic Styling](./basic-styling) - Quick appearance changes
+- [Basic Styling](./basic-styling.md) - Quick appearance changes
 - [Custom Styles](./custom-styles) - Creating custom themes
 - [Advanced Customization](./advanced-customization) - Full plot control
 - [Performance Tuning](./performance-tuning) - Optimization settings

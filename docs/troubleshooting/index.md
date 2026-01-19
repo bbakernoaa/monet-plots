@@ -772,7 +772,7 @@ else:
 
 **Q1: What is the best way to learn MONET Plots?**
 
-**A**: Start with the [Getting Started Guide](../getting-started), then explore the [Examples](../examples) section. Begin with basic plots and gradually work up to more complex visualizations.
+**A**: Start with the [Getting Started Guide](../getting-started.md), then explore the [Examples](../examples/index.md) section. Begin with basic plots and gradually work up to more complex visualizations.
 
 **Q2: Can I use MONET Plots with Jupyter notebooks?**
 
@@ -960,7 +960,7 @@ plot2.save("consistent_plot2.png")
 
 - **GitHub Issues**: Report bugs and request features
 - **GitHub Discussions**: Ask questions and share knowledge
-- **Documentation**: Check the full [documentation](../index)
+- **Documentation**: Check the full [documentation](../index.md)
 
 ### Professional Support
 
@@ -981,8 +981,8 @@ Help improve this troubleshooting guide by:
 
 **Related Resources**:
 
-- [Getting Started Guide](../getting-started) - Installation and basic usage
-- [API Reference](../api) - Complete API documentation
-- [Examples](../examples) - Practical examples and tutorials
-- [Performance Guide](../performance) - Optimization techniques
-- [Configuration Guide](../configuration) - Customization options
+- [Getting Started Guide](../getting-started.md) - Installation and basic usage
+- [API Reference](../api/index.md) - Complete API documentation
+- [Examples](../examples/index.md) - Practical examples and tutorials
+- [Performance Guide](../performance/index.md) - Optimization techniques
+- [Configuration Guide](../configuration/index.md) - Customization options

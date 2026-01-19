@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
-import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from .base import BasePlot
@@ -48,13 +48,19 @@ class TrajectoryPlot(BasePlot):
         Args:
             **kwargs: Keyword arguments passed to the plot methods.
         """
-        if self.fig is None:
-            self.fig = plt.figure(figsize=kwargs.get("figsize", (10, 8)))
+        # If BasePlot created a default figure with one axes, we might want to clear it
+        # or just use self.fig.
+        if self.ax is not None and not isinstance(self.ax, list):
+            self.ax.remove()
+            self.ax = None
 
         gs = self.fig.add_gridspec(2, 1, height_ratios=[3, 1])
 
         # Spatial track plot
-        ax0 = self.fig.add_subplot(gs[0, 0], projection=kwargs.get("projection"))
+        import cartopy.crs as ccrs
+
+        proj = kwargs.get("projection", ccrs.PlateCarree())
+        ax0 = self.fig.add_subplot(gs[0, 0], projection=proj)
 
         # Create an xarray.DataArray for the trajectory data
         lon = np.asarray(self.longitude)
@@ -65,13 +71,19 @@ class TrajectoryPlot(BasePlot):
         track_da = xr.DataArray(values, dims=["time"], coords=coords, name="track_data")
 
         # Pass the DataArray to SpatialTrack
-        plot_kwargs = kwargs.get("spatial_track_kwargs", {})
-        spatial_track = SpatialTrack(data=track_da, ax=ax0)
+        plot_kwargs = kwargs.get("spatial_track_kwargs", {}).copy()
+        spatial_track = SpatialTrack(data=track_da, ax=ax0, fig=self.fig)
         spatial_track.plot(**plot_kwargs)
 
         # Timeseries plot
         ax1 = self.fig.add_subplot(gs[1, 0])
-        timeseries = TimeSeriesPlot(df=self.time, y=self.ts_data, ax=ax1)
-        timeseries.plot(**kwargs.get("timeseries_kwargs", {}))
+
+        # Prepare DataFrame for TimeSeriesPlot
+        ts_df = pd.DataFrame({"time": self.time, "value": np.asarray(self.ts_data)})
+
+        timeseries_kwargs = kwargs.get("timeseries_kwargs", {}).copy()
+        timeseries = TimeSeriesPlot(df=ts_df, x="time", y="value", ax=ax1, fig=self.fig)
+        timeseries.plot(**timeseries_kwargs)
 
         self.ax = [ax0, ax1]
+        return self.ax

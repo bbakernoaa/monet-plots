@@ -5,7 +5,7 @@ from typing import Any
 import cartopy.crs as ccrs
 
 
-class SpatialImshow(SpatialPlot):
+class SpatialImshowPlot(SpatialPlot):
     """Create a basic spatial plot using imshow.
 
     This plot is useful for visualizing 2D model data on a map.
@@ -14,7 +14,7 @@ class SpatialImshow(SpatialPlot):
     def __init__(
         self,
         modelvar: Any,
-        gridobj,
+        gridobj=None,
         plotargs: dict = {},
         ncolors: int = 15,
         discrete: bool = False,
@@ -44,11 +44,19 @@ class SpatialImshow(SpatialPlot):
         imshow_kwargs = self.add_features(**kwargs)
         imshow_kwargs.update(self.plotargs)
 
-        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
-        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+        if self.gridobj is not None:
+            lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
+            lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+            extent = [lon.min(), lon.max(), lat.min(), lat.max()]
+        elif hasattr(self.modelvar, "lat") and hasattr(self.modelvar, "lon"):
+            lat = self.modelvar.lat
+            lon = self.modelvar.lon
+            extent = [lon.min(), lon.max(), lat.min(), lat.max()]
+        else:
+            # Fallback to extent from plotargs or default
+            extent = imshow_kwargs.get("extent", None)
 
         # imshow requires the extent [lon_min, lon_max, lat_min, lat_max]
-        extent = [lon.min(), lon.max(), lat.min(), lat.max()]
 
         imshow_kwargs.setdefault("cmap", "viridis")
         imshow_kwargs.setdefault("origin", "lower")

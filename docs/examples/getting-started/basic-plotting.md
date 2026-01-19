@@ -419,7 +419,7 @@ After completing this basic tutorial, you're ready to explore:
 
 **Navigation**:
 
-- [Examples Index](../index) - All examples and tutorials
-- [Getting Started Guide](../../getting-started) - Installation and setup
-- [API Reference](../../api) - Complete API documentation
-- [Plot Types](../../plots) - Individual plot type documentation
+- [Examples Index](../index.md) - All examples and tutorials
+- [Getting Started Guide](../../getting-started.md) - Installation and setup
+- [API Reference](../../api/index.md) - Complete API documentation
+- [Plot Types](../../plots/index.md) - Individual plot type documentation

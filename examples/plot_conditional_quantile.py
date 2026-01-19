@@ -1,3 +1,10 @@
+"""
+Conditional Quantile
+====================
+
+This example demonstrates how to create a Conditional Quantile.
+"""
+
 import pandas as pd
 import numpy as np
 from monet_plots.plots.conditional_quantile import ConditionalQuantilePlot

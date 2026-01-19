@@ -1,3 +1,10 @@
+"""
+Fingerprint
+===========
+
+This example demonstrates how to create a Fingerprint.
+"""
+
 import pandas as pd
 import numpy as np
 from monet_plots.plots.fingerprint import FingerprintPlot

@@ -1,3 +1,10 @@
+"""
+Soccer
+======
+
+This example demonstrates how to create a Soccer.
+"""
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from monet_plots.plots.soccer import SoccerPlot

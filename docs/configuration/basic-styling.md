@@ -527,7 +527,7 @@ After mastering basic styling, explore:
 
 **Navigation**:
 
-- [Configuration Index](../index) - All configuration guides
+- [Configuration Index](../index.md) - All configuration guides
 - [Custom Styles](../custom-styles) - Advanced style creation
 - [Advanced Customization](../advanced-customization) - Full plot control
 - [Color Management](../colors) - Color schemes and palettes

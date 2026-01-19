@@ -1,3 +1,10 @@
+"""
+Diurnal Error
+=============
+
+This example demonstrates how to create a Diurnal Error.
+"""
+
 import pandas as pd
 import numpy as np
 from monet_plots.plots.diurnal_error import DiurnalErrorPlot

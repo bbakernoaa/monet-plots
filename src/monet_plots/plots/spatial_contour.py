@@ -27,13 +27,15 @@ class SpatialContourPlot(SpatialPlot):
         Initialize the plot with data and map projection.
 
         Args:
-            modelvar (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray): 2D model variable array to contour.
+            modelvar (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray):
+                2D model variable array to contour.
             gridobj (object): Object with LAT and LON variables.
             date (datetime.datetime): Date/time for the plot title.
             discrete (bool): If True, use a discrete colorbar.
             ncolors (int, optional): Number of discrete colors.
             dtype (str): Data type for colorbar tick labels.
-            **kwargs: Keyword arguments passed to SpatialPlot for projection and features.
+            **kwargs: Keyword arguments passed to SpatialPlot for
+                projection and features.
         """
         super().__init__(*args, **kwargs)
         self.modelvar = np.asarray(modelvar)
@@ -48,8 +50,25 @@ class SpatialContourPlot(SpatialPlot):
         # Draw map features and get remaining kwargs for contourf
         plot_kwargs = self.add_features(**kwargs)
 
-        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
-        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+        # Try to handle different gridobj structures
+        if hasattr(self.gridobj, "variables"):
+            lat_var = self.gridobj.variables["LAT"]
+            lon_var = self.gridobj.variables["LON"]
+
+            # Flexible indexing based on dimension count
+            if lat_var.ndim == 4:
+                lat = lat_var[0, 0, :, :].squeeze()
+                lon = lon_var[0, 0, :, :].squeeze()
+            elif lat_var.ndim == 3:
+                lat = lat_var[0, :, :].squeeze()
+                lon = lon_var[0, :, :].squeeze()
+            else:
+                lat = lat_var.squeeze()
+                lon = lon_var.squeeze()
+        else:
+            # Assume it's already an array or similar
+            lat = self.gridobj.LAT
+            lon = self.gridobj.LON
 
         # Data is in lat/lon, so specify transform
         plot_kwargs.setdefault("transform", ccrs.PlateCarree())
@@ -62,12 +81,23 @@ class SpatialContourPlot(SpatialPlot):
         if self.discrete:
             ncolors = self.ncolors
             if ncolors is None and levels is not None:
-                ncolors = len(levels) - 1
+                if isinstance(levels, int):
+                    ncolors = levels
+                else:
+                    ncolors = len(levels) - 1
+
+            if levels is not None and not isinstance(levels, int):
+                minval = levels[0]
+                maxval = levels[-1]
+            else:
+                minval = self.modelvar.min()
+                maxval = self.modelvar.max()
+
             c, _ = colorbar_index(
-                ncolors,
-                cmap,
-                minval=levels[0],
-                maxval=levels[-1],
+                ncolors if ncolors else 15,
+                cmap if cmap else "viridis",
+                minval=minval,
+                maxval=maxval,
                 dtype=self.dtype,
                 ax=self.ax,
             )

@@ -483,6 +483,6 @@ td.finish_plot()
 
 **Related Resources**:
 
-- [Plot Types API](../plots) - Other plot implementations
-- [Examples](../examples) - Practical usage examples
-- [Base API](./base) - Core plotting functionality
+- [Plot Types API](../plots/index.md) - Other plot implementations
+- [Examples](../examples/index.md) - Practical usage examples
+- [Base API](./base.md) - Core plotting functionality
