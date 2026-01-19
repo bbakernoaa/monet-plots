@@ -1,14 +1,14 @@
-
 import pytest
-import matplotlib.pyplot as plt
 from unittest.mock import MagicMock
 import cartopy.crs as ccrs
 from monet_plots.plots.spatial import SpatialPlot
+
 
 @pytest.fixture
 def spatial_plot():
     """Returns a SpatialPlot instance for testing."""
     return SpatialPlot(projection=ccrs.PlateCarree())
+
 
 def test_add_features_boolean(spatial_plot):
     """Test that features are added with boolean flags."""
@@ -21,13 +21,14 @@ def test_add_features_boolean(spatial_plot):
     # Check that three features have been added
     assert len(spatial_plot.ax.collections) == 3
 
+
 def test_add_features_dict(spatial_plot):
     """Test that features are styled with dictionaries."""
     # The plot is initialized with no features, so the list should be empty.
     assert len(spatial_plot.ax.collections) == 0
 
     # Add a feature with a style dictionary
-    style = {'linewidth': 2, 'edgecolor': 'red'}
+    style = {"linewidth": 2, "edgecolor": "red"}
     spatial_plot.add_features(states=style)
 
     # Check that one feature has been added
@@ -35,7 +36,8 @@ def test_add_features_dict(spatial_plot):
 
     # Check that the properties of the added collection are correct
     added_collection = spatial_plot.ax.collections[0]
-    assert added_collection.get_linewidth()[0] == style['linewidth']
+    assert added_collection.get_linewidth()[0] == style["linewidth"]
+
 
 def test_add_features_gridlines(spatial_plot):
     """Test that gridlines are added correctly."""
@@ -47,6 +49,7 @@ def test_add_features_gridlines(spatial_plot):
 
     # Check that ax.gridlines was called
     spatial_plot.ax.gridlines.assert_called_once()
+
 
 def test_add_features_natural_earth(spatial_plot):
     """Test the natural_earth convenience flag."""

@@ -122,7 +122,15 @@ class SpatialPlot(BasePlot):
             A dictionary mapping feature names to a specification dictionary
             containing the feature object and its default styling.
         """
-        from cartopy.feature import BORDERS, COASTLINE, LAKES, LAND, OCEAN, RIVERS, STATES
+        from cartopy.feature import (
+            BORDERS,
+            COASTLINE,
+            LAKES,
+            LAND,
+            OCEAN,
+            RIVERS,
+            STATES,
+        )
 
         # Define default styles in one place for consistency
         line_defaults = {"linewidth": 0.5, "edgecolor": "black", "facecolor": "none"}
@@ -271,7 +279,11 @@ class SpatialPlot(BasePlot):
         if "gridlines" in kwargs:
             gridline_style = kwargs.pop("gridlines")
             if gridline_style:  # Allows for `gridlines=False`
-                gridline_defaults = {"draw_labels": True, "linestyle": "--", "color": "gray"}
+                gridline_defaults = {
+                    "draw_labels": True,
+                    "linestyle": "--",
+                    "color": "gray",
+                }
                 gridline_kwargs = self._get_style(gridline_style, gridline_defaults)
                 self.ax.gridlines(**gridline_kwargs)
 
