@@ -9,7 +9,6 @@ from ..plot_utils import get_plot_kwargs, to_dataframe
 from .spatial import SpatialPlot
 
 
-
 class SpatialBiasScatterPlot(SpatialPlot):
     """Create a spatial scatter plot showing bias between model and observations.
 
