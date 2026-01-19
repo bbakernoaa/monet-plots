@@ -37,7 +37,7 @@ def test_spatial_track_docstring_example(clear_figures):
     )
 
     # 2. Create and render the plot
-    track_plot = SpatialTrack(data=da, states=True)
+    track_plot = SpatialTrack(data=da, states=True, resolution="110m")
     sc = track_plot.plot(cmap="viridis")
 
     # --- The Proof (Validation) ---

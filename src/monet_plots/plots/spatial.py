@@ -1,7 +1,8 @@
 # src/monet_plots/plots/spatial.py
 from __future__ import annotations
 
-from typing import Any, Union
+import warnings
+from typing import Any, Literal, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -9,7 +10,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 from numpy.typing import ArrayLike
-
 
 from .base import BasePlot
 
@@ -28,8 +28,6 @@ class SpatialPlot(BasePlot):
     ----------
     resolution : str
         The resolution of the cartopy features (e.g., '50m').
-    feature_kwargs : dict[str, Any]
-        Keyword arguments for cartopy features passed during initialization.
     """
 
     def __init__(
@@ -78,20 +76,6 @@ class SpatialPlot(BasePlot):
             The matplotlib Axes (or GeoAxes) object.
         resolution : str
             The default resolution for cartopy features.
-
-        Examples
-        --------
-        >>> import matplotlib.pyplot as plt
-        >>> import cartopy.crs as ccrs
-        >>> from monet_plots.plots.spatial import SpatialPlot
-        >>>
-        >>> # Create a map with states and a specific extent
-        >>> plot = SpatialPlot(
-        ...     projection=ccrs.LambertConformal(),
-        ...     states=True,
-        ...     extent=[-125, -70, 25, 50],
-        ... )
-        >>> plt.show()
         """
         # Ensure 'projection' is correctly passed to subplot creation.
         current_subplot_kw = subplot_kw.copy() if subplot_kw else {}
@@ -104,6 +88,118 @@ class SpatialPlot(BasePlot):
 
         # Add features from kwargs
         self.add_features(**kwargs)
+
+    @classmethod
+    def from_projection(
+        cls,
+        projection: ccrs.Projection = ccrs.PlateCarree(),
+        **kwargs: Any,
+    ) -> "SpatialPlot":
+        """Create a `SpatialPlot` instance from a map projection.
+
+        .. deprecated::
+           Use the constructor `SpatialPlot(...)` instead.
+
+        Parameters
+        ----------
+        projection : ccrs.Projection
+            The cartopy projection for the map. Default is ccrs.PlateCarree().
+        **kwargs : Any
+            Keyword arguments for map features and figure settings.
+
+        Returns
+        -------
+        SpatialPlot
+            An instance of the SpatialPlot class.
+        """
+        warnings.warn(
+            "SpatialPlot.from_projection() is deprecated. Use SpatialPlot() instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return cls(projection=projection, **kwargs)
+
+    @classmethod
+    def draw_map(
+        cls,
+        *,
+        crs: ccrs.Projection | None = None,
+        natural_earth: bool = False,
+        coastlines: bool = True,
+        states: bool = False,
+        counties: bool = False,
+        countries: bool = True,
+        resolution: Literal["10m", "50m", "110m"] = "10m",
+        extent: list[float] | None = None,
+        figsize: tuple[float, float] = (10, 5),
+        linewidth: float = 0.25,
+        return_fig: bool = False,
+        **kwargs: Any,
+    ) -> plt.Axes | tuple[plt.Figure, plt.Axes]:
+        """Draw a map with Cartopy.
+
+        .. deprecated::
+           Use `SpatialPlot(...)` instead.
+
+        Parameters
+        ----------
+        crs : cartopy.crs.Projection, optional
+            The map projection. Default is PlateCarree.
+        natural_earth : bool
+            Whether to add Natural Earth features (ocean, land, etc.).
+        coastlines : bool
+            Whether to add coastlines.
+        states : bool
+            Whether to add US states/provinces.
+        counties : bool
+            Whether to add US counties.
+        countries : bool
+            Whether to add country borders.
+        resolution : {"10m", "50m", "110m"}
+            Resolution of Natural Earth features. Default is "10m".
+        extent : list[float], optional
+            Map extent as [lon_min, lon_max, lat_min, lat_max].
+        figsize : tuple
+            Figure size (width, height). Default is (10, 5).
+        linewidth : float
+            Line width for vector features. Default is 0.25.
+        return_fig : bool
+            If True, return the figure and axes objects.
+        **kwargs : Any
+            Additional arguments.
+
+        Returns
+        -------
+        plt.Axes or tuple[plt.Figure, plt.Axes]
+            The matplotlib Axes object, or a tuple of (Figure, Axes).
+        """
+        warnings.warn(
+            "`draw_map` is deprecated and will be removed in a future version. "
+            "Please use `SpatialPlot()` instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+
+        # Prepare feature kwargs for the constructor
+        feature_kwargs = {
+            "natural_earth": natural_earth,
+            "coastlines": {"linewidth": linewidth} if coastlines else False,
+            "states": {"linewidth": linewidth} if states else False,
+            "counties": {"linewidth": linewidth} if counties else False,
+            "countries": {"linewidth": linewidth} if countries else False,
+            "extent": extent,
+            "resolution": resolution,
+            "figsize": figsize,
+            **kwargs,
+        }
+
+        # Create the plot
+        plot = cls(projection=crs or ccrs.PlateCarree(), **feature_kwargs)
+
+        if return_fig:
+            return plot.fig, plot.ax
+        else:
+            return plot.ax
 
     def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:
         """Return a registry of cartopy features and their default styles.
@@ -236,29 +332,6 @@ class SpatialPlot(BasePlot):
             A dictionary of the keyword arguments that were not used for
             adding features. This can be useful for passing remaining
             arguments to other functions.
-
-        Examples
-        --------
-        >>> import matplotlib.pyplot as plt
-        >>> import cartopy.crs as ccrs
-        >>> from monet_plots.plots.spatial import SpatialPlot
-        >>>
-        >>> # Create a plot with features enabled in the constructor
-        >>> plot = SpatialPlot(
-        ...     projection=ccrs.LambertConformal(),
-        ...     figsize=(10, 5),
-        ...     states=True,
-        ...     coastlines=True,
-        ...     countries=True,
-        ...     extent=[-125, -65, 25, 50],
-        ... )
-        >>>
-        >>> # Style the states with a dictionary using add_features
-        >>> unused_kwargs = plot.add_features(
-        ...     states=dict(linewidth=1.5, edgecolor='blue')
-        ... )
-        >>> print(f"Unused kwargs: {unused_kwargs}")
-        >>> plt.show()
         """
         resolution = kwargs.pop("resolution", self.resolution)
         feature_registry = self._get_feature_registry(resolution)
@@ -384,45 +457,6 @@ class SpatialTrack(SpatialPlot):
         -------
         plt.Artist
             The scatter plot artist created by `ax.scatter`.
-        Examples
-        --------
-        >>> import numpy as np
-        >>> import xarray as xr
-        >>> import matplotlib.pyplot as plt
-        >>> from monet_plots.plots.spatial import SpatialTrack
-        >>> import cartopy.crs as ccrs
-        >>>
-        >>> # 1. Create a sample xarray.DataArray
-        >>> time = np.arange(20)
-        >>> lon = np.linspace(-120, -80, 20)
-        >>> lat = np.linspace(30, 45, 20)
-        >>> concentration = np.linspace(0, 100, 20)
-        >>> da = xr.DataArray(
-        ...     concentration,
-        ...     dims=['time'],
-        ...     coords={
-        ...         'time': time,
-        ...         'lon': ('time', lon),
-        ...         'lat': ('time', lat)
-        ...     },
-        ...     name='O3_concentration',
-        ...     attrs={'units': 'ppb'}
-        ... )
-        >>>
-        >>> # 2. Initialize the plot with map features
-        >>> track_plot = SpatialTrack(
-        ...     da,
-        ...     projection=ccrs.LambertConformal(),
-        ...     states=True,
-        ...     extent=[-125, -70, 25, 50],
-        ... )
-        >>>
-        >>> # 3. Plot the data using scaling tools
-        >>> from monet_plots.colorbars import get_linear_scale
-        >>> cmap_norm = get_linear_scale(da, cmap='viridis', p_max=95)
-        >>> sc = track_plot.plot(cmap=cmap_norm, transform=ccrs.PlateCarree())
-        >>> plt.colorbar(sc, label="O3 Concentration (ppb)")
-        >>> plt.show()
         """
         from ..plot_utils import get_plot_kwargs
 

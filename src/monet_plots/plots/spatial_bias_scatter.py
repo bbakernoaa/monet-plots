@@ -1,10 +1,12 @@
-from scipy.stats import scoreatpercentile as score
+from typing import Any
+
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-from .spatial import SpatialPlot
+from scipy.stats import scoreatpercentile as score
+
 from ..colorbars import get_discrete_scale
-from ..plot_utils import to_dataframe, get_plot_kwargs
-from typing import Any
+from ..plot_utils import get_plot_kwargs, to_dataframe
+from .spatial import SpatialPlot
 
 
 class SpatialBiasScatterPlot(SpatialPlot):

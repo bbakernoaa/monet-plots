@@ -1,8 +1,8 @@
 """Colorbar helper functions"""
 
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.colors as mcolors
 from matplotlib.ticker import MaxNLocator
 
 
@@ -203,7 +203,6 @@ def colorbar_index(
         - discretized_cmap is the discretized colormap
     """
     import matplotlib.cm as cm
-    import numpy as np
 
     cmap = cmap_discretize(cmap, ncolors)
     mappable = cm.ScalarMappable(cmap=cmap)
@@ -249,20 +248,7 @@ def cmap_discretize(cmap, N):
     matplotlib.colors.LinearSegmentedColormap
         A new colormap object with N discrete colors based on the input colormap.
         The name will be the original colormap name with "_N" appended.
-
-    Examples
-    --------
-    >>> from numpy import arange
-    >>> from numpy.ma import resize
-    >>> from matplotlib.pyplot import imshow
-    >>> from matplotlib.cm import jet
-    >>> x = resize(arange(100), (5, 100))
-    >>> djet = cmap_discretize(jet, 5)
-    >>> imshow(x, cmap=djet)
     """
-    import matplotlib.colors as mcolors
-    import numpy as np
-
     if isinstance(cmap, str):
         cmap = plt.get_cmap(cmap)
     colors_i = np.concatenate((np.linspace(0, 1.0, N), (0.0, 0.0, 0.0, 0.0)))
@@ -276,140 +262,3 @@ def cmap_discretize(cmap, N):
         ]
     # Return colormap object.
     return mcolors.LinearSegmentedColormap(cmap.name + "_%d" % N, cdict, 1024)
-
-
-# def o3cmap():
-#     import matplotlib.cm as cm
-#     # This function returns the colormap and bins for the ozone spatial plots
-#     # this is designed to have a vmin =0 and vmax = 140
-#     # return cmap,bins
-#     colors1 = cm.viridis(linspace(0, 1, 128))
-#     colors2 = cm.OrRd(linspace(.2, 1, 128))
-#     colors = vstack((colors1, colors2))
-#     return mcolors.LinearSegmentedColormap.from_list('o3cmap', colors), arange(
-#         0, 140.5, .5)
-#
-#
-# def pm25cmap():
-#     from matplotlib.cm import viridis, OrRd
-#     # This function returns the colormap and bins for the PM spatial plots
-#     # this is designed to have a vmin =0 and vmax = 140
-#     # return cmap,bins
-#     colors1 = viridis(linspace(0, 1, 128))
-#     colors2 = OrRd(linspace(.2, 1, 128))
-#     colors = vstack((colors1, colors2))
-#     cc = mcolors.LinearSegmentedColormap.from_list('pm25cmap', colors), arange(
-#         0, 70.2, .2)
-#     return cc
-#
-#
-# def wscmap():
-#     from matplotlib.cm import viridis, OrRd
-#     # This function returns the colormap and bins for the PM spatial plots
-#     # this is designed to have a vmin =0 and vmax = 140
-#     # return cmap,bins
-#     colors1 = viridis(linspace(0, 1, 128))
-#     colors2 = OrRd(linspace(.2, 1, 128))
-#     colors = vstack((colors1, colors2))
-#     return mcolors.LinearSegmentedColormap.from_list('wscmap', colors), arange(
-#         0, 40.2, .2)
-#
-#
-# def tempcmap():
-#     from matplotlib.cm import viridis, OrRd
-#     # This function returns the colormap and bins for the PM spatial plots
-#     # this is designed to have a vmin =0 and vmax = 140
-#     # return cmap,bins
-#     colors1 = viridis(linspace(0, 1, 128))
-#     colors2 = OrRd(linspace(.2, 1, 128))
-#     colors = vstack((colors1, colors2))
-#     return mcolors.LinearSegmentedColormap.from_list('tempcmap',
-#                                                      colors), arange(
-#                                                          250, 320.5, .5)
-#
-#
-# def sradcmap():
-#     from matplotlib.cm import viridis, plasma_r
-#     # This function returns the colormap and bins for the PM spatial plots
-#     # this is designed to have a vmin =0 and vmax = 140
-#     # return cmap,bins
-#     colors1 = viridis(linspace(0, 1, 128))
-#     colors2 = plasma_r(linspace(.2, 1, 128))
-#     colors = vstack((colors1, colors2))
-#     return mcolors.LinearSegmentedColormap.from_list('sradcmap',
-#                                                      colors), arange(
-#                                                          0, 1410., 10)
-#
-#
-# def noxcmap():
-#     """Short summary.
-#
-#     Returns
-#     -------
-#     type
-#         Description of returned object.
-#
-#     """
-#     from matplotlib.cm import viridis, plasma_r
-#     # This function returns the colormap and bins for the NO2/NO/NOx spatial plots
-#     # this is designed to have a vmin =0 and vmax = 140
-#     # return cmap,bins
-#     colors1 = viridis(linspace(0, 1, 128))
-#     colors2 = plasma_r(linspace(.042, .75, 128))
-#     colors = vstack((colors1, colors2))
-#     return mcolors.LinearSegmentedColormap.from_list('noxcmap',
-#                                                      colors), arange(
-#                                                          0, 40.2, .2)
-#
-#
-# def rhcmap():
-#     """Short summary.
-#
-#     Returns
-#     -------
-#     type
-#         Description of returned object.
-#
-#     """
-#     from matplotlib.cm import viridis, plasma_r
-#     # This function returns the colormap and bins for the NO2/NO/NOx spatial
-#     # plots
-#     # this is designed to have a vmin =0 and vmax = 140
-#     # return cmap,bins
-#     colors1 = viridis(linspace(0, 1, 128))
-#     colors2 = plasma_r(linspace(.042, .75, 128))
-#     colors = vstack((colors1, colors2))
-#     return mcolors.LinearSegmentedColormap.from_list('noxcmap',
-#                                                      colors), arange(
-#                                                          0, 100.5, .5)
-#
-#
-# def so2cmap():
-#     """Short summary.
-#
-#     Returns
-#     -------
-#     type
-#         Description of returned object.
-#
-#     """
-#     from matplotlib.cm import viridis, plasma_r
-#     colors1 = viridis(linspace(0, 1, 128))
-#     colors2 = plasma_r(linspace(.042, .75, 128))
-#     colors = vstack((colors1, colors2))
-#     return mcolors.LinearSegmentedColormap.from_list('noxcmap',
-#                                                      colors), arange(
-#                                                          0, 14.1, .1)
-#
-#
-# def pm10cmap():
-#     import matplotlib.cm as cm
-#     # This function returns the colormap and bins for the NO2/NO/NOx spatial plots
-#     # this is designed to have a vmin =0 and vmax = 140
-#     # return cmap,bins
-#     colors1 = cm.viridis(linspace(0, 1, 128))
-#     colors2 = cm.plasma_r(linspace(.042, .75, 128))
-#     colors = vstack((colors1, colors2))
-#     return mcolors.LinearSegmentedColormap.from_list('noxcmap',
-#                                                      colors), arange(
-#                                                          0, 150.5, .5)

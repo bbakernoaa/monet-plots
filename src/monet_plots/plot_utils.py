@@ -1,7 +1,8 @@
 import warnings
+from typing import Any, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Any, Optional
 
 # Optional xarray import - will be used if available
 try:
