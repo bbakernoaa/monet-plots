@@ -3,6 +3,8 @@ from __future__ import annotations
 import typing as t
 
 import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
 
 from .base import BasePlot
 from .spatial import SpatialTrack
@@ -41,8 +43,8 @@ class TrajectoryPlot(BasePlot):
         self.ts_data = ts_data
 
     def plot(self, **kwargs: t.Any) -> None:
-        """
-        Plot the trajectory and timeseries.
+        """Plot the trajectory and timeseries.
+
         Args:
             **kwargs: Keyword arguments passed to the plot methods.
         """
@@ -53,10 +55,19 @@ class TrajectoryPlot(BasePlot):
 
         # Spatial track plot
         ax0 = self.fig.add_subplot(gs[0, 0], projection=kwargs.get("projection"))
-        spatial_track = SpatialTrack(
-            self.longitude, self.latitude, self.data, ax=ax0
-        )
-        spatial_track.plot(**kwargs.get("spatial_track_kwargs", {}))
+
+        # Create an xarray.DataArray for the trajectory data
+        lon = np.asarray(self.longitude)
+        lat = np.asarray(self.latitude)
+        values = np.asarray(self.data)
+        time_dim = np.arange(len(lon))
+        coords = {"time": time_dim, "lon": ("time", lon), "lat": ("time", lat)}
+        track_da = xr.DataArray(values, dims=["time"], coords=coords, name="track_data")
+
+        # Pass the DataArray to SpatialTrack
+        plot_kwargs = kwargs.get("spatial_track_kwargs", {})
+        spatial_track = SpatialTrack(data=track_da, ax=ax0)
+        spatial_track.plot(**plot_kwargs)
 
         # Timeseries plot
         ax1 = self.fig.add_subplot(gs[1, 0])

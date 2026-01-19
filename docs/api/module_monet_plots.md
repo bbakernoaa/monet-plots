@@ -27,6 +27,12 @@ print(monet_plots.__email__)
 | Wind Quiver | [`WindQuiverPlot`](../plots/wind) | Wind vector plots |
 | Wind Barbs | [`WindBarbsPlot`](../plots/wind) | Wind barb plots |
 | Facet Grid | [`FacetGridPlot`](../plots/facet_grid) | Multi-panel figure layouts |
+| Soccer | [`SoccerPlot`](../plots/soccer) | Model bias vs error plots |
+| Curtain | [`CurtainPlot`](../plots/curtain) | Vertical cross-section plots |
+| Diurnal Error | [`DiurnalErrorPlot`](../plots/diurnal_error) | Heat maps of error by hour |
+| Fingerprint | [`FingerprintPlot`](../plots/fingerprint) | Heat maps for temporal patterns |
+| Polar | [`BivariatePolarPlot`](../plots/polar) | Concentration vs wind speed/direction |
+| Conditional Quantile | [`ConditionalQuantilePlot`](../plots/conditional_quantile) | Quantiles conditioned on observations |
 
 ### Style Configuration
 
@@ -36,7 +42,6 @@ print(monet_plots.__email__)
 | [`aps_style`](#aps_style) | APS journal style |
 | [`nature_style`](#nature_style) | Nature journal style |
 | [`science_style`](#science_style) | Science journal style |
-| [`custom_style`](#custom_style) | Custom style creation utility |
 
 ### Utilities
 
@@ -46,7 +51,6 @@ print(monet_plots.__email__)
 | [`taylordiagram`](../taylordiagram) | Taylor diagram functionality |
 | [`plot_utils`](../plot_utils) | Common plotting utilities |
 | [`cartopy_utils`](../cartopy_utils) | Cartopy integration utilities |
-| [`mapgen`](../mapgen) | Map generation utilities |
 
 ## Package Attributes
 
@@ -145,21 +149,6 @@ Science journal compliant style.
 ```python
 import matplotlib.pyplot as plt
 plt.style.use(monet_plots.science_style)
-```
-
-### `custom_style(**kwargs)`
-
-Create custom styles by modifying existing ones.
-
-```python
-# Create custom style
-custom = monet_plots.custom_style(
-    font_size=12,
-    figure_size=(10, 8),
-    grid_style='--'
-)
-
-plt.style.use(custom)
 ```
 
 ## Usage Examples
@@ -343,11 +332,11 @@ files = glob.glob('data/*.nc')
 for file in files:
     # Load data
     data = load_data(file)
-    
+
     # Create plot
     plot = monet_plots.SpatialPlot()
     plot.plot(data, title=f"Data from {file}")
-    
+
     # Save with consistent naming
     filename = file.replace('.nc', '.png').replace('data/', 'plots/')
     plot.save(filename)

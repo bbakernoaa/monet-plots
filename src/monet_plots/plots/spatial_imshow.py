@@ -1,10 +1,9 @@
-
-import matplotlib.pyplot as plt
 from .spatial import SpatialPlot
 from ..colorbars import colorbar_index
 import numpy as np
 from typing import Any
 import cartopy.crs as ccrs
+
 
 class SpatialImshow(SpatialPlot):
     """Create a basic spatial plot using imshow.
@@ -12,7 +11,16 @@ class SpatialImshow(SpatialPlot):
     This plot is useful for visualizing 2D model data on a map.
     """
 
-    def __init__(self, modelvar: Any, gridobj, plotargs: dict = {}, ncolors: int = 15, discrete: bool = False, *args, **kwargs):
+    def __init__(
+        self,
+        modelvar: Any,
+        gridobj,
+        plotargs: dict = {},
+        ncolors: int = 15,
+        discrete: bool = False,
+        *args,
+        **kwargs,
+    ):
         """
         Initialize the plot with data and map projection.
 
@@ -33,7 +41,7 @@ class SpatialImshow(SpatialPlot):
 
     def plot(self, **kwargs):
         """Generate the spatial imshow plot."""
-        imshow_kwargs = self._draw_features(**kwargs)
+        imshow_kwargs = self.add_features(**kwargs)
         imshow_kwargs.update(self.plotargs)
 
         lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
@@ -50,7 +58,13 @@ class SpatialImshow(SpatialPlot):
 
         if self.discrete:
             vmin, vmax = img.get_clim()
-            c, _ = colorbar_index(self.ncolors, imshow_kwargs["cmap"], minval=vmin, maxval=vmax, ax=self.ax)
+            c, _ = colorbar_index(
+                self.ncolors,
+                imshow_kwargs["cmap"],
+                minval=vmin,
+                maxval=vmax,
+                ax=self.ax,
+            )
         else:
             c = self.fig.colorbar(img, ax=self.ax)
 

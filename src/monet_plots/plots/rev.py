@@ -1,10 +1,9 @@
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Optional, Union, List, Any
+from typing import Optional, List, Any
 from ..verification_metrics import compute_rev
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
+
 
 class RelativeEconomicValuePlot(BasePlot):
     """
@@ -26,13 +25,15 @@ class RelativeEconomicValuePlot(BasePlot):
     def __init__(self, fig=None, ax=None, **kwargs):
         super().__init__(fig=fig, ax=ax, **kwargs)
 
-    def plot(self,
-             data: Any,
-             counts_cols: List[str] = ['hits', 'misses', 'fa', 'cn'],
-             climatology: Optional[float] = None,
-             label_col: Optional[str] = None,
-             cost_loss_ratios: Optional[np.ndarray] = None,
-             **kwargs):
+    def plot(
+        self,
+        data: Any,
+        counts_cols: List[str] = ["hits", "misses", "fa", "cn"],
+        climatology: Optional[float] = None,
+        label_col: Optional[str] = None,
+        cost_loss_ratios: Optional[np.ndarray] = None,
+        **kwargs,
+    ):
         """
         Main plotting method.
 
@@ -59,18 +60,22 @@ class RelativeEconomicValuePlot(BasePlot):
 
         if label_col:
             for name, group in df.groupby(label_col):
-                rev_values = self._calculate_rev(group, counts_cols, cost_loss_ratios, climatology)
+                rev_values = self._calculate_rev(
+                    group, counts_cols, cost_loss_ratios, climatology
+                )
                 self.ax.plot(cost_loss_ratios, rev_values, label=str(name), **kwargs)
-            self.ax.legend(loc='best')
+            self.ax.legend(loc="best")
         else:
-            rev_values = self._calculate_rev(df, counts_cols, cost_loss_ratios, climatology)
-            self.ax.plot(cost_loss_ratios, rev_values, label='Model', **kwargs)
+            rev_values = self._calculate_rev(
+                df, counts_cols, cost_loss_ratios, climatology
+            )
+            self.ax.plot(cost_loss_ratios, rev_values, label="Model", **kwargs)
 
         self.ax.set_xlabel("Cost/Loss Ratio")
         self.ax.set_ylabel("Relative Economic Value (REV)")
         self.ax.set_ylim(-0.2, 1.05)
-        self.ax.axhline(0, color='k', linestyle='--', alpha=0.7, label='Climatology')
-        self.ax.axhline(1, color='gray', linestyle=':', alpha=0.7, label='Perfect')
+        self.ax.axhline(0, color="k", linestyle="--", alpha=0.7, label="Climatology")
+        self.ax.axhline(1, color="gray", linestyle=":", alpha=0.7, label="Perfect")
         self.ax.legend()
         self.ax.grid(True, alpha=0.3)
 
@@ -83,6 +88,7 @@ class RelativeEconomicValuePlot(BasePlot):
         fa = df[cols[2]].sum()
         cn = df[cols[3]].sum()
         return compute_rev(hits, misses, fa, cn, ratios, clim)
+
 
 # TDD Anchors:
 # 1. test_rev_max_value: REV should never exceed 1.

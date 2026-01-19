@@ -109,14 +109,15 @@ class StickPlot(BasePlot):
         Parameters
         ----------
         **kwargs
-            Keyword arguments passed to `matplotlib.pyplot.barbs`.
+            Keyword arguments passed to `matplotlib.pyplot.quiver`.
         """
         if self.ax is None:
             if self.fig is None:
                 self.fig = plt.figure()
             self.ax = self.fig.add_subplot()
 
-        return self.ax.barbs(self.x, self.y, self.u, self.v, **kwargs)
+        return self.ax.quiver(self.x, self.y, self.u, self.v, **kwargs)
+
 
 class VerticalBoxPlot(BasePlot):
     """Vertical box plot."""
@@ -150,6 +151,10 @@ class VerticalBoxPlot(BasePlot):
         output_list = tools.split_by_threshold(self.data, self.y, self.thresholds)
         position_list_1 = self.thresholds[:-1]
         position_list_2 = self.thresholds[1:]
-        position_list_mid = [(p1 + p2) / 2 for p1, p2 in zip(position_list_1, position_list_2)]
+        position_list_mid = [
+            (p1 + p2) / 2 for p1, p2 in zip(position_list_1, position_list_2)
+        ]
 
-        return self.ax.boxplot(output_list, vert=False, positions=position_list_mid, **kwargs)
+        return self.ax.boxplot(
+            output_list, vert=False, positions=position_list_mid, **kwargs
+        )

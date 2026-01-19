@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 def split_by_threshold(data_list, alt_list, threshold_list):
     """
     Splits data into bins based on altitude thresholds.
@@ -14,10 +15,12 @@ def split_by_threshold(data_list, alt_list, threshold_list):
         list: A list of arrays, where each array contains the data values
               within an altitude bin.
     """
-    df = pd.DataFrame(data={'data': data_list, 'alt': alt_list})
+    df = pd.DataFrame(data={"data": data_list, "alt": alt_list})
     output_list = []
     for i in range(1, len(threshold_list)):
-        df_here = df.data.loc[(df.alt > threshold_list[i-1]) & (df.alt <= threshold_list[i])]
+        df_here = df.data.loc[
+            (df.alt > threshold_list[i - 1]) & (df.alt <= threshold_list[i])
+        ]
         output_list.append(df_here.values)
     return output_list
 
@@ -32,10 +35,11 @@ def wsdir2uv(ws, wdir):
     Returns:
         tuple: A tuple containing the u and v components of the wind.
     """
-    rad = np.pi / 180.
+    rad = np.pi / 180.0
     u = -ws * np.sin(wdir * rad)
     v = -ws * np.cos(wdir * rad)
     return u, v
+
 
 def uv2wsdir(u, v):
     """Converts u and v components to wind speed and direction.
@@ -48,5 +52,5 @@ def uv2wsdir(u, v):
         tuple: A tuple containing the wind speed and direction.
     """
     ws = np.sqrt(u**2 + v**2)
-    wdir = 180 + (180/np.pi) * np.arctan2(u, v)
+    wdir = 180 + (180 / np.pi) * np.arctan2(u, v)
     return ws, wdir

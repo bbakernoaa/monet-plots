@@ -1,29 +1,34 @@
 from .base import BasePlot
-from .scatter import ScatterPlot
-from .timeseries import TimeSeriesPlot
-from .spatial import SpatialPlot, SpatialTrack
-from .kde import KDEPlot
-from .taylor_diagram import TaylorDiagramPlot
-from .wind_barbs import WindBarbsPlot
-from .wind_quiver import WindQuiverPlot
+from .brier_decomposition import BrierScoreDecompositionPlot
+from .conditional_bias import ConditionalBiasPlot
+from .conditional_quantile import ConditionalQuantilePlot
+from .curtain import CurtainPlot
+from .diurnal_error import DiurnalErrorPlot
+from .ensemble import SpreadSkillPlot
 from .facet_grid import FacetGridPlot
+from .fingerprint import FingerprintPlot
+from .kde import KDEPlot
+from .performance_diagram import PerformanceDiagramPlot
+from .polar import BivariatePolarPlot
+from .profile import ProfilePlot, StickPlot, VerticalBoxPlot, VerticalSlice
+from .rank_histogram import RankHistogramPlot
+from .reliability_diagram import ReliabilityDiagramPlot
+from .rev import RelativeEconomicValuePlot
+from .ridgeline import RidgelinePlot
+from .roc_curve import ROCCurvePlot
+from .scatter import ScatterPlot
+from .scorecard import ScorecardPlot
+from .soccer import SoccerPlot
+from .sp_scatter_bias import SpScatterBiasPlot
+from .spatial import SpatialPlot, SpatialTrack
 from .spatial_bias_scatter import SpatialBiasScatterPlot
 from .spatial_contour import SpatialContourPlot
 from .spatial_imshow import SpatialImshow
-from .sp_scatter_bias import SpScatterBiasPlot
-from .profile import ProfilePlot, VerticalSlice, StickPlot, VerticalBoxPlot
+from .taylor_diagram import TaylorDiagramPlot
+from .timeseries import TimeSeriesPlot
 from .trajectory import TrajectoryPlot
-
-# New Verification Plots
-from .performance_diagram import PerformanceDiagramPlot
-from .roc_curve import ROCCurvePlot
-from .reliability_diagram import ReliabilityDiagramPlot
-from .rank_histogram import RankHistogramPlot
-from .brier_decomposition import BrierScoreDecompositionPlot
-from .scorecard import ScorecardPlot
-from .rev import RelativeEconomicValuePlot
-from .conditional_bias import ConditionalBiasPlot
-from .ensemble import SpreadSkillPlot
+from .wind_barbs import WindBarbsPlot
+from .wind_quiver import WindQuiverPlot
 
 __all__ = [
     "BasePlot",
@@ -45,6 +50,7 @@ __all__ = [
     "StickPlot",
     "VerticalBoxPlot",
     "TrajectoryPlot",
+    "RidgelinePlot",
     "PerformanceDiagramPlot",
     "ROCCurvePlot",
     "ReliabilityDiagramPlot",
@@ -54,4 +60,10 @@ __all__ = [
     "RelativeEconomicValuePlot",
     "ConditionalBiasPlot",
     "SpreadSkillPlot",
+    "SoccerPlot",
+    "CurtainPlot",
+    "DiurnalErrorPlot",
+    "FingerprintPlot",
+    "BivariatePolarPlot",
+    "ConditionalQuantilePlot",
 ]

@@ -4,12 +4,14 @@
 import matplotlib.pyplot as plt
 from ..style import wiley_style
 
+
 class BasePlot:
     """Base class for all plots.
 
     Handles figure and axis creation, applies a consistent style,
     and provides a common interface for saving and closing plots.
     """
+
     def __init__(self, fig=None, ax=None, **kwargs):
         """Initializes the plot with a consistent style.
 

@@ -1,4 +1,3 @@
-import pytest
 import numpy as np
 import pandas as pd
 import datetime
@@ -13,16 +12,18 @@ def test_spatial_bias_scatter_plot():
     mock_map.return_value = (np.random.rand(10), np.random.rand(10))
 
     # Create a sample dataframe
-    df = pd.DataFrame({
-        'latitude': np.arange(30, 40),
-        'longitude': np.arange(-100, -90),
-        'CMAQ': np.random.rand(10),
-        'Obs': np.random.rand(10),
-        'datetime': [datetime.datetime(2020, 1, 1)] * 10
-    })
+    df = pd.DataFrame(
+        {
+            "latitude": np.arange(30, 40),
+            "longitude": np.arange(-100, -90),
+            "CMAQ": np.random.rand(10),
+            "Obs": np.random.rand(10),
+            "datetime": [datetime.datetime(2020, 1, 1)] * 10,
+        }
+    )
 
     # Create a SpatialBiasScatterPlot instance
-    plot = SpatialBiasScatterPlot(df, col1='Obs', col2='CMAQ')
+    plot = SpatialBiasScatterPlot(df, col1="Obs", col2="CMAQ")
 
     # Call the plot method
     ax = plot.plot()

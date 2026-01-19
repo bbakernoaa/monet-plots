@@ -1,11 +1,11 @@
 # src/monet_plots/plots/wind_barbs.py
 
-import matplotlib.pyplot as plt
 from .spatial import SpatialPlot
 from .. import tools
 import numpy as np
 from typing import Any
 import cartopy.crs as ccrs
+
 
 class WindBarbsPlot(SpatialPlot):
     """Create a barbs plot of wind on a map.
@@ -30,13 +30,19 @@ class WindBarbsPlot(SpatialPlot):
 
     def plot(self, **kwargs):
         """Generate the wind barbs plot."""
-        barb_kwargs = self._draw_features(**kwargs)
-        barb_kwargs.setdefault('transform', ccrs.PlateCarree())
+        barb_kwargs = self.add_features(**kwargs)
+        barb_kwargs.setdefault("transform", ccrs.PlateCarree())
 
         lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
         lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
         u, v = tools.wsdir2uv(self.ws, self.wdir)
         # Subsample the data for clarity
-        skip = barb_kwargs.pop('skip', 15)
-        self.ax.barbs(lon[::skip, ::skip], lat[::skip, ::skip], u[::skip, ::skip], v[::skip, ::skip], **barb_kwargs)
+        skip = barb_kwargs.pop("skip", 15)
+        self.ax.barbs(
+            lon[::skip, ::skip],
+            lat[::skip, ::skip],
+            u[::skip, ::skip],
+            v[::skip, ::skip],
+            **barb_kwargs,
+        )
         return self.ax

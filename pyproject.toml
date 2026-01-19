@@ -10,7 +10,7 @@ authors = [
 ]
 description = "A small example package"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -32,9 +32,16 @@ dependencies = [
 "Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
 
 [project.optional-dependencies]
+test = [
+    "pytest",
+]
 docs = [
     "mkdocs>=1.4",
     "mkdocs-material>=8.5",
     "mkdocstrings[python]>=0.19",
     "pymdown-extensions>=9.0",
 ]
+
+[tool.ruff]
+line-length = 88
+exclude = ["examples"]
