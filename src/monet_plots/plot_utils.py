@@ -36,7 +36,9 @@ def to_dataframe(data: Any) -> pd.DataFrame:
         if data.ndim == 1:
             return pd.DataFrame(data, columns=["col_0"])
         elif data.ndim == 2:
-            return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
+            return pd.DataFrame(
+                data, columns=[f"col_{i}" for i in range(data.shape[1])]
+            )
         else:
             raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
 

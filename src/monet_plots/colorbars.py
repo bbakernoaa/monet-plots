@@ -6,7 +6,9 @@ import numpy as np
 from matplotlib.ticker import MaxNLocator
 
 
-def get_linear_scale(data, cmap="viridis", vmin=None, vmax=None, p_min=None, p_max=None):
+def get_linear_scale(
+    data, cmap="viridis", vmin=None, vmax=None, p_min=None, p_max=None
+):
     """
     Get a linear colormap and normalization object.
 

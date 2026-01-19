@@ -81,7 +81,7 @@ class ConditionalQuantilePlot(BasePlot):
         # Plot quantiles
         colors = plt.cm.Blues(np.linspace(0.4, 0.8, len(self.quantiles)))
         for i, q in enumerate(self.quantiles):
-            label = f"{int(q*100)}th percentile"
+            label = f"{int(q * 100)}th percentile"
             linestyle = "-" if q == 0.5 else "--"
             linewidth = 2 if q == 0.5 else 1
             self.ax.plot(
