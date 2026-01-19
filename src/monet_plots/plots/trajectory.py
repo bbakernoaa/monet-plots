@@ -30,8 +30,8 @@ class TrajectoryPlot(BasePlot):
             longitude: Longitude values for the spatial track.
             latitude: Latitude values for the spatial track.
             data: Data to use for coloring the track.
-            time: Time values for the timeseries.
-            ts_data: Data for the timeseries.
+            time: Time values for the timeseries or a DataFrame.
+            ts_data: Data for the timeseries or column name if time is a DataFrame.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
         """
@@ -49,7 +49,6 @@ class TrajectoryPlot(BasePlot):
             **kwargs: Keyword arguments passed to the plot methods.
         """
         # If BasePlot created a default figure with one axes, we might want to clear it
-        # or just use self.fig.
         if self.ax is not None and not isinstance(self.ax, list):
             self.ax.remove()
             self.ax = None
@@ -78,11 +77,22 @@ class TrajectoryPlot(BasePlot):
         # Timeseries plot
         ax1 = self.fig.add_subplot(gs[1, 0])
 
-        # Prepare DataFrame for TimeSeriesPlot
-        ts_df = pd.DataFrame({"time": self.time, "value": np.asarray(self.ts_data)})
-
         timeseries_kwargs = kwargs.get("timeseries_kwargs", {}).copy()
-        timeseries = TimeSeriesPlot(df=ts_df, x="time", y="value", ax=ax1, fig=self.fig)
+
+        if isinstance(self.time, pd.DataFrame):
+            # Already a DataFrame
+            timeseries = TimeSeriesPlot(
+                df=self.time, y=self.ts_data, ax=ax1, fig=self.fig
+            )
+        else:
+            # Assume arrays
+            ts_df = pd.DataFrame(
+                {"time": self.time, "value": np.asarray(self.ts_data)}
+            )
+            timeseries = TimeSeriesPlot(
+                df=ts_df, x="time", y="value", ax=ax1, fig=self.fig
+            )
+
         timeseries.plot(**timeseries_kwargs)
 
         self.ax = [ax0, ax1]
