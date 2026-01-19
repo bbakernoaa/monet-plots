@@ -25,11 +25,12 @@ dependencies = [
     "scipy",
     "numpy",
     "statsmodels",
+    "dask",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/pypa/sampleproject"
-"Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+"Homepage" = "https://github.com/noaa-oar-arl/monet-plots"
+"Bug Tracker" = "https://github.com/noaa-oar-arl/monet-plots/issues"
 
 [project.optional-dependencies]
 test = [

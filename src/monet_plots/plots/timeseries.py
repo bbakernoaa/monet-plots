@@ -185,6 +185,7 @@ class TimeSeriesStatsPlot(BasePlot):
         super().__init__(*args, **kwargs)
         self.df = normalize_data(df)
         if not isinstance(self.df.index, pd.DatetimeIndex):
+            # Attempt to set 'time' or 'datetime' column as index if not already
             if "datetime" in self.df.columns:
                 self.df = self.df.set_index("datetime")
             elif "time" in self.df.columns:

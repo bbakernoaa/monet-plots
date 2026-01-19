@@ -1,4 +1,5 @@
 site_name: MONET Plots
+site_url: https://noaa-oar-arl.github.io/monet-plots/
 repo_url: https://github.com/noaa-oar-arl/monet-plots
 theme:
   name: material

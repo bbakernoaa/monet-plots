@@ -11,6 +11,17 @@ class ReliabilityDiagramPlot(BasePlot):
     Reliability Diagram Plot (Attributes Diagram).
 
     Visualizes Observed Frequency vs Forecast Probability.
+
+    Functional Requirements:
+    1. Plot Observed Frequency (y-axis) vs Forecast Probability (x-axis).
+    2. Draw "Perfect Reliability" diagonal (1:1).
+    3. Draw "No Skill" line (horizontal at climatology/sample mean).
+    4. Shade "Skill" areas (where Brier Skill Score > 0).
+    5. Include inset histogram of forecast usage (Sharpness) if requested.
+
+    Edge Cases:
+    - Empty bins (no forecasts with that probability).
+    - Climatology not provided (cannot draw skill regions correctly).
     """
 
     def __init__(self, fig=None, ax=None, **kwargs):

@@ -86,9 +86,7 @@ class TrajectoryPlot(BasePlot):
             )
         else:
             # Assume arrays
-            ts_df = pd.DataFrame(
-                {"time": self.time, "value": np.asarray(self.ts_data)}
-            )
+            ts_df = pd.DataFrame({"time": self.time, "value": np.asarray(self.ts_data)})
             timeseries = TimeSeriesPlot(
                 df=ts_df, x="time", y="value", ax=ax1, fig=self.fig
             )
