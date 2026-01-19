@@ -1,12 +1,15 @@
+from typing import Any
+
+import matplotlib.pyplot as plt
 from scipy.stats import scoreatpercentile as score
+
 from ..plot_utils import _set_outline_patch_alpha, to_dataframe
 from .spatial import SpatialPlot
-from typing import Any
-import matplotlib.pyplot as plt
 
 
 class SpScatterBiasPlot(SpatialPlot):
     """Create a spatial scatter plot showing the bias (difference) between two columns in a DataFrame.
+
     The point size is scaled by the magnitude of the difference between col2 and col1,
     making larger differences more visually prominent. Differences are capped at 300 units
     for display purposes.
@@ -28,6 +31,7 @@ class SpScatterBiasPlot(SpatialPlot):
     ):
         """
         Initialize the plot with data and map projection.
+
         Parameters
         ----------
         df : pd.DataFrame, np.ndarray, xr.Dataset, or xr.DataArray

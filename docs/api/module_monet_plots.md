@@ -42,7 +42,6 @@ print(monet_plots.__email__)
 | [`aps_style`](#aps_style) | APS journal style |
 | [`nature_style`](#nature_style) | Nature journal style |
 | [`science_style`](#science_style) | Science journal style |
-| [`custom_style`](#custom_style) | Custom style creation utility |
 
 ### Utilities
 
@@ -150,21 +149,6 @@ Science journal compliant style.
 ```python
 import matplotlib.pyplot as plt
 plt.style.use(monet_plots.science_style)
-```
-
-### `custom_style(**kwargs)`
-
-Create custom styles by modifying existing ones.
-
-```python
-# Create custom style
-custom = monet_plots.custom_style(
-    font_size=12,
-    figure_size=(10, 8),
-    grid_style='--'
-)
-
-plt.style.use(custom)
 ```
 
 ## Usage Examples
