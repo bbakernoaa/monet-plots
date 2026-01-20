@@ -5,7 +5,7 @@ matrix:
     spelling_language: en_US
     pipeline:
       - pyspelling.filters.markdown:
-          code: no
+          ignore_code: true
     dictionary:
       wordlists:
         - .spelling_wordlist.txt
