@@ -1,7 +1,6 @@
 import warnings
 from typing import Any, Optional
 
-from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -424,39 +423,6 @@ def get_plot_kwargs(cmap: Any = None, norm: Any = None, **kwargs: Any) -> dict:
     return kwargs
 
 
-def get_plot_kwargs(cmap: Any = None, norm: Any = None, **kwargs: Any) -> dict:
-    """
-    Helper to prepare keyword arguments for plotting functions.
-
-    This function handles cases where `cmap` might be a tuple of
-    (colormap, norm) returned by the scaling tools in `colorbars.py`.
-
-    Parameters
-    ----------
-    cmap : Any, optional
-        Colormap name, object, or (colormap, norm) tuple.
-    norm : Any, optional
-        Normalization object.
-    **kwargs : Any
-        Additional keyword arguments.
-
-    Returns
-    -------
-    dict
-        A dictionary of keyword arguments suitable for matplotlib plotting functions.
-    """
-    if isinstance(cmap, tuple) and len(cmap) == 2:
-        kwargs["cmap"] = cmap[0]
-        kwargs["norm"] = cmap[1]
-    elif cmap is not None:
-        kwargs["cmap"] = cmap
-
-    if norm is not None:
-        kwargs["norm"] = norm
-
-    return kwargs
-
-
 def _dynamic_fig_size(obj):
     """Try to determine a generic figure size based on the shape of obj
 
@@ -518,4 +484,3 @@ def _set_outline_patch_alpha(ax, alpha=0):
             break
     else:
         warnings.warn("unable to set outline_patch alpha", stacklevel=2)
-
