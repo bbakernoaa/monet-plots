@@ -230,11 +230,9 @@ def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None
 
     # Check if data has required attributes
     if not hasattr(data, "shape"):
-    if not hasattr(data, "shape"):
         raise TypeError("data must have a shape attribute")
 
     if required_dims:
-        if not hasattr(data, "dims"):
         if not hasattr(data, "dims"):
             raise TypeError("data must have dims attribute for dimension validation")
 
@@ -263,7 +261,6 @@ def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None
     if df is None:
         raise ValueError("DataFrame cannot be None")
 
-    if not hasattr(df, "columns"):
     if not hasattr(df, "columns"):
         raise TypeError("object must have columns attribute")
 

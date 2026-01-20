@@ -388,4 +388,3 @@ After completing this guide, explore:
 - Check the [API Reference](./api/index.md) for detailed documentation
 - Browse [Examples](./examples/index.md) for use cases similar to yours
 - Visit our [GitHub Issues](https://github.com/your-repo/monet-plots/issues) for support
-
