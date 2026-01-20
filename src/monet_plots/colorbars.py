@@ -211,7 +211,7 @@ def colorbar_index(
     if basemap is not None:
         colorbar = basemap.colorbar(mappable, format="%1.2g")
     else:
-        colorbar = plt.colorbar(mappable, format="%1.2g", ax=ax)
+        colorbar = plt.colorbar(mappable, format="%1.2g", ax=ax, shrink=0.8)
     colorbar.set_ticks(np.linspace(0, ncolors, ncolors))
     if (minval is None) & (maxval is not None):
         colorbar.set_ticklabels(
