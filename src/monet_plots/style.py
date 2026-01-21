@@ -19,7 +19,7 @@ CB_MARKERS = ["o", "s", "^", "D", "v", "<", ">", "p", "*", "X"]
 _wiley_style = {
     # Font settings
     "font.family": "serif",
-    "font.serif": ["Times New Roman"],
+    "font.serif": ["Times New Roman", "DejaVu Serif", "Liberation Serif", "serif"],
     "font.size": 10,
     # Axes settings
     "axes.labelsize": 10,
@@ -58,7 +58,7 @@ _presentation_style = {
 
 _paper_style = {
     "font.family": "serif",
-    "font.serif": ["Times New Roman"],
+    "font.serif": ["Times New Roman", "DejaVu Serif", "Liberation Serif", "serif"],
     "font.size": 10,
     "axes.labelsize": 10,
     "axes.titlesize": 12,
@@ -80,7 +80,13 @@ _paper_style = {
 
 _web_style = {
     "font.family": "sans-serif",
-    "font.sans-serif": ["Arial", "Helvetica"],
+    "font.sans-serif": [
+        "Arial",
+        "Helvetica",
+        "DejaVu Sans",
+        "Liberation Sans",
+        "sans-serif",
+    ],
     "font.size": 12,
     "axes.labelsize": 12,
     "axes.titlesize": 16,

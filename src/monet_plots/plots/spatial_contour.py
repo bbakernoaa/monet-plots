@@ -1,9 +1,16 @@
 # src/monet_plots/plots/spatial_contour.py
-from .spatial import SpatialPlot
-from ..colorbars import colorbar_index
-import numpy as np
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import cartopy.crs as ccrs
+import numpy as np
+
+from ..colorbars import colorbar_index
+from .spatial import SpatialPlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
 
 
 class SpatialContourPlot(SpatialPlot):
@@ -45,7 +52,7 @@ class SpatialContourPlot(SpatialPlot):
         self.ncolors = ncolors
         self.dtype = dtype
 
-    def plot(self, **kwargs):
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial contour plot."""
         # Draw map features and get remaining kwargs for contourf
         plot_kwargs = self.add_features(**kwargs)
@@ -93,7 +100,7 @@ class SpatialContourPlot(SpatialPlot):
                 minval = self.modelvar.min()
                 maxval = self.modelvar.max()
 
-            c, _ = colorbar_index(
+            colorbar_index(
                 ncolors if ncolors else 15,
                 cmap if cmap else "viridis",
                 minval=minval,
@@ -102,10 +109,10 @@ class SpatialContourPlot(SpatialPlot):
                 ax=self.ax,
             )
         else:
-            c = self.add_colorbar(mesh)
+            self.add_colorbar(mesh)
 
         if self.date:
             titstring = self.date.strftime("%B %d %Y %H")
             self.ax.set_title(titstring)
         self.fig.tight_layout()
-        return c
+        return self.ax

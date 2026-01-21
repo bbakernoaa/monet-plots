@@ -220,11 +220,26 @@ def colorbar_index(
 
     if basemap is not None:
         colorbar = basemap.colorbar(mappable, format="%1.2g")
+    elif ax is not None:
+        from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+        # Use inset_axes to ensure the colorbar height matches the axes perfectly
+        # regardless of aspect ratio or projection.
+        cax = inset_axes(
+            ax,
+            width="5%",
+            height="100%",
+            loc="lower left",
+            bbox_to_anchor=(1.05, 0.0, 1.0, 1.0),
+            bbox_transform=ax.transAxes,
+            borderpad=0,
+        )
+        cbar_kwargs = {"format": "%1.2g", "cax": cax}
+        cbar_kwargs.update(kwargs)
+        colorbar = plt.colorbar(mappable, **cbar_kwargs)
     else:
-        # Remove shrink=0.8 to allow for flexible sizing, matching axes by default
-        # if used with appropriate arguments or through automated scaling.
-        # We use a default fraction and pad that works well for many plots.
-        cbar_kwargs = {"format": "%1.2g", "ax": ax, "fraction": 0.046, "pad": 0.04}
+        # Fallback for case where no axes is provided
+        cbar_kwargs = {"format": "%1.2g", "fraction": 0.046, "pad": 0.04}
         cbar_kwargs.update(kwargs)
         colorbar = plt.colorbar(mappable, **cbar_kwargs)
 

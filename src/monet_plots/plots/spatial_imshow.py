@@ -9,6 +9,7 @@ from ..colorbars import colorbar_index
 from .spatial import SpatialPlot
 
 if TYPE_CHECKING:
+    import matplotlib.axes
     import matplotlib.colorbar
 
 
@@ -55,13 +56,13 @@ class SpatialImshowPlot(SpatialPlot):
         self.ncolors = ncolors
         self.discrete = discrete
 
-    def plot(self, **kwargs: Any) -> matplotlib.colorbar.Colorbar:
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial imshow plot.
 
         Returns
         -------
-        matplotlib.colorbar.Colorbar
-            The created colorbar.
+        matplotlib.axes.Axes
+            The axes object containing the plot.
         """
         imshow_kwargs = self.add_features(**kwargs)
         if self.plotargs:
@@ -93,7 +94,7 @@ class SpatialImshowPlot(SpatialPlot):
 
         if self.discrete:
             vmin, vmax = img.get_clim()
-            c, _ = colorbar_index(
+            colorbar_index(
                 self.ncolors,
                 imshow_kwargs["cmap"],
                 minval=vmin,
@@ -101,6 +102,6 @@ class SpatialImshowPlot(SpatialPlot):
                 ax=self.ax,
             )
         else:
-            c = self.add_colorbar(img)
+            self.add_colorbar(img)
 
-        return c
+        return self.ax
