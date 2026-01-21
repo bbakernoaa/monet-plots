@@ -76,7 +76,14 @@ class TrajectoryPlot(BasePlot):
         # Add coastlines by default if not explicitly specified
         plot_kwargs.setdefault("coastlines", True)
         spatial_track = SpatialTrack(data=track_da, ax=ax0, fig=self.fig, **plot_kwargs)
-        spatial_track.plot(**{k: v for k, v in plot_kwargs.items() if k not in ["coastlines", "states", "countries", "extent", "resolution"]})
+        spatial_track.plot(
+            **{
+                k: v
+                for k, v in plot_kwargs.items()
+                if k
+                not in ["coastlines", "states", "countries", "extent", "resolution"]
+            }
+        )
 
         # Timeseries plot
         ax1 = self.fig.add_subplot(gs[1, 0])
