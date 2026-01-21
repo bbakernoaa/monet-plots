@@ -101,6 +101,9 @@ class RidgelinePlot(BasePlot):
             else:
                 vmin, vmax = self.x_range
 
+            if np.isnan(vmin) or np.isnan(vmax):
+                raise ValueError("No valid data points found to plot.")
+
         elif isinstance(self.data, xr.Dataset):
             if self.x is None:
                 self.x = list(self.data.data_vars)[0]
@@ -114,6 +117,9 @@ class RidgelinePlot(BasePlot):
                 vmax = float(da.max().compute())
             else:
                 vmin, vmax = self.x_range
+
+            if np.isnan(vmin) or np.isnan(vmax):
+                raise ValueError("No valid data points found to plot.")
 
         else:
             # Pandas DataFrame
@@ -135,6 +141,9 @@ class RidgelinePlot(BasePlot):
                 vmax = float(df[self.x].max())
             else:
                 vmin, vmax = self.x_range
+
+            if np.isnan(vmin) or np.isnan(vmax):
+                raise ValueError("No valid data points found to plot.")
 
         # Setup X-axis grid for density calculation
         if self.x_range is None:
