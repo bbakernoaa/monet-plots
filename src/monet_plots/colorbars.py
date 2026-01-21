@@ -171,7 +171,14 @@ def get_log_scale(data, cmap="viridis", vmin=None, vmax=None):
 
 
 def colorbar_index(
-    ncolors, cmap, minval=None, maxval=None, dtype="int", basemap=None, ax=None
+    ncolors,
+    cmap,
+    minval=None,
+    maxval=None,
+    dtype="int",
+    basemap=None,
+    ax=None,
+    **kwargs,
 ):
     """Create a colorbar with discrete colors and custom tick labels.
 
@@ -194,6 +201,8 @@ def colorbar_index(
         Basemap instance to attach the colorbar to. If None, uses plt.colorbar.
     ax : matplotlib.axes.Axes, optional
         Axes to attach the colorbar to. If None, uses plt.gca().
+    **kwargs : Any
+        Additional keyword arguments for plt.colorbar.
 
     Returns
     -------
@@ -208,10 +217,17 @@ def colorbar_index(
     mappable = cm.ScalarMappable(cmap=cmap)
     mappable.set_array([])
     mappable.set_clim(-0.5, ncolors + 0.5)
+
     if basemap is not None:
         colorbar = basemap.colorbar(mappable, format="%1.2g")
     else:
-        colorbar = plt.colorbar(mappable, format="%1.2g", ax=ax, shrink=0.8)
+        # Remove shrink=0.8 to allow for flexible sizing, matching axes by default
+        # if used with appropriate arguments or through automated scaling.
+        # We use a default fraction and pad that works well for many plots.
+        cbar_kwargs = {"format": "%1.2g", "ax": ax, "fraction": 0.046, "pad": 0.04}
+        cbar_kwargs.update(kwargs)
+        colorbar = plt.colorbar(mappable, **cbar_kwargs)
+
     colorbar.set_ticks(np.linspace(0, ncolors, ncolors))
     if (minval is None) & (maxval is not None):
         colorbar.set_ticklabels(

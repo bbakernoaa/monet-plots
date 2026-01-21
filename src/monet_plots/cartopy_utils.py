@@ -98,15 +98,18 @@ def _add_colorbar(fig, ax, mesh, colorbar=True, cbar_label=None, cbar_inset=Fals
         cax = inset_axes(
             ax,
             width="5%",
-            height="80%",
+            height="100%",
             loc="lower left",
-            bbox_to_anchor=(1.05, 0.1, 1, 1),
+            bbox_to_anchor=(1.05, 0.0, 1, 1),
             bbox_transform=ax.transAxes,
             borderpad=0,
         )
         cbar = plt.colorbar(mesh, cax=cax, orientation="vertical")
     else:
-        cbar = plt.colorbar(mesh, ax=ax, orientation="vertical", pad=0.02, aspect=30)
+        # Use fraction and pad for better default sizing matching axes height
+        cbar = plt.colorbar(
+            mesh, ax=ax, orientation="vertical", pad=0.04, fraction=0.046
+        )
 
     cbar.ax.tick_params(labelsize=10)
     if cbar_label:
@@ -182,12 +185,13 @@ def _add_shared_colorbar(fig, axes, mesh, colorbar=True, cbar_label=None):
 
     from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
+    # Using 100% height and 0.0 offset for consistent sizing with axes
     cax = inset_axes(
         axes[-1],
         width="5%",
-        height="80%",
+        height="100%",
         loc="lower left",
-        bbox_to_anchor=(1.05, 0.1, 1, 1),
+        bbox_to_anchor=(1.05, 0.0, 1, 1),
         bbox_transform=axes[-1].transAxes,
         borderpad=0,
     )

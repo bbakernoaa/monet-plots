@@ -79,8 +79,8 @@ class SpatialBiasScatterPlot(SpatialPlot):
 
         # Create colorbar
         mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
-        c = self.ax.figure.colorbar(mappable, ax=self.ax, format="%1.2g")
-        c.ax.tick_params(labelsize=13)
+        c = self.add_colorbar(mappable, format="%1.2g")
+        c.ax.tick_params(labelsize=10)
 
         colors = diff
         ss = diff.abs() / top * 100.0

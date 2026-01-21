@@ -1,7 +1,9 @@
 # src/monet_plots/plots/ridgeline.py
 """Ridgeline (joyplot) plot implementation."""
 
-from typing import Any, Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,6 +13,9 @@ from scipy.stats import gaussian_kde
 from ..colorbars import get_linear_scale
 from ..plot_utils import normalize_data
 from .base import BasePlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
 
 
 class RidgelinePlot(BasePlot):
@@ -71,7 +76,7 @@ class RidgelinePlot(BasePlot):
         self.cmap_name = cmap
         self.title = title
 
-    def plot(self, **kwargs: Any) -> plt.Axes:
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """
         Generate the ridgeline plot.
 

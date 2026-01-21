@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -12,6 +12,10 @@ import xarray as xr
 from numpy.typing import ArrayLike
 
 from .base import BasePlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
+    import matplotlib.figure
 
 # Type hint for array-like data
 DataHint = Union[ArrayLike, pd.Series, xr.DataArray]
@@ -34,8 +38,8 @@ class SpatialPlot(BasePlot):
         self,
         *,
         projection: ccrs.Projection = ccrs.PlateCarree(),
-        fig: plt.Figure | None = None,
-        ax: plt.Axes | None = None,
+        fig: matplotlib.figure.Figure | None = None,
+        ax: matplotlib.axes.Axes | None = None,
         figsize: tuple[float, float] | None = None,
         subplot_kw: dict[str, Any] | None = None,
         **kwargs: Any,
@@ -135,7 +139,7 @@ class SpatialPlot(BasePlot):
         linewidth: float = 0.25,
         return_fig: bool = False,
         **kwargs: Any,
-    ) -> plt.Axes | tuple[plt.Figure, plt.Axes]:
+    ) -> matplotlib.axes.Axes | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Draw a map with Cartopy.
 
         .. deprecated::

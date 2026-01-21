@@ -102,7 +102,7 @@ class SpatialContourPlot(SpatialPlot):
                 ax=self.ax,
             )
         else:
-            c = self.fig.colorbar(mesh, ax=self.ax, shrink=0.8)
+            c = self.add_colorbar(mesh)
 
         if self.date:
             titstring = self.date.strftime("%B %d %Y %H")
