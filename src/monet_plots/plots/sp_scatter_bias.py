@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
 from scipy.stats import scoreatpercentile as score
 
 from ..plot_utils import _set_outline_patch_alpha, to_dataframe

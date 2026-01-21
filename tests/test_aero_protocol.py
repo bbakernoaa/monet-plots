@@ -8,7 +8,6 @@ except ImportError:
     da = None
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
 
 @pytest.mark.skipif(da is None, reason="dask not installed")
 def test_spatial_imshow_eager_vs_lazy():
