@@ -1,10 +1,16 @@
-from typing import Any
+from __future__ import annotations
 
-import matplotlib.pyplot as plt
+from typing import TYPE_CHECKING, Any
+
+import cartopy.crs as ccrs
 from scipy.stats import scoreatpercentile as score
 
 from ..plot_utils import _set_outline_patch_alpha, to_dataframe
 from .spatial import SpatialPlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
+    import matplotlib.colorbar
 
 
 class SpScatterBiasPlot(SpatialPlot):
@@ -69,7 +75,7 @@ class SpScatterBiasPlot(SpatialPlot):
 
         self.add_features()
 
-    def plot(self, **kwargs: Any) -> "plt.Axes":
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial scatter bias plot."""
         dfnew = (
             self.df[["latitude", "longitude", self.col1, self.col2]]
@@ -84,17 +90,21 @@ class SpScatterBiasPlot(SpatialPlot):
         dfnew["sp_diff_size"] = dfnew["sp_diff"].abs() / top * 100.0
         dfnew.loc[dfnew["sp_diff_size"] > 300, "sp_diff_size"] = 300.0
 
-        dfnew.plot.scatter(
-            x="longitude",
-            y="latitude",
+        # Ensure transform is set for Cartopy
+        kwargs.setdefault("transform", ccrs.PlateCarree())
+
+        # We manually add colorbar to ensure it matches axes size
+        sc = self.ax.scatter(
+            dfnew["longitude"],
+            dfnew["latitude"],
             c=dfnew["sp_diff"],
             s=dfnew["sp_diff_size"],
             vmin=-1 * top,
             vmax=top,
-            ax=self.ax,
-            colorbar=True,
             **kwargs,
         )
+
+        self.add_colorbar(sc, **self.cbar_kwargs)
 
         if not self.outline:
             from cartopy.mpl.geoaxes import GeoAxes
