@@ -75,31 +75,46 @@ class RidgelinePlot(BasePlot):
         self.cmap_name = cmap
         self.title = title
 
-    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
+    def plot(self, gradient: bool = True, **kwargs: Any) -> matplotlib.axes.Axes:
         """
         Generate the ridgeline plot.
 
         Args:
+            gradient (bool): If True, fill curves with a gradient based on x-values.
             **kwargs: Additional keyword arguments for formatting.
 
         Returns:
             matplotlib.axes.Axes: The axes object containing the plot.
         """
+        import matplotlib.pyplot as plt
+
         # 1. Prepare Data and Groups
         if isinstance(self.data, xr.DataArray):
             da = self.data
             da_sorted = da.sortby(self.group_dim, ascending=False)
             groups = da_sorted[self.group_dim].values
-            all_values = da.values.flatten()
-            data_name = da.name if da.name else "Value"
+            data_name = str(da.name) if da.name else "Value"
+
+            if self.x_range is None:
+                vmin = float(da.min().compute())
+                vmax = float(da.max().compute())
+            else:
+                vmin, vmax = self.x_range
+
         elif isinstance(self.data, xr.Dataset):
             if self.x is None:
                 self.x = list(self.data.data_vars)[0]
             da = self.data[self.x]
             da_sorted = da.sortby(self.group_dim, ascending=False)
             groups = da_sorted[self.group_dim].values
-            all_values = da.values.flatten()
-            data_name = da.name if da.name else self.x
+            data_name = str(da.name) if da.name else self.x
+
+            if self.x_range is None:
+                vmin = float(da.min().compute())
+                vmax = float(da.max().compute())
+            else:
+                vmin, vmax = self.x_range
+
         else:
             # Pandas DataFrame
             df = self.data
@@ -113,23 +128,23 @@ class RidgelinePlot(BasePlot):
 
             df_sorted = df.sort_values(self.group_dim, ascending=False)
             groups = df_sorted[self.group_dim].unique()
-            all_values = df[self.x].values
-            data_name = self.x
+            data_name = str(self.x)
 
-        all_values = all_values[~np.isnan(all_values)]
-        if len(all_values) == 0:
-            raise ValueError("No valid data points found to plot.")
+            if self.x_range is None:
+                vmin = float(df[self.x].min())
+                vmax = float(df[self.x].max())
+            else:
+                vmin, vmax = self.x_range
 
         # Setup X-axis grid for density calculation
         if self.x_range is None:
-            xmin, xmax = np.nanmin(all_values), np.nanmax(all_values)
-            pad = (xmax - xmin) * 0.1
-            x_grid = np.linspace(xmin - pad, xmax + pad, 200)
+            pad = (vmax - vmin) * 0.1
+            x_grid = np.linspace(vmin - pad, vmax + pad, 200)
         else:
-            x_grid = np.linspace(self.x_range[0], self.x_range[1], 200)
+            x_grid = np.linspace(vmin, vmax, 200)
 
         # Setup Colors
-        cmap, norm = get_linear_scale(all_values, cmap=self.cmap_name)
+        cmap, norm = get_linear_scale(None, cmap=self.cmap_name, vmin=vmin, vmax=vmax)
 
         # 2. Iterate and Plot
         for i, val in enumerate(groups):
@@ -158,44 +173,55 @@ class RidgelinePlot(BasePlot):
             baseline = -i * self.overlap
             y_final = baseline + y_density_scaled
 
-            # Color based on the mean of this slice
-            slice_mean = np.mean(data_slice)
-            color = cmap(norm(slice_mean))
-
             # Plot filling
-            self.ax.fill_between(
-                x_grid,
-                baseline,
-                y_final,
-                facecolor=color,
-                edgecolor="white",
-                linewidth=0.5,
-                alpha=0.9,
-                zorder=len(groups) - i,
-            )
-
-            # Add Label for every 5th group to avoid clutter
-            if i % 5 == 0:
-                label_text = (
-                    f"{val:.1f}"
-                    if isinstance(val, (int, float, np.number))
-                    else str(val)
+            if gradient:
+                # Plot in segments to create a gradient effect
+                for j in range(len(x_grid) - 1):
+                    self.ax.fill_between(
+                        x_grid[j : j + 2],
+                        baseline,
+                        y_final[j : j + 2],
+                        facecolor=cmap(norm(x_grid[j])),
+                        edgecolor="none",
+                        alpha=0.9,
+                        zorder=len(groups) - i,
+                    )
+                # Add a clean top outline
+                self.ax.plot(
+                    x_grid,
+                    y_final,
+                    color="black",
+                    linewidth=0.5,
+                    zorder=len(groups) - i + 0.1,
                 )
-                self.ax.text(
-                    x_grid[0],
-                    baseline + (self.scale_factor * 0.1),
-                    label_text,
-                    fontsize=9,
-                    color="#555",
-                    verticalalignment="center",
-                    ha="right",
+            else:
+                # Single color based on the mean of this slice
+                slice_mean = np.mean(data_slice)
+                color = cmap(norm(slice_mean))
+                self.ax.fill_between(
+                    x_grid,
+                    baseline,
+                    y_final,
+                    facecolor=color,
+                    edgecolor="white",
+                    linewidth=0.5,
+                    alpha=0.9,
+                    zorder=len(groups) - i,
                 )
 
         # 3. Final Formatting
-        self.ax.set_yticks([])
+        self.ax.set_yticks([-i * self.overlap for i in range(len(groups))])
+        self.ax.set_yticklabels(groups)
         self.ax.set_xlabel(data_name)
         if self.title:
             self.ax.set_title(self.title, pad=20)
+
+        # Add Colorbar matching the x-axis scale
+        mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+        self.add_colorbar(mappable, label=data_name)
+
+        # Add vertical gridlines as seen in the reference
+        self.ax.xaxis.grid(True, linestyle="-", alpha=0.3)
 
         # Add a vertical zero line if the range crosses zero
         if x_grid.min() < 0 and x_grid.max() > 0:
