@@ -108,7 +108,13 @@ _web_style = {
 _pivotal_weather_style = {
     # Font settings
     "font.family": "sans-serif",
-    "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans", "Liberation Sans", "sans-serif"],
+    "font.sans-serif": [
+        "Arial",
+        "Helvetica",
+        "DejaVu Sans",
+        "Liberation Sans",
+        "sans-serif",
+    ],
     "font.size": 12,
     # Axes settings
     "axes.labelsize": 12,
