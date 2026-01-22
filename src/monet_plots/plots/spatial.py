@@ -1,8 +1,7 @@
 # src/monet_plots/plots/spatial.py
 from __future__ import annotations
 
-import warnings
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -93,118 +92,6 @@ class SpatialPlot(BasePlot):
         # Add features from kwargs
         self.add_features(**kwargs)
 
-    @classmethod
-    def from_projection(
-        cls,
-        projection: ccrs.Projection = ccrs.PlateCarree(),
-        **kwargs: Any,
-    ) -> "SpatialPlot":
-        """Create a `SpatialPlot` instance from a map projection.
-
-        .. deprecated::
-           Use the constructor `SpatialPlot(...)` instead.
-
-        Parameters
-        ----------
-        projection : ccrs.Projection
-            The cartopy projection for the map. Default is ccrs.PlateCarree().
-        **kwargs : Any
-            Keyword arguments for map features and figure settings.
-
-        Returns
-        -------
-        SpatialPlot
-            An instance of the SpatialPlot class.
-        """
-        warnings.warn(
-            "SpatialPlot.from_projection() is deprecated. Use SpatialPlot() instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-        return cls(projection=projection, **kwargs)
-
-    @classmethod
-    def draw_map(
-        cls,
-        *,
-        crs: ccrs.Projection | None = None,
-        natural_earth: bool = False,
-        coastlines: bool = True,
-        states: bool = False,
-        counties: bool = False,
-        countries: bool = True,
-        resolution: Literal["10m", "50m", "110m"] = "10m",
-        extent: list[float] | None = None,
-        figsize: tuple[float, float] = (10, 5),
-        linewidth: float = 0.25,
-        return_fig: bool = False,
-        **kwargs: Any,
-    ) -> matplotlib.axes.Axes | tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
-        """Draw a map with Cartopy.
-
-        .. deprecated::
-           Use `SpatialPlot(...)` instead.
-
-        Parameters
-        ----------
-        crs : cartopy.crs.Projection, optional
-            The map projection. Default is PlateCarree.
-        natural_earth : bool
-            Whether to add Natural Earth features (ocean, land, etc.).
-        coastlines : bool
-            Whether to add coastlines.
-        states : bool
-            Whether to add US states/provinces.
-        counties : bool
-            Whether to add US counties.
-        countries : bool
-            Whether to add country borders.
-        resolution : {"10m", "50m", "110m"}
-            Resolution of Natural Earth features. Default is "10m".
-        extent : list[float], optional
-            Map extent as [lon_min, lon_max, lat_min, lat_max].
-        figsize : tuple
-            Figure size (width, height). Default is (10, 5).
-        linewidth : float
-            Line width for vector features. Default is 0.25.
-        return_fig : bool
-            If True, return the figure and axes objects.
-        **kwargs : Any
-            Additional arguments.
-
-        Returns
-        -------
-        plt.Axes or tuple[plt.Figure, plt.Axes]
-            The matplotlib Axes object, or a tuple of (Figure, Axes).
-        """
-        warnings.warn(
-            "`draw_map` is deprecated and will be removed in a future version. "
-            "Please use `SpatialPlot()` instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-
-        # Prepare feature kwargs for the constructor
-        feature_kwargs = {
-            "natural_earth": natural_earth,
-            "coastlines": {"linewidth": linewidth} if coastlines else False,
-            "states": {"linewidth": linewidth} if states else False,
-            "counties": {"linewidth": linewidth} if counties else False,
-            "countries": {"linewidth": linewidth} if countries else False,
-            "extent": extent,
-            "resolution": resolution,
-            "figsize": figsize,
-            **kwargs,
-        }
-
-        # Create the plot
-        plot = cls(projection=crs or ccrs.PlateCarree(), **feature_kwargs)
-
-        if return_fig:
-            return plot.fig, plot.ax
-        else:
-            return plot.ax
-
     def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:
         """Return a registry of cartopy features and their default styles.
 
@@ -232,25 +119,39 @@ class SpatialPlot(BasePlot):
             STATES,
         )
 
-        # Define default styles in one place for consistency
-        line_defaults = {"linewidth": 0.5, "edgecolor": "black", "facecolor": "none"}
+        # Define default styles, falling back to sane defaults if not in rcParams.
+        coastline_defaults = {
+            "linewidth": plt.rcParams.get("coastline.width", 0.5),
+            "edgecolor": plt.rcParams.get("coastline.color", "black"),
+            "facecolor": "none",
+        }
+        states_defaults = {
+            "linewidth": plt.rcParams.get("states.width", 0.5),
+            "edgecolor": plt.rcParams.get("states.color", "black"),
+            "facecolor": "none",
+        }
+        borders_defaults = {
+            "linewidth": plt.rcParams.get("borders.width", 0.5),
+            "edgecolor": plt.rcParams.get("borders.color", "black"),
+            "facecolor": "none",
+        }
 
         feature_mapping = {
             "coastlines": {
                 "feature": COASTLINE.with_scale(resolution),
-                "defaults": line_defaults,
+                "defaults": coastline_defaults,
             },
             "countries": {
                 "feature": BORDERS.with_scale(resolution),
-                "defaults": line_defaults,
+                "defaults": borders_defaults,
             },
             "states": {
                 "feature": STATES.with_scale(resolution),
-                "defaults": line_defaults,
+                "defaults": states_defaults,
             },
             "borders": {
                 "feature": BORDERS.with_scale(resolution),
-                "defaults": line_defaults,
+                "defaults": borders_defaults,
             },
             "ocean": {"feature": OCEAN.with_scale(resolution), "defaults": {}},
             "land": {"feature": LAND.with_scale(resolution), "defaults": {}},
@@ -263,7 +164,7 @@ class SpatialPlot(BasePlot):
                     scale=resolution,
                     facecolor="none",
                 ),
-                "defaults": line_defaults,
+                "defaults": borders_defaults,
             },
         }
         return feature_mapping

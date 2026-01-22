@@ -51,7 +51,6 @@ plot.plot(
 
 # 3. Add titles and labels
 plot.ax.set_title("Spatial Bias Plot: Comparison vs. Reference")
-# Map elements (coastlines, borders) are added by default via draw_map
 
 plt.tight_layout()
 plt.show()
