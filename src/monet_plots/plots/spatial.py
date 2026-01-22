@@ -1,8 +1,7 @@
 # src/monet_plots/plots/spatial.py
 from __future__ import annotations
 
-import warnings
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -93,7 +92,6 @@ class SpatialPlot(BasePlot):
         # Add features from kwargs
         self.add_features(**kwargs)
 
-
     def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:
         """Return a registry of cartopy features and their default styles.
 
@@ -121,25 +119,39 @@ class SpatialPlot(BasePlot):
             STATES,
         )
 
-        # Define default styles in one place for consistency
-        line_defaults = {"linewidth": 0.5, "edgecolor": "black", "facecolor": "none"}
+        # Define default styles, falling back to sane defaults if not in rcParams.
+        coastline_defaults = {
+            "linewidth": plt.rcParams.get("coastline.width", 0.5),
+            "edgecolor": plt.rcParams.get("coastline.color", "black"),
+            "facecolor": "none",
+        }
+        states_defaults = {
+            "linewidth": plt.rcParams.get("states.width", 0.5),
+            "edgecolor": plt.rcParams.get("states.color", "black"),
+            "facecolor": "none",
+        }
+        borders_defaults = {
+            "linewidth": plt.rcParams.get("borders.width", 0.5),
+            "edgecolor": plt.rcParams.get("borders.color", "black"),
+            "facecolor": "none",
+        }
 
         feature_mapping = {
             "coastlines": {
                 "feature": COASTLINE.with_scale(resolution),
-                "defaults": line_defaults,
+                "defaults": coastline_defaults,
             },
             "countries": {
                 "feature": BORDERS.with_scale(resolution),
-                "defaults": line_defaults,
+                "defaults": borders_defaults,
             },
             "states": {
                 "feature": STATES.with_scale(resolution),
-                "defaults": line_defaults,
+                "defaults": states_defaults,
             },
             "borders": {
                 "feature": BORDERS.with_scale(resolution),
-                "defaults": line_defaults,
+                "defaults": borders_defaults,
             },
             "ocean": {"feature": OCEAN.with_scale(resolution), "defaults": {}},
             "land": {"feature": LAND.with_scale(resolution), "defaults": {}},
@@ -152,7 +164,7 @@ class SpatialPlot(BasePlot):
                     scale=resolution,
                     facecolor="none",
                 ),
-                "defaults": line_defaults,
+                "defaults": borders_defaults,
             },
         }
         return feature_mapping
