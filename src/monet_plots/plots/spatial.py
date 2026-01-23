@@ -90,7 +90,38 @@ class SpatialPlot(BasePlot):
         super().__init__(fig=fig, ax=ax, figsize=figsize, subplot_kw=current_subplot_kw)
 
         # Add features from kwargs
+        # All remaining kwargs are passed to add_features to style the map.
         self.add_features(**kwargs)
+
+    def _set_extent(self, extent: tuple[float, float, float, float] | None) -> None:
+        """Set the geographical extent of the map.
+
+        Parameters
+        ----------
+        extent : tuple[float, float, float, float] | None
+            The extent of the map in the format (x0, x1, y0, y1).
+        """
+        if extent is not None:
+            self.ax.set_extent(extent)
+
+    def _draw_gridlines(self, style: bool | dict[str, Any]) -> None:
+        """Draw gridlines on the map.
+
+        Parameters
+        ----------
+        style : bool or dict
+            The style for the gridlines. If True, use defaults.
+        """
+        if not style:
+            return
+
+        gridline_defaults = {
+            "draw_labels": True,
+            "linestyle": "--",
+            "color": "gray",
+        }
+        gridline_kwargs = self._get_style(style, gridline_defaults)
+        self.ax.gridlines(**gridline_kwargs)
 
     def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:
         """Return a registry of cartopy features and their default styles.
@@ -221,15 +252,15 @@ class SpatialPlot(BasePlot):
         `coastlines=True`) or styled with a dictionary of keyword arguments
         (e.g., `states=dict(linewidth=2, edgecolor='red')`).
 
-        The `extent` keyword is also supported to set the map boundaries.
+        Special keywords `extent` and `gridlines` are also supported to
+        set the map boundaries and draw gridlines, respectively.
 
         Parameters
         ----------
         **kwargs : Any
             Keyword arguments controlling the features to add and their
-            styles. Common options include `coastlines`, `states`,
-            `countries`, `ocean`, `land`, `lakes`, `rivers`, `borders`,
-            and `gridlines`.
+            styles. See `_get_feature_registry` for a list of supported
+            cartopy features.
 
         Returns
         -------
@@ -238,40 +269,29 @@ class SpatialPlot(BasePlot):
             adding features. This can be useful for passing remaining
             arguments to other functions.
         """
+        # Pop special (non-feature) arguments first.
         resolution = kwargs.pop("resolution", self.resolution)
+        self._set_extent(kwargs.pop("extent", None))
+        self._draw_gridlines(kwargs.pop("gridlines", False))
+
+        # Get the feature registry
         feature_registry = self._get_feature_registry(resolution)
 
-        # If natural_earth is True, enable a standard set of features
+        # Handle the natural_earth convenience flag
         if kwargs.pop("natural_earth", False):
             for feature in ["ocean", "land", "lakes", "rivers"]:
                 kwargs.setdefault(feature, True)
 
         # Main feature-drawing loop
-        for key, feature_spec in feature_registry.items():
-            if key in kwargs:
-                style_arg = kwargs.pop(key)
+        # Iterate over a copy since the dictionary is modified by pop
+        remaining_kwargs = kwargs.copy()
+        for key, style_arg in kwargs.items():
+            if key in feature_registry:
+                feature_spec = feature_registry[key]
                 self._draw_single_feature(style_arg, feature_spec)
+                remaining_kwargs.pop(key)
 
-        # Handle gridlines separately, as they are not a 'feature' but an
-        # operation on the axes.
-        if "gridlines" in kwargs:
-            gridline_style = kwargs.pop("gridlines")
-            if gridline_style:  # Allows for `gridlines=False`
-                gridline_defaults = {
-                    "draw_labels": True,
-                    "linestyle": "--",
-                    "color": "gray",
-                }
-                gridline_kwargs = self._get_style(gridline_style, gridline_defaults)
-                self.ax.gridlines(**gridline_kwargs)
-
-        # Handle extent after features are drawn
-        if "extent" in kwargs:
-            extent = kwargs.pop("extent")
-            if extent is not None:
-                self.ax.set_extent(extent)
-
-        return kwargs
+        return remaining_kwargs
 
 
 class SpatialTrack(SpatialPlot):
