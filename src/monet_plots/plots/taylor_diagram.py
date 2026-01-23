@@ -5,7 +5,7 @@ import seaborn as sns
 from numpy import corrcoef
 from .base import BasePlot
 from ..plot_utils import to_dataframe
-from typing import Any, Union, List, Tuple
+from typing import Any, Union, List
 import mpl_toolkits.axisartist.floating_axes as FA
 import mpl_toolkits.axisartist.grid_finder as GF
 from matplotlib.projections import PolarAxes
@@ -14,13 +14,17 @@ import matplotlib.axes
 # Define the color palette and decorator at the module level
 colors = ["#DA70D6", "#228B22", "#FA8072", "#FF1493"]
 
+
 def _sns_context(f):
     """Decorator to apply seaborn color palette to a function."""
+
     @functools.wraps(f)
     def inner(*args, **kwargs):
         with sns.color_palette(colors):
             return f(*args, **kwargs)
+
     return inner
+
 
 class TaylorDiagramPlot(BasePlot):
     """Create a DataFrame-based Taylor diagram.
@@ -57,7 +61,7 @@ class TaylorDiagramPlot(BasePlot):
         self.label1 = label1
         self.scale = scale
         self.sample_points = []
-        self._ax = None # To hold the floating axes
+        self._ax = None  # To hold the floating axes
 
     def _setup_diagram(self, refstd: float) -> None:
         """Set up the Taylor diagram axes.
@@ -125,9 +129,7 @@ class TaylorDiagramPlot(BasePlot):
         refstd = self.df[self.col1].std()
         smin = 0
         smax = self.scale * refstd
-        rs, ts = np.meshgrid(
-            np.linspace(smin, smax), np.linspace(0, np.pi / 2)
-        )
+        rs, ts = np.meshgrid(np.linspace(smin, smax), np.linspace(0, np.pi / 2))
         rms = np.sqrt(refstd**2 + rs**2 - 2 * refstd * rs * np.cos(ts))
         contours = self.ax.contour(ts, rs, rms, levels, **kwargs)
         plt.clabel(contours, inline=1, fontsize=10)
