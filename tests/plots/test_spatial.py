@@ -157,8 +157,9 @@ def test_spatial_plot_feature_styling(clear_figures):
 
 
 def test_spatial_track_init(sample_dataarray, clear_figures):
-    """Test SpatialTrack initialization."""
+    """Test SpatialTrack initialization and plotting."""
     track = SpatialTrack(sample_dataarray, projection=ccrs.PlateCarree())
+    track.plot()  # History is added during plotting
     assert isinstance(track.data, xr.DataArray)
     assert "Plotted with monet-plots.SpatialTrack" in track.data.attrs["history"]
 
@@ -194,20 +195,21 @@ def test_spatial_track_plot_method(sample_dataarray, clear_figures):
 
 
 def test_spatialtrack_history_attribute_updated(sample_dataarray, clear_figures):
-    """Test that the history attribute is correctly updated."""
+    """Test that the history attribute is correctly updated after plotting."""
     # Test case 1: No pre-existing history
-    da_no_history = sample_dataarray.copy()
-    if "history" in da_no_history.attrs:
-        del da_no_history.attrs["history"]
+    da_no_history = sample_dataarray.copy(deep=True)
+    da_no_history.attrs = {}  # Start with fresh attrs
     track_plot = SpatialTrack(data=da_no_history)
+    track_plot.plot()  # Plot to trigger history update
     assert "history" in track_plot.data.attrs
     assert "Plotted with monet-plots.SpatialTrack" in track_plot.data.attrs["history"]
 
     # Test case 2: Pre-existing history
-    da_with_history = sample_dataarray.copy()
-    da_with_history.attrs["history"] = "Initial analysis step."
+    da_with_history = sample_dataarray.copy(deep=True)
+    da_with_history.attrs["history"] = "Initial analysis step;"
     track_plot_2 = SpatialTrack(data=da_with_history)
-    assert "Initial analysis step." in track_plot_2.data.attrs["history"]
+    track_plot_2.plot()  # Plot to trigger history update
+    assert "Initial analysis step;" in track_plot_2.data.attrs["history"]
     assert "Plotted with monet-plots.SpatialTrack" in track_plot_2.data.attrs["history"]
 
 
@@ -238,8 +240,7 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
         args, kwargs = mock_scatter.call_args
         c_arg = kwargs.get("c")
 
-        # Ensure 'c' is an xarray.DataArray wrapping a dask array
-        assert isinstance(c_arg, xr.DataArray), "The 'c' argument is not a DataArray."
+        # Aero Protocol: Ensure the raw dask array is passed, not the DataArray
         assert isinstance(
-            c_arg.data, dask.array.Array
+            c_arg, dask.array.Array
         ), "The underlying data is not a dask array."
