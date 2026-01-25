@@ -241,6 +241,6 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
         c_arg = kwargs.get("c")
 
         # Aero Protocol: Ensure the raw dask array is passed, not the DataArray
-        assert isinstance(
-            c_arg, dask.array.Array
-        ), "The underlying data is not a dask array."
+        assert isinstance(c_arg, dask.array.Array), (
+            "The underlying data is not a dask array."
+        )

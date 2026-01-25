@@ -1,15 +1,14 @@
 # tests/test_lazy_spatial.py
+import numpy as np
+import pandas as pd
 import pytest
+from matplotlib.artist import Artist
+
+from monet_plots.plots.spatial import SpatialTrack
 
 # Check if dask and dask.array are installed
 da = pytest.importorskip("dask.array")
 xr = pytest.importorskip("xarray")
-
-import numpy as np
-import pandas as pd
-from matplotlib.artist import Artist
-
-from monet_plots.plots.spatial import SpatialTrack
 
 
 def test_spatial_track_plot_dask_awareness():
@@ -41,11 +40,15 @@ def test_spatial_track_plot_dask_awareness():
 
     # 3. The Proof (Validation):
     # a) Check that the returned object is a Matplotlib artist
-    assert isinstance(scatter_artist, Artist), "The plot method should return a Matplotlib artist."
+    assert isinstance(scatter_artist, Artist), (
+        "The plot method should return a Matplotlib artist."
+    )
 
     # b) The core assertion: Verify that the Dask array has NOT been computed.
     # The `_in_memory` property is False if the data is still lazy.
-    assert not data.variable._in_memory, "The Dask array was computed eagerly, violating laziness."
+    assert not data.variable._in_memory, (
+        "The Dask array was computed eagerly, violating laziness."
+    )
 
     # c) Check history for provenance
     assert "Plotted with monet-plots.SpatialTrack" in data.attrs["history"]
