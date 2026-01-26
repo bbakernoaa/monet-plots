@@ -216,45 +216,91 @@ class SpatialPlot(BasePlot):
     def add_features(self, **kwargs: Any) -> dict[str, Any]:
         """Add and style cartopy features on the map axes.
 
-        This method provides a flexible, data-driven interface to add common
-        map features. Features can be enabled with a boolean flag (e.g.,
-        `coastlines=True`) or styled with a dictionary of keyword arguments
-        (e.g., `states=dict(linewidth=2, edgecolor='red')`).
+        This is the primary interface for customizing the map's appearance.
+        It supports adding geographic features like coastlines and borders,
+        setting the map's geographic extent, and drawing gridlines.
 
-        The `extent` keyword is also supported to set the map boundaries.
+        Features can be enabled with a boolean flag (e.g., `coastlines=True`)
+        or styled with a dictionary of keyword arguments (e.g.,
+        `states=dict(linewidth=2, edgecolor='red')`).
 
         Parameters
         ----------
+        extent : tuple[float, float, float, float], optional
+            Set the geographic extent (bounding box) of the map.
+            The tuple should be in the format (x_min, x_max, y_min, y_max).
+        gridlines : bool or dict[str, Any], optional
+            If True, draw gridlines with default styling. If a dictionary,
+            the items are passed as keyword arguments to `ax.gridlines()`.
+        coastlines : bool or dict[str, Any], optional
+            If True, draw coastlines with default styling. If a dictionary,
+            the items are passed as keyword arguments to `ax.add_feature()`.
+        states : bool or dict[str, Any], optional
+            If True, draw state borders. Styling is supported via a dict.
+        countries : bool or dict[str, Any], optional
+            If True, draw country borders. Styling is supported via a dict.
+        borders : bool or dict[str, Any], optional
+            Alias for `countries`.
+        ocean : bool or dict[str, Any], optional
+            If True, fill in ocean areas. Styling is supported via a dict.
+        land : bool or dict[str, Any], optional
+            If True, fill in land areas. Styling is supported via a dict.
+        lakes : bool or dict[str, Any], optional
+            If True, draw lakes. Styling is supported via a dict.
+        rivers : bool or dict[str, Any], optional
+            If True, draw rivers. Styling is supported via a dict.
+        counties : bool or dict[str, Any], optional
+            If True, draw US county borders. Styling is supported via a dict.
+        natural_earth : bool, optional
+            A shorthand to enable a standard set of features: 'ocean', 'land',
+            'lakes', and 'rivers', by default False.
+        resolution : str, optional
+            The resolution for cartopy features (e.g., '10m', '50m', '110m').
+            This overrides the default resolution set during initialization.
         **kwargs : Any
-            Keyword arguments controlling the features to add and their
-            styles. Common options include `coastlines`, `states`,
-            `countries`, `ocean`, `land`, `lakes`, `rivers`, `borders`,
-            and `gridlines`.
+            Additional keyword arguments. This method will process the above
+            keys and return any unrecognized keywords.
 
         Returns
         -------
         dict[str, Any]
             A dictionary of the keyword arguments that were not used for
             adding features. This can be useful for passing remaining
-            arguments to other functions.
+            arguments to other plotting functions.
+
+        Examples
+        --------
+        >>> import matplotlib.pyplot as plt
+        >>> from monet_plots.plots import SpatialPlot
+        >>> fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()})
+        >>> plot = SpatialPlot(ax=ax)
+        >>> remaining = plot.add_features(
+        ...     extent=[-120, -70, 20, 50],
+        ...     coastlines=True,
+        ...     states={'linewidth': 1.5, 'edgecolor': 'blue'},
+        ...     gridlines=True,
+        ...     unrecognized_arg='test'
+        ... )
+        >>> print(remaining)
+        {'unrecognized_arg': 'test'}
         """
         # Note: The order of these calls is important.
         # Extent must be set before gridlines are drawn to ensure labels
         # are placed correctly.
         if "extent" in kwargs:
             extent = kwargs.pop("extent")
-            self._set_extent(extent)
+            self.__set_extent(extent)
 
         if "gridlines" in kwargs:
             gridline_style = kwargs.pop("gridlines")
-            self._draw_gridlines(gridline_style)
+            self.__draw_gridlines(gridline_style)
 
         # The rest of the kwargs are assumed to be for vector features.
-        remaining_kwargs = self._draw_features(**kwargs)
+        remaining_kwargs = self.__draw_features(**kwargs)
 
         return remaining_kwargs
 
-    def _set_extent(self, extent: tuple[float, float, float, float] | None) -> None:
+    def __set_extent(self, extent: tuple[float, float, float, float] | None) -> None:
         """Set the geographic extent of the map.
 
         Parameters
@@ -266,7 +312,7 @@ class SpatialPlot(BasePlot):
         if extent is not None:
             self.ax.set_extent(extent)
 
-    def _draw_features(self, **kwargs: Any) -> dict[str, Any]:
+    def __draw_features(self, **kwargs: Any) -> dict[str, Any]:
         """Draw vector features on the map.
 
         This is the primary feature-drawing loop, responsible for adding
@@ -300,7 +346,7 @@ class SpatialPlot(BasePlot):
 
         return kwargs
 
-    def _draw_gridlines(self, style: bool | dict[str, Any]) -> None:
+    def __draw_gridlines(self, style: bool | dict[str, Any]) -> None:
         """Draw gridlines on the map.
 
         Parameters

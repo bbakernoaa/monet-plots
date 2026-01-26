@@ -243,3 +243,55 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
         assert isinstance(
             c_arg.data, dask.array.Array
         ), "The underlying data is not a dask array."
+
+from unittest.mock import MagicMock, patch
+
+@pytest.fixture
+def mock_ax():
+    """Create a mock cartopy GeoAxes object."""
+    mock = MagicMock(spec=["set_extent", "add_feature", "gridlines"])
+    # The figure attribute is accessed in the BasePlot constructor
+    mock.figure = MagicMock()
+    return mock
+
+
+@patch("matplotlib.pyplot.figure")  # Patch to avoid creating a real figure
+def test_spatial_plot_add_features_calls(mock_fig, mock_ax):
+    """Test that SpatialPlot.add_features calls the correct ax methods."""
+    # We pass a mock 'ax' to prevent the BasePlot from creating a new one.
+    # The 'projection' is needed by cartopy GeoAxes.
+    mock_ax.projection = ccrs.PlateCarree()
+
+    plot = SpatialPlot(ax=mock_ax)
+
+    # Define test parameters
+    test_extent = [-120, -70, 20, 50]
+    test_states_style = {"linewidth": 2, "edgecolor": "red"}
+
+    # Call the method under test
+    plot.add_features(
+        extent=test_extent,
+        coastlines=True,
+        states=test_states_style,
+        gridlines=False,  # Explicitly test disabling a feature
+    )
+
+    # --- Verification ---
+
+    # 1. Verify extent was set correctly
+    mock_ax.set_extent.assert_called_once_with(test_extent)
+
+    # 2. Verify add_feature was called for coastlines and states
+    # We can't easily check the feature object itself, but we can check
+    # that it was called and with the correct styling kwargs.
+    call_args_list = mock_ax.add_feature.call_args_list
+    assert len(call_args_list) == 2, "Expected add_feature to be called twice"
+
+    # Check for states call (order is not guaranteed)
+    states_called = any(
+        call.kwargs == test_states_style for call in call_args_list
+    )
+    assert states_called, "add_feature not called with correct states style"
+
+    # 3. Verify gridlines was NOT called
+    mock_ax.gridlines.assert_not_called()
