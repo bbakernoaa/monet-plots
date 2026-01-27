@@ -54,10 +54,18 @@ class TaylorDiagramPlot(BasePlot):
         # If no diagram is provided, create a new one
         if self.dia is None:
             obsstd = self.df[self.col1].std()
+
+            # Remove the default axes created by BasePlot to avoid an extra empty plot
+            if hasattr(self, "ax") and self.ax is not None:
+                self.fig.delaxes(self.ax)
+
             # Use self.fig which is created in BasePlot.__init__
             self.dia = td.TaylorDiagram(
                 obsstd, scale=self.scale, fig=self.fig, rect=111, label=self.label1
             )
+            # Update self.ax to the one created by TaylorDiagram
+            self.ax = self.dia._ax
+
             # Add contours for the new diagram
             contours = self.dia.add_contours(colors="0.5")
             plt.clabel(contours, inline=1, fontsize=10)

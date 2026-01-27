@@ -56,14 +56,14 @@ def sample_dataarray():
 
 
 def test_spatial_plot_init_default(clear_figures):
-    """Test SpatialPlot default initialization without features."""
+    """Test SpatialPlot default initialization with features."""
     plot = SpatialPlot()
     plot.fig.canvas.draw()
     assert isinstance(plot.fig, plt.Figure)
     assert isinstance(plot.ax, GeoAxes)
     assert isinstance(plot.ax.projection, ccrs.PlateCarree)
-    # No features should be added by default
-    assert len(plot.ax.collections) == 0
+    # Coastlines should be added by default
+    assert len(plot.ax.collections) > 0
 
 
 def test_spatial_plot_init_with_features(clear_figures):
