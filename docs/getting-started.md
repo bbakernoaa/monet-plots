@@ -242,6 +242,7 @@ MONET Plots follows a class-based architecture where each plot type has its own 
 BasePlot (abstract base class)
 ├── SpatialPlot
 ├── TimeSeriesPlot
+├── TimeSeriesPlot
 ├── ScatterPlot
 ├── TaylorDiagramPlot
 ├── KDEPlot
@@ -377,13 +378,13 @@ plt.ion()           # For interactive scripts
 
 After completing this guide, explore:
 
-1. **[Plot Types](./plots)**: Learn about specific plot types and their usage
-2. **[API Reference](./api)**: Detailed documentation for all modules
-3. **[Examples](./examples)**: Practical examples and tutorials
-4. **[Configuration](./configuration)**: Advanced customization options
+1. **[Plot Types](./plots/index.md)**: Learn about specific plot types and their usage
+2. **[API Reference](./api/index.md)**: Detailed documentation for all modules
+3. **[Examples](./examples/index.md)**: Practical examples and tutorials
+4. **[Configuration](./configuration/index.md)**: Advanced customization options
 
 ## Need Help?
 
-- Check the [API Reference](./api) for detailed documentation
-- Browse [Examples](./examples) for use cases similar to yours
+- Check the [API Reference](./api/index.md) for detailed documentation
+- Browse [Examples](./examples/index.md) for use cases similar to yours
 - Visit our [GitHub Issues](https://github.com/your-repo/monet-plots/issues) for support

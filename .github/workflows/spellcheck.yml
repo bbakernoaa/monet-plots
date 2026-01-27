@@ -2,9 +2,9 @@ name: Spellcheck
 
 on:
   push:
-    branches: [ main ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main, develop]
 
 jobs:
   build:
@@ -14,4 +14,4 @@ jobs:
       - name: Check spelling
         uses: rojopolis/spellcheck-github-actions@0.36.0
         with:
-          source_files: docs/**/*.md
+          task_name: markdown-spellcheck

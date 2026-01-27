@@ -12,8 +12,10 @@ Taylor diagrams display the standard deviation and correlation coefficient betwe
 class TaylorDiagram:
     """Create a Taylor diagram for model evaluation."""
 
+
     def __init__(self, obsstd, scale=1.5, fig=None, rect=111, label='OBS', **kwargs):
         """Initialize a Taylor diagram.
+
 
         Args:
             obsstd (float): Standard deviation of observations
@@ -249,6 +251,8 @@ poor_perf_models = [
 # Add models with different colors and markers
 for models, color in [(high_perf_models, 'red'),
                       (med_perf_models, 'blue'),
+for models, color in [(high_perf_models, 'red'),
+                      (med_perf_models, 'blue'),
                       (poor_perf_models, 'orange')]:
     for stddev, corrcoef, label, c, marker in models:
         td.add_sample(
@@ -390,9 +394,11 @@ from scipy import stats
 def calculate_taylor_metrics(obs, model):
     """Calculate standard deviation and correlation for Taylor diagram.
 
+
     Args:
         obs (array-like): Observation data
         model (array-like): Model data
+
 
     Returns:
         tuple: (stddev, corrcoef)
@@ -401,8 +407,10 @@ def calculate_taylor_metrics(obs, model):
     obs_std = np.std(obs, ddof=1)
     model_std = np.std(model, ddof=1)
 
+
     # Calculate correlation coefficient
     corrcoef, _ = stats.pearsonr(obs, model)
+
 
     return model_std, corrcoef
 
@@ -483,6 +491,6 @@ td.finish_plot()
 
 **Related Resources**:
 
-- [Plot Types API](../plots) - Other plot implementations
-- [Examples](../examples) - Practical usage examples
-- [Base API](./base) - Core plotting functionality
+- [Plot Types API](../plots/index.md) - Other plot implementations
+- [Examples](../examples/index.md) - Practical usage examples
+- [Base API](./base.md) - Core plotting functionality

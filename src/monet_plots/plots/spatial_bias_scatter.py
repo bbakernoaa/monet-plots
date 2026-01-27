@@ -1,4 +1,6 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
@@ -7,6 +9,9 @@ from scipy.stats import scoreatpercentile as score
 from ..colorbars import get_discrete_scale
 from ..plot_utils import get_plot_kwargs, to_dataframe
 from .spatial import SpatialPlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
 
 
 class SpatialBiasScatterPlot(SpatialPlot):
@@ -21,13 +26,11 @@ class SpatialBiasScatterPlot(SpatialPlot):
         df: Any,
         col1: str,
         col2: str,
-        projection=ccrs.PlateCarree(),
         vmin: float = None,
         vmax: float = None,
         ncolors: int = 15,
         fact: float = 1.5,
         cmap: str = "RdBu_r",
-        *args,
         **kwargs,
     ):
         """
@@ -37,18 +40,17 @@ class SpatialBiasScatterPlot(SpatialPlot):
             df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): DataFrame with 'latitude', 'longitude', and data columns.
             col1 (str): Name of the first column (e.g., observations).
             col2 (str): Name of the second column (e.g., model). Bias is calculated as col2 - col1.
-            projection (ccrs.Projection): The cartopy projection for the map.
             vmin (float, optional): Minimum for colorscale.
             vmax (float, optional): Maximum for colorscale.
             ncolors (int): Number of discrete colors.
             fact (float): Scaling factor for point sizes.
             cmap (str or Colormap): Colormap for bias values.
-            **kwargs: Additional keyword arguments for plotting, including cartopy features
-                      like 'coastlines', 'countries', 'states', 'borders', 'ocean',
-                      'land', 'rivers', 'lakes', 'gridlines'. These can be True for default styling or a dict for
-                      custom styling.
+            **kwargs: Additional keyword arguments for map creation, passed to
+                      :class:`monet_plots.plots.spatial.SpatialPlot`. These
+                      include `projection`, `figsize`, `ax`, and cartopy
+                      features like `states`, `coastlines`, etc.
         """
-        super().__init__(*args, projection=projection, **kwargs)
+        super().__init__(**kwargs)
         self.df = to_dataframe(df)
         self.col1 = col1
         self.col2 = col2
@@ -58,7 +60,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
         self.fact = fact
         self.cmap = cmap
 
-    def plot(self, **kwargs):
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial bias scatter plot."""
         from numpy import around
 
@@ -82,8 +84,8 @@ class SpatialBiasScatterPlot(SpatialPlot):
 
         # Create colorbar
         mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
-        c = self.ax.figure.colorbar(mappable, ax=self.ax, format="%1.2g")
-        c.ax.tick_params(labelsize=13)
+        cbar = self.add_colorbar(mappable, format="%1.2g")
+        cbar.ax.tick_params(labelsize=10)
 
         colors = diff
         ss = diff.abs() / top * 100.0
@@ -107,4 +109,4 @@ class SpatialBiasScatterPlot(SpatialPlot):
             new.latitude.values,
             **final_scatter_kwargs,
         )
-        return c
+        return self.ax

@@ -79,7 +79,7 @@ class CurtainPlot(BasePlot):
             raise ValueError("kind must be 'pcolormesh' or 'contourf'")
 
         if colorbar:
-            self.fig.colorbar(mappable, ax=self.ax)
+            self.add_colorbar(mappable)
 
         self.ax.set_xlabel(self.x)
         self.ax.set_ylabel(self.y)

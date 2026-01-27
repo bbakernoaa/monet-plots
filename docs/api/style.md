@@ -387,6 +387,6 @@ full_page_style = style.custom_style(
 
 **Related Resources**:
 
-- [Base Plot API](./base) - Core plotting functionality
-- [Colorbars API](./colorbars) - Colorbar customization
-- [Examples](../examples) - Style usage examples
+- [Base Plot API](./base.md) - Core plotting functionality
+- [Colorbars API](./colorbars.md) - Colorbar customization
+- [Examples](../examples/index.md) - Style usage examples

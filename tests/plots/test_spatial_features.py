@@ -6,8 +6,8 @@ from monet_plots.plots.spatial import SpatialPlot
 
 @pytest.fixture
 def spatial_plot():
-    """Returns a SpatialPlot instance for testing."""
-    return SpatialPlot(projection=ccrs.PlateCarree())
+    """Returns a SpatialPlot instance with no features for testing."""
+    return SpatialPlot(projection=ccrs.PlateCarree(), coastlines=False)
 
 
 def test_add_features_boolean(spatial_plot):

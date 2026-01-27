@@ -428,6 +428,7 @@ categorical_df['category_numeric'] = pd.Categorical(categorical_df['category']).
 
 plot = ScatterPlot()
 plot.plot(categorical_df, x='measurement', y='category_numeric',
+plot.plot(categorical_df, x='measurement', y='category_numeric',
          title="Categorical Data Handling")
 plot.save("categorical_handling.png")
 plot.close()
@@ -537,6 +538,7 @@ if not plt.isinteractive():
     plt.ion()
     print("Interactive mode enabled")
 
+
     # Test interactive update
     plot.title("Interactive Test")
     plt.draw()
@@ -571,9 +573,11 @@ def collect_system_info():
         'Memory': f"{round(platform.meminfo().total / (1024**3), 2)} GB"
     }
 
+
     print("System Information:")
     for key, value in info.items():
         print(f"{key}: {value}")
+
 
     return info
 
@@ -583,8 +587,10 @@ def collect_plot_debug_info():
         # Test basic plot creation
         test_data = np.random.random((10, 10))
 
+
         plot = SpatialPlot()
         plot.plot(test_data)
+
 
         debug_info = {
             'Plot Created': True,
@@ -596,12 +602,15 @@ def collect_plot_debug_info():
             'DPI': plot.fig.get_dpi()
         }
 
+
         print("\nPlot Debug Information:")
         for key, value in debug_info.items():
             print(f"{key}: {value}")
 
+
         plot.close()
         return debug_info
+
 
     except Exception as e:
         print(f"\nPlot Creation Failed: {e}")
@@ -628,6 +637,7 @@ from monet_plots import SpatialPlot, TimeSeriesPlot, ScatterPlot
 def profile_plot_operations():
     """Profile different plot operations."""
 
+
     def profile_spatial_plot():
         data = np.random.random((500, 500))
         plot = SpatialPlot()
@@ -635,16 +645,19 @@ def profile_plot_operations():
         plot.save("profiled_spatial.png")
         plot.close()
 
+
     def profile_timeseries_plot():
         import pandas as pd
         dates = pd.date_range('2023-01-01', periods=1000, freq='D')
         values = np.cumsum(np.random.normal(0, 1, 1000))
         df = pd.DataFrame({'time': dates, 'value': values})
 
+
         plot = TimeSeriesPlot()
         plot.plot(df, x='time', y='value')
         plot.save("profiled_timeseries.png")
         plot.close()
+
 
     def profile_scatter_plot():
         import pandas as pd
@@ -652,10 +665,12 @@ def profile_plot_operations():
         y = x * 2 + np.random.normal(0, 1, 5000)
         df = pd.DataFrame({'x': x, 'y': y})
 
+
         plot = ScatterPlot()
         plot.plot(df, x='x', y='y')
         plot.save("profiled_scatter.png")
         plot.close()
+
 
     # Profile each operation
     operations = [
@@ -664,19 +679,23 @@ def profile_plot_operations():
         ("Scatter Plot", profile_scatter_plot)
     ]
 
+
     for name, operation in operations:
         print(f"\nProfiling {name}:")
+
 
         profiler = cProfile.Profile()
         profiler.enable()
         operation()
         profiler.disable()
 
+
         # Get statistics
         stats_stream = io.StringIO()
         stats = pstats.Stats(profiler, stream=stats_stream)
         stats.sort_stats('cumulative')
         stats.print_stats(5)  # Top 5 functions
+
 
         print(stats_stream.getvalue())
 ```
@@ -710,25 +729,31 @@ def safe_plot_creation(data, config, output_path):
         logging.info(f"Starting plot creation for {output_path}")
         logging.info(f"Data shape: {data.shape}, config: {config}")
 
+
         # Validate input data
         if data is None:
             raise ValueError("Data cannot be None")
         if not hasattr(data, 'shape'):
             raise ValueError("Data must be a numpy array or similar")
 
+
         # Create plot
         plot = SpatialPlot(**config.get('plot_kwargs', {}))
+
 
         # Plot data
         plot_kwargs = config.get('plot_kwargs', {})
         plot.plot(data, **plot_kwargs)
 
+
         # Save plot
         plot.save(output_path, **config.get('save_kwargs', {}))
         plot.close()
 
+
         logging.info(f"Successfully created plot: {output_path}")
         return True
+
 
     except MemoryError as e:
         logging.error(f"Memory error creating {output_path}: {e}")
@@ -740,6 +765,7 @@ def safe_plot_creation(data, config, output_path):
         except Exception as retry_error:
             logging.error(f"Retry failed for {output_path}: {retry_error}")
             return False
+
 
     except Exception as e:
         logging.error(f"Error creating {output_path}: {e}")
@@ -772,7 +798,7 @@ else:
 
 **Q1: What is the best way to learn MONET Plots?**
 
-**A**: Start with the [Getting Started Guide](../getting-started), then explore the [Examples](../examples) section. Begin with basic plots and gradually work up to more complex visualizations.
+**A**: Start with the [Getting Started Guide](../getting-started.md), then explore the [Examples](../examples/index.md) section. Begin with basic plots and gradually work up to more complex visualizations.
 
 **Q2: Can I use MONET Plots with Jupyter notebooks?**
 
@@ -794,6 +820,7 @@ plot.save("notebook_plot.png")
 
 **Q4: What are the system requirements for MONET Plots?**
 
+**A**:
 **A**:
 - Python 3.7+
 - 512MB RAM minimum (1GB+ recommended)
@@ -960,7 +987,7 @@ plot2.save("consistent_plot2.png")
 
 - **GitHub Issues**: Report bugs and request features
 - **GitHub Discussions**: Ask questions and share knowledge
-- **Documentation**: Check the full [documentation](../index)
+- **Documentation**: Check the full [documentation](../index.md)
 
 ### Professional Support
 
@@ -981,8 +1008,8 @@ Help improve this troubleshooting guide by:
 
 **Related Resources**:
 
-- [Getting Started Guide](../getting-started) - Installation and basic usage
-- [API Reference](../api) - Complete API documentation
-- [Examples](../examples) - Practical examples and tutorials
-- [Performance Guide](../performance) - Optimization techniques
-- [Configuration Guide](../configuration) - Customization options
+- [Getting Started Guide](../getting-started.md) - Installation and basic usage
+- [API Reference](../api/index.md) - Complete API documentation
+- [Examples](../examples/index.md) - Practical examples and tutorials
+- [Performance Guide](../performance/index.md) - Optimization techniques
+- [Configuration Guide](../configuration/index.md) - Customization options

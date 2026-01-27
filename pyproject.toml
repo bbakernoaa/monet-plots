@@ -25,11 +25,12 @@ dependencies = [
     "scipy",
     "numpy",
     "statsmodels",
+    "dask",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/pypa/sampleproject"
-"Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+"Homepage" = "https://github.com/noaa-oar-arl/monet-plots"
+"Bug Tracker" = "https://github.com/noaa-oar-arl/monet-plots/issues"
 
 [project.optional-dependencies]
 test = [
@@ -40,6 +41,8 @@ docs = [
     "mkdocs-material>=8.5",
     "mkdocstrings[python]>=0.19",
     "pymdown-extensions>=9.0",
+    "mkdocs-gallery>=0.10.0",
+    "sphinx-gallery>=0.15.0",
 ]
 
 [tool.ruff]

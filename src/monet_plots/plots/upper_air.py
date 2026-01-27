@@ -67,7 +67,18 @@ class UpperAir(SpatialPlot):
             Keyword arguments passed to the parent `plot` method.
         """
         if contour_kwargs is None:
-            contour_kwargs = {"levels": np.arange(0, 1.1, 0.1), "cmap": "viridis"}
+            # Use data-driven levels for geopotential height
+            # Typical 500 hPa heights range from ~5000-6000 m
+            hgt_min, hgt_max = np.nanmin(self.hgt), np.nanmax(self.hgt)
+            hgt_range = hgt_max - hgt_min
+            if hgt_range > 0:
+                # Create reasonable contour levels based on data range
+                num_levels = 10
+                levels = np.linspace(hgt_min, hgt_max, num_levels)
+            else:
+                # Fallback if data has no range
+                levels = np.arange(hgt_min - 50, hgt_min + 51, 10)
+            contour_kwargs = {"levels": levels, "cmap": "viridis"}
         if barb_kwargs is None:
             barb_kwargs = {}
 
