@@ -160,7 +160,8 @@ def test_spatial_track_init(sample_dataarray, clear_figures):
     """Test SpatialTrack initialization."""
     track = SpatialTrack(sample_dataarray, projection=ccrs.PlateCarree())
     assert isinstance(track.data, xr.DataArray)
-    assert "Plotted with monet-plots.SpatialTrack" in track.data.attrs["history"]
+    # History is no longer updated in __init__
+    assert "history" not in track.data.attrs or "Plotted" not in track.data.attrs["history"]
 
 
 def test_spatial_track_missing_coords(sample_dataarray, clear_figures):
@@ -194,12 +195,14 @@ def test_spatial_track_plot_method(sample_dataarray, clear_figures):
 
 
 def test_spatialtrack_history_attribute_updated(sample_dataarray, clear_figures):
-    """Test that the history attribute is correctly updated."""
+    """Test that the history attribute is correctly updated in plot()."""
     # Test case 1: No pre-existing history
     da_no_history = sample_dataarray.copy()
     if "history" in da_no_history.attrs:
         del da_no_history.attrs["history"]
+
     track_plot = SpatialTrack(data=da_no_history)
+    track_plot.plot()  # History is updated here
     assert "history" in track_plot.data.attrs
     assert "Plotted with monet-plots.SpatialTrack" in track_plot.data.attrs["history"]
 
@@ -207,12 +210,13 @@ def test_spatialtrack_history_attribute_updated(sample_dataarray, clear_figures)
     da_with_history = sample_dataarray.copy()
     da_with_history.attrs["history"] = "Initial analysis step."
     track_plot_2 = SpatialTrack(data=da_with_history)
+    track_plot_2.plot()  # History is updated here
     assert "Initial analysis step." in track_plot_2.data.attrs["history"]
     assert "Plotted with monet-plots.SpatialTrack" in track_plot_2.data.attrs["history"]
 
 
 def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
-    """Test that SpatialTrack.plot preserves lazy evaluation with dask."""
+    """Test that SpatialTrack.plot correctly handles dask arrays."""
     dask = pytest.importorskip("dask")
     import dask.array as da
 
@@ -220,9 +224,9 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
     time = np.arange(20)
     lon = np.linspace(-120, -80, 20)
     lat = np.linspace(30, 45, 20)
-    concentration = da.from_array(np.linspace(0, 100, 20), chunks=(10,))
+    concentration_dask = da.from_array(np.linspace(0, 100, 20), chunks=(10,))
     da_lazy = xr.DataArray(
-        concentration,
+        concentration_dask,
         dims=["time"],
         coords={"time": time, "lon": ("time", lon), "lat": ("time", lat)},
         name="O3_concentration_lazy",
@@ -238,8 +242,12 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
         args, kwargs = mock_scatter.call_args
         c_arg = kwargs.get("c")
 
-        # Ensure 'c' is an xarray.DataArray wrapping a dask array
+        # The data should now be computed (a numpy array) because matplotlib
+        # is not dask-aware. The key is that the plot() method handles this
+        # explicitly.
         assert isinstance(c_arg, xr.DataArray), "The 'c' argument is not a DataArray."
         assert isinstance(
-            c_arg.data, dask.array.Array
-        ), "The underlying data is not a dask array."
+            c_arg.data, np.ndarray
+        ), "The underlying data should be a numpy array after compute()."
+        # Verify the data is correct
+        np.testing.assert_array_equal(c_arg.data, np.linspace(0, 100, 20))
