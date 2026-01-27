@@ -161,7 +161,10 @@ def test_spatial_track_init(sample_dataarray, clear_figures):
     track = SpatialTrack(sample_dataarray, projection=ccrs.PlateCarree())
     assert isinstance(track.data, xr.DataArray)
     # History is no longer updated in __init__
-    assert "history" not in track.data.attrs or "Plotted" not in track.data.attrs["history"]
+    assert (
+        "history" not in track.data.attrs
+        or "Plotted" not in track.data.attrs["history"]
+    )
 
 
 def test_spatial_track_missing_coords(sample_dataarray, clear_figures):
@@ -217,7 +220,7 @@ def test_spatialtrack_history_attribute_updated(sample_dataarray, clear_figures)
 
 def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
     """Test that SpatialTrack.plot correctly handles dask arrays."""
-    dask = pytest.importorskip("dask")
+    pytest.importorskip("dask")
     import dask.array as da
 
     # 1. Create lazy data
