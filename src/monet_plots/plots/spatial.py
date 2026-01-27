@@ -342,6 +342,14 @@ class SpatialTrack(SpatialPlot):
         The name of the longitude coordinate in the DataArray.
     lat_coord : str
         The name of the latitude coordinate in the DataArray.
+    fig : matplotlib.figure.Figure
+        The matplotlib Figure object, inherited from :class:`BasePlot`.
+    ax : matplotlib.axes.Axes
+        The matplotlib Axes (or GeoAxes) object, inherited from
+        :class:`BasePlot`.
+    resolution : str
+        The default resolution for cartopy features, inherited from
+        :class:`SpatialPlot`.
     """
 
     def __init__(
@@ -387,12 +395,10 @@ class SpatialTrack(SpatialPlot):
         # and draws features from the keyword arguments.
         super().__init__(**kwargs)
 
-        # Set data and update history for provenance
+        # Set data for plotting
         self.data = data
         self.lon_coord = lon_coord
         self.lat_coord = lat_coord
-        history = self.data.attrs.get("history", "")
-        self.data.attrs["history"] = f"Plotted with monet-plots.SpatialTrack; {history}"
 
     def plot(self, **kwargs: Any) -> plt.Artist:
         """Plot the trajectory on the map.
@@ -418,16 +424,26 @@ class SpatialTrack(SpatialPlot):
         """
         from ..plot_utils import get_plot_kwargs
 
+        # Update history for provenance
+        history = self.data.attrs.get("history", "")
+        self.data.attrs["history"] = f"Plotted with monet-plots.SpatialTrack; {history}"
+
         # Add features and get remaining kwargs for scatter
         scatter_kwargs = self.add_features(**kwargs)
 
         scatter_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        longitude = self.data[self.lon_coord]
-        latitude = self.data[self.lat_coord]
+        # Ensure data is computed if it's a dask array before plotting
+        if hasattr(self.data.data, "dask"):
+            plot_data = self.data.compute()
+        else:
+            plot_data = self.data
+
+        longitude = plot_data[self.lon_coord]
+        latitude = plot_data[self.lat_coord]
 
         # Use get_plot_kwargs to handle (cmap, norm) tuples
-        final_kwargs = get_plot_kwargs(c=self.data, **scatter_kwargs)
+        final_kwargs = get_plot_kwargs(c=plot_data, **scatter_kwargs)
 
         sc = self.ax.scatter(longitude, latitude, **final_kwargs)
         return sc
