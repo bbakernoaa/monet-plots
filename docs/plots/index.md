@@ -31,7 +31,6 @@ Specialized plots for visualizing geospatial data on maps.
 | [`SpatialContourPlot`](./spatial_contour.md) | 2D contour plots on a geographical map. | [`Spatial Contour`](./spatial_contour.md) |
 | [`SpatialImshowPlot`](./spatial_imshow.md) | Gridded spatial data displayed as an image on a map. | [`Spatial Imshow`](./spatial_imshow.md) |
 | [`SpatialBiasScatterPlot`](./spatial_bias_scatter.md) | Geographical distribution of bias with points. | [`Spatial Bias Scatter`](./spatial_bias_scatter.md) |
-| [`SpScatterBiasPlot`](./sp_scatter_bias.md) | Alternative spatial bias visualization. | [`SP Scatter Bias`](./sp_scatter_bias.md) |
 
 ## Basic & Statistical Plots
 
