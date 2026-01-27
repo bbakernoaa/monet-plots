@@ -36,6 +36,8 @@ class SpatialContourPlot(SpatialPlot):
         Args:
             modelvar (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray):
                 2D model variable array to contour.
+            modelvar (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray):
+                2D model variable array to contour.
             gridobj (object): Object with LAT and LON variables.
             date (datetime.datetime): Date/time for the plot title.
             discrete (bool): If True, use a discrete colorbar.
@@ -88,23 +90,12 @@ class SpatialContourPlot(SpatialPlot):
         if self.discrete:
             ncolors = self.ncolors
             if ncolors is None and levels is not None:
-                if isinstance(levels, int):
-                    ncolors = levels
-                else:
-                    ncolors = len(levels) - 1
-
-            if levels is not None and not isinstance(levels, int):
-                minval = levels[0]
-                maxval = levels[-1]
-            else:
-                minval = self.modelvar.min()
-                maxval = self.modelvar.max()
-
-            colorbar_index(
-                ncolors if ncolors else 15,
-                cmap if cmap else "viridis",
-                minval=minval,
-                maxval=maxval,
+                ncolors = len(levels) - 1
+            c, _ = colorbar_index(
+                ncolors,
+                cmap,
+                minval=levels[0],
+                maxval=levels[-1],
                 dtype=self.dtype,
                 ax=self.ax,
             )

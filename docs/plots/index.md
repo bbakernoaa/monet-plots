@@ -2,51 +2,13 @@
 
 ## Overview
 
-This document serves as the central index for all available plot types within the MONET Plots system. These plots are categorized into groups based on their primary use case.
+This document serves as the central index for all available **Verification Plots** within the MONET Plots system. These plots are specifically designed to evaluate model forecast quality against observations across various statistical and spatial domains. They provide critical insights into bias, reliability, skill, and resolution, adhering to best practices in meteorological and statistical verification.
 
-## Verification Plots
+For detailed instructions on each plot's usage, customization, and underlying methodology, refer to the individual documentation pages listed below.
 
-These plots are specifically designed to evaluate model forecast quality against observations.
+## Available Verification Plots
 
-| Plot Name | Description | Documentation Link |
-| :--- | :--- | :--- |
-| [`PerformanceDiagramPlot`](./performance_diagram.md) | Analyzes forecast performance across POD, Success Ratio, and CSI. | [`Performance Diagram`](./performance_diagram.md) |
-| [`ROCCurvePlot`](./roc_curve.md) | Visualizes the trade-off between hit rate and false alarm rate. | [`ROC Curve`](./roc_curve.md) |
-| [`ReliabilityDiagramPlot`](./reliability_diagram.md) | Assesses calibration of probabilistic forecasts. | [`Reliability Diagram`](./reliability_diagram.md) |
-| [`RankHistogramPlot`](./rank_histogram.md) | Evaluates ensemble spread and reliability. | [`Rank Histogram`](./rank_histogram.md) |
-| [`BrierScoreDecompositionPlot`](./brier_decomposition.md) | Decomposes Brier Score into components. | [`Brier Score Decomposition`](./brier_decomposition.md) |
-| [`ScorecardPlot`](./scorecard.md) | Summary of key verification statistics. | [`Scorecard`](./scorecard.md) |
-| [`RelativeEconomicValuePlot`](./rev.md) | Evaluates the economic value of forecasts. | [`Relative Economic Value (REV)`](./rev.md) |
-| [`ConditionalBiasPlot`](./conditional_bias.md) | Shows bias conditioned on forecast value. | [`Conditional Bias`](./conditional_bias.md) |
-| [`SoccerPlot`](./soccer.md) | Plots model bias against error with target zones. | [`Soccer Plot`](./soccer.md) |
-| [`ConditionalQuantilePlot`](./conditional_quantile.md) | Modeled value quantiles conditioned on observations. | [`Conditional Quantile Plot`](./conditional_quantile.md) |
-
-## Spatial Plots
-
-Specialized plots for visualizing geospatial data on maps.
-
-| Plot Name | Description | Documentation Link |
-| :--- | :--- | :--- |
-| [`SpatialPlot`](./spatial.md) | Base class for geospatial plots with cartopy support. | [`Spatial Plot`](./spatial.md) |
-| [`SpatialContourPlot`](./spatial_contour.md) | 2D contour plots on a geographical map. | [`Spatial Contour`](./spatial_contour.md) |
-| [`SpatialImshowPlot`](./spatial_imshow.md) | Gridded spatial data displayed as an image on a map. | [`Spatial Imshow`](./spatial_imshow.md) |
-| [`SpatialBiasScatterPlot`](./spatial_bias_scatter.md) | Geographical distribution of bias with points. | [`Spatial Bias Scatter`](./spatial_bias_scatter.md) |
-
-## Basic & Statistical Plots
-
-Fundamental plot types for general data analysis.
-
-| Plot Name | Description | Documentation Link |
-| :--- | :--- | :--- |
-| [`TimeSeriesPlot`](./timeseries.md) | Plot data over time with statistical bands. | [`Time Series Plot`](./timeseries.md) |
-| [`ScatterPlot`](./scatter.md) | Relationship between two variables with regression. | [`Scatter Plot`](./scatter.md) |
-| [`KDEPlot`](./kde.md) | Kernel density estimation for probability distributions. | [`KDE Plot`](./kde.md) |
-| [`CategoricalPlot`](./categorical.md) | Bar or violin plots for categorical data. | [`Categorical Plot`](./categorical.md) |
-| [`RidgelinePlot`](./ridgeline.md) | Distribution curves for several groups (joyplot). | [`Ridgeline Plot`](./ridgeline.md) |
-| [`TaylorDiagramPlot`](./taylor_diagram.md) | Summarizes standard deviation, correlation, and RMSE. | [`Taylor Diagram`](./taylor_diagram.md) |
-| [`FacetGridPlot`](./facet_grid.md) | Multi-panel figure layouts using Seaborn. | [`Facet Grid`](./facet_grid.md) |
-
-## Meteorological & Specialized Plots
+The following verification plots are available. Each link directs to a page detailing its usage, configuration, and interpretation.
 
 | Plot Name | Description | Documentation Link |
 | :--- | :--- | :--- |

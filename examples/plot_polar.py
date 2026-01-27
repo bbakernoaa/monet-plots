@@ -2,7 +2,11 @@
 Polar
 =====
 
+<<<<<<<< HEAD:examples/plot_polar.py
 This example demonstrates how to create a Polar.
+========
+This example demonstrates Polar.
+>>>>>>>> origin/main:examples/example_polar.py
 """
 
 import pandas as pd

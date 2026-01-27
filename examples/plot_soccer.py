@@ -2,7 +2,11 @@
 Soccer
 ======
 
+<<<<<<<< HEAD:examples/plot_soccer.py
 This example demonstrates how to create a Soccer.
+========
+This example demonstrates Soccer.
+>>>>>>>> origin/main:examples/example_soccer.py
 """
 
 import pandas as pd

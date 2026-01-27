@@ -2,7 +2,11 @@
 Facet Grid Spatial
 ==================
 
+<<<<<<<< HEAD:examples/plot_facet_grid_spatial.py
 This example demonstrates how to create a Facet Grid Spatial.
+========
+This example demonstrates Facet Grid Spatial.
+>>>>>>>> origin/main:examples/example_facet_grid_spatial.py
 """
 
 import xarray as xr

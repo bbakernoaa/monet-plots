@@ -48,14 +48,10 @@ class TrajectoryPlot(BasePlot):
         Args:
             **kwargs: Keyword arguments passed to the plot methods.
         """
-        # If BasePlot created a default figure with one axes, we might want to clear it
-        if self.ax is not None and not isinstance(self.ax, list):
-            self.ax.remove()
-            self.ax = None
+        if self.fig is None:
+            self.fig = plt.figure(figsize=kwargs.get("figsize", (10, 8)))
 
-        # Use constrained layout for better alignment
-        self.fig.set_constrained_layout(True)
-        gs = self.fig.add_gridspec(2, 1, height_ratios=[3, 1], hspace=0.3)
+        gs = self.fig.add_gridspec(2, 1, height_ratios=[3, 1])
 
         # Spatial track plot
         import cartopy.crs as ccrs
@@ -71,19 +67,10 @@ class TrajectoryPlot(BasePlot):
         coords = {"time": time_dim, "lon": ("time", lon), "lat": ("time", lat)}
         track_da = xr.DataArray(values, dims=["time"], coords=coords, name="track_data")
 
-        # Pass the DataArray to SpatialTrack with coastlines enabled
-        plot_kwargs = kwargs.get("spatial_track_kwargs", {}).copy()
-        # Add coastlines by default if not explicitly specified
-        plot_kwargs.setdefault("coastlines", True)
-        spatial_track = SpatialTrack(data=track_da, ax=ax0, fig=self.fig, **plot_kwargs)
-        spatial_track.plot(
-            **{
-                k: v
-                for k, v in plot_kwargs.items()
-                if k
-                not in ["coastlines", "states", "countries", "extent", "resolution"]
-            }
-        )
+        # Pass the DataArray to SpatialTrack
+        plot_kwargs = kwargs.get("spatial_track_kwargs", {})
+        spatial_track = SpatialTrack(data=track_da, ax=ax0)
+        spatial_track.plot(**plot_kwargs)
 
         # Timeseries plot
         ax1 = self.fig.add_subplot(gs[1, 0])
