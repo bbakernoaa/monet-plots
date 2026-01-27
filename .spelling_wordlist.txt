@@ -46,3 +46,11 @@ coolwarm
 ScalarFormatter
 ppb
 cbar
+Roboto
+geospatial
+joyplot
+ridgeline
+meteogram
+coastlines
+gridlines
+natural_earth
