@@ -18,8 +18,15 @@ CB_MARKERS = ["o", "s", "^", "D", "v", "<", ">", "p", "*", "X"]
 # Define individual style dictionaries
 _wiley_style = {
     # Font settings
-    "font.family": "serif",
-    "font.serif": ["Times New Roman", "DejaVu Serif", "Liberation Serif", "serif"],
+    "font.family": "sans-serif",
+    "font.sans-serif": [
+        "Roboto",
+        "Arial",
+        "Helvetica",
+        "DejaVu Sans",
+        "Liberation Sans",
+        "sans-serif",
+    ],
     "font.size": 10,
     # Axes settings
     "axes.labelsize": 10,
@@ -57,8 +64,15 @@ _presentation_style = {
 }
 
 _paper_style = {
-    "font.family": "serif",
-    "font.serif": ["Times New Roman", "DejaVu Serif", "Liberation Serif", "serif"],
+    "font.family": "sans-serif",
+    "font.sans-serif": [
+        "Roboto",
+        "Arial",
+        "Helvetica",
+        "DejaVu Sans",
+        "Liberation Sans",
+        "sans-serif",
+    ],
     "font.size": 10,
     "axes.labelsize": 10,
     "axes.titlesize": 12,
@@ -81,6 +95,7 @@ _paper_style = {
 _web_style = {
     "font.family": "sans-serif",
     "font.sans-serif": [
+        "Roboto",
         "Arial",
         "Helvetica",
         "DejaVu Sans",
@@ -109,6 +124,7 @@ _pivotal_weather_style = {
     # Font settings
     "font.family": "sans-serif",
     "font.sans-serif": [
+        "Roboto",
         "Arial",
         "Helvetica",
         "DejaVu Sans",

@@ -86,6 +86,10 @@ class SpatialPlot(BasePlot):
 
         self.resolution = kwargs.pop("resolution", "50m")
 
+        # Ensure coastlines are enabled by default if not specified.
+        if "coastlines" not in kwargs:
+            kwargs["coastlines"] = True
+
         # Initialize the base plot, which creates the figure and axes.
         super().__init__(fig=fig, ax=ax, figsize=figsize, subplot_kw=current_subplot_kw)
 
@@ -400,10 +404,12 @@ class SpatialTrack(SpatialPlot):
         ----------
         **kwargs : Any
             Keyword arguments passed to `matplotlib.pyplot.scatter`.
+            Common options include `cmap`, `s` (size), and `alpha`.
             A `transform` keyword (e.g., `transform=ccrs.PlateCarree()`)
             is highly recommended for geospatial accuracy.
             The `cmap` argument can be a string, a Colormap object, or a
             (colormap, norm) tuple from the scaling tools in `colorbars.py`.
+            Map features (e.g., `coastlines=True`) can also be passed here.
 
         Returns
         -------
@@ -412,13 +418,16 @@ class SpatialTrack(SpatialPlot):
         """
         from ..plot_utils import get_plot_kwargs
 
-        kwargs.setdefault("transform", ccrs.PlateCarree())
+        # Add features and get remaining kwargs for scatter
+        scatter_kwargs = self.add_features(**kwargs)
+
+        scatter_kwargs.setdefault("transform", ccrs.PlateCarree())
 
         longitude = self.data[self.lon_coord]
         latitude = self.data[self.lat_coord]
 
         # Use get_plot_kwargs to handle (cmap, norm) tuples
-        final_kwargs = get_plot_kwargs(c=self.data, **kwargs)
+        final_kwargs = get_plot_kwargs(c=self.data, **scatter_kwargs)
 
         sc = self.ax.scatter(longitude, latitude, **final_kwargs)
         return sc
