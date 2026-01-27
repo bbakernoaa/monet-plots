@@ -18,8 +18,15 @@ CB_MARKERS = ["o", "s", "^", "D", "v", "<", ">", "p", "*", "X"]
 # Define individual style dictionaries
 _wiley_style = {
     # Font settings
-    "font.family": "serif",
-    "font.serif": ["Times New Roman"],
+    "font.family": "sans-serif",
+    "font.sans-serif": [
+        "Roboto",
+        "Arial",
+        "Helvetica",
+        "DejaVu Sans",
+        "Liberation Sans",
+        "sans-serif",
+    ],
     "font.size": 10,
     # Axes settings
     "axes.labelsize": 10,
@@ -57,8 +64,15 @@ _presentation_style = {
 }
 
 _paper_style = {
-    "font.family": "serif",
-    "font.serif": ["Times New Roman"],
+    "font.family": "sans-serif",
+    "font.sans-serif": [
+        "Roboto",
+        "Arial",
+        "Helvetica",
+        "DejaVu Sans",
+        "Liberation Sans",
+        "sans-serif",
+    ],
     "font.size": 10,
     "axes.labelsize": 10,
     "axes.titlesize": 12,
@@ -80,7 +94,14 @@ _paper_style = {
 
 _web_style = {
     "font.family": "sans-serif",
-    "font.sans-serif": ["Arial", "Helvetica"],
+    "font.sans-serif": [
+        "Roboto",
+        "Arial",
+        "Helvetica",
+        "DejaVu Sans",
+        "Liberation Sans",
+        "sans-serif",
+    ],
     "font.size": 12,
     "axes.labelsize": 12,
     "axes.titlesize": 16,
@@ -99,12 +120,46 @@ _web_style = {
     "figure.facecolor": "white",
 }
 
+_pivotal_weather_style = {
+    # Font settings
+    "font.family": "sans-serif",
+    "font.sans-serif": [
+        "Roboto",
+        "Arial",
+        "Helvetica",
+        "DejaVu Sans",
+        "Liberation Sans",
+        "sans-serif",
+    ],
+    "font.size": 12,
+    # Axes settings
+    "axes.labelsize": 12,
+    "axes.titlesize": 14,
+    "axes.grid": False,
+    "axes.edgecolor": "black",
+    "axes.linewidth": 1.0,
+    # Map feature styles
+    "coastline.width": 0.5,
+    "coastline.color": "black",
+    "states.width": 0.5,
+    "states.color": "black",
+    "borders.width": 0.5,
+    "borders.color": "black",
+    # Colorbar settings
+    "cbar.orientation": "horizontal",
+    "cbar.location": "bottom",
+    "cbar.pad": 0.05,
+    "cbar.fraction": 0.02,
+}
+
+
 # Dictionary to map context names to style dictionaries
 _styles = {
     "wiley": _wiley_style,
     "presentation": _presentation_style,
     "paper": _paper_style,
     "web": _web_style,
+    "pivotal_weather": _pivotal_weather_style,
     "default": {},  # Matplotlib default style
 }
 
@@ -117,7 +172,7 @@ def set_style(context="default"):
     ----------
     context : str, optional
         The name of the style context to apply.
-        Available contexts: "wiley", "presentation", "paper", "web", "default".
+        Available contexts: "wiley", "presentation", "paper", "web", "pivotal_weather", "default".
         Defaults to "default" (Matplotlib's default style).
 
     Raises

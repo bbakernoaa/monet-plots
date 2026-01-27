@@ -1,0 +1,8 @@
+matrix:
+  - name: markdown-spellcheck
+    sources:
+      - docs/**/*.md
+    spelling_language: en_US
+    dictionary:
+      wordlists:
+        - .spelling_wordlist.txt

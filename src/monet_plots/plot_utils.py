@@ -1,6 +1,7 @@
 import warnings
 from typing import Any, Optional
 
+
 import numpy as np
 import pandas as pd
 
@@ -28,7 +29,8 @@ def to_dataframe(data: Any) -> pd.DataFrame:
     if isinstance(data, pd.DataFrame):
         return data
 
-    # Using hasattr to avoid direct dependency on xarray for users who don't have it installed.
+    # Using hasattr to avoid direct dependency on xarray for users who don't have it
+    # installed.
     if hasattr(data, "to_dataframe"):  # Works for both xarray DataArray and Dataset
         return data.to_dataframe()
 

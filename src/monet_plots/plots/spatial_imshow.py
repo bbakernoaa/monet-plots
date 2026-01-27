@@ -1,11 +1,19 @@
-from .spatial import SpatialPlot
-from ..colorbars import colorbar_index
-import numpy as np
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import cartopy.crs as ccrs
+import numpy as np
+
+from ..colorbars import colorbar_index
+from .spatial import SpatialPlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
+    import matplotlib.colorbar
 
 
-class SpatialImshow(SpatialPlot):
+class SpatialImshowPlot(SpatialPlot):
     """Create a basic spatial plot using imshow.
 
     This plot is useful for visualizing 2D model data on a map.
@@ -14,51 +22,79 @@ class SpatialImshow(SpatialPlot):
     def __init__(
         self,
         modelvar: Any,
-        gridobj,
-        plotargs: dict = {},
+        gridobj: Any | None = None,
+        plotargs: dict[str, Any] | None = None,
         ncolors: int = 15,
         discrete: bool = False,
-        *args,
-        **kwargs,
-    ):
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize the plot with data and map projection.
 
-        Args:
-            modelvar (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray): 2D model variable array to plot.
-            gridobj (object): Object with LAT and LON variables to determine extent.
-            plotargs (dict): Arguments for imshow.
-            ncolors (int): Number of discrete colors.
-            discrete (bool): If True, use a discrete colorbar.
-            **kwargs: Keyword arguments passed to SpatialPlot for projection and features.
+        Parameters
+        ----------
+        modelvar : xarray.DataArray or array-like
+            2D model variable array to plot.
+        gridobj : Any, optional
+            Object with LAT and LON variables to determine extent.
+        plotargs : dict, optional
+            Arguments for imshow.
+        ncolors : int, optional
+            Number of discrete colors for discrete colorbar.
+        discrete : bool, optional
+            If True, use a discrete colorbar.
+        *args : Any
+            Positional arguments for SpatialPlot.
+        **kwargs : Any
+            Keyword arguments passed to SpatialPlot for projection and features.
         """
         super().__init__(*args, **kwargs)
-        self.modelvar = np.asarray(modelvar)
+        self.modelvar = modelvar
         self.gridobj = gridobj
         self.plotargs = plotargs
         self.ncolors = ncolors
         self.discrete = discrete
 
-    def plot(self, **kwargs):
-        """Generate the spatial imshow plot."""
-        imshow_kwargs = self.add_features(**kwargs)
-        imshow_kwargs.update(self.plotargs)
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
+        """Generate the spatial imshow plot.
 
-        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
-        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object containing the plot.
+        """
+        imshow_kwargs = self.add_features(**kwargs)
+        if self.plotargs:
+            imshow_kwargs.update(self.plotargs)
+
+        # Handle eager vs lazy data by delaying conversion until plotting
+        # we still eventually need a numpy array for imshow.
+        model_data = np.asarray(self.modelvar)
+
+        if self.gridobj is not None:
+            lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
+            lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+            extent = [lon.min(), lon.max(), lat.min(), lat.max()]
+        elif hasattr(self.modelvar, "lat") and hasattr(self.modelvar, "lon"):
+            lat = self.modelvar.lat
+            lon = self.modelvar.lon
+            extent = [lon.min(), lon.max(), lat.min(), lat.max()]
+        else:
+            # Fallback to extent from plotargs or default
+            extent = imshow_kwargs.get("extent", None)
 
         # imshow requires the extent [lon_min, lon_max, lat_min, lat_max]
-        extent = [lon.min(), lon.max(), lat.min(), lat.max()]
 
         imshow_kwargs.setdefault("cmap", "viridis")
         imshow_kwargs.setdefault("origin", "lower")
         imshow_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        img = self.ax.imshow(self.modelvar, extent=extent, **imshow_kwargs)
+        img = self.ax.imshow(model_data, extent=extent, **imshow_kwargs)
 
         if self.discrete:
             vmin, vmax = img.get_clim()
-            c, _ = colorbar_index(
+            colorbar_index(
                 self.ncolors,
                 imshow_kwargs["cmap"],
                 minval=vmin,
@@ -66,6 +102,6 @@ class SpatialImshow(SpatialPlot):
                 ax=self.ax,
             )
         else:
-            c = self.fig.colorbar(img, ax=self.ax)
+            self.add_colorbar(img)
 
-        return c
+        return self.ax

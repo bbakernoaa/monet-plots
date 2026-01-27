@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
-import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from .base import BasePlot
@@ -30,8 +30,8 @@ class TrajectoryPlot(BasePlot):
             longitude: Longitude values for the spatial track.
             latitude: Latitude values for the spatial track.
             data: Data to use for coloring the track.
-            time: Time values for the timeseries.
-            ts_data: Data for the timeseries.
+            time: Time values for the timeseries or a DataFrame.
+            ts_data: Data for the timeseries or column name if time is a DataFrame.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
         """
@@ -48,13 +48,20 @@ class TrajectoryPlot(BasePlot):
         Args:
             **kwargs: Keyword arguments passed to the plot methods.
         """
-        if self.fig is None:
-            self.fig = plt.figure(figsize=kwargs.get("figsize", (10, 8)))
+        # If BasePlot created a default figure with one axes, we might want to clear it
+        if self.ax is not None and not isinstance(self.ax, list):
+            self.ax.remove()
+            self.ax = None
 
-        gs = self.fig.add_gridspec(2, 1, height_ratios=[3, 1])
+        # Use constrained layout for better alignment
+        self.fig.set_constrained_layout(True)
+        gs = self.fig.add_gridspec(2, 1, height_ratios=[3, 1], hspace=0.3)
 
         # Spatial track plot
-        ax0 = self.fig.add_subplot(gs[0, 0], projection=kwargs.get("projection"))
+        import cartopy.crs as ccrs
+
+        proj = kwargs.get("projection", ccrs.PlateCarree())
+        ax0 = self.fig.add_subplot(gs[0, 0], projection=proj)
 
         # Create an xarray.DataArray for the trajectory data
         lon = np.asarray(self.longitude)
@@ -64,14 +71,38 @@ class TrajectoryPlot(BasePlot):
         coords = {"time": time_dim, "lon": ("time", lon), "lat": ("time", lat)}
         track_da = xr.DataArray(values, dims=["time"], coords=coords, name="track_data")
 
-        # Pass the DataArray to SpatialTrack
-        plot_kwargs = kwargs.get("spatial_track_kwargs", {})
-        spatial_track = SpatialTrack(data=track_da, ax=ax0)
-        spatial_track.plot(**plot_kwargs)
+        # Pass the DataArray to SpatialTrack with coastlines enabled
+        plot_kwargs = kwargs.get("spatial_track_kwargs", {}).copy()
+        # Add coastlines by default if not explicitly specified
+        plot_kwargs.setdefault("coastlines", True)
+        spatial_track = SpatialTrack(data=track_da, ax=ax0, fig=self.fig, **plot_kwargs)
+        spatial_track.plot(
+            **{
+                k: v
+                for k, v in plot_kwargs.items()
+                if k
+                not in ["coastlines", "states", "countries", "extent", "resolution"]
+            }
+        )
 
         # Timeseries plot
         ax1 = self.fig.add_subplot(gs[1, 0])
-        timeseries = TimeSeriesPlot(df=self.time, y=self.ts_data, ax=ax1)
-        timeseries.plot(**kwargs.get("timeseries_kwargs", {}))
+
+        timeseries_kwargs = kwargs.get("timeseries_kwargs", {}).copy()
+
+        if isinstance(self.time, pd.DataFrame):
+            # Already a DataFrame
+            timeseries = TimeSeriesPlot(
+                df=self.time, y=self.ts_data, ax=ax1, fig=self.fig
+            )
+        else:
+            # Assume arrays
+            ts_df = pd.DataFrame({"time": self.time, "value": np.asarray(self.ts_data)})
+            timeseries = TimeSeriesPlot(
+                df=ts_df, x="time", y="value", ax=ax1, fig=self.fig
+            )
+
+        timeseries.plot(**timeseries_kwargs)
 
         self.ax = [ax0, ax1]
+        return self.ax

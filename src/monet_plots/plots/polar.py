@@ -93,7 +93,7 @@ class BivariatePolarPlot(BasePlot):
 
         # Plotting
         mappable = self.ax.pcolormesh(Theta, R, Z.T, cmap=cmap, **kwargs)
-        self.fig.colorbar(mappable, ax=self.ax, label=self.val_col)
+        self.add_colorbar(mappable, label=self.val_col)
 
         self.ax.set_ylim(0, self.ws_max)
         return self.ax

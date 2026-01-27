@@ -19,7 +19,7 @@ class TimeSeriesPlot(BasePlot):
         x: str = "time",
         y: str = "obs",
         plotargs: dict = {},
-        fillargs: dict = {"alpha": 0.2},
+        fillargs: dict = None,
         title: str = "",
         ylabel: Optional[str] = None,
         label: Optional[str] = None,
@@ -30,7 +30,8 @@ class TimeSeriesPlot(BasePlot):
         Initialize the plot with data and plot settings.
 
         Args:
-            df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): DataFrame with the data to plot.
+            df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray):
+                DataFrame with the data to plot.
             x (str): Column name for the x-axis (time).
             y (str): Column name for the y-axis (values).
             plotargs (dict): Arguments for the plot.
@@ -45,13 +46,22 @@ class TimeSeriesPlot(BasePlot):
         self.x = x
         self.y = y
         self.plotargs = plotargs
-        self.fillargs = fillargs
+        self.fillargs = fillargs if fillargs is not None else {"alpha": 0.2}
         self.title = title
         self.ylabel = ylabel
         self.label = label
 
     def plot(self, **kwargs):
-        """Generate the timeseries plot."""
+        """Generate the timeseries plot.
+
+        Args:
+            **kwargs: Overrides for plot settings (x, y, title, ylabel, label, etc.)
+        """
+        # Update attributes from kwargs if provided
+        for attr in ["x", "y", "title", "ylabel", "label"]:
+            if attr in kwargs:
+                setattr(self, attr, kwargs.pop(attr))
+
         import xarray as xr
 
         # Handle xarray objects differently from pandas DataFrames
@@ -61,33 +71,40 @@ class TimeSeriesPlot(BasePlot):
             return self._plot_dataframe(**kwargs)
 
     def _plot_dataframe(self, **kwargs):
-        """Generate the timeseries plot from pandas DataFrame (original implementation)."""
-        self.df.index = self.df[self.x]
-        df = self.df.drop(columns=self.x).reset_index()
-        m = df.groupby("time").mean(numeric_only=True)
-        e = df.groupby("time").std(numeric_only=True)
+        """Generate the timeseries plot from pandas DataFrame."""
+        df = self.df.copy()
+        df.index = df[self.x]
+        # Keep only numeric columns for grouping, but make sure self.y is there
+        df = df.reset_index(drop=True)
+        # We need to preserve self.x for grouping if it's not the index
+        m = self.df.groupby(self.x).mean(numeric_only=True)
+        e = self.df.groupby(self.x).std(numeric_only=True)
+
         variable = self.y
-        if df.columns.isin(["units"]).max():
-            unit = df.units
-        else:
-            unit = "None"
+        unit = "None"
+        if "units" in self.df.columns:
+            unit = str(self.df["units"].iloc[0])
+
         upper = m[self.y] + e[self.y]
         lower = m[self.y] - e[self.y]
-        lower.loc[lower < 0] = 0
-        lower = lower.values
-        if "alpha" not in self.fillargs:
-            self.fillargs["alpha"] = 0.2
+        # lower.loc[lower < 0] = 0 # Not always desired for all variables
+        lower_vals = lower.values
+        upper_vals = upper.values
+
         if self.label is not None:
-            m.rename(columns={self.y: self.label}, inplace=True)
+            plot_label = self.label
         else:
-            self.label = self.y
-        m[self.label].plot(ax=self.ax, **self.plotargs)
-        self.ax.fill_between(m[self.label].index, lower, upper, **self.fillargs)
+            plot_label = self.y
+
+        m[self.y].plot(ax=self.ax, label=plot_label, **self.plotargs)
+        self.ax.fill_between(m.index, lower_vals, upper_vals, **self.fillargs)
+
         if self.ylabel is None:
-            self.ax.set_ylabel(variable + " (" + unit + ")")
+            self.ax.set_ylabel(f"{variable} ({unit})")
         else:
-            self.ax.set_ylabel(self.label)
-        self.ax.set_xlabel("")
+            self.ax.set_ylabel(self.ylabel)
+
+        self.ax.set_xlabel(self.x)
         self.ax.legend()
         self.ax.set_title(self.title)
         self.fig.tight_layout()
@@ -99,47 +116,45 @@ class TimeSeriesPlot(BasePlot):
 
         # Ensure we have the right data structure
         if isinstance(self.df, xr.DataArray):
-            # Convert DataArray to Dataset for easier handling
-            data = self.df.to_dataset(name=self.y)
+            data = (
+                self.df.to_dataset(name=self.y)
+                if self.df.name is None
+                else self.df.to_dataset()
+            )
+            if self.df.name is not None:
+                self.y = self.df.name
         else:
             data = self.df
 
-        # Set default fill alpha if not provided
-        if "alpha" not in self.fillargs:
-            self.fillargs["alpha"] = 0.2
+        # Calculate mean and std along other dimensions if any
+        # If it's already a 1D time series, mean/std won't do much
+        dims_to_reduce = [d for d in data[self.y].dims if d != self.x]
 
-        # Use xarray's built-in plotting capabilities
-        # For time series, we can use the plot method with error shading
-        if self.label is not None:
-            data[self.y].plot(ax=self.ax, label=self.label, **self.plotargs)
+        if dims_to_reduce:
+            mean_data = data[self.y].mean(dim=dims_to_reduce)
+            std_data = data[self.y].std(dim=dims_to_reduce)
         else:
-            data[self.y].plot(ax=self.ax, **self.plotargs)
+            mean_data = data[self.y]
+            std_data = xr.zeros_like(mean_data)
 
-        # Calculate and plot error bounds
-        # Use the time coordinate directly from the data
-        time_coord = data[self.y].coords[self.x]
-        mean_data = data[self.y].mean(dim=self.x)
-        std_data = data[self.y].std(dim=self.x)
+        plot_label = self.label if self.label is not None else self.y
+        mean_data.plot(ax=self.ax, label=plot_label, **self.plotargs)
+
         upper = mean_data + std_data
         lower = mean_data - std_data
-        lower = lower.where(lower >= 0, 0)  # Ensure non-negative values
 
-        # Plot the error bounds using the time coordinate values
         self.ax.fill_between(
-            time_coord.values, lower.values, upper.values, **self.fillargs
+            mean_data[self.x].values, lower.values, upper.values, **self.fillargs
         )
 
-        # Set labels and title
-        unit = "None"  # xarray doesn't have a direct units attribute like pandas
-        if hasattr(data[self.y], "attrs") and "units" in data[self.y].attrs:
-            unit = data[self.y].attrs["units"]
+        unit = data[self.y].attrs.get("units", "None")
 
         if self.ylabel is None:
             self.ax.set_ylabel(f"{self.y} ({unit})")
         else:
-            self.ax.set_ylabel(self.label)
+            self.ax.set_ylabel(self.ylabel)
 
-        self.ax.set_xlabel("")
+        self.ax.set_xlabel(self.x)
         self.ax.legend()
         self.ax.set_title(self.title)
         self.fig.tight_layout()
@@ -163,7 +178,8 @@ class TimeSeriesStatsPlot(BasePlot):
                 and the columns to compare. Must be convertible to a pandas
                 DataFrame with a DatetimeIndex.
             col1 (str): Name of the first column (e.g., 'Obs').
-            col2 (str or list): Name of the second column(s) (e.g., 'Model' or ['Model1', 'Model2']).
+            col2 (str or list): Name of the second column(s)
+                (e.g., 'Model' or ['Model1', 'Model2']).
             *args, **kwargs: Arguments passed to BasePlot.
         """
         super().__init__(*args, **kwargs)
@@ -175,11 +191,18 @@ class TimeSeriesStatsPlot(BasePlot):
             elif "time" in self.df.columns:
                 self.df = self.df.set_index("time")
             else:
-                raise ValueError("Input DataFrame must have a DatetimeIndex.")
+                # Try to convert index if it's not already datetime
+                try:
+                    self.df.index = pd.to_datetime(self.df.index)
+                except Exception:
+                    raise ValueError(
+                        "Input DataFrame must have a DatetimeIndex "
+                        "or 'time'/'datetime' column."
+                    )
 
         self.col1 = col1
         if isinstance(col2, str):
-            self.col2 = [col2]  # Internally, always treat col2 as a list
+            self.col2 = [col2]
         else:
             self.col2 = col2
         self.stats = {
@@ -196,9 +219,9 @@ class TimeSeriesStatsPlot(BasePlot):
         """Calculate Root Mean Square Error for a group."""
         return np.sqrt(np.mean((group[col2_name] - group[self.col1]) ** 2))
 
-    def _calculate_corr(self, group):
+    def _calculate_corr(self, group, col2_name):
         """Calculate Pearson correlation for a group."""
-        return group[[self.col1, self.col2]].corr().iloc[0, 1]
+        return group[[self.col1, col2_name]].corr().iloc[0, 1]
 
     def plot(self, stat: str = "bias", freq: str = "D", **kwargs):
         """
@@ -207,31 +230,21 @@ class TimeSeriesStatsPlot(BasePlot):
         Args:
             stat (str): The statistic to plot. Supported: 'bias', 'rmse', 'corr'.
             freq (str): The resampling frequency (e.g., 'H', 'D', 'W', 'M').
-                        See pandas frequency strings for options.
             **kwargs: Keyword arguments passed to the pandas plot() method.
-
-        Returns:
-            matplotlib.axes.Axes: The axes object containing the plot.
         """
         if stat.lower() not in self.stats:
-            raise ValueError(
-                f"Statistic '{stat}' not supported. Use one of {list(self.stats.keys())}"
-            )
+            msg = f"Statistic '{stat}' not supported. Use one of {list(self.stats.keys())}"
+            raise ValueError(msg)
 
-        # Set default plot properties, allowing user to override
         plot_kwargs = {"grid": True, "marker": "o", "linestyle": "-"}
-        # User-provided kwargs will override defaults but not the label
-        plot_kwargs = {**plot_kwargs, **kwargs}
+        plot_kwargs.update(kwargs)
 
         for model_col in self.col2:
-            # Define a function to pass the current model column to the stat function
+
             def stat_func(group):
                 return self.stats[stat.lower()](group, model_col)
 
-            # Resample and apply the chosen statistical function for the current model
             stat_series = self.df.resample(freq).apply(stat_func)
-
-            # Plot the series with the model column name as the label
             stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
 
         self.ax.set_ylabel(f"{stat.upper()}")

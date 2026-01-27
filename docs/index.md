@@ -87,20 +87,20 @@ ts_plot.save("timeseries_plot.png")
 
 | Plot Type | Class | Description |
 |-----------|-------|-------------|
-| Spatial | [`SpatialPlot`](./plots/spatial) | Geospatial plots with cartopy support |
-| Time Series | [`TimeSeriesPlot`](./plots/timeseries) | Time series with statistical bands |
-| Scatter | [`ScatterPlot`](./plots/scatter) | Scatter plots with regression lines |
-| Taylor Diagram | [`TaylorDiagramPlot`](./plots/taylor) | Model evaluation diagrams |
-| KDE | [`KDEPlot`](./plots/kde) | Kernel density estimation plots |
-| Wind | [`WindQuiverPlot`](./plots/wind) | Wind vector plots |
-| Facet Grid | [`FacetGridPlot`](./plots/facet_grid) | Multi-panel figure layouts |
+| Spatial | [`SpatialPlot`](./plots/spatial.md) | Geospatial plots with cartopy support |
+| Time Series | [`TimeSeriesPlot`](./plots/timeseries.md) | Time series with statistical bands |
+| Scatter | [`ScatterPlot`](./plots/scatter.md) | Scatter plots with regression lines |
+| Taylor Diagram | [`TaylorDiagramPlot`](./plots/taylor.md) | Model evaluation diagrams |
+| KDE | [`KDEPlot`](./plots/kde.md) | Kernel density estimation plots |
+| Wind | [`WindQuiverPlot`](./plots/wind.md) | Wind vector plots |
+| Facet Grid | [`FacetGridPlot`](./plots/facet_grid.md) | Multi-panel figure layouts |
 
 ### Utility Modules
 
-- **[`style`](./api/style)**: Publication-ready styling configuration
-- **[`colorbars`](./api/colorbars)**: Custom colorbar creation utilities
-- **[`taylordiagram`](./api/taylordiagram)**: Taylor diagram functionality
-- **[`plot_utils`](./api/plot_utils)**: Common plotting utilities
+- **[`style`](./api/style.md)**: Publication-ready styling configuration
+- **[`colorbars`](./api/colorbars.md)**: Custom colorbar creation utilities
+- **[`taylordiagram`](./api/taylordiagram.md)**: Taylor diagram functionality
+- **[`plot_utils`](./api/plot_utils.md)**: Common plotting utilities
 
 ## Basic Usage Patterns
 
@@ -136,19 +136,19 @@ colorbar, cmap = colorbar_index(10, 'viridis', minval=0, maxval=100)
 
 ### Core Documentation
 
-- **[Getting Started](./getting-started)**: Comprehensive installation and setup guide with detailed troubleshooting
-- **[API Reference](./api)**: Complete API documentation for all modules, classes, and functions
-- **[Plot Types](./plots)**: Detailed documentation for all plot types with examples and best practices
+- **[Getting Started](./getting-started.md)**: Comprehensive installation and setup guide with detailed troubleshooting
+- **[API Reference](./api/index.md)**: Complete API documentation for all modules, classes, and functions
+- **[Plot Types](./plots/index.md)**: Detailed documentation for all plot types with examples and best practices
 
 ### Learning Resources
 
-- **[Examples and Tutorials](./examples)**: Practical examples, workflows, and real-world use cases
-- **[Configuration and Customization](./configuration)**: Advanced styling, theming, and customization guides
-- **[Performance Optimization](./performance)**: Techniques for handling large datasets and improving speed
+- **[Examples and Tutorials](./examples/index.md)**: Practical examples, workflows, and real-world use cases
+- **[Configuration and Customization](./configuration/index.md)**: Advanced styling, theming, and customization guides
+- **[Performance Optimization](./performance/index.md)**: Techniques for handling large datasets and improving speed
 
 ### Support and Troubleshooting
 
-- **[Troubleshooting and FAQ](./troubleshooting)**: Common issues, solutions, and expert guidance
+- **[Troubleshooting and FAQ](./troubleshooting/index.md)**: Common issues, solutions, and expert guidance
 - **[Contributing Guidelines](../CONTRIBUTING.md)**: How to contribute to the project
 - **[License](../LICENSE)**: Project licensing information
 
@@ -156,9 +156,9 @@ colorbar, cmap = colorbar_index(10, 'viridis', minval=0, maxval=100)
 
 | Category | Description | Level |
 |----------|-------------|-------|
-| **Beginner** | [Getting Started](./getting-started), [Basic Examples](./examples/getting-started) | New users |
-| **Intermediate** | [API Reference](./api), [Plot Types](./plots), [Configuration](./configuration) | Regular users |
-| **Advanced** | [Performance](./performance), [Advanced Examples](./examples/advanced-workflows), [Troubleshooting](./troubleshooting) | Power users |
+| **Beginner** | [Getting Started](./getting-started.md), [Basic Examples](./examples/getting-started) | New users |
+| **Intermediate** | [API Reference](./api/index.md), [Plot Types](./plots/index.md), [Configuration](./configuration/index.md) | Regular users |
+| **Advanced** | [Performance](./performance/index.md), [Advanced Examples](./examples/advanced-workflows), [Troubleshooting](./troubleshooting/index.md) | Power users |
 | **Expert** | [Contributing](../CONTRIBUTING.md), [Development](../development) | Developers |
 
 ## Contributing

@@ -491,24 +491,31 @@ from monet_plots.plot_utils import (
 def create_custom_plot(data, title="", filename="output.png"):
     """Create a custom plot with consistent styling."""
 
+
     # Create figure with defaults
     fig, ax = create_figure(figsize=(10, 6))
+
 
     # Apply styling
     apply_wiley_style(ax, fontsize=11)
 
+
     # Plot data
     ax.plot(data, linewidth=2, label='Data')
+
 
     # Add grid and legend
     add_grid(ax, linestyle='--', alpha=0.3)
     add_legend(ax, location='upper right')
 
+
     # Add title
     ax.set_title(title, fontsize=14, pad=20)
 
+
     # Save figure
     save_figure(fig, filename, dpi=300)
+
 
     return fig, ax
 
@@ -526,17 +533,21 @@ import matplotlib.pyplot as plt
 def create_batch_plots(data_dict, output_dir="plots/"):
     """Create multiple plots in a batch."""
 
+
     n_plots = len(data_dict)
     fig, axes = create_subplot_layout(n_plots, max_cols=2, figsize=(14, 10))
+
 
     for (title, data), ax in zip(data_dict.items(), axes.flat):
         ax.plot(data, linewidth=2)
         ax.set_title(title, fontsize=12)
         ax.grid(True, alpha=0.3)
 
+
     # Format date axes if applicable
     for ax in axes.flat:
         format_date_axis(ax, rotation=45)
+
 
     plt.tight_layout()
     save_figure(fig, f"{output_dir}batch_plots.png", dpi=300)
@@ -568,12 +579,15 @@ try:
     # Validate data before plotting
     validate_data(data, required_columns=['time', 'value'])
 
+
     # Create plot
     plot = SpatialPlot()
     plot.plot(data)
 
+
     # Save with error handling
     save_figure(plot.fig, 'output.png')
+
 
 except ValueError as e:
     print(f"Data error: {e}")
@@ -585,6 +599,6 @@ except Exception as e:
 
 **Related Resources**:
 
-- [Style Configuration](./style) - Plot styling and themes
-- [Base API](./base) - Core plotting functionality
-- [Examples](../examples) - Practical usage examples
+- [Style Configuration](./style.md) - Plot styling and themes
+- [Base API](./base.md) - Core plotting functionality
+- [Examples](../examples/index.md) - Practical usage examples

@@ -56,14 +56,14 @@ def sample_dataarray():
 
 
 def test_spatial_plot_init_default(clear_figures):
-    """Test SpatialPlot default initialization without features."""
+    """Test SpatialPlot default initialization with features."""
     plot = SpatialPlot()
     plot.fig.canvas.draw()
     assert isinstance(plot.fig, plt.Figure)
     assert isinstance(plot.ax, GeoAxes)
     assert isinstance(plot.ax.projection, ccrs.PlateCarree)
-    # No features should be added by default
-    assert len(plot.ax.collections) == 0
+    # Coastlines should be added by default
+    assert len(plot.ax.collections) > 0
 
 
 def test_spatial_plot_init_with_features(clear_figures):
@@ -240,6 +240,6 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
 
         # Ensure 'c' is an xarray.DataArray wrapping a dask array
         assert isinstance(c_arg, xr.DataArray), "The 'c' argument is not a DataArray."
-        assert isinstance(
-            c_arg.data, dask.array.Array
-        ), "The underlying data is not a dask array."
+        assert isinstance(c_arg.data, dask.array.Array), (
+            "The underlying data is not a dask array."
+        )

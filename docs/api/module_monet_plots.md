@@ -19,20 +19,20 @@ print(monet_plots.__email__)
 
 | Plot Type | Class | Description |
 |-----------|-------|-------------|
-| Spatial | [`SpatialPlot`](../plots/spatial) | Geospatial plots with cartopy support |
-| Time Series | [`TimeSeriesPlot`](../plots/timeseries) | Time series with statistical bands |
-| Scatter | [`ScatterPlot`](../plots/scatter) | Scatter plots with regression lines |
-| Taylor Diagram | [`TaylorDiagramPlot`](../plots/taylor) | Model evaluation diagrams |
-| KDE | [`KDEPlot`](../plots/kde) | Kernel density estimation plots |
-| Wind Quiver | [`WindQuiverPlot`](../plots/wind) | Wind vector plots |
-| Wind Barbs | [`WindBarbsPlot`](../plots/wind) | Wind barb plots |
-| Facet Grid | [`FacetGridPlot`](../plots/facet_grid) | Multi-panel figure layouts |
-| Soccer | [`SoccerPlot`](../plots/soccer) | Model bias vs error plots |
-| Curtain | [`CurtainPlot`](../plots/curtain) | Vertical cross-section plots |
-| Diurnal Error | [`DiurnalErrorPlot`](../plots/diurnal_error) | Heat maps of error by hour |
-| Fingerprint | [`FingerprintPlot`](../plots/fingerprint) | Heat maps for temporal patterns |
-| Polar | [`BivariatePolarPlot`](../plots/polar) | Concentration vs wind speed/direction |
-| Conditional Quantile | [`ConditionalQuantilePlot`](../plots/conditional_quantile) | Quantiles conditioned on observations |
+| Spatial | [`SpatialPlot`](../plots/spatial.md) | Geospatial plots with cartopy support |
+| Time Series | [`TimeSeriesPlot`](../plots/timeseries.md) | Time series with statistical bands |
+| Scatter | [`ScatterPlot`](../plots/scatter.md) | Scatter plots with regression lines |
+| Taylor Diagram | [`TaylorDiagramPlot`](../plots/taylor.md) | Model evaluation diagrams |
+| KDE | [`KDEPlot`](../plots/kde.md) | Kernel density estimation plots |
+| Wind Quiver | [`WindQuiverPlot`](../plots/wind.md) | Wind vector plots |
+| Wind Barbs | [`WindBarbsPlot`](../plots/wind.md) | Wind barb plots |
+| Facet Grid | [`FacetGridPlot`](../plots/facet_grid.md) | Multi-panel figure layouts |
+| Soccer | [`SoccerPlot`](../plots/soccer.md) | Model bias vs error plots |
+| Curtain | [`CurtainPlot`](../plots/curtain.md) | Vertical cross-section plots |
+| Diurnal Error | [`DiurnalErrorPlot`](../plots/diurnal_error.md) | Heat maps of error by hour |
+| Fingerprint | [`FingerprintPlot`](../plots/fingerprint.md) | Heat maps for temporal patterns |
+| Polar | [`BivariatePolarPlot`](../plots/polar.md) | Concentration vs wind speed/direction |
+| Conditional Quantile | [`ConditionalQuantilePlot`](../plots/conditional_quantile.md) | Quantiles conditioned on observations |
 
 ### Style Configuration
 
@@ -433,7 +433,7 @@ print(f"Render time: {debug_info['render_time']:.3f} seconds")
 
 **Related Resources**:
 
-- [Base API](./base) - Core plotting functionality
-- [Style Configuration](./style) - Detailed style documentation
-- [Plot Types](../plots) - Specific plot implementations
-- [Examples](../examples) - Practical usage examples
+- [Base API](./base.md) - Core plotting functionality
+- [Style Configuration](./style.md) - Detailed style documentation
+- [Plot Types](../plots/index.md) - Specific plot implementations
+- [Examples](../examples/index.md) - Practical usage examples

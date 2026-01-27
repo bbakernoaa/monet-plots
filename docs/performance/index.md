@@ -8,7 +8,7 @@ MONET Plots is designed with performance in mind, but large datasets and complex
 
 | Optimization Level | Difficulty | Focus Area |
 |-------------------|------------|------------|
-| [Basic Optimization](./basic-optimization) | Beginner | Quick wins for most users |
+| [Basic Optimization](./basic-optimization.md) | Beginner | Quick wins for most users |
 | [Memory Management](./memory-management) | Intermediate | Large datasets and memory usage |
 | [Rendering Optimization](./rendering-optimization) | Advanced | Plot generation speed |
 | [Workflow Optimization](./workflow-optimization) | Intermediate | Multi-plot workflows |
@@ -61,7 +61,7 @@ Monitor these key performance indicators:
 
 ## Navigation
 
-- [Basic Optimization](./basic-optimization) - Quick performance wins
+- [Basic Optimization](./basic-optimization.md) - Quick performance wins
 - [Memory Management](./memory-management) - Handling large datasets
 - [Rendering Optimization](./rendering-optimization) - Fast plot generation
 - [Workflow Optimization](./workflow-optimization) - Efficient multi-plot workflows

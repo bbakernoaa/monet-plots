@@ -569,7 +569,7 @@ After mastering basic optimization, explore:
 
 **Navigation**:
 
-- [Performance Index](../index) - All performance guides
+- [Performance Index](../index.md) - All performance guides
 - [Memory Management](../memory-management) - Advanced memory optimization
 - [Rendering Optimization](../rendering-optimization) - Fast plot generation
 - [Workflow Optimization](../workflow-optimization) - Multi-plot workflows

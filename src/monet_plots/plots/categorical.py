@@ -1,4 +1,3 @@
-import monet_plots as mpl
 import seaborn as sns
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -58,12 +57,15 @@ def categorical_plot(
 
     df = data.to_dataframe().reset_index()
 
-    with plt.style.context(mpl.style.wiley_style):
+    from .. import style
+
+    col = "site" if "site" in df else None
+    with plt.style.context(style.wiley_style):
         p = sns.catplot(
             data=df,
             kind=kind,
-            col="site" if "site" in df else None,
-            col_wrap=col_wrap,
+            col=col,
+            col_wrap=col_wrap if col is not None else None,
             sharey=sharey,
             **kwargs,
         )
