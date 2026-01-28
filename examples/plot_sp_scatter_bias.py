@@ -33,20 +33,3 @@ df = pd.DataFrame({
 
 # 2. Initialize and create the plot
 # Example skipped: SpScatterBiasPlot module not found in this version.
-    extent=[-125, -65, 15, 55],
-    coastlines=True,
-    countries=True,
-)
-plot.plot(
-    cmap='RdBu_r', # Red-Blue colormap, reversed for positive=red, negative=blue
-    edgecolor='black',
-    linewidth=0.5,
-    alpha=0.8
-)
-
-# 3. Add titles and labels
-plot.ax.set_title("Spatial Bias Plot: Comparison vs. Reference")
-# Map elements (coastlines, borders) are added by default via draw_map
-
-plt.tight_layout()
-plt.show()
