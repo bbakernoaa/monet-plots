@@ -93,7 +93,9 @@ class SpatialContourPlot(SpatialPlot):
                 # If levels is an int, convert to a sequence for len()
                 if isinstance(levels, int):
                     ncolors = levels - 1
-                    levels_seq = np.linspace(np.nanmin(self.modelvar), np.nanmax(self.modelvar), levels)
+                    levels_seq = np.linspace(
+                        np.nanmin(self.modelvar), np.nanmax(self.modelvar), levels
+                    )
                 else:
                     ncolors = len(levels) - 1
                     levels_seq = levels
