@@ -35,6 +35,7 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pytest",
+    "ruff",
 ]
 docs = [
     "mkdocs>=1.4",
