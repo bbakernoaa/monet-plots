@@ -2,7 +2,23 @@
 Trajectory Plot
 ===============
 
-This example demonstrates how to create a Trajectory plot, combining a map track and a timeseries.
+**What it's for:**
+A Trajectory plot visualizes the path of a parcel of air or a mobile platform (e.g., aircraft,
+ship, or research balloon) over time. It typically combines a horizontal map view of the path
+with a time-series view of variables measured along that path.
+
+**When to use:**
+Use this when you need to understand the history of an air mass (back-trajectories) or
+visualize data collected by mobile sensors. It is essential for source-receptor
+analysis in air quality studies.
+
+**How to read:**
+*   **Map View (Top/Main):** Shows the geographic path (Longitude/Latitude). Markers or
+    colors along the path often represent time or a measured variable.
+*   **Time-Series View (Bottom):** Shows how one or more variables changed as the
+    platform moved along the trajectory.
+*   **Interpretation:** Allows you to correlate specific geographical locations or
+    events along the path with observed changes in the measured data.
 """
 
 import numpy as np

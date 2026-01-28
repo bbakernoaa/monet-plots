@@ -1,8 +1,22 @@
 """
-Basic Plotting
-==============
+Basic Spatial Plotting
+======================
 
-This example demonstrates how to create a Basic Plotting.
+**What it's for:**
+This example demonstrates the foundational `SpatialPlot` class, which provides a
+consistent interface for creating map-based visualizations in MONET Plots.
+
+**When to use:**
+Use `SpatialPlot` when you need full control over a map-based visualization and want
+to use standard Matplotlib or Cartopy commands on a pre-configured axes that
+includes geographic features.
+
+**How to read:**
+*   **Axes:** The plot is in geographic coordinates (typically Latitude/Longitude).
+*   **Features:** It automatically includes geographic context like coastlines and
+    borders to provide spatial orientation.
+*   **Interpretation:** Data is plotted directly onto the map; the location of colors
+    or markers corresponds to their real-world geographical position.
 """
 
 import numpy as np
