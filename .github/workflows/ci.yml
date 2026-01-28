@@ -43,15 +43,15 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .[docs]
-        pip install pre-commit pytest pytest-cov
+        pip install pre-commit pytest pytest-cov pytest-xdist
 
     - name: Run pre-commit
       run: |
         pre-commit run --all-files
 
-    - name: Test with pytest
+    - name: Test with pytest (parallel)
       run: |
-        pytest tests/ --cov=src/monet_plots --cov-report=xml
+        pytest -n auto tests/ --cov=src/monet_plots --cov-report=xml
 
     - name: Build documentation
       run: |
