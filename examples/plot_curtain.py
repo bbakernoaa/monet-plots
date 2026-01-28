@@ -2,7 +2,11 @@
 Curtain
 =======
 
+<<<<<<<< HEAD:examples/plot_curtain.py
 This example demonstrates how to create a Curtain.
+========
+This example demonstrates Curtain.
+>>>>>>>> origin/main:examples/example_curtain.py
 """
 
 import xarray as xr

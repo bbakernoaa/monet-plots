@@ -19,7 +19,6 @@ from .roc_curve import ROCCurvePlot
 from .scatter import ScatterPlot
 from .scorecard import ScorecardPlot
 from .soccer import SoccerPlot
-from .sp_scatter_bias import SpScatterBiasPlot
 from .spatial import SpatialPlot, SpatialTrack
 from .spatial_bias_scatter import SpatialBiasScatterPlot
 from .spatial_contour import SpatialContourPlot

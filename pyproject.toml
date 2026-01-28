@@ -35,6 +35,8 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pytest",
+    "pytest-xdist",
+    "ruff",
 ]
 docs = [
     "mkdocs>=1.4",

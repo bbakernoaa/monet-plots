@@ -2,7 +2,11 @@
 Diurnal Error
 =============
 
+<<<<<<<< HEAD:examples/plot_diurnal_error.py
 This example demonstrates how to create a Diurnal Error.
+========
+This example demonstrates Diurnal Error.
+>>>>>>>> origin/main:examples/example_diurnal_error.py
 """
 
 import pandas as pd

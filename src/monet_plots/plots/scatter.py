@@ -60,7 +60,7 @@ class ScatterPlot(BasePlot):
                     self.df[self.x], self.df[y_col], c=self.df[self.c], **kwargs
                 )
                 if self.colorbar:
-                    self.fig.colorbar(mappable, ax=self.ax)
+                    self.add_colorbar(mappable)
                 # Add regression line manually
                 m, b = np.polyfit(self.df[self.x], self.df[y_col], 1)
                 self.ax.plot(self.df[self.x], m * self.df[self.x] + b, color="red")

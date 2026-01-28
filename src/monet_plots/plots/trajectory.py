@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+import matplotlib.pyplot as plt
 from .base import BasePlot
 from .spatial import SpatialTrack
 from .timeseries import TimeSeriesPlot
@@ -48,10 +49,8 @@ class TrajectoryPlot(BasePlot):
         Args:
             **kwargs: Keyword arguments passed to the plot methods.
         """
-        # If BasePlot created a default figure with one axes, we might want to clear it
-        if self.ax is not None and not isinstance(self.ax, list):
-            self.ax.remove()
-            self.ax = None
+        if self.fig is None:
+            self.fig = plt.figure(figsize=kwargs.get("figsize", (10, 8)))
 
         gs = self.fig.add_gridspec(2, 1, height_ratios=[3, 1])
 
@@ -70,8 +69,8 @@ class TrajectoryPlot(BasePlot):
         track_da = xr.DataArray(values, dims=["time"], coords=coords, name="track_data")
 
         # Pass the DataArray to SpatialTrack
-        plot_kwargs = kwargs.get("spatial_track_kwargs", {}).copy()
-        spatial_track = SpatialTrack(data=track_da, ax=ax0, fig=self.fig)
+        plot_kwargs = kwargs.get("spatial_track_kwargs", {})
+        spatial_track = SpatialTrack(data=track_da, ax=ax0)
         spatial_track.plot(**plot_kwargs)
 
         # Timeseries plot

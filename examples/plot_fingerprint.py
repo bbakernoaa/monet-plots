@@ -2,7 +2,11 @@
 Fingerprint
 ===========
 
+<<<<<<<< HEAD:examples/plot_fingerprint.py
 This example demonstrates how to create a Fingerprint.
+========
+This example demonstrates Fingerprint.
+>>>>>>>> origin/main:examples/example_fingerprint.py
 """
 
 import pandas as pd

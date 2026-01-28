@@ -2,7 +2,11 @@
 Conditional Quantile
 ====================
 
+<<<<<<<< HEAD:examples/plot_conditional_quantile.py
 This example demonstrates how to create a Conditional Quantile.
+========
+This example demonstrates Conditional Quantile.
+>>>>>>>> origin/main:examples/example_conditional_quantile.py
 """
 
 import pandas as pd
