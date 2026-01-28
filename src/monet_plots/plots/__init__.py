@@ -23,7 +23,6 @@ from .spatial import SpatialPlot, SpatialTrack
 from .spatial_bias_scatter import SpatialBiasScatterPlot
 from .spatial_contour import SpatialContourPlot
 from .spatial_imshow import SpatialImshowPlot
-from .spatial_imshow import SpatialImshowPlot
 from .taylor_diagram import TaylorDiagramPlot
 from .timeseries import TimeSeriesPlot
 from .trajectory import TrajectoryPlot
