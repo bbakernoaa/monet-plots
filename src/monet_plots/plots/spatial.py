@@ -433,7 +433,10 @@ class SpatialTrack(SpatialPlot):
 
         scatter_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        # Ensure data is computed if it's a dask array before plotting
+        # Ensure data is computed if it's a dask array before plotting.
+        # Matplotlib's scatter function is not dask-aware and requires
+        # concrete data to determine colors. This is a necessary eager
+        # computation step.
         if hasattr(self.data.data, "dask"):
             plot_data = self.data.compute()
         else:
