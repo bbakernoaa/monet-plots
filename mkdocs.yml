@@ -18,9 +18,7 @@ plugins:
   - gallery:
       examples_dirs: examples
       gallery_dirs: docs/gallery
-  - gallery:
-      examples_dirs: examples
-      gallery_dirs: docs/gallery
+edit_uri: edit/develop/docs/
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
