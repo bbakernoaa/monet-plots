@@ -93,6 +93,16 @@ def test_spatial_plot_init_custom_fig_ax(clear_figures):
     assert isinstance(plot.ax.projection, ccrs.LambertConformal)
 
 
+def test_spatial_plot_init_with_fig_only(clear_figures):
+    """Test SpatialPlot initialization with existing figure but no axes."""
+    fig = plt.figure()
+    plot = SpatialPlot(fig=fig, projection=ccrs.PlateCarree())
+    assert plot.fig is fig
+    assert plot.ax is not None
+    assert isinstance(plot.ax, GeoAxes)
+    assert len(fig.axes) == 1
+
+
 def test_add_features_default_styles(spatial_plot):
     """Test adding features with default styles (e.g., states=True)."""
     initial_collections = len(spatial_plot.ax.collections)
