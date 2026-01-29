@@ -2,7 +2,23 @@
 Upper Air Plot
 ==============
 
-This example demonstrates how to create an Upper Air plot, which combines geopotential height contours and wind barbs.
+**What it's for:**
+An Upper Air plot is a standard meteorological visualization that combines
+geopotential height (represented as contours) and wind (represented as barbs)
+on a single map for a specific atmospheric pressure level.
+
+**When to use:**
+Use this to analyze the synoptic-scale weather patterns at various levels of the
+atmosphere (e.g., 850, 700, 500, or 250 hPa). It is essential for identifying
+ridges, troughs, jet streams, and other features that drive surface weather.
+
+**How to read:**
+*   **Contours:** Lines of equal geopotential height (similar to isobars on a
+    surface map).
+*   **Wind Barbs:** Indicate the wind direction and speed at specific points.
+*   **Interpretation:** The relationship between the height contours and the wind
+    barbs indicates the atmospheric flow. For example, in the mid-latitudes, the
+    wind typically flows roughly parallel to the height contours (geostrophic flow).
 """
 
 import numpy as np

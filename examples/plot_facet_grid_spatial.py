@@ -2,11 +2,23 @@
 Facet Grid Spatial
 ==================
 
-<<<<<<<< HEAD:examples/plot_facet_grid_spatial.py
-This example demonstrates how to create a Facet Grid Spatial.
-========
-This example demonstrates Facet Grid Spatial.
->>>>>>>> origin/main:examples/example_facet_grid_spatial.py
+**What it's for:**
+Facet Grid Spatial is an extension of the facet grid concept applied to geographic
+maps. It allows you to create a matrix of maps, where each map represents a different
+subset of your data (e.g., different models and different timestamps).
+
+**When to use:**
+Use this when you need to compare spatial patterns across multiple dimensions
+simultaneously, such as comparing the output of several different models at
+multiple points in time. It is the most effective way to identify where and
+when models diverge in their spatial predictions.
+
+**How to read:**
+*   **Rows/Columns:** Represent different categorical dimensions (e.g., Time vs. Model).
+*   **Subplots:** Each facet is a complete `SpatialPlot` showing the geographic
+    distribution of a variable.
+*   **Interpretation:** Look for spatial shifts or intensity differences between
+    the maps in different rows and columns.
 """
 
 import xarray as xr

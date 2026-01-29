@@ -1,8 +1,21 @@
 """
-Spatial Contour
-===============
+Spatial Contour Plot
+====================
 
-This example demonstrates how to create a Spatial Contour.
+**What it's for:**
+A Spatial Contour plot visualizes continuous 2D fields (like temperature, pressure, or
+pollutant concentrations) as line or filled contours on a map.
+
+**When to use:**
+Use this to show the spatial distribution and gradients of a variable over a
+geographical region. It is ideal for identifying centers of high/low values and
+observing the overall structure of a field.
+
+**How to read:**
+*   **Contours:** Lines (or boundaries between colors) represent points of equal value.
+*   **Color Scale:** Indicates the magnitude of the variable in each region.
+*   **Interpretation:** Closely spaced contour lines indicate a steep gradient
+    (rapid change over distance), while widely spaced lines indicate a flat field.
 """
 
 import numpy as np
