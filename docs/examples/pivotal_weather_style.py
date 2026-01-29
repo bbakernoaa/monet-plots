@@ -5,6 +5,7 @@ Pivotal Weather Style Example
 This example demonstrates how to use the 'pivotal_weather' style to create a
 spatial plot that mimics the aesthetic of Pivotal Weather maps.
 """
+
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr

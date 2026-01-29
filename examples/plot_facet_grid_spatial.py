@@ -21,9 +21,10 @@ when models diverge in their spatial predictions.
     the maps in different rows and columns.
 """
 
-import xarray as xr
+import cartopy.crs as ccrs
 import numpy as np
 import pandas as pd
+import xarray as xr
 import matplotlib.pyplot as plt
 from monet_plots.plots.facet_grid import FacetGridPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
@@ -85,8 +86,6 @@ def plot_spatial_imshow(*args, **kwargs):
 # 3. Create the FacetGridPlot
 # We want 'time' as rows and 'model' as columns
 # We must pass subplot_kws to ensure Cartopy GeoAxes are created for each facet
-import cartopy.crs as ccrs
-
 grid = FacetGridPlot(
     ds,
     row="time",
