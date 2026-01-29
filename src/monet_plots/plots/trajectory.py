@@ -36,6 +36,8 @@ class TrajectoryPlot(BasePlot):
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
         """
+        if "fig" not in kwargs and "ax" not in kwargs:
+            kwargs["fig"] = plt.figure()
         super().__init__(*args, **kwargs)
         self.longitude = longitude
         self.latitude = latitude
@@ -50,7 +52,10 @@ class TrajectoryPlot(BasePlot):
             **kwargs: Keyword arguments passed to the plot methods.
         """
         if self.fig is None:
-            self.fig = plt.figure(figsize=kwargs.get("figsize", (10, 8)))
+            self.fig = plt.figure(figsize=kwargs.get("figsize", (12, 6)))
+
+        # Ensure constrained_layout to help with alignment
+        self.fig.set_constrained_layout(True)
 
         gs = self.fig.add_gridspec(2, 1, height_ratios=[3, 1])
 
@@ -59,6 +64,10 @@ class TrajectoryPlot(BasePlot):
 
         proj = kwargs.get("projection", ccrs.PlateCarree())
         ax0 = self.fig.add_subplot(gs[0, 0], projection=proj)
+
+        # Set adjustable to 'datalim' to allow the map to fill the horizontal
+        # space while maintaining equal aspect ratio by expanding the limits.
+        ax0.set_adjustable("datalim")
 
         # Create an xarray.DataArray for the trajectory data
         lon = np.asarray(self.longitude)

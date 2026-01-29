@@ -40,6 +40,9 @@ class BasePlot:
                 self.fig = fig
             else:
                 self.fig = ax.figure
+        elif fig is not None:
+            self.fig = fig
+            self.ax = None
         else:
             self.fig, self.ax = plt.subplots(**kwargs)
 

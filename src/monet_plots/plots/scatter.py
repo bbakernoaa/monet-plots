@@ -37,6 +37,8 @@ class ScatterPlot(BasePlot):
             title (str, optional): Title for the plot.
         """
         super().__init__(*args, **kwargs)
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(1, 1, 1)
         self.x = x
         if isinstance(y, str):
             self.y = [y]
