@@ -16,15 +16,21 @@ def to_dataframe(data: Any) -> pd.DataFrame:
     """
     Convert input data to a pandas DataFrame.
 
-    Args:
-        data: Input data. Can be a pandas DataFrame, xarray DataArray,
-              xarray Dataset, or numpy ndarray.
+    Parameters
+    ----------
+    data : Any
+        Input data. Can be a pandas DataFrame, xarray DataArray,
+        xarray Dataset, or numpy ndarray.
 
-    Returns:
+    Returns
+    -------
+    pd.DataFrame
         A pandas DataFrame.
 
-    Raises:
-        TypeError: If the input data type is not supported.
+    Raises
+    ------
+    TypeError
+        If the input data type is not supported.
     """
     if isinstance(data, pd.DataFrame):
         return data
@@ -35,24 +41,19 @@ def to_dataframe(data: Any) -> pd.DataFrame:
         return data.to_dataframe()
 
     if isinstance(data, np.ndarray):
-        if data.ndim == 1:
-            return pd.DataFrame(data, columns=["col_0"])
-            return pd.DataFrame(data, columns=["col_0"])
-        elif data.ndim == 2:
-            return pd.DataFrame(
-                data, columns=[f"col_{i}" for i in range(data.shape[1])]
-            )
-            return pd.DataFrame(
-                data, columns=[f"col_{i}" for i in range(data.shape[1])]
-            )
-        else:
-            raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
+        return _convert_numpy_to_dataframe(data)
 
     raise TypeError(f"Unsupported data type: {type(data).__name__}")
 
 
-def _validate_spatial_plot_params(kwargs):
-    """Validate parameters specific to SpatialPlot."""
+def _validate_spatial_plot_params(kwargs: dict[str, Any]) -> None:
+    """Validate parameters specific to SpatialPlot.
+
+    Parameters
+    ----------
+    kwargs : dict[str, Any]
+        Keyword arguments to validate.
+    """
     if "discrete" in kwargs:
         discrete = kwargs["discrete"]
         if not isinstance(discrete, bool):
@@ -74,8 +75,14 @@ def _validate_spatial_plot_params(kwargs):
     _validate_plotargs(kwargs.get("plotargs"))
 
 
-def _validate_timeseries_plot_params(kwargs):
-    """Validate parameters specific to TimeSeriesPlot."""
+def _validate_timeseries_plot_params(kwargs: dict[str, Any]) -> None:
+    """Validate parameters specific to TimeSeriesPlot.
+
+    Parameters
+    ----------
+    kwargs : dict[str, Any]
+        Keyword arguments to validate.
+    """
     if "x" in kwargs:
         x = kwargs["x"]
         if not isinstance(x, str):
@@ -90,8 +97,14 @@ def _validate_timeseries_plot_params(kwargs):
     _validate_fillargs(kwargs.get("fillargs"))
 
 
-def _validate_plotargs(plotargs):
-    """Validate plotargs parameter."""
+def _validate_plotargs(plotargs: dict[str, Any] | None) -> None:
+    """Validate plotargs parameter.
+
+    Parameters
+    ----------
+    plotargs : dict[str, Any] | None
+        The plot arguments to validate.
+    """
     if plotargs is not None:
         if not isinstance(plotargs, dict):
             raise TypeError(
@@ -104,8 +117,14 @@ def _validate_plotargs(plotargs):
                 raise TypeError(f"colormap must be string, got {type(cmap).__name__}")
 
 
-def _validate_fillargs(fillargs):
-    """Validate fillargs parameter."""
+def _validate_fillargs(fillargs: dict[str, Any] | None) -> None:
+    """Validate fillargs parameter.
+
+    Parameters
+    ----------
+    fillargs : dict[str, Any] | None
+        The fill arguments to validate.
+    """
     if fillargs is not None:
         if not isinstance(fillargs, dict):
             raise TypeError(
@@ -120,92 +139,26 @@ def _validate_fillargs(fillargs):
                 raise ValueError(f"alpha must be between 0 and 1, got {alpha}")
 
 
-def _validate_spatial_plot_params(kwargs):
-    """Validate parameters specific to SpatialPlot."""
-    if "discrete" in kwargs:
-        discrete = kwargs["discrete"]
-        if not isinstance(discrete, bool):
-            raise TypeError(
-                f"discrete parameter must be boolean, got {type(discrete).__name__}"
-            )
-
-    if "ncolors" in kwargs:
-        ncolors = kwargs["ncolors"]
-        if not isinstance(ncolors, int):
-            raise TypeError(
-                f"ncolors parameter must be integer, got {type(ncolors).__name__}"
-            )
-        if ncolors <= 0 or ncolors > 1000:
-            raise ValueError(
-                f"ncolors parameter must be between 1 and 1000, got {ncolors}"
-            )
-
-    _validate_plotargs(kwargs.get("plotargs"))
-
-
-def _validate_timeseries_plot_params(kwargs):
-    """Validate parameters specific to TimeSeriesPlot."""
-    if "x" in kwargs:
-        x = kwargs["x"]
-        if not isinstance(x, str):
-            raise TypeError(f"x parameter must be string, got {type(x).__name__}")
-
-    if "y" in kwargs:
-        y = kwargs["y"]
-        if not isinstance(y, str):
-            raise TypeError(f"y parameter must be string, got {type(y).__name__}")
-
-    _validate_plotargs(kwargs.get("plotargs"))
-    _validate_fillargs(kwargs.get("fillargs"))
-
-
-def _validate_plotargs(plotargs):
-    """Validate plotargs parameter."""
-    if plotargs is not None:
-        if not isinstance(plotargs, dict):
-            raise TypeError(
-                f"plotargs parameter must be dict, got {type(plotargs).__name__}"
-            )
-
-        if "cmap" in plotargs:
-            cmap = plotargs["cmap"]
-            if not isinstance(cmap, str):
-                raise TypeError(f"colormap must be string, got {type(cmap).__name__}")
-
-
-def _validate_fillargs(fillargs):
-    """Validate fillargs parameter."""
-    if fillargs is not None:
-        if not isinstance(fillargs, dict):
-            raise TypeError(
-                f"fillargs parameter must be dict, got {type(fillargs).__name__}"
-            )
-
-        if "alpha" in fillargs:
-            alpha = fillargs["alpha"]
-            if not isinstance(alpha, (int, float)):
-                raise TypeError(f"alpha must be numeric, got {type(alpha).__name__}")
-            if not 0 <= alpha <= 1:
-                raise ValueError(f"alpha must be between 0 and 1, got {alpha}")
-
-
-def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:
+def validate_plot_parameters(plot_class: str, method: str, **kwargs: Any) -> None:
     """
     Validate parameters for plot methods.
 
-    Args:
-        plot_class: The plot class name
-        method: The method name
-        **kwargs: Parameters to validate
+    Parameters
+    ----------
+    plot_class : str
+        The plot class name.
+    method : str
+        The method name.
+    **kwargs : Any
+        Parameters to validate.
 
-    Raises:
-        TypeError: If parameter types are invalid
-        ValueError: If parameter values are invalid
+    Raises
+    ------
+    TypeError
+        If parameter types are invalid.
+    ValueError
+        If parameter values are invalid.
     """
-    if plot_class == "SpatialPlot" and method == "plot":
-        _validate_spatial_plot_params(kwargs)
-    elif plot_class == "TimeSeriesPlot" and method == "plot":
-        _validate_timeseries_plot_params(kwargs)
     if plot_class == "SpatialPlot" and method == "plot":
         _validate_spatial_plot_params(kwargs)
     elif plot_class == "TimeSeriesPlot" and method == "plot":
@@ -216,13 +169,19 @@ def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None
     """
     Validate data array parameters.
 
-    Args:
-        data: Data to validate
-        required_dims: List of required dimension names
+    Parameters
+    ----------
+    data : Any
+        Data to validate.
+    required_dims : list, optional
+        List of required dimension names.
 
-    Raises:
-        TypeError: If data type is invalid
-        ValueError: If data dimensions are invalid
+    Raises
+    ------
+    TypeError
+        If data type is invalid.
+    ValueError
+        If data dimensions are invalid.
     """
     if data is None:
         raise ValueError("data cannot be None")
@@ -240,22 +199,25 @@ def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None
                 raise ValueError(
                     f"required dimension '{dim}' not found in data dimensions {data.dims}"
                 )
-                raise ValueError(
-                    f"required dimension '{dim}' not found in data dimensions {data.dims}"
-                )
 
 
 def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None:
     """
     Validate DataFrame parameters.
 
-    Args:
-        df: DataFrame to validate
-        required_columns: List of required column names
+    Parameters
+    ----------
+    df : Any
+        DataFrame to validate.
+    required_columns : list, optional
+        List of required column names.
 
-    Raises:
-        TypeError: If DataFrame type is invalid
-        ValueError: If DataFrame structure is invalid
+    Raises
+    ------
+    TypeError
+        If DataFrame type is invalid.
+    ValueError
+        If DataFrame structure is invalid.
     """
     if df is None:
         raise ValueError("DataFrame cannot be None")
@@ -272,8 +234,19 @@ def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None
         raise ValueError("DataFrame cannot be empty")
 
 
-def _try_xarray_conversion(data):
-    """Try to convert data to xarray format."""
+def _try_xarray_conversion(data: Any) -> Optional[Any]:
+    """Try to convert data to xarray format.
+
+    Parameters
+    ----------
+    data : Any
+        Data to convert.
+
+    Returns
+    -------
+    Any | None
+        Xarray object or None.
+    """
     if xr is None:
         return None
 
@@ -293,39 +266,24 @@ def _try_xarray_conversion(data):
     return None
 
 
-def _convert_numpy_to_dataframe(data):
-    """Convert numpy array to DataFrame."""
-    if data.ndim == 1:
-        return pd.DataFrame(data, columns=["col_0"])
-    elif data.ndim == 2:
-        return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
-    else:
-        raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
+def _convert_numpy_to_dataframe(data: np.ndarray) -> pd.DataFrame:
+    """Convert numpy array to DataFrame.
 
+    Parameters
+    ----------
+    data : np.ndarray
+        Numpy array to convert.
 
-def _try_xarray_conversion(data):
-    """Try to convert data to xarray format."""
-    if xr is None:
-        return None
+    Returns
+    -------
+    pd.DataFrame
+        Converted DataFrame.
 
-    # Check if already xarray
-    if hasattr(xr, "DataArray") and isinstance(data, xr.DataArray):
-        return data
-    if hasattr(xr, "Dataset") and isinstance(data, xr.Dataset):
-        return data
-
-    # Try xarray-like conversion
-    if hasattr(data, "to_dataset") and hasattr(data, "to_dataframe"):
-        try:
-            return data.to_dataset()
-        except Exception:
-            return None
-
-    return None
-
-
-def _convert_numpy_to_dataframe(data):
-    """Convert numpy array to DataFrame."""
+    Raises
+    ------
+    ValueError
+        If dimensions are not supported.
+    """
     if data.ndim == 1:
         return pd.DataFrame(data, columns=["col_0"])
     elif data.ndim == 2:
@@ -344,19 +302,21 @@ def _normalize_data(data: Any) -> Any:
     - numpy array: converted to DataFrame
     - Other types: converted to DataFrame if possible
 
-    Args:
-        data: Input data of various types
+    Parameters
+    ----------
+    data : Any
+        Input data of various types.
 
-    Returns:
-        Either an xarray DataArray, xarray Dataset, or pandas DataFrame
+    Returns
+    -------
+    Any
+        Either an xarray DataArray, xarray Dataset, or pandas DataFrame.
 
-    Raises:
-        TypeError: If the input data type is not supported
+    Raises
+    ------
+    TypeError
+        If the input data type is not supported.
     """
-    # Try xarray conversion first
-    xarray_result = _try_xarray_conversion(data)
-    if xarray_result is not None:
-        return xarray_result
     # Try xarray conversion first
     xarray_result = _try_xarray_conversion(data)
     if xarray_result is not None:
@@ -369,7 +329,6 @@ def _normalize_data(data: Any) -> Any:
     # Check if data is numpy array
     if isinstance(data, np.ndarray):
         return _convert_numpy_to_dataframe(data)
-        return _convert_numpy_to_dataframe(data)
 
     # Fall back to existing to_dataframe logic for backward compatibility
     return to_dataframe(data)
@@ -379,13 +338,15 @@ def normalize_data(data: Any) -> Any:
     """
     Public API for normalizing data, preferring xarray objects when possible.
 
-    This is the same as _normalize_data but exposed as a public API.
+    Parameters
+    ----------
+    data : Any
+        Input data of various types.
 
-    Args:
-        data: Input data of various types
-
-    Returns:
-        Either an xarray DataArray, xarray Dataset, or pandas DataFrame
+    Returns
+    -------
+    Any
+        Either an xarray DataArray, xarray Dataset, or pandas DataFrame.
     """
     return _normalize_data(data)
 
@@ -423,37 +384,37 @@ def get_plot_kwargs(cmap: Any = None, norm: Any = None, **kwargs: Any) -> dict:
     return kwargs
 
 
-def _dynamic_fig_size(obj):
-    """Try to determine a generic figure size based on the shape of obj
+def _dynamic_fig_size(obj: Any) -> tuple[float, float]:
+    """Try to determine a generic figure size based on the shape of obj.
 
     Parameters
     ----------
-    obj : A 2D xarray DataArray
-        Description of parameter `obj`.
+    obj : Any
+        Object to determine figure size from.
 
     Returns
     -------
-    type
-        Description of returned object.
-
+    tuple[float, float]
+        Width and height in inches.
     """
     scale = 1.0  # Default scale
 
-    if "x" in obj.dims:
-        nx, ny = len(obj.x), len(obj.y)
-        scale = float(ny) / float(nx)
-    elif "latitude" in obj.dims:
-        nx, ny = len(obj.longitude), len(obj.latitude)
-        scale = float(ny) / float(nx)
-    elif "lat" in obj.dims:
-        nx, ny = len(obj.lon), len(obj.lat)
-        scale = float(ny) / float(nx)
+    if hasattr(obj, "dims"):
+        if "x" in obj.dims:
+            nx, ny = len(obj.x), len(obj.y)
+            scale = float(ny) / float(nx)
+        elif "latitude" in obj.dims:
+            nx, ny = len(obj.longitude), len(obj.latitude)
+            scale = float(ny) / float(nx)
+        elif "lat" in obj.dims:
+            nx, ny = len(obj.lon), len(obj.lat)
+            scale = float(ny) / float(nx)
 
     figsize = (10, 10 * scale)
     return figsize
 
 
-def _set_outline_patch_alpha(ax, alpha=0):
+def _set_outline_patch_alpha(ax: Any, alpha: float = 0.0) -> None:
     """Set the transparency of map outline patches for Cartopy GeoAxes.
 
     This function attempts multiple methods to set the alpha (transparency) of
@@ -461,10 +422,11 @@ def _set_outline_patch_alpha(ax, alpha=0):
 
     Parameters
     ----------
-    ax : matplotlib.axes.Axes or cartopy.mpl.geoaxes.GeoAxes
+    ax : Any
         The axes object whose outline transparency should be modified.
-    alpha : float, default 0
-        Alpha value between 0 (fully transparent) and 1 (fully opaque).
+    alpha : float, optional
+        Alpha value between 0 (fully transparent) and 1 (fully opaque),
+        by default 0.0.
 
     Notes
     -----

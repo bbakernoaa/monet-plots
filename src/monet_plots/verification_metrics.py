@@ -241,23 +241,30 @@ def compute_pofd(
     )
 
 
-def compute_auc(x: np.ndarray, y: np.ndarray) -> float:
+def compute_auc(x: Any, y: Any) -> Union[float, xr.DataArray]:
     """
     Calculates Area Under Curve (AUC) using the trapezoidal rule.
 
     Parameters
     ----------
-    x : np.ndarray
+    x : Any
         x-coordinates (e.g., POFD).
-    y : np.ndarray
+    y : Any
         y-coordinates (e.g., POD).
 
     Returns
     -------
-    float
+    Union[float, xr.DataArray]
         The calculated AUC.
     """
-    # Ensure sorted by x
+    if isinstance(x, (xr.DataArray, xr.Dataset)):
+        # xarray integration
+        # Note: np.trapezoid works on DataArrays but returns a DataArray if multiple dims
+        # or a scalar DataArray.
+        res = xr.DataArray(np.trapezoid(y, x))
+        return _update_history(res, "Calculated AUC")
+
+    # Ensure sorted by x for numpy
     sort_idx = np.argsort(x)
     return float(np.trapezoid(y[sort_idx], x[sort_idx]))
 
@@ -333,38 +340,68 @@ def compute_reliability_curve(
 
 
 def compute_brier_score_components(
-    forecasts: np.ndarray, observations: np.ndarray, n_bins: int = 10
-) -> Dict[str, float]:
+    forecasts: Any, observations: Any, n_bins: int = 10
+) -> Dict[str, Any]:
     """
     Decomposes Brier Score into Reliability, Resolution, and Uncertainty.
 
     BS = Reliability - Resolution + Uncertainty
+
+    Parameters
+    ----------
+    forecasts : Any
+        Array-like of forecast probabilities [0, 1].
+    observations : Any
+        Array-like of binary outcomes (0 or 1).
+    n_bins : int, optional
+        Number of bins, by default 10.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing 'reliability', 'resolution', 'uncertainty',
+        and 'brier_score'.
     """
-    N = len(forecasts)
-    base_rate = float(np.mean(observations))
+    if isinstance(observations, (xr.DataArray, xr.Dataset)):
+        base_rate = observations.mean()
+        N = observations.size
+    else:
+        base_rate = np.mean(observations)
+        N = len(forecasts)
+
     uncertainty = base_rate * (1.0 - base_rate)
 
     bin_centers, obs_freq, bin_counts = compute_reliability_curve(
         forecasts, observations, n_bins
     )
 
-    # Filter out empty bins
-    mask = ~np.isnan(obs_freq)
-    bin_centers = bin_centers[mask]
-    obs_freq = obs_freq[mask]
-    bin_counts = bin_counts[mask]
+    # Handle filtering of empty bins
+    if isinstance(obs_freq, xr.DataArray):
+        # Histogram results are small (n_bins), so it's safe to compute for filtering
+        mask = ~obs_freq.isnull()
+        if hasattr(mask.data, "chunks"):
+            mask = mask.compute()
 
-    # Reliability: Weighted average of (forecast - observed_freq)^2
-    reliability = float(np.sum(bin_counts * (bin_centers - obs_freq) ** 2) / N)
+        bin_centers_f = bin_centers.where(mask, drop=True)
+        obs_freq_f = obs_freq.where(mask, drop=True)
+        bin_counts_f = bin_counts.where(mask, drop=True)
 
-    # Resolution: Weighted average of (observed_freq - base_rate)**2
-    resolution = float(np.sum(bin_counts * (obs_freq - base_rate) ** 2) / N)
+        reliability = (bin_counts_f * (bin_centers_f - obs_freq_f) ** 2).sum() / N
+        resolution = (bin_counts_f * (obs_freq_f - base_rate) ** 2).sum() / N
+    else:
+        mask = ~np.isnan(obs_freq)
+        bin_centers_f = bin_centers[mask]
+        obs_freq_f = obs_freq[mask]
+        bin_counts_f = bin_counts[mask]
+
+        reliability = np.sum(bin_counts_f * (bin_centers_f - obs_freq_f) ** 2) / N
+        resolution = np.sum(bin_counts_f * (obs_freq_f - base_rate) ** 2) / N
 
     return {
         "reliability": reliability,
         "resolution": resolution,
-        "uncertainty": float(uncertainty),
-        "brier_score": float(reliability - resolution + uncertainty),
+        "uncertainty": uncertainty,
+        "brier_score": reliability - resolution + uncertainty,
     }
 
 
@@ -387,22 +424,27 @@ def compute_rank_histogram(ensemble: Any, observations: Any) -> Any:
     # Vectorized rank computation
     # Handle Xarray/Dask
     if isinstance(ensemble, xr.DataArray):
-        ensemble = ensemble.data
+        ensemble_data = ensemble.data
+    else:
+        ensemble_data = ensemble
+
     if isinstance(observations, xr.DataArray):
-        observations = observations.data
+        observations_data = observations.data
+    else:
+        observations_data = observations
 
     # ensemble < observations[:, np.newaxis] broadcast comparison
     # This works for both numpy and dask arrays
-    obs_expanded = observations[:, np.newaxis]
-    ranks = (ensemble < obs_expanded).sum(axis=1)
+    obs_expanded = observations_data[:, np.newaxis]
+    ranks = (ensemble_data < obs_expanded).sum(axis=1)
 
     if hasattr(ranks, "chunks"):
         import dask.array as da
 
-        n_members = ensemble.shape[1]
+        n_members = ensemble_data.shape[1]
         counts, _ = da.histogram(ranks, bins=np.arange(n_members + 2) - 0.5)
     else:
-        counts = np.bincount(ranks, minlength=ensemble.shape[1] + 1)
+        counts = np.bincount(ranks, minlength=ensemble_data.shape[1] + 1)
 
     # Return as Xarray for provenance if input was Xarray
     if isinstance(ensemble, (xr.DataArray, xr.Dataset)) or isinstance(
@@ -420,13 +462,13 @@ def compute_rank_histogram(ensemble: Any, observations: Any) -> Any:
 
 
 def compute_rev(
-    hits: float,
-    misses: float,
-    fa: float,
-    cn: float,
-    cost_loss_ratios: np.ndarray,
-    climatology: float,
-) -> np.ndarray:
+    hits: Any,
+    misses: Any,
+    fa: Any,
+    cn: Any,
+    cost_loss_ratios: Any,
+    climatology: Any,
+) -> Any:
     """
     Calculates Relative Economic Value (REV).
 
@@ -436,46 +478,70 @@ def compute_rev(
 
     Parameters
     ----------
-    hits : float
-        Number of hits.
-    misses : float
-        Number of misses.
-    fa : float
-        Number of false alarms.
-    cn : float
-        Number of correct negatives.
-    cost_loss_ratios : np.ndarray
+    hits : Any
+        Number of hits (scalar or array).
+    misses : Any
+        Number of misses (scalar or array).
+    fa : Any
+        Number of false alarms (scalar or array).
+    cn : Any
+        Number of correct negatives (scalar or array).
+    cost_loss_ratios : Any
         Array of cost/loss ratios.
-    climatology : float
-        Climatological base rate.
+    climatology : Any
+        Climatological base rate (scalar or array).
 
     Returns
     -------
-    np.ndarray
-        Array of REV values for each cost/loss ratio.
+    Any
+        Array or DataArray of REV values for each cost/loss ratio.
     """
     n = hits + misses + fa + cn
     alpha = np.asarray(cost_loss_ratios)
     s = (hits + misses) / n
 
+    # Expand dimensions for broadcasting if inputs are arrays
+    # If alpha is 1D and others are scalars, no problem.
+    # If others are arrays (e.g. 2D spatial), we need to broadcast.
+    if isinstance(hits, (np.ndarray, xr.DataArray)) and hits.ndim > 0:
+        if isinstance(hits, xr.DataArray):
+            # Use Xarray broadcasting: Create a DataArray for alpha
+            # with a new dimension name 'cost_loss'
+            alpha_da = xr.DataArray(alpha, coords={"cost_loss": alpha}, dims=["cost_loss"])
+            alpha_broadcast = alpha_da
+        else:
+            # Move alpha to a new dimension to broadcast over hits/misses (numpy)
+            alpha_broadcast = alpha[(...,) + (np.newaxis,) * hits.ndim]
+    else:
+        alpha_broadcast = alpha
+
     # Expected Expense for Forecast
-    e_fcst = alpha * (hits + fa) / n + misses / n
+    e_fcst = alpha_broadcast * (hits + fa) / n + misses / n
 
     # Expected Expense for Climatology
-    e_clim = np.minimum(alpha, s)
+    if isinstance(hits, (np.ndarray, xr.DataArray)):
+        if isinstance(hits, xr.DataArray):
+            e_clim = xr.where(alpha_broadcast < s, alpha_broadcast, s)
+        else:
+            e_clim = np.minimum(alpha_broadcast, s)
+    else:
+        e_clim = np.minimum(alpha, s)
 
     # Expected Expense for Perfect Forecast
-    e_perf = alpha * s
+    e_perf = alpha_broadcast * s
 
     # REV calculation
     numerator = e_clim - e_fcst
     denominator = e_clim - e_perf
 
-    rev = np.divide(
+    if isinstance(hits, (xr.DataArray, xr.Dataset)):
+        rev = numerator / denominator
+        rev = rev.where(denominator != 0, 0)
+        return _update_history(rev, "Calculated REV")
+
+    return np.divide(
         numerator,
         denominator,
-        out=np.zeros_like(denominator),
+        out=np.zeros_like(denominator, dtype=float),
         where=denominator != 0,
     )
-
-    return rev

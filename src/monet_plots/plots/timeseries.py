@@ -1,9 +1,16 @@
 # src/monet_plots/plots/timeseries.py
-import pandas as pd
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
-from .base import BasePlot
+import pandas as pd
+
 from ..plot_utils import normalize_data
-from typing import Any, Union, List, Optional
+from .base import BasePlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
 
 
 class TimeSeriesPlot(BasePlot):
@@ -18,49 +25,71 @@ class TimeSeriesPlot(BasePlot):
         df: Any,
         x: str = "time",
         y: str = "obs",
-        plotargs: dict = {},
-        fillargs: dict = None,
+        plotargs: dict[str, Any] | None = None,
+        fillargs: dict[str, Any] | None = None,
         title: str = "",
-        ylabel: Optional[str] = None,
-        label: Optional[str] = None,
-        *args,
-        **kwargs,
-    ):
+        ylabel: str | None = None,
+        label: str | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize the plot with data and plot settings.
 
-        Args:
-            df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray):
-                DataFrame with the data to plot.
-            x (str): Column name for the x-axis (time).
-            y (str): Column name for the y-axis (values).
-            plotargs (dict): Arguments for the plot.
-            fillargs (dict): Arguments for fill_between.
-            title (str): Title for the plot.
-            ylabel (str, optional): Y-axis label.
-            label (str, optional): Label for the plotted line.
-            *args, **kwargs: Arguments passed to BasePlot.
+        Parameters
+        ----------
+        df : pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray
+            DataFrame with the data to plot.
+        x : str, optional
+            Column name for the x-axis (time), by default 'time'.
+        y : str, optional
+            Column name for the y-axis (values), by default 'obs'.
+        plotargs : dict, optional
+            Arguments for the plot, by default {}.
+        fillargs : dict, optional
+            Arguments for fill_between, by default None.
+        title : str, optional
+            Title for the plot, by default "".
+        ylabel : str, optional
+            Y-axis label, by default None.
+        label : str, optional
+            Label for the plotted line, by default None.
+        *args : Any
+            Positional arguments passed to BasePlot.
+        **kwargs : Any
+            Keyword arguments passed to BasePlot.
         """
         super().__init__(*args, **kwargs)
         self.df = normalize_data(df)
         self.x = x
         self.y = y
-        self.plotargs = plotargs
+        self.plotargs = plotargs if plotargs is not None else {}
         self.fillargs = fillargs if fillargs is not None else {"alpha": 0.2}
         self.title = title
         self.ylabel = ylabel
         self.label = label
 
-    def plot(self, **kwargs):
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the timeseries plot.
 
-        Args:
-            **kwargs: Overrides for plot settings (x, y, title, ylabel, label, etc.)
+        Parameters
+        ----------
+        **kwargs : Any
+            Overrides for plot settings (x, y, title, ylabel, label, etc.)
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object containing the plot.
         """
         # Update attributes from kwargs if provided
         for attr in ["x", "y", "title", "ylabel", "label"]:
             if attr in kwargs:
                 setattr(self, attr, kwargs.pop(attr))
+
+        # Update history for provenance
+        history = self.df.attrs.get("history", "")
+        self.df.attrs["history"] = f"Plotted TimeSeriesPlot; {history}"
 
         import xarray as xr
 
@@ -168,22 +197,36 @@ class TimeSeriesStatsPlot(BasePlot):
     """
 
     def __init__(
-        self, df: Any, col1: str, col2: Union[str, List[str]], *args, **kwargs
-    ):
+        self,
+        df: Any,
+        col1: str,
+        col2: str | list[str],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize the plot with data.
 
-        Args:
-            df (pd.DataFrame, xr.Dataset, etc.): Data containing a time coordinate
-                and the columns to compare. Must be convertible to a pandas
-                DataFrame with a DatetimeIndex.
-            col1 (str): Name of the first column (e.g., 'Obs').
-            col2 (str or list): Name of the second column(s)
-                (e.g., 'Model' or ['Model1', 'Model2']).
-            *args, **kwargs: Arguments passed to BasePlot.
+        Parameters
+        ----------
+        df : pd.DataFrame, xr.Dataset, etc.
+            Data containing a time coordinate and the columns to compare.
+            Must be convertible to a pandas DataFrame with a DatetimeIndex.
+        col1 : str
+            Name of the first column (e.g., 'Obs').
+        col2 : str or list
+            Name of the second column(s) (e.g., 'Model' or ['Model1', 'Model2']).
+        *args : Any
+            Positional arguments passed to BasePlot.
+        **kwargs : Any
+            Keyword arguments passed to BasePlot.
         """
+        from ..plot_utils import to_dataframe
+
         super().__init__(*args, **kwargs)
-        self.df = normalize_data(df)
+        # TimeSeriesStatsPlot requires pandas for its resampling logic
+        self.df = to_dataframe(df)
+
         if not isinstance(self.df.index, pd.DatetimeIndex):
             # Attempt to set 'time' or 'datetime' column as index if not already
             if "datetime" in self.df.columns:
@@ -205,51 +248,75 @@ class TimeSeriesStatsPlot(BasePlot):
             self.col2 = [col2]
         else:
             self.col2 = col2
-        self.stats = {
-            "bias": self._calculate_bias,
-            "rmse": self._calculate_rmse,
-            "corr": self._calculate_corr,
-        }
 
-    def _calculate_bias(self, group, col2_name):
-        """Calculate mean bias for a group."""
-        return (group[col2_name] - group[self.col1]).mean()
-
-    def _calculate_rmse(self, group, col2_name):
-        """Calculate Root Mean Square Error for a group."""
-        return np.sqrt(np.mean((group[col2_name] - group[self.col1]) ** 2))
-
-    def _calculate_corr(self, group, col2_name):
-        """Calculate Pearson correlation for a group."""
-        return group[[self.col1, col2_name]].corr().iloc[0, 1]
-
-    def plot(self, stat: str = "bias", freq: str = "D", **kwargs):
+    def plot(
+        self, stat: str = "bias", freq: str = "D", **kwargs: Any
+    ) -> matplotlib.axes.Axes:
         """
         Generate the time series plot for the chosen statistic.
 
-        Args:
-            stat (str): The statistic to plot. Supported: 'bias', 'rmse', 'corr'.
-            freq (str): The resampling frequency (e.g., 'H', 'D', 'W', 'M').
-            **kwargs: Keyword arguments passed to the pandas plot() method.
+        Parameters
+        ----------
+        stat : str, optional
+            The statistic to plot. Supported: 'bias', 'rmse', 'corr'.
+            By default 'bias'.
+        freq : str, optional
+            The resampling frequency (e.g., 'H', 'D', 'W', 'M'),
+            by default 'D'.
+        **kwargs : Any
+            Keyword arguments passed to the pandas plot() method.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object containing the plot.
+
+        Raises
+        ------
+        ValueError
+            If the requested statistic is not supported.
         """
-        if stat.lower() not in self.stats:
-            msg = f"Statistic '{stat}' not supported. Use one of {list(self.stats.keys())}"
+        stat = stat.lower()
+        if stat not in ["bias", "rmse", "corr"]:
+            msg = f"Statistic '{stat}' not supported. Use one of ['bias', 'rmse', 'corr']"
             raise ValueError(msg)
 
         plot_kwargs = {"grid": True, "marker": "o", "linestyle": "-"}
         plot_kwargs.update(kwargs)
 
         for model_col in self.col2:
+            if stat == "bias":
+                # Vectorized Bias: Mean of (Model - Obs)
+                stat_series = (self.df[model_col] - self.df[self.col1]).resample(freq).mean()
+            elif stat == "rmse":
+                # Vectorized RMSE: Square root of Mean of (Model - Obs)^2
+                stat_series = np.sqrt(
+                    ((self.df[model_col] - self.df[self.col1]) ** 2)
+                    .resample(freq)
+                    .mean()
+                )
+            elif stat == "corr":
+                # Pearson correlation via resample
+                # We use groupby(pd.Grouper) to apply the function to the whole group (multiple columns)
+                stat_series = (
+                    self.df[[self.col1, model_col]]
+                    .groupby(pd.Grouper(freq=freq))
+                    .apply(
+                        lambda x: x[self.col1].corr(x[model_col])
+                        if len(x) > 1
+                        else np.nan
+                    )
+                )
 
-            def stat_func(group):
-                return self.stats[stat.lower()](group, model_col)
-
-            stat_series = self.df.resample(freq).apply(stat_func)
             stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
 
         self.ax.set_ylabel(f"{stat.upper()}")
         self.ax.set_xlabel("Date")
         self.ax.legend()
         self.fig.tight_layout()
+
+        # Update history for provenance
+        history = self.df.attrs.get("history", "")
+        self.df.attrs["history"] = f"Plotted TimeSeriesStatsPlot ({stat}); {history}"
 
         return self.ax
