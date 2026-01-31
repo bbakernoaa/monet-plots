@@ -279,7 +279,7 @@ def compute_reliability_curve(
 
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray, np.ndarray]
+    Tuple[Any, Any, Any]
         Tuple of (bin_centers, observed_frequencies, bin_counts).
     """
     bins = np.linspace(0, 1, n_bins + 1)
@@ -381,8 +381,8 @@ def compute_rank_histogram(ensemble: Any, observations: Any) -> Any:
 
     Returns
     -------
-    np.ndarray
-        Array of counts for each rank (length n_members + 1).
+    Any
+        Array or DataArray of counts for each rank (length n_members + 1).
     """
     # Vectorized rank computation
     # Handle Xarray/Dask
