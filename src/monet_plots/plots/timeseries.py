@@ -278,7 +278,9 @@ class TimeSeriesStatsPlot(BasePlot):
         """
         stat = stat.lower()
         if stat not in ["bias", "rmse", "corr"]:
-            msg = f"Statistic '{stat}' not supported. Use one of ['bias', 'rmse', 'corr']"
+            msg = (
+                f"Statistic '{stat}' not supported. Use one of ['bias', 'rmse', 'corr']"
+            )
             raise ValueError(msg)
 
         plot_kwargs = {"grid": True, "marker": "o", "linestyle": "-"}
@@ -287,7 +289,9 @@ class TimeSeriesStatsPlot(BasePlot):
         for model_col in self.col2:
             if stat == "bias":
                 # Vectorized Bias: Mean of (Model - Obs)
-                stat_series = (self.df[model_col] - self.df[self.col1]).resample(freq).mean()
+                stat_series = (
+                    (self.df[model_col] - self.df[self.col1]).resample(freq).mean()
+                )
             elif stat == "rmse":
                 # Vectorized RMSE: Square root of Mean of (Model - Obs)^2
                 stat_series = np.sqrt(

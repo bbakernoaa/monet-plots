@@ -507,7 +507,9 @@ def compute_rev(
         if isinstance(hits, xr.DataArray):
             # Use Xarray broadcasting: Create a DataArray for alpha
             # with a new dimension name 'cost_loss'
-            alpha_da = xr.DataArray(alpha, coords={"cost_loss": alpha}, dims=["cost_loss"])
+            alpha_da = xr.DataArray(
+                alpha, coords={"cost_loss": alpha}, dims=["cost_loss"]
+            )
             alpha_broadcast = alpha_da
         else:
             # Move alpha to a new dimension to broadcast over hits/misses (numpy)
