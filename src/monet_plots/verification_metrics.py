@@ -241,30 +241,49 @@ def compute_pofd(
     )
 
 
-def compute_auc(x: np.ndarray, y: np.ndarray) -> float:
+def compute_auc(
+    x: Union[np.ndarray, xr.DataArray], y: Union[np.ndarray, xr.DataArray]
+) -> Union[float, xr.DataArray]:
     """
     Calculates Area Under Curve (AUC) using the trapezoidal rule.
 
     Parameters
     ----------
-    x : np.ndarray
+    x : Union[np.ndarray, xr.DataArray]
         x-coordinates (e.g., POFD).
-    y : np.ndarray
+    y : Union[np.ndarray, xr.DataArray]
         y-coordinates (e.g., POD).
 
     Returns
     -------
-    float
-        The calculated AUC.
+    Union[float, xr.DataArray]
+        The calculated AUC (float or xarray.DataArray).
     """
+    x_val = np.asarray(x)
+    y_val = np.asarray(y)
+
     # Ensure sorted by x
-    sort_idx = np.argsort(x)
-    return float(np.trapezoid(y[sort_idx], x[sort_idx]))
+    sort_idx = np.argsort(x_val)
+    auc = np.trapezoid(y_val[sort_idx], x_val[sort_idx])
+
+    if isinstance(x, (xr.DataArray, xr.Dataset)) or isinstance(
+        y, (xr.DataArray, xr.Dataset)
+    ):
+        res = xr.DataArray(auc, name="auc")
+        return _update_history(res, "Calculated AUC")
+
+    return float(auc)
 
 
 def compute_reliability_curve(
-    forecasts: Any, observations: Any, n_bins: int = 10
-) -> Tuple[Any, Any, Any]:
+    forecasts: Union[np.ndarray, xr.DataArray],
+    observations: Union[np.ndarray, xr.DataArray],
+    n_bins: int = 10,
+) -> Tuple[
+    Union[np.ndarray, xr.DataArray],
+    Union[np.ndarray, xr.DataArray],
+    Union[np.ndarray, xr.DataArray],
+]:
     """
     Computes reliability curve statistics.
 
@@ -333,42 +352,82 @@ def compute_reliability_curve(
 
 
 def compute_brier_score_components(
-    forecasts: np.ndarray, observations: np.ndarray, n_bins: int = 10
-) -> Dict[str, float]:
+    forecasts: Union[np.ndarray, xr.DataArray],
+    observations: Union[np.ndarray, xr.DataArray],
+    n_bins: int = 10,
+) -> Dict[str, Union[float, xr.DataArray]]:
     """
     Decomposes Brier Score into Reliability, Resolution, and Uncertainty.
 
     BS = Reliability - Resolution + Uncertainty
+
+    Parameters
+    ----------
+    forecasts : Any
+        Array-like of forecast probabilities [0, 1].
+    observations : Any
+        Array-like of binary outcomes (0 or 1).
+    n_bins : int, optional
+        Number of bins for reliability curve, by default 10.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary with keys 'reliability', 'resolution', 'uncertainty',
+        and 'brier_score'.
     """
-    N = len(forecasts)
-    base_rate = float(np.mean(observations))
+    # Use .size for dimensionality awareness
+    if hasattr(forecasts, "size"):
+        N = forecasts.size
+    else:
+        N = len(forecasts)
+
+    base_rate = observations.mean()
     uncertainty = base_rate * (1.0 - base_rate)
 
     bin_centers, obs_freq, bin_counts = compute_reliability_curve(
         forecasts, observations, n_bins
     )
 
-    # Filter out empty bins
-    mask = ~np.isnan(obs_freq)
+    # Filter out empty bins. Need to compute mask if it's Dask to allow indexing.
+    # obs_freq is small (n_bins), so this is safe and necessary for Xarray.
+    is_lazy = hasattr(obs_freq, "chunks") and obs_freq.chunks is not None
+    if is_lazy:
+        mask = (~np.isnan(obs_freq)).compute()
+    else:
+        mask = ~np.isnan(obs_freq)
+
     bin_centers = bin_centers[mask]
     obs_freq = obs_freq[mask]
     bin_counts = bin_counts[mask]
 
     # Reliability: Weighted average of (forecast - observed_freq)^2
-    reliability = float(np.sum(bin_counts * (bin_centers - obs_freq) ** 2) / N)
+    reliability = (bin_counts * (bin_centers - obs_freq) ** 2).sum() / N
 
     # Resolution: Weighted average of (observed_freq - base_rate)**2
-    resolution = float(np.sum(bin_counts * (obs_freq - base_rate) ** 2) / N)
+    resolution = (bin_counts * (obs_freq - base_rate) ** 2).sum() / N
 
-    return {
+    bs = reliability - resolution + uncertainty
+
+    res = {
         "reliability": reliability,
         "resolution": resolution,
-        "uncertainty": float(uncertainty),
-        "brier_score": float(reliability - resolution + uncertainty),
+        "uncertainty": uncertainty,
+        "brier_score": bs,
     }
 
+    # Update history for all components if they are Xarray
+    for key, value in res.items():
+        if isinstance(value, (xr.DataArray, xr.Dataset)):
+            _update_history(value, f"Computed Brier Score component: {key}")
 
-def compute_rank_histogram(ensemble: Any, observations: Any) -> Any:
+    return res
+
+
+def compute_rank_histogram(
+    ensemble: Union[np.ndarray, xr.DataArray],
+    observations: Union[np.ndarray, xr.DataArray],
+) -> Union[np.ndarray, xr.DataArray]:
     """
     Computes rank histogram counts.
 
@@ -420,49 +479,73 @@ def compute_rank_histogram(ensemble: Any, observations: Any) -> Any:
 
 
 def compute_rev(
-    hits: float,
-    misses: float,
-    fa: float,
-    cn: float,
-    cost_loss_ratios: np.ndarray,
-    climatology: float,
-) -> np.ndarray:
+    hits: Union[float, np.ndarray, xr.DataArray],
+    misses: Union[float, np.ndarray, xr.DataArray],
+    fa: Union[float, np.ndarray, xr.DataArray],
+    cn: Union[float, np.ndarray, xr.DataArray],
+    cost_loss_ratios: Union[np.ndarray, xr.DataArray],
+    climatology: float | None = None,
+) -> Union[np.ndarray, xr.DataArray]:
     """
     Calculates Relative Economic Value (REV).
 
     REV = (E_clim - E_forecast) / (E_clim - E_perfect)
-
     Where E is expected expense per event.
 
     Parameters
     ----------
-    hits : float
-        Number of hits.
-    misses : float
+    hits : Any
+        Number of hits (scalar, numpy array, or xarray.DataArray).
+    misses : Any
         Number of misses.
-    fa : float
+    fa : Any
         Number of false alarms.
-    cn : float
+    cn : Any
         Number of correct negatives.
-    cost_loss_ratios : np.ndarray
-        Array of cost/loss ratios.
-    climatology : float
-        Climatological base rate.
+    cost_loss_ratios : Any
+        Array-like of cost/loss ratios [0, 1].
+    climatology : float, optional
+        Climatological base rate (hits + misses) / n. If None, it is
+        calculated from the input contingency table, by default None.
 
     Returns
     -------
-    np.ndarray
-        Array of REV values for each cost/loss ratio.
+    Any
+        Calculated REV. Returns xarray.DataArray if inputs are xarray.
     """
     n = hits + misses + fa + cn
-    alpha = np.asarray(cost_loss_ratios)
-    s = (hits + misses) / n
+
+    if climatology is not None:
+        s = climatology
+    else:
+        s = (hits + misses) / n
+
+    # Handle alpha broadcasting for Xarray
+    is_xarray = any(
+        isinstance(x, (xr.DataArray, xr.Dataset))
+        for x in [hits, misses, fa, cn, cost_loss_ratios]
+    )
+
+    if is_xarray:
+        if not isinstance(cost_loss_ratios, (xr.DataArray, xr.Dataset)):
+            alpha = xr.DataArray(
+                cost_loss_ratios,
+                coords={"cost_loss_ratio": cost_loss_ratios},
+                dims=["cost_loss_ratio"],
+            )
+        else:
+            alpha = cost_loss_ratios
+    else:
+        alpha = np.asarray(cost_loss_ratios)
 
     # Expected Expense for Forecast
     e_fcst = alpha * (hits + fa) / n + misses / n
 
     # Expected Expense for Climatology
-    e_clim = np.minimum(alpha, s)
+    if is_xarray:
+        e_clim = xr.where(alpha < s, alpha, s)
+    else:
+        e_clim = np.minimum(alpha, s)
 
     # Expected Expense for Perfect Forecast
     e_perf = alpha * s
@@ -471,11 +554,14 @@ def compute_rev(
     numerator = e_clim - e_fcst
     denominator = e_clim - e_perf
 
-    rev = np.divide(
+    if is_xarray:
+        rev = numerator / denominator
+        rev = rev.where(denominator != 0, 0)
+        return _update_history(rev, "Calculated Relative Economic Value (REV)")
+
+    return np.divide(
         numerator,
         denominator,
-        out=np.zeros_like(denominator),
+        out=np.zeros_like(denominator, dtype=float),
         where=denominator != 0,
     )
-
-    return rev

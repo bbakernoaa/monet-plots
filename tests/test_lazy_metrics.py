@@ -69,10 +69,56 @@ def test_lazy_rank_histogram():
 
 
 def test_lazy_rev():
-    """Test REV with vectorized inputs."""
+    """Test REV with vectorized and lazy inputs."""
     cost_loss_ratios = np.linspace(0.1, 0.9, 10)
-    # REV currently takes scalars for hits/misses but vectorized cost_loss_ratios
-    rev = verification_metrics.compute_rev(10, 5, 2, 20, cost_loss_ratios, 0.5)
-    assert len(rev) == 10
-    # REV can be negative if forecast is worse than climatology
-    assert isinstance(rev, np.ndarray)
+
+    # Xarray spatial inputs
+    shape = (5, 5)
+    hits = xr.DataArray(da.from_array(np.random.randint(0, 10, shape), chunks=2), dims=['x', 'y'])
+    misses = xr.DataArray(da.from_array(np.random.randint(0, 10, shape), chunks=2), dims=['x', 'y'])
+    fa = xr.DataArray(da.from_array(np.random.randint(0, 10, shape), chunks=2), dims=['x', 'y'])
+    cn = xr.DataArray(da.from_array(np.random.randint(0, 10, shape), chunks=2), dims=['x', 'y'])
+
+    rev = verification_metrics.compute_rev(hits, misses, fa, cn, cost_loss_ratios)
+
+    assert isinstance(rev, xr.DataArray)
+    assert rev.chunks is not None
+    assert 'cost_loss_ratio' in rev.dims
+    assert rev.shape == (10, 5, 5)
+    assert "Calculated Relative Economic Value" in rev.attrs["history"]
+
+
+def test_lazy_brier_score_components():
+    """Test Brier Score decomposition with lazy multidimensional inputs."""
+    shape = (10, 10)
+    forecasts = np.random.rand(*shape)
+    observations = np.random.randint(0, 2, shape)
+
+    f_lazy = xr.DataArray(da.from_array(forecasts, chunks=5), dims=['x', 'y'])
+    o_lazy = xr.DataArray(da.from_array(observations, chunks=5), dims=['x', 'y'])
+
+    res = verification_metrics.compute_brier_score_components(f_lazy, o_lazy, n_bins=5)
+
+    assert isinstance(res['reliability'], xr.DataArray)
+    assert res['reliability'].chunks is not None
+
+    # Verify correctness against eager
+    res_eager = verification_metrics.compute_brier_score_components(forecasts.flatten(), observations.flatten(), n_bins=5)
+    np.testing.assert_allclose(res['reliability'].compute(), res_eager['reliability'])
+    np.testing.assert_allclose(res['brier_score'].compute(), res_eager['brier_score'])
+    assert "Computed Brier Score component" in res['reliability'].attrs["history"]
+
+
+def test_lazy_auc():
+    """Test AUC with Xarray inputs."""
+    x = xr.DataArray(np.sort(np.random.rand(10)), dims=['threshold'])
+    y = xr.DataArray(np.sort(np.random.rand(10)), dims=['threshold'])
+
+    auc = verification_metrics.compute_auc(x, y)
+
+    assert isinstance(auc, xr.DataArray)
+    assert "Calculated AUC" in auc.attrs["history"]
+
+    # Correctness
+    auc_eager = verification_metrics.compute_auc(x.values, y.values)
+    np.testing.assert_allclose(auc.values, auc_eager)
