@@ -156,8 +156,24 @@ class SoccerPlot(BasePlot):
             else:
                 raise ValueError("metric must be 'fractional' or 'normalized'")
 
-    def plot(self, **kwargs):
-        """Generate the soccer plot."""
+    def plot(self, **kwargs: Any) -> Any:
+        """Generate the soccer plot.
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Matplotlib kwargs for scatter plot.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object.
+
+        Examples
+        --------
+        >>> plot = SoccerPlot(ds, obs_col="obs", mod_col="mod")
+        >>> plot.plot(color='red')
+        """
         # Draw zones
         if self.criteria:
             rect_crit = patches.Rectangle(

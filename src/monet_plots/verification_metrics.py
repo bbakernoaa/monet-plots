@@ -45,6 +45,11 @@ def compute_pod(
     -------
     Union[float, np.ndarray, xr.DataArray]
         The calculated POD.
+
+    Examples
+    --------
+    >>> compute_pod(10, 5)
+    0.6666666666666666
     """
     denominator = hits + misses
     if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [hits, misses]):
@@ -82,6 +87,11 @@ def compute_far(
     -------
     Union[float, np.ndarray, xr.DataArray]
         The calculated FAR.
+
+    Examples
+    --------
+    >>> compute_far(10, 2)
+    0.16666666666666666
     """
     denominator = hits + fa
     if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [hits, fa]):
@@ -119,6 +129,11 @@ def compute_success_ratio(
     -------
     Union[float, np.ndarray, xr.DataArray]
         The calculated Success Ratio.
+
+    Examples
+    --------
+    >>> compute_success_ratio(10, 2)
+    0.8333333333333334
     """
     denominator = hits + fa
     if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [hits, fa]):
@@ -159,6 +174,11 @@ def compute_csi(
     -------
     Union[float, np.ndarray, xr.DataArray]
         The calculated CSI.
+
+    Examples
+    --------
+    >>> compute_csi(10, 5, 2)
+    0.5882352941176471
     """
     denominator = hits + misses + fa
     if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [hits, misses, fa]):
@@ -199,6 +219,11 @@ def compute_frequency_bias(
     -------
     Union[float, np.ndarray, xr.DataArray]
         The calculated Frequency Bias.
+
+    Examples
+    --------
+    >>> compute_frequency_bias(10, 5, 2)
+    0.8
     """
     numerator = hits + fa
     denominator = hits + misses
@@ -237,6 +262,11 @@ def compute_pofd(
     -------
     Union[float, np.ndarray, xr.DataArray]
         The calculated POFD.
+
+    Examples
+    --------
+    >>> compute_pofd(2, 20)
+    0.09090909090909091
     """
     denominator = fa + cn
     if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [fa, cn]):
@@ -353,6 +383,12 @@ def compute_reliability_curve(
     -------
     Tuple[Any, Any, Any]
         Tuple of (bin_centers, observed_frequencies, bin_counts).
+
+    Examples
+    --------
+    >>> forecasts = np.array([0.1, 0.4, 0.8])
+    >>> obs = np.array([0, 0, 1])
+    >>> bc, of, ct = compute_reliability_curve(forecasts, obs, n_bins=2)
     """
     bins = np.linspace(0, 1, n_bins + 1)
     bin_centers = (bins[:-1] + bins[1:]) / 2
@@ -426,6 +462,11 @@ def compute_brier_score_components(
     Dict[str, Any]
         Dictionary with keys 'reliability', 'resolution', 'uncertainty',
         and 'brier_score'.
+
+    Examples
+    --------
+    >>> res = compute_brier_score_components(forecasts, obs, n_bins=5)
+    >>> res['brier_score']
     """
     # Use .size for dimensionality awareness
     if hasattr(forecasts, "size"):
@@ -493,6 +534,12 @@ def compute_rank_histogram(
     -------
     Any
         Array or DataArray of counts for each rank (length n_members + 1).
+
+    Examples
+    --------
+    >>> ensemble = np.random.rand(100, 10)
+    >>> obs = np.random.rand(100)
+    >>> counts = compute_rank_histogram(ensemble, obs)
     """
     # Vectorized rank computation
     # Handle Xarray/Dask
@@ -561,6 +608,10 @@ def compute_rev(
     -------
     Any
         Calculated REV. Returns xarray.DataArray if inputs are xarray.
+
+    Examples
+    --------
+    >>> compute_rev(10, 5, 2, 20, [0.1, 0.5, 0.9])
     """
     n = hits + misses + fa + cn
 

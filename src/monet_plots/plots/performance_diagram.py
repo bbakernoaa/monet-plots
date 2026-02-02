@@ -37,19 +37,35 @@ class PerformanceDiagramPlot(BasePlot):
         y_col: str = "pod",
         counts_cols: Optional[List[str]] = None,
         label_col: Optional[str] = None,
-        **kwargs,
-    ):
-        """
-        Main plotting method.
+        **kwargs: Any,
+    ) -> Any:
+        """Main plotting method.
 
-        Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Input data.
-            x_col (str): Column name for Success Ratio (1-FAR).
-            y_col (str): Column name for POD.
-            counts_cols (list, optional): List of columns [hits, misses, fa, cn]
-                                        to calculate metrics if x_col/y_col not present.
-            label_col (str, optional): Column to use for legend labels.
-            **kwargs: Matplotlib kwargs.
+        Parameters
+        ----------
+        data : Any
+            Input data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray).
+        x_col : str, optional
+            Column name for Success Ratio (1-FAR), by default "success_ratio".
+        y_col : str, optional
+            Column name for POD, by default "pod".
+        counts_cols : List[str], optional
+            List of columns [hits, misses, fa, cn] to calculate metrics
+            if x_col/y_col not present.
+        label_col : str, optional
+            Column to use for legend labels.
+        **kwargs : Any
+            Matplotlib kwargs.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object.
+
+        Examples
+        --------
+        >>> plot = PerformanceDiagramPlot()
+        >>> plot.plot(df, counts_cols=['h', 'm', 'fa', 'cn'])
         """
         # Data Preparation (preserving laziness if xarray/dask)
         df_plot = self._prepare_data(data, x_col, y_col, counts_cols)
