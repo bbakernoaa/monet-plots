@@ -227,12 +227,12 @@ class SoccerPlot(BasePlot):
             )
 
             for i, txt in enumerate(labels):
+                # Ensure we have scalar values for the annotation position
+                b_val = b_vals.iloc[i] if hasattr(b_vals, "iloc") else b_vals[i]
+                e_val = e_vals.iloc[i] if hasattr(e_vals, "iloc") else e_vals[i]
                 self.ax.annotate(
-                    txt,
-                    (
-                        b_vals.iloc[i] if hasattr(b_vals, "iloc") else b_vals[i],
-                        e_vals.iloc[i] if hasattr(e_vals, "iloc") else e_vals[i],
-                    ),
+                    str(txt),
+                    (float(b_val), float(e_val)),
                     xytext=(5, 5),
                     textcoords="offset points",
                 )
