@@ -199,8 +199,16 @@ class SoccerPlot(BasePlot):
             # Ensure we have concrete values for annotation
             if hasattr(labels, "compute"):
                 labels = labels.compute()
-            b_vals = self.bias_data.compute() if hasattr(self.bias_data, "compute") else self.bias_data
-            e_vals = self.error_data.compute() if hasattr(self.error_data, "compute") else self.error_data
+            b_vals = (
+                self.bias_data.compute()
+                if hasattr(self.bias_data, "compute")
+                else self.bias_data
+            )
+            e_vals = (
+                self.error_data.compute()
+                if hasattr(self.error_data, "compute")
+                else self.error_data
+            )
 
             for i, txt in enumerate(labels):
                 self.ax.annotate(

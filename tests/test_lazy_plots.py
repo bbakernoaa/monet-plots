@@ -47,7 +47,9 @@ def test_performance_diagram_lazy():
     """Verify PerformanceDiagramPlot handles lazy dask inputs."""
     shape = (100,)
     hits = xr.DataArray(
-        da.from_array(np.random.randint(1, 10, shape), chunks=20), dims=["x"], name="hits"
+        da.from_array(np.random.randint(1, 10, shape), chunks=20),
+        dims=["x"],
+        name="hits",
     )
     misses = xr.DataArray(
         da.from_array(np.random.randint(1, 10, shape), chunks=20),

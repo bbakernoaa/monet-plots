@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 import dask.array as da
-from typing import Tuple, Union, Dict, Any, Optional
+from typing import Tuple, Union, Dict, Any
 
 
 def _update_history(obj: Any, msg: str) -> Any:
