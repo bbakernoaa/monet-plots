@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
-from typing import Tuple, Union, Dict, Any
+import dask.array as da
+from typing import Tuple, Union, Dict, Any, Optional
 
 
 def _update_history(obj: Any, msg: str) -> Any:
@@ -46,7 +47,7 @@ def compute_pod(
         The calculated POD.
     """
     denominator = hits + misses
-    if isinstance(hits, (xr.DataArray, xr.Dataset)):
+    if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [hits, misses]):
         res = hits / denominator
         res = res.where(denominator != 0, 0)
         return _update_history(res, "Calculated POD")
@@ -54,7 +55,9 @@ def compute_pod(
     return np.divide(
         hits,
         denominator,
-        out=np.zeros_like(denominator, dtype=float),
+        out=np.zeros_like(denominator, dtype=float)
+        if isinstance(denominator, np.ndarray)
+        else None,
         where=denominator != 0,
     )
 
@@ -81,7 +84,7 @@ def compute_far(
         The calculated FAR.
     """
     denominator = hits + fa
-    if isinstance(hits, (xr.DataArray, xr.Dataset)):
+    if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [hits, fa]):
         res = fa / denominator
         res = res.where(denominator != 0, 0)
         return _update_history(res, "Calculated FAR")
@@ -89,7 +92,9 @@ def compute_far(
     return np.divide(
         fa,
         denominator,
-        out=np.zeros_like(denominator, dtype=float),
+        out=np.zeros_like(denominator, dtype=float)
+        if isinstance(denominator, np.ndarray)
+        else None,
         where=denominator != 0,
     )
 
@@ -116,7 +121,7 @@ def compute_success_ratio(
         The calculated Success Ratio.
     """
     denominator = hits + fa
-    if isinstance(hits, (xr.DataArray, xr.Dataset)):
+    if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [hits, fa]):
         res = hits / denominator
         res = res.where(denominator != 0, 0)
         return _update_history(res, "Calculated Success Ratio")
@@ -124,7 +129,9 @@ def compute_success_ratio(
     return np.divide(
         hits,
         denominator,
-        out=np.zeros_like(denominator, dtype=float),
+        out=np.zeros_like(denominator, dtype=float)
+        if isinstance(denominator, np.ndarray)
+        else None,
         where=denominator != 0,
     )
 
@@ -154,7 +161,7 @@ def compute_csi(
         The calculated CSI.
     """
     denominator = hits + misses + fa
-    if isinstance(hits, (xr.DataArray, xr.Dataset)):
+    if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [hits, misses, fa]):
         res = hits / denominator
         res = res.where(denominator != 0, 0)
         return _update_history(res, "Calculated CSI")
@@ -162,7 +169,9 @@ def compute_csi(
     return np.divide(
         hits,
         denominator,
-        out=np.zeros_like(denominator, dtype=float),
+        out=np.zeros_like(denominator, dtype=float)
+        if isinstance(denominator, np.ndarray)
+        else None,
         where=denominator != 0,
     )
 
@@ -193,7 +202,7 @@ def compute_frequency_bias(
     """
     numerator = hits + fa
     denominator = hits + misses
-    if isinstance(hits, (xr.DataArray, xr.Dataset)):
+    if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [hits, misses, fa]):
         res = numerator / denominator
         res = res.where(denominator != 0, 0)
         return _update_history(res, "Calculated Frequency Bias")
@@ -201,7 +210,9 @@ def compute_frequency_bias(
     return np.divide(
         numerator,
         denominator,
-        out=np.zeros_like(denominator, dtype=float),
+        out=np.zeros_like(denominator, dtype=float)
+        if isinstance(denominator, np.ndarray)
+        else None,
         where=denominator != 0,
     )
 
@@ -228,7 +239,7 @@ def compute_pofd(
         The calculated POFD.
     """
     denominator = fa + cn
-    if isinstance(fa, (xr.DataArray, xr.Dataset)):
+    if any(isinstance(x, (xr.DataArray, xr.Dataset)) for x in [fa, cn]):
         res = fa / denominator
         res = res.where(denominator != 0, 0)
         return _update_history(res, "Calculated POFD")
@@ -236,16 +247,41 @@ def compute_pofd(
     return np.divide(
         fa,
         denominator,
-        out=np.zeros_like(denominator, dtype=float),
+        out=np.zeros_like(denominator, dtype=float)
+        if isinstance(denominator, np.ndarray)
+        else None,
         where=denominator != 0,
     )
 
 
+def _auc_core(x: np.ndarray, y: np.ndarray) -> float:
+    """Core logic for AUC calculation using trapezoidal rule.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        x-coordinates.
+    y : np.ndarray
+        y-coordinates.
+
+    Returns
+    -------
+    float
+        The calculated AUC.
+    """
+    sort_idx = np.argsort(x)
+    return np.trapezoid(y[sort_idx], x[sort_idx])
+
+
 def compute_auc(
-    x: Union[np.ndarray, xr.DataArray], y: Union[np.ndarray, xr.DataArray]
+    x: Union[np.ndarray, xr.DataArray],
+    y: Union[np.ndarray, xr.DataArray],
+    dim: str = "threshold",
 ) -> Union[float, xr.DataArray]:
     """
     Calculates Area Under Curve (AUC) using the trapezoidal rule.
+
+    Supports lazy evaluation via Dask when provided with xarray objects.
 
     Parameters
     ----------
@@ -253,26 +289,43 @@ def compute_auc(
         x-coordinates (e.g., POFD).
     y : Union[np.ndarray, xr.DataArray]
         y-coordinates (e.g., POD).
+    dim : str, optional
+        The dimension to integrate over, by default "threshold".
 
     Returns
     -------
     Union[float, xr.DataArray]
         The calculated AUC (float or xarray.DataArray).
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> x = np.array([0.0, 0.5, 1.0])
+    >>> y = np.array([0.0, 0.8, 1.0])
+    >>> compute_auc(x, y)
+    0.65
     """
-    x_val = np.asarray(x)
-    y_val = np.asarray(y)
-
-    # Ensure sorted by x
-    sort_idx = np.argsort(x_val)
-    auc = np.trapezoid(y_val[sort_idx], x_val[sort_idx])
-
     if isinstance(x, (xr.DataArray, xr.Dataset)) or isinstance(
         y, (xr.DataArray, xr.Dataset)
     ):
-        res = xr.DataArray(auc, name="auc")
+        # Ensure we are working with DataArrays
+        x_da = x if isinstance(x, xr.DataArray) else xr.DataArray(x)
+        y_da = y if isinstance(y, xr.DataArray) else xr.DataArray(y)
+
+        # Handle Xarray/Dask lazily using apply_ufunc
+        # Core dimensions must be unchunked for parallelized ufunc
+        res = xr.apply_ufunc(
+            _auc_core,
+            x_da.chunk({dim: -1}),
+            y_da.chunk({dim: -1}),
+            input_core_dims=[[dim], [dim]],
+            dask="parallelized",
+            output_dtypes=[float],
+        )
+        res.name = "auc"
         return _update_history(res, "Calculated AUC")
 
-    return float(auc)
+    return float(_auc_core(np.asarray(x), np.asarray(y)))
 
 
 def compute_reliability_curve(
@@ -310,8 +363,6 @@ def compute_reliability_curve(
     )
 
     if is_dask:
-        import dask.array as da
-
         f_data = forecasts.data if isinstance(forecasts, xr.DataArray) else forecasts
         o_data = (
             observations.data
@@ -456,8 +507,6 @@ def compute_rank_histogram(
     ranks = (ensemble < obs_expanded).sum(axis=1)
 
     if hasattr(ranks, "chunks"):
-        import dask.array as da
-
         n_members = ensemble.shape[1]
         counts, _ = da.histogram(ranks, bins=np.arange(n_members + 2) - 0.5)
     else:

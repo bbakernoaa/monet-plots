@@ -3,6 +3,7 @@
 
 import matplotlib.patches as patches
 import numpy as np
+import xarray as xr
 from .base import BasePlot
 from ..plot_utils import to_dataframe
 from typing import Any, Optional, Dict
@@ -28,25 +29,44 @@ class SoccerPlot(BasePlot):
         metric: str = "fractional",
         goal: Optional[Dict[str, float]] = {"bias": 30.0, "error": 50.0},
         criteria: Optional[Dict[str, float]] = {"bias": 60.0, "error": 75.0},
-        **kwargs,
-    ):
-        """
-        Initialize Soccer Plot.
+        **kwargs: Any,
+    ) -> None:
+        """Initialize Soccer Plot.
 
-        Args:
-            data: Input data (DataFrame, DataArray, etc.).
-            obs_col: Column name for observations. Required if bias/error not provided.
-            mod_col: Column name for model values. Required if bias/error not provided.
-            bias_col: Column name for pre-calculated bias.
-            error_col: Column name for pre-calculated error.
-            label_col: Column name for labeling points.
-            metric: Type of metric to calculate if obs/mod provided ('fractional' or 'normalized').
-            goal: Dictionary with 'bias' and 'error' thresholds for the goal zone.
-            criteria: Dictionary with 'bias' and 'error' thresholds for the criteria zone.
-            **kwargs: Arguments passed to BasePlot.
+        Parameters
+        ----------
+        data : Any
+            Input data (DataFrame, DataArray, etc.).
+        obs_col : str, optional
+            Column name for observations. Required if bias/error not provided.
+        mod_col : str, optional
+            Column name for model values. Required if bias/error not provided.
+        bias_col : str, optional
+            Column name for pre-calculated bias.
+        error_col : str, optional
+            Column name for pre-calculated error.
+        label_col : str, optional
+            Column name for labeling points.
+        metric : str, optional
+            Type of metric to calculate if obs/mod provided ('fractional' or 'normalized').
+        goal : dict, optional
+            Dictionary with 'bias' and 'error' thresholds for the goal zone.
+        criteria : dict, optional
+            Dictionary with 'bias' and 'error' thresholds for the criteria zone.
+        **kwargs : Any
+            Arguments passed to BasePlot.
+
+        Examples
+        --------
+        >>> plot = SoccerPlot(ds, obs_col="obs", mod_col="mod")
         """
         super().__init__(**kwargs)
-        self.df = to_dataframe(data)
+
+        if isinstance(data, (xr.DataArray, xr.Dataset)):
+            self.data = data
+        else:
+            self.data = to_dataframe(data)
+
         self.bias_col = bias_col
         self.error_col = error_col
         self.label_col = label_col
@@ -61,50 +81,80 @@ class SoccerPlot(BasePlot):
                 )
             self._calculate_metrics(obs_col, mod_col)
         else:
-            self.bias_data = self.df[bias_col]
-            self.error_data = self.df[error_col]
+            self.bias_data = self.data[bias_col]
+            self.error_data = self.data[error_col]
 
-    def _calculate_metrics(self, obs_col: str, mod_col: str):
-        """Calculate MFB/MFE or NMB/NME."""
-        obs = self.df[obs_col]
-        mod = self.df[mod_col]
+    def _calculate_metrics(self, obs_col: str, mod_col: str) -> None:
+        """Calculate MFB/MFE or NMB/NME. Preserves Xarray/Dask laziness.
 
-        if self.metric == "fractional":
-            # Mean Fractional Bias and Error
-            denom = (obs + mod).astype(float)
-            self.bias_data = np.divide(
-                200.0 * (mod - obs),
-                denom,
-                out=np.full(denom.shape, np.nan),
-                where=denom != 0,
-            )
-            self.error_data = np.divide(
-                200.0 * np.abs(mod - obs),
-                denom,
-                out=np.full(denom.shape, np.nan),
-                where=denom != 0,
-            )
-            self.xlabel = "Mean Fractional Bias (%)"
-            self.ylabel = "Mean Fractional Error (%)"
-        elif self.metric == "normalized":
-            # Normalized Mean Bias and Error
-            obs_float = obs.astype(float)
-            self.bias_data = np.divide(
-                100.0 * (mod - obs),
-                obs_float,
-                out=np.full(obs_float.shape, np.nan),
-                where=obs_float != 0,
-            )
-            self.error_data = np.divide(
-                100.0 * np.abs(mod - obs),
-                obs_float,
-                out=np.full(obs_float.shape, np.nan),
-                where=obs_float != 0,
-            )
-            self.xlabel = "Normalized Mean Bias (%)"
-            self.ylabel = "Normalized Mean Error (%)"
+        Parameters
+        ----------
+        obs_col : str
+            Column name for observations.
+        mod_col : str
+            Column name for model values.
+
+        Examples
+        --------
+        >>> plot._calculate_metrics("obs", "mod")
+        """
+        obs = self.data[obs_col]
+        mod = self.data[mod_col]
+
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
+            if self.metric == "fractional":
+                denom = obs + mod
+                self.bias_data = (200.0 * (mod - obs) / denom).where(denom != 0, np.nan)
+                self.error_data = (200.0 * np.abs(mod - obs) / denom).where(
+                    denom != 0, np.nan
+                )
+                self.xlabel = "Mean Fractional Bias (%)"
+                self.ylabel = "Mean Fractional Error (%)"
+            elif self.metric == "normalized":
+                self.bias_data = (100.0 * (mod - obs) / obs).where(obs != 0, np.nan)
+                self.error_data = (100.0 * np.abs(mod - obs) / obs).where(
+                    obs != 0, np.nan
+                )
+                self.xlabel = "Normalized Mean Bias (%)"
+                self.ylabel = "Normalized Mean Error (%)"
+            else:
+                raise ValueError("metric must be 'fractional' or 'normalized'")
         else:
-            raise ValueError("metric must be 'fractional' or 'normalized'")
+            # Pandas/NumPy fallback
+            if self.metric == "fractional":
+                denom = (obs + mod).astype(float)
+                self.bias_data = np.divide(
+                    200.0 * (mod - obs),
+                    denom,
+                    out=np.full(denom.shape, np.nan),
+                    where=denom != 0,
+                )
+                self.error_data = np.divide(
+                    200.0 * np.abs(mod - obs),
+                    denom,
+                    out=np.full(denom.shape, np.nan),
+                    where=denom != 0,
+                )
+                self.xlabel = "Mean Fractional Bias (%)"
+                self.ylabel = "Mean Fractional Error (%)"
+            elif self.metric == "normalized":
+                obs_float = obs.astype(float)
+                self.bias_data = np.divide(
+                    100.0 * (mod - obs),
+                    obs_float,
+                    out=np.full(obs_float.shape, np.nan),
+                    where=obs_float != 0,
+                )
+                self.error_data = np.divide(
+                    100.0 * np.abs(mod - obs),
+                    obs_float,
+                    out=np.full(obs_float.shape, np.nan),
+                    where=obs_float != 0,
+                )
+                self.xlabel = "Normalized Mean Bias (%)"
+                self.ylabel = "Normalized Mean Error (%)"
+            else:
+                raise ValueError("metric must be 'fractional' or 'normalized'")
 
     def plot(self, **kwargs):
         """Generate the soccer plot."""
@@ -140,14 +190,25 @@ class SoccerPlot(BasePlot):
         # Plot points
         scatter_kwargs = {"zorder": 5}
         scatter_kwargs.update(kwargs)
+        # Matplotlib will trigger computation if dask-backed
         self.ax.scatter(self.bias_data, self.error_data, **scatter_kwargs)
 
         # Labels
         if self.label_col is not None:
-            for i, txt in enumerate(self.df[self.label_col]):
+            labels = self.data[self.label_col]
+            # Ensure we have concrete values for annotation
+            if hasattr(labels, "compute"):
+                labels = labels.compute()
+            b_vals = self.bias_data.compute() if hasattr(self.bias_data, "compute") else self.bias_data
+            e_vals = self.error_data.compute() if hasattr(self.error_data, "compute") else self.error_data
+
+            for i, txt in enumerate(labels):
                 self.ax.annotate(
                     txt,
-                    (self.bias_data.iloc[i], self.error_data.iloc[i]),
+                    (
+                        b_vals.iloc[i] if hasattr(b_vals, "iloc") else b_vals[i],
+                        e_vals.iloc[i] if hasattr(e_vals, "iloc") else e_vals[i],
+                    ),
                     xytext=(5, 5),
                     textcoords="offset points",
                 )
@@ -158,8 +219,8 @@ class SoccerPlot(BasePlot):
             limit = max(limit, self.criteria["bias"] * 1.1)
             limit_y = self.criteria["error"] * 1.1
         else:
-            limit = max(limit, self.bias_data.abs().max() * 1.1)
-            limit_y = self.error_data.max() * 1.1
+            limit = max(limit, float(self.bias_data.abs().max()) * 1.1)
+            limit_y = float(self.error_data.max()) * 1.1
 
         self.ax.set_xlim(-limit, limit)
         self.ax.set_ylim(0, limit_y)

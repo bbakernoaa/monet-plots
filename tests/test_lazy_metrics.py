@@ -132,3 +132,19 @@ def test_lazy_auc():
     # Correctness
     auc_eager = verification_metrics.compute_auc(x.values, y.values)
     np.testing.assert_allclose(auc.values, auc_eager)
+
+
+def test_lazy_auc_dask():
+    """Test that AUC remains lazy when given dask-backed xarray inputs."""
+    x_data = np.sort(np.random.rand(100))
+    y_data = np.sort(np.random.rand(100))
+
+    x = xr.DataArray(da.from_array(x_data, chunks=10), dims=["threshold"])
+    y = xr.DataArray(da.from_array(y_data, chunks=10), dims=["threshold"])
+
+    auc = verification_metrics.compute_auc(x, y)
+
+    assert hasattr(auc.data, "chunks"), "AUC should be a dask array"
+    # Verify correctness
+    expected = np.trapezoid(y_data, x_data)
+    np.testing.assert_allclose(auc.compute(), expected)

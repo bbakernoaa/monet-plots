@@ -1,5 +1,7 @@
 import numpy as np
-from typing import Optional, Any, List
+import xarray as xr
+from typing import Optional, Any, List, Union
+import pandas as pd
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
 from ..verification_metrics import compute_pod, compute_success_ratio
@@ -49,20 +51,20 @@ class PerformanceDiagramPlot(BasePlot):
             label_col (str, optional): Column to use for legend labels.
             **kwargs: Matplotlib kwargs.
         """
-        df = to_dataframe(data)
-        # TDD Anchor: Test validation raises error on missing cols
-        self._validate_inputs(df, x_col, y_col, counts_cols)
+        # Data Preparation (preserving laziness if xarray/dask)
+        df_plot = self._prepare_data(data, x_col, y_col, counts_cols)
 
-        # Data Preparation
-        df_plot = self._prepare_data(df, x_col, y_col, counts_cols)
+        # Validation
+        self._validate_inputs(df_plot, x_col, y_col, counts_cols)
 
         # Plot Background (Isolines)
         self._draw_background()
 
         # Plot Data
-        # TDD Anchor: Verify scatter points match input data coordinates
         if label_col:
+            # Both Pandas and Xarray support groupby
             for name, group in df_plot.groupby(label_col):
+                # Matplotlib calls will trigger computation if dask-backed
                 self.ax.plot(
                     group[x_col],
                     group[y_col],
@@ -84,24 +86,97 @@ class PerformanceDiagramPlot(BasePlot):
         self.ax.set_ylabel("Probability of Detection (POD)")
         self.ax.set_aspect("equal")
 
-    def _validate_inputs(self, data, x, y, counts):
-        """Validates input dataframe structure."""
-        if counts:
-            validate_dataframe(data, required_columns=counts)
-        else:
-            validate_dataframe(data, required_columns=[x, y])
+        return self.ax
 
-    def _prepare_data(self, data, x, y, counts):
+    def _validate_inputs(
+        self,
+        data: Union[pd.DataFrame, xr.Dataset, xr.DataArray],
+        x: str,
+        y: str,
+        counts: Optional[List[str]],
+    ) -> None:
+        """Validates input structure (handles DataFrame and Xarray).
+
+        Parameters
+        ----------
+        data : Union[pd.DataFrame, xr.Dataset, xr.DataArray]
+            The input data to validate.
+        x : str
+            The x-axis column/variable name.
+        y : str
+            The y-axis column/variable name.
+        counts : Optional[List[str]]
+            List of contingency table count names.
+
+        Examples
+        --------
+        >>> plot = PerformanceDiagramPlot()
+        >>> plot._validate_inputs(df, "sr", "pod", None)
         """
-        Calculates metrics if counts provided, otherwise returns subset.
-        TDD Anchor: Test calculation logic: SR = hits/(hits+fa), POD = hits/(hits+miss).
+        required = counts if counts else [x, y]
+
+        if isinstance(data, (xr.DataArray, xr.Dataset)):
+            for col in required:
+                if col not in data.coords and col not in getattr(data, "data_vars", []):
+                    # For DataArray, the name might be the variable
+                    if isinstance(data, xr.DataArray) and data.name == col:
+                        continue
+                    raise ValueError(f"Missing required variable/coordinate: {col}")
+        else:
+            validate_dataframe(data, required_columns=required)
+
+    def _prepare_data(
+        self,
+        data: Any,
+        x: str,
+        y: str,
+        counts: Optional[List[str]],
+    ) -> Union[pd.DataFrame, xr.Dataset]:
+        """Calculates metrics if counts provided, otherwise returns subset.
+
+        Preserves Dask laziness for Xarray inputs.
+
+        Parameters
+        ----------
+        data : Any
+            The input data.
+        x : str
+            The Success Ratio column/variable name.
+        y : str
+            The POD column/variable name.
+        counts : Optional[List[str]]
+            List of columns [hits, misses, fa, cn].
+
+        Returns
+        -------
+        Union[pd.DataFrame, xr.Dataset]
+            The prepared data with metrics calculated.
+
+        Examples
+        --------
+        >>> plot = PerformanceDiagramPlot()
+        >>> ds_out = plot._prepare_data(ds, "sr", "pod", ["h", "m", "fa", "cn"])
         """
-        df = data.copy()
         if counts:
             hits_col, misses_col, fa_col, cn_col = counts
-            df[x] = compute_success_ratio(df[hits_col], df[fa_col])
-            df[y] = compute_pod(df[hits_col], df[misses_col])
-        return df
+            sr = compute_success_ratio(data[hits_col], data[fa_col])
+            pod = compute_pod(data[hits_col], data[misses_col])
+
+            if isinstance(data, (xr.DataArray, xr.Dataset)):
+                # Return Xarray with new variables
+                if isinstance(data, xr.DataArray):
+                    ds = data.to_dataset()
+                else:
+                    ds = data.copy()
+                ds[x] = sr
+                ds[y] = pod
+                return ds
+            else:
+                df = to_dataframe(data).copy()
+                df[x] = sr
+                df[y] = pod
+                return df
+        return data
 
     def _draw_background(self):
         """
