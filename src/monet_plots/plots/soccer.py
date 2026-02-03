@@ -1,12 +1,12 @@
 # src/monet_plots/plots/soccer.py
 """Soccer plot for model evaluation."""
+
 from __future__ import annotations
 
 import matplotlib.patches as patches
 import numpy as np
-import pandas as pd
 import xarray as xr
-from typing import Any, Optional, Dict, Union, TYPE_CHECKING
+from typing import Any, Optional, Dict, TYPE_CHECKING
 
 from .base import BasePlot
 from ..plot_utils import normalize_data
@@ -171,7 +171,9 @@ class SoccerPlot(BasePlot):
         # Update history if Xarray
         if isinstance(self.bias_data, xr.DataArray):
             history = self.bias_data.attrs.get("history", "")
-            self.bias_data.attrs["history"] = f"Calculated {self.metric} soccer metrics; {history}"
+            self.bias_data.attrs["history"] = (
+                f"Calculated {self.metric} soccer metrics; {history}"
+            )
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the soccer plot.
