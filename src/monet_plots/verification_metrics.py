@@ -1,6 +1,6 @@
 import numpy as np
 import xarray as xr
-from typing import Tuple, Union, Dict, Any
+from typing import Tuple, Union, Dict, Any, Optional
 
 
 def _update_history(obj: Any, msg: str) -> Any:
@@ -242,10 +242,14 @@ def compute_pofd(
 
 
 def compute_auc(
-    x: Union[np.ndarray, xr.DataArray], y: Union[np.ndarray, xr.DataArray]
+    x: Union[np.ndarray, xr.DataArray],
+    y: Union[np.ndarray, xr.DataArray],
+    dim: Optional[str] = None,
 ) -> Union[float, xr.DataArray]:
     """
     Calculates Area Under Curve (AUC) using the trapezoidal rule.
+
+    Supports lazy evaluation via Dask and multidimensional xarray objects.
 
     Parameters
     ----------
@@ -253,12 +257,47 @@ def compute_auc(
         x-coordinates (e.g., POFD).
     y : Union[np.ndarray, xr.DataArray]
         y-coordinates (e.g., POD).
+    dim : str, optional
+        The dimension along which to integrate. Required if x, y are
+        multidimensional xarray objects. If not provided and inputs are
+        1D xarray objects, the only dimension is used.
 
     Returns
     -------
     Union[float, xr.DataArray]
-        The calculated AUC (float or xarray.DataArray).
+        The calculated AUC. Returns xarray.DataArray if inputs are xarray.
     """
+    if isinstance(x, xr.DataArray) and isinstance(y, xr.DataArray):
+        if dim is None:
+            if x.ndim == 1:
+                dim = x.dims[0]
+            else:
+                raise ValueError(
+                    "dim must be provided for multidimensional xarray inputs"
+                )
+
+        # Ensure the integration dimension is not chunked for the ufunc
+        x = x.chunk({dim: -1})
+        y = y.chunk({dim: -1})
+
+        def _auc_ufunc(x_arr, y_arr):
+            # x_arr and y_arr have the core dimension as the last axis
+            sort_idx = np.argsort(x_arr, axis=-1)
+            x_sorted = np.take_along_axis(x_arr, sort_idx, axis=-1)
+            y_sorted = np.take_along_axis(y_arr, sort_idx, axis=-1)
+            return np.trapezoid(y_sorted, x_sorted, axis=-1)
+
+        res = xr.apply_ufunc(
+            _auc_ufunc,
+            x,
+            y,
+            input_core_dims=[[dim], [dim]],
+            dask="parallelized",
+            output_dtypes=[float],
+        )
+        return _update_history(res, f"Calculated AUC along dimension {dim}")
+
+    # Fallback for numpy or mixed
     x_val = np.asarray(x)
     y_val = np.asarray(y)
 

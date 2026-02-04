@@ -120,15 +120,46 @@ def test_lazy_brier_score_components():
 
 
 def test_lazy_auc():
-    """Test AUC with Xarray inputs."""
-    x = xr.DataArray(np.sort(np.random.rand(10)), dims=["threshold"])
-    y = xr.DataArray(np.sort(np.random.rand(10)), dims=["threshold"])
+    """Robust test for AUC with Dask-backed xarray inputs, including multidimensional."""
+    # 1D Case
+    x_data = np.sort(np.random.rand(10))
+    y_data = np.random.rand(10)
 
-    auc = verification_metrics.compute_auc(x, y)
+    x_lazy = xr.DataArray(da.from_array(x_data, chunks=5), dims=["threshold"])
+    y_lazy = xr.DataArray(da.from_array(y_data, chunks=5), dims=["threshold"])
 
-    assert isinstance(auc, xr.DataArray)
-    assert "Calculated AUC" in auc.attrs["history"]
+    auc_lazy = verification_metrics.compute_auc(x_lazy, y_lazy)
 
-    # Correctness
-    auc_eager = verification_metrics.compute_auc(x.values, y.values)
-    np.testing.assert_allclose(auc.values, auc_eager)
+    assert auc_lazy.chunks is not None
+    assert "Calculated AUC" in auc_lazy.attrs["history"]
+
+    # Eager comparison
+    auc_eager = verification_metrics.compute_auc(x_data, y_data)
+    np.testing.assert_allclose(auc_lazy.compute(), auc_eager)
+
+    # Multidimensional Case
+    shape = (5, 5, 10)  # lat, lon, threshold
+    x_multi = np.broadcast_to(x_data, shape).copy()
+    y_multi = np.random.rand(*shape)
+
+    x_multi_lazy = xr.DataArray(
+        da.from_array(x_multi, chunks=(5, 5, 5)), dims=["x", "y", "threshold"]
+    )
+    y_multi_lazy = xr.DataArray(
+        da.from_array(y_multi, chunks=(5, 5, 5)), dims=["x", "y", "threshold"]
+    )
+
+    auc_multi_lazy = verification_metrics.compute_auc(
+        x_multi_lazy, y_multi_lazy, dim="threshold"
+    )
+
+    assert auc_multi_lazy.chunks is not None
+    assert auc_multi_lazy.dims == ("x", "y")
+    assert auc_multi_lazy.shape == (5, 5)
+
+    # Verify correctness for one pixel
+    auc_pixel_lazy = auc_multi_lazy.isel(x=0, y=0).compute()
+    auc_pixel_eager = verification_metrics.compute_auc(
+        x_multi[0, 0, :], y_multi[0, 0, :]
+    )
+    np.testing.assert_allclose(auc_pixel_lazy, auc_pixel_eager)
