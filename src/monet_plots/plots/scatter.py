@@ -123,14 +123,23 @@ class ScatterPlot(BasePlot):
         y_reg = m * x_reg + b
         return x_reg, y_reg
 
-    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
+    def plot(
+        self,
+        scatter_kws: Optional[dict[str, Any]] = None,
+        line_kws: Optional[dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> matplotlib.axes.Axes:
         """Generate the scatter plot.
 
         Parameters
         ----------
+        scatter_kws : dict, optional
+            Additional keyword arguments for `ax.scatter`.
+        line_kws : dict, optional
+            Additional keyword arguments for the regression `ax.plot`.
         **kwargs : Any
-            Keyword arguments passed to `ax.scatter`.
-            A `transform` keyword is recommended for geospatial data.
+            Secondary way to pass keyword arguments to `ax.scatter`.
+            Merged with `scatter_kws`.
 
         Returns
         -------
@@ -144,12 +153,19 @@ class ScatterPlot(BasePlot):
         """
         from ..plot_utils import get_plot_kwargs
 
+        # Combine scatter_kws and kwargs
+        s_kws = scatter_kws.copy() if scatter_kws is not None else {}
+        s_kws.update(kwargs)
+
+        l_kws = line_kws.copy() if line_kws is not None else {}
+
         # Aero Protocol Requirement: Mandatory transform for GeoAxes
         is_geo = hasattr(self.ax, "projection")
         if is_geo:
-            kwargs.setdefault("transform", ccrs.PlateCarree())
+            s_kws.setdefault("transform", ccrs.PlateCarree())
+            l_kws.setdefault("transform", ccrs.PlateCarree())
 
-        transform = kwargs.get("transform")
+        transform = s_kws.get("transform")
 
         # Performance: Compute required variables once to avoid double work
         cols = [self.x] + self.y
@@ -171,28 +187,29 @@ class ScatterPlot(BasePlot):
             if self.c is not None:
                 c_plot = concrete_data[self.c].values.flatten()
 
-                final_kwargs = get_plot_kwargs(c=c_plot, **kwargs)
-                mappable = self.ax.scatter(x_plot, y_plot, **final_kwargs)
+                final_s_kwargs = get_plot_kwargs(c=c_plot, **s_kws)
+                mappable = self.ax.scatter(x_plot, y_plot, **final_s_kwargs)
 
                 if self.colorbar:
                     self.add_colorbar(mappable)
             else:
-                scatter_kwargs = kwargs.copy()
-                scatter_kwargs.setdefault("label", y_col)
-                self.ax.scatter(x_plot, y_plot, **scatter_kwargs)
+                final_s_kwargs = s_kws.copy()
+                final_s_kwargs.setdefault("label", y_col)
+                self.ax.scatter(x_plot, y_plot, **final_s_kwargs)
 
             # Add regression line using endpoints
             x_reg, y_reg = self._get_regression_line(x_plot, y_plot)
 
-            plot_kwargs = {
+            final_l_kwargs = {
                 "color": "red",
                 "linestyle": "--",
                 "label": "Fit" if (self.c is None and len(self.y) == 1) else None,
             }
+            final_l_kwargs.update(l_kws)
             if transform:
-                plot_kwargs["transform"] = transform
+                final_l_kwargs.setdefault("transform", transform)
 
-            self.ax.plot(x_reg, y_reg, **plot_kwargs)
+            self.ax.plot(x_reg, y_reg, **final_l_kwargs)
 
         if len(self.y) > 1 and self.c is None:
             self.ax.legend()
