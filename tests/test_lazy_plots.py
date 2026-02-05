@@ -51,8 +51,7 @@ def test_scatter_plot_eager_vs_lazy():
     y = 2 * x + 1 + np.random.randn(100)
 
     ds_eager = xr.Dataset(
-        {"x": (["index"], x), "y": (["index"], y)},
-        coords={"index": np.arange(100)}
+        {"x": (["index"], x), "y": (["index"], y)}, coords={"index": np.arange(100)}
     )
     ds_lazy = ds_eager.chunk({"index": 50})
 
