@@ -214,13 +214,15 @@ class TimeSeriesStatsPlot(BasePlot):
         Generate the time series plot for the chosen statistic.
 
         Args:
-            stat (str): The statistic to plot. Supported: 'bias', 'rmse', 'mae', 'corr'.
-            freq (str): The resampling frequency (e.g., 'h', 'd', 'w', 'm').
+            stat (str): The statistic to plot. Supported includes 'bias', 'rmse',
+                'mae', 'corr', 'spearmanr', 'kendalltau', 'ioa', 'nse', 'kge',
+                'mnb', 'mne', 'mape', 'mase', 'wdmb', 'stdo', 'stdp', 'r2'.
+            freq (str): The resampling frequency (e.g., 'H', 'D', 'W', 'M').
             **kwargs: Keyword arguments passed to the plot() method.
         """
-        supported_stats = ["bias", "rmse", "mae", "corr"]
-        if stat.lower() not in supported_stats:
-            msg = f"Statistic '{stat}' not supported. Use one of {supported_stats}"
+        stat_func_name = f"compute_{stat.lower()}"
+        if not hasattr(verification_metrics, stat_func_name):
+            msg = f"Statistic '{stat}' not supported."
             raise ValueError(msg)
 
         import xarray as xr
@@ -235,32 +237,13 @@ class TimeSeriesStatsPlot(BasePlot):
         plot_kwargs = {"grid": True, "marker": "o", "linestyle": "-"}
         plot_kwargs.update(kwargs)
 
+        func = getattr(verification_metrics, f"compute_{stat}")
+
         for model_col in self.col2:
-            if stat == "bias":
-                stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
-                    lambda group: verification_metrics.compute_bias(
-                        group[self.col1], group[model_col]
-                    )
-                )
-            elif stat == "rmse":
-                stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
-                    lambda group: verification_metrics.compute_rmse(
-                        group[self.col1], group[model_col]
-                    )
-                )
-            elif stat == "mae":
-                stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
-                    lambda group: verification_metrics.compute_mae(
-                        group[self.col1], group[model_col]
-                    )
-                )
-            elif stat == "corr":
-                # Resampling correlation is best done via groupby apply to ensure correct alignment
-                stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
-                    lambda group: verification_metrics.compute_corr(
-                        group[self.col1], group[model_col]
-                    )
-                )
+            # Resampling stats on multiple columns is best done via groupby apply
+            stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
+                lambda group: func(group[self.col1], group[model_col])
+            )
 
             stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
 
@@ -288,35 +271,16 @@ class TimeSeriesStatsPlot(BasePlot):
                     time_dim = d
                     break
 
+        func = getattr(verification_metrics, f"compute_{stat}")
+
         ds = self.df
         for model_col in self.col2:
             # For all statistics in xarray resample, we use map with our vectorized metric
             # This preserves laziness if the inputs are dask-backed and ensures
             # we don't reimplement the logic here.
-            if stat == "bias":
-                stat_series = ds.resample({time_dim: freq}).map(
-                    lambda x: verification_metrics.compute_bias(
-                        x[self.col1], x[model_col], dim=time_dim
-                    )
-                )
-            elif stat == "rmse":
-                stat_series = ds.resample({time_dim: freq}).map(
-                    lambda x: verification_metrics.compute_rmse(
-                        x[self.col1], x[model_col], dim=time_dim
-                    )
-                )
-            elif stat == "mae":
-                stat_series = ds.resample({time_dim: freq}).map(
-                    lambda x: verification_metrics.compute_mae(
-                        x[self.col1], x[model_col], dim=time_dim
-                    )
-                )
-            elif stat == "corr":
-                stat_series = ds.resample({time_dim: freq}).map(
-                    lambda x: verification_metrics.compute_corr(
-                        x[self.col1], x[model_col], dim=time_dim
-                    )
-                )
+            stat_series = ds.resample({time_dim: freq}).map(
+                lambda x: func(x[self.col1], x[model_col], dim=time_dim)
+            )
 
             stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
 

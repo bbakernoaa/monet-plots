@@ -191,3 +191,46 @@ def test_lazy_basic_stats():
     # xr.corr uses a slightly different algo than np.corrcoef but they should be close
     np.testing.assert_allclose(corr.compute(), np.corrcoef(obs_data, fcast_data)[0, 1])
     assert "Calculated Mean Bias" in bias.attrs["history"]
+
+
+def test_lazy_extended_stats():
+    """Test the extended set of metrics with lazy xarray inputs."""
+    obs_data = np.random.rand(10, 5)
+    fcast_data = np.random.rand(10, 5)
+
+    obs = xr.DataArray(obs_data, dims=["time", "x"]).chunk({"time": 5, "x": 5})
+    fcast = xr.DataArray(fcast_data, dims=["time", "x"]).chunk({"time": 5, "x": 5})
+
+    metrics = [
+        "spearmanr",
+        "kendalltau",
+        "ioa",
+        "nse",
+        "kge",
+        "mnb",
+        "mne",
+        "mape",
+        "mase",
+        "wdmb",
+        "stdo",
+        "stdp",
+        "r2",
+    ]
+
+    for m in metrics:
+        print(f"Testing {m}...")
+        func = getattr(verification_metrics, f"compute_{m}")
+        # Test reduction over all dims
+        res = func(obs, fcast)
+        assert res.chunks is not None
+        assert res.ndim == 0
+        val = res.compute()
+        assert not np.isnan(val)
+
+        # Test reduction over specific dim
+        res_dim = func(obs, fcast, dim="time")
+        assert res_dim.chunks is not None
+        assert res_dim.dims == ("x",)
+        assert res_dim.shape == (5,)
+        vals = res_dim.compute()
+        assert not np.any(np.isnan(vals))

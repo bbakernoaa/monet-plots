@@ -116,3 +116,100 @@ def test_compute_corr():
     obs = np.array([1, 2, 3])
     fcast = np.array([1, 2, 3])
     assert verification_metrics.compute_corr(obs, fcast) == pytest.approx(1.0)
+
+
+def test_compute_spearmanr():
+    """Test the compute_spearmanr function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1, 2, 3])
+    assert verification_metrics.compute_spearmanr(obs, fcast) == pytest.approx(1.0)
+
+
+def test_compute_kendalltau():
+    """Test the compute_kendalltau function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1, 2, 3])
+    assert verification_metrics.compute_kendalltau(obs, fcast) == pytest.approx(1.0)
+
+
+def test_compute_ioa():
+    """Test the compute_ioa function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1.1, 1.9, 3.2])
+    assert verification_metrics.compute_ioa(obs, fcast) > 0.9
+
+
+def test_compute_nse():
+    """Test the compute_nse function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1.1, 1.9, 3.1])
+    assert verification_metrics.compute_nse(obs, fcast) > 0.9
+
+
+def test_compute_kge():
+    """Test the compute_kge function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1.1, 1.9, 3.1])
+    assert verification_metrics.compute_kge(obs, fcast) > 0.8
+
+
+def test_compute_mnb():
+    """Test the compute_mnb function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1.1, 2.2, 3.3])
+    assert verification_metrics.compute_mnb(obs, fcast) == pytest.approx(10.0)
+
+
+def test_compute_mne():
+    """Test the compute_mne function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1.1, 2.2, 3.3])
+    assert verification_metrics.compute_mne(obs, fcast) == pytest.approx(10.0)
+
+
+def test_compute_mape():
+    """Test the compute_mape function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1.1, 2.2, 3.3])
+    assert verification_metrics.compute_mape(obs, fcast) == pytest.approx(10.0)
+
+
+def test_compute_mase():
+    """Test the compute_mase function."""
+    obs = np.array([1, 2, 3, 4])
+    fcast = np.array([1.1, 2.1, 3.1, 4.1])
+    # Naive error is mean(abs(diff([1,2,3,4]))) = mean([1,1,1]) = 1.0
+    # Model error is mean([0.1, 0.1, 0.1, 0.1]) = 0.1
+    # MASE = 0.1 / 1.0 = 0.1
+    assert verification_metrics.compute_mase(obs, fcast) == pytest.approx(0.1)
+
+
+def test_compute_wdmb():
+    """Test the compute_wdmb function."""
+    obs = np.array([0, 90])
+    fcast = np.array([10, 100])
+    assert verification_metrics.compute_wdmb(obs, fcast) == pytest.approx(10.0)
+
+
+def test_compute_stdo():
+    """Test the compute_stdo function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1.1, 1.9, 3.2])
+    # errors are [ -0.1, 0.1, -0.2]
+    # mean error is -0.0666...
+    # std of errors
+    assert verification_metrics.compute_stdo(obs, fcast) > 0
+
+
+def test_compute_stdp():
+    """Test the compute_stdp function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1.1, 1.9, 3.2])
+    assert verification_metrics.compute_stdp(obs, fcast) > 0
+
+
+def test_compute_r2():
+    """Test the compute_r2 function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1, 2, 3])
+    assert verification_metrics.compute_r2(obs, fcast) == pytest.approx(1.0)

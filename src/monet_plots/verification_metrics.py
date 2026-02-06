@@ -727,3 +727,372 @@ def compute_corr(
     if isinstance(res, (xr.DataArray, xr.Dataset)):
         return _update_history(res, "Calculated Pearson Correlation")
     return float(res)
+
+
+def compute_spearmanr(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Spearman Rank Correlation Coefficient using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the correlation.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Spearman Correlation.
+    """
+    res = monet_stats.spearmanr(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated Spearman Correlation")
+    return float(res)
+
+
+def compute_kendalltau(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Kendall Tau Correlation Coefficient using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the correlation.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Kendall Tau Correlation.
+    """
+    res = monet_stats.kendalltau(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated Kendall Tau Correlation")
+    return float(res)
+
+
+def compute_ioa(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Index of Agreement (IOA) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the IOA.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated IOA.
+    """
+    res = monet_stats.IOA(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated IOA")
+    return float(res)
+
+
+def compute_nse(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Nash-Sutcliffe Efficiency (NSE) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the NSE.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated NSE.
+    """
+    res = monet_stats.NSE(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated NSE")
+    return float(res)
+
+
+def compute_kge(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Kling-Gupta Efficiency (KGE) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the KGE.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated KGE.
+    """
+    res = monet_stats.KGE(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated KGE")
+    return float(res)
+
+
+def compute_mnb(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Normalized Bias (%) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the MNB.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated MNB (percent).
+    """
+    res = monet_stats.MNB(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated Mean Normalized Bias")
+    return float(res)
+
+
+def compute_mne(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Normalized Gross Error (%) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the MNE.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated MNE (percent).
+    """
+    res = monet_stats.MNE(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated Mean Normalized Gross Error")
+    return float(res)
+
+
+def compute_mape(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Absolute Percentage Error (%) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the MAPE.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated MAPE (percent).
+    """
+    res = monet_stats.MAPE(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated Mean Absolute Percentage Error")
+    return float(res)
+
+
+def compute_mase(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Absolute Scaled Error (MASE) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the MASE.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated MASE.
+    """
+    res = monet_stats.MASE(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated MASE")
+    return float(res)
+
+
+def compute_wdmb(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Wind Direction Mean Bias (degrees) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed wind direction values (degrees).
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted wind direction values (degrees).
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the WDMB.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated WDMB.
+    """
+    res = monet_stats.WDMB(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated Wind Direction Mean Bias")
+    return float(res)
+
+
+def compute_stdo(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates standard deviation of Observation Errors (obs - fcast)
+    using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the STDO.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated STDO.
+    """
+    res = monet_stats.STDO(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated STDO")
+    return float(res)
+
+
+def compute_stdp(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates standard deviation of Prediction Errors (fcast - obs)
+    using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the STDP.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated STDP.
+    """
+    res = monet_stats.STDP(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, "Calculated STDP")
+    return float(res)
+
+
+def compute_r2(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Coefficient of Determination (R^2) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the R^2.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated R^2.
+    """
+    # We use compute_corr squared here because monet_stats.R2 has a bug
+    # in its Xarray implementation for multidimensional inputs when dim=None.
+    res = compute_corr(obs, fcast, dim=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        res = res**2
+        return _update_history(res, "Calculated R^2")
+    return float(res**2)
