@@ -88,3 +88,31 @@ def test_compute_rev():
     cost_loss_ratios = np.linspace(0, 1, 11)
     rev = verification_metrics.compute_rev(10, 5, 2, 20, cost_loss_ratios, 0.5)
     assert len(rev) == 11
+
+
+def test_compute_bias():
+    """Test the compute_bias function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([2, 3, 4])
+    assert verification_metrics.compute_bias(obs, fcast) == pytest.approx(1.0)
+
+
+def test_compute_rmse():
+    """Test the compute_rmse function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([2, 3, 4])
+    assert verification_metrics.compute_rmse(obs, fcast) == pytest.approx(1.0)
+
+
+def test_compute_mae():
+    """Test the compute_mae function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([2, 3, 4])
+    assert verification_metrics.compute_mae(obs, fcast) == pytest.approx(1.0)
+
+
+def test_compute_corr():
+    """Test the compute_corr function."""
+    obs = np.array([1, 2, 3])
+    fcast = np.array([1, 2, 3])
+    assert verification_metrics.compute_corr(obs, fcast) == pytest.approx(1.0)

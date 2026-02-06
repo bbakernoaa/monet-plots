@@ -163,3 +163,31 @@ def test_lazy_auc():
         x_multi[0, 0, :], y_multi[0, 0, :]
     )
     np.testing.assert_allclose(auc_pixel_lazy, auc_pixel_eager)
+
+
+def test_lazy_basic_stats():
+    """Test Bias, RMSE, MAE with lazy xarray inputs."""
+    obs_data = np.random.rand(10)
+    fcast_data = np.random.rand(10)
+
+    obs = xr.DataArray(obs_data, dims=["x"]).chunk({"x": 5})
+    fcast = xr.DataArray(fcast_data, dims=["x"]).chunk({"x": 5})
+
+    bias = verification_metrics.compute_bias(obs, fcast)
+    rmse = verification_metrics.compute_rmse(obs, fcast)
+    mae = verification_metrics.compute_mae(obs, fcast)
+    corr = verification_metrics.compute_corr(obs, fcast)
+
+    assert bias.chunks is not None
+    assert rmse.chunks is not None
+    assert mae.chunks is not None
+    assert corr.chunks is not None
+
+    np.testing.assert_allclose(bias.compute(), (fcast_data - obs_data).mean())
+    np.testing.assert_allclose(
+        rmse.compute(), np.sqrt(((fcast_data - obs_data) ** 2).mean())
+    )
+    np.testing.assert_allclose(mae.compute(), np.abs(fcast_data - obs_data).mean())
+    # xr.corr uses a slightly different algo than np.corrcoef but they should be close
+    np.testing.assert_allclose(corr.compute(), np.corrcoef(obs_data, fcast_data)[0, 1])
+    assert "Calculated Mean Bias" in bias.attrs["history"]

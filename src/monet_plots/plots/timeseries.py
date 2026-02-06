@@ -4,6 +4,7 @@ import numpy as np
 from .base import BasePlot
 from ..plot_utils import normalize_data
 from typing import Any, Union, List, Optional
+from .. import verification_metrics
 
 
 class TimeSeriesPlot(BasePlot):
@@ -175,8 +176,7 @@ class TimeSeriesStatsPlot(BasePlot):
 
         Args:
             df (pd.DataFrame, xr.Dataset, etc.): Data containing a time coordinate
-                and the columns to compare. Must be convertible to a pandas
-                DataFrame with a DatetimeIndex.
+                and the columns to compare.
             col1 (str): Name of the first column (e.g., 'Obs').
             col2 (str or list): Name of the second column(s)
                 (e.g., 'Model' or ['Model1', 'Model2']).
@@ -184,72 +184,123 @@ class TimeSeriesStatsPlot(BasePlot):
         """
         super().__init__(*args, **kwargs)
         self.df = normalize_data(df)
-        if not isinstance(self.df.index, pd.DatetimeIndex):
-            # Attempt to set 'time' or 'datetime' column as index if not already
-            if "datetime" in self.df.columns:
-                self.df = self.df.set_index("datetime")
-            elif "time" in self.df.columns:
-                self.df = self.df.set_index("time")
-            else:
-                # Try to convert index if it's not already datetime
-                try:
-                    self.df.index = pd.to_datetime(self.df.index)
-                except Exception:
-                    raise ValueError(
-                        "Input DataFrame must have a DatetimeIndex "
-                        "or 'time'/'datetime' column."
-                    )
+
+        import xarray as xr
+
+        if not isinstance(self.df, (xr.DataArray, xr.Dataset)):
+            if not isinstance(self.df.index, pd.DatetimeIndex):
+                # Attempt to set 'time' or 'datetime' column as index if not already
+                if "datetime" in self.df.columns:
+                    self.df = self.df.set_index("datetime")
+                elif "time" in self.df.columns:
+                    self.df = self.df.set_index("time")
+                else:
+                    # Try to convert index if it's not already datetime
+                    try:
+                        self.df.index = pd.to_datetime(self.df.index)
+                    except Exception:
+                        raise ValueError(
+                            "Input DataFrame must have a DatetimeIndex "
+                            "or 'time'/'datetime' column."
+                        )
 
         self.col1 = col1
         if isinstance(col2, str):
             self.col2 = [col2]
         else:
             self.col2 = col2
-        self.stats = {
-            "bias": self._calculate_bias,
-            "rmse": self._calculate_rmse,
-            "corr": self._calculate_corr,
-        }
-
-    def _calculate_bias(self, group, col2_name):
-        """Calculate mean bias for a group."""
-        return (group[col2_name] - group[self.col1]).mean()
-
-    def _calculate_rmse(self, group, col2_name):
-        """Calculate Root Mean Square Error for a group."""
-        return np.sqrt(np.mean((group[col2_name] - group[self.col1]) ** 2))
-
-    def _calculate_corr(self, group, col2_name):
-        """Calculate Pearson correlation for a group."""
-        return group[[self.col1, col2_name]].corr().iloc[0, 1]
 
     def plot(self, stat: str = "bias", freq: str = "D", **kwargs):
         """
         Generate the time series plot for the chosen statistic.
 
         Args:
-            stat (str): The statistic to plot. Supported: 'bias', 'rmse', 'corr'.
-            freq (str): The resampling frequency (e.g., 'H', 'D', 'W', 'M').
-            **kwargs: Keyword arguments passed to the pandas plot() method.
+            stat (str): The statistic to plot. Supported: 'bias', 'rmse', 'mae', 'corr'.
+            freq (str): The resampling frequency (e.g., 'h', 'd', 'w', 'm').
+            **kwargs: Keyword arguments passed to the plot() method.
         """
-        if stat.lower() not in self.stats:
-            msg = f"Statistic '{stat}' not supported. Use one of {list(self.stats.keys())}"
+        supported_stats = ["bias", "rmse", "mae", "corr"]
+        if stat.lower() not in supported_stats:
+            msg = (
+                f"Statistic '{stat}' not supported. Use one of {supported_stats}"
+            )
             raise ValueError(msg)
 
+        import xarray as xr
+
+        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+            return self._plot_xarray(stat.lower(), freq, **kwargs)
+        else:
+            return self._plot_dataframe(stat.lower(), freq, **kwargs)
+
+    def _plot_dataframe(self, stat: str, freq: str, **kwargs):
+        """Resample and plot using Pandas."""
         plot_kwargs = {"grid": True, "marker": "o", "linestyle": "-"}
         plot_kwargs.update(kwargs)
 
         for model_col in self.col2:
+            if stat == "bias":
+                stat_series = (self.df[model_col] - self.df[self.col1]).resample(freq).mean()
+            elif stat == "rmse":
+                stat_series = np.sqrt(((self.df[model_col] - self.df[self.col1]) ** 2).resample(freq).mean())
+            elif stat == "mae":
+                stat_series = np.abs(self.df[model_col] - self.df[self.col1]).resample(freq).mean()
+            elif stat == "corr":
+                # Resampling correlation is best done via groupby apply to ensure correct alignment
+                stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
+                    lambda group: group[self.col1].corr(group[model_col])
+                )
 
-            def stat_func(group):
-                return self.stats[stat.lower()](group, model_col)
-
-            stat_series = self.df.resample(freq).apply(stat_func)
             stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
 
         self.ax.set_ylabel(f"{stat.upper()}")
         self.ax.set_xlabel("Date")
         self.ax.legend()
         self.fig.tight_layout()
+        return self.ax
+
+    def _plot_xarray(self, stat: str, freq: str, **kwargs):
+        """Resample and plot using Xarray (Dask-friendly)."""
+        import xarray as xr
+
+        plot_kwargs = {"marker": "o", "linestyle": "-"}
+        plot_kwargs.update(kwargs)
+
+        # Detect time dimension
+        time_dim = "time"
+        if time_dim not in self.df.dims and "datetime" in self.df.dims:
+            time_dim = "datetime"
+        elif time_dim not in self.df.dims:
+             # Try to find a dimension with time-like name or attributes
+             for d in self.df.dims:
+                 if "time" in d.lower():
+                     time_dim = d
+                     break
+
+        ds = self.df
+        for model_col in self.col2:
+            if stat == "bias":
+                stat_series = (ds[model_col] - ds[self.col1]).resample({time_dim: freq}).mean()
+            elif stat == "rmse":
+                stat_series = np.sqrt(((ds[model_col] - ds[self.col1]) ** 2).resample({time_dim: freq}).mean())
+            elif stat == "mae":
+                stat_series = np.abs(ds[model_col] - ds[self.col1]).resample({time_dim: freq}).mean()
+            elif stat == "corr":
+                # For correlation in xarray resample, we use map with our vectorized metric
+                # This preserves laziness if the inputs are dask-backed
+                stat_series = ds.resample({time_dim: freq}).map(
+                    lambda x: verification_metrics.compute_corr(x[self.col1], x[model_col])
+                )
+
+            stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
+
+        self.ax.set_ylabel(f"{stat.upper()}")
+        self.ax.set_xlabel("Date")
+        self.ax.legend()
+        self.fig.tight_layout()
+
+        # Update history for provenance
+        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+            verification_metrics._update_history(self.df, f"Plotted {stat} time series resampled at {freq}")
 
         return self.ax

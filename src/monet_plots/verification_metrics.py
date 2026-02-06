@@ -1,6 +1,6 @@
 import numpy as np
 import xarray as xr
-from typing import Tuple, Union, Dict, Any, Optional
+from typing import Tuple, Union, Dict, Any, Optional, List
 
 
 def _update_history(obj: Any, msg: str) -> Any:
@@ -604,3 +604,132 @@ def compute_rev(
         out=np.zeros_like(denominator, dtype=float),
         where=denominator != 0,
     )
+
+
+def compute_bias(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Bias.
+
+    Bias = (Forecast - Observation).mean()
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Mean Bias.
+    """
+    if isinstance(obs, (xr.DataArray, xr.Dataset)) or isinstance(
+        fcast, (xr.DataArray, xr.Dataset)
+    ):
+        res = (fcast - obs).mean()
+        return _update_history(res, "Calculated Mean Bias")
+
+    return float(np.mean(fcast - obs))
+
+
+def compute_rmse(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Root Mean Square Error (RMSE).
+
+    RMSE = sqrt(((Forecast - Observation)**2).mean())
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated RMSE.
+    """
+    if isinstance(obs, (xr.DataArray, xr.Dataset)) or isinstance(
+        fcast, (xr.DataArray, xr.Dataset)
+    ):
+        res = np.sqrt(((fcast - obs) ** 2).mean())
+        return _update_history(res, "Calculated RMSE")
+
+    return float(np.sqrt(np.mean((fcast - obs) ** 2)))
+
+
+def compute_mae(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Absolute Error (MAE).
+
+    MAE = abs(Forecast - Observation).mean()
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated MAE.
+    """
+    if isinstance(obs, (xr.DataArray, xr.Dataset)) or isinstance(
+        fcast, (xr.DataArray, xr.Dataset)
+    ):
+        res = np.abs(fcast - obs).mean()
+        return _update_history(res, "Calculated MAE")
+
+    return float(np.mean(np.abs(fcast - obs)))
+
+
+def compute_corr(
+    obs: Union[np.ndarray, xr.DataArray],
+    fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Pearson Correlation Coefficient.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    fcast : Union[np.ndarray, xr.DataArray]
+        Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the correlation.
+        Only used if inputs are xarray objects.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Pearson Correlation.
+    """
+    if isinstance(obs, (xr.DataArray, xr.Dataset)) or isinstance(
+        fcast, (xr.DataArray, xr.Dataset)
+    ):
+        # Ensure they are both DataArrays for xr.corr
+        obs_da = obs if isinstance(obs, xr.DataArray) else xr.DataArray(obs)
+        fcast_da = fcast if isinstance(fcast, xr.DataArray) else xr.DataArray(fcast)
+
+        res = xr.corr(obs_da, fcast_da, dim=dim)
+        return _update_history(res, "Calculated Pearson Correlation")
+
+    # Numpy fallback - handles NaNs by flattening and using corrcoef
+    # but corrcoef returns a matrix, we want the off-diagonal element
+    c = np.corrcoef(np.asarray(obs).flatten(), np.asarray(fcast).flatten())
+    return float(c[0, 1])

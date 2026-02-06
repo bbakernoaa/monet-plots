@@ -2,7 +2,8 @@ import pytest
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from monet_plots.plots.timeseries import TimeSeriesPlot
+from monet_plots.plots.timeseries import TimeSeriesPlot, TimeSeriesStatsPlot
+import xarray as xr
 
 
 @pytest.fixture
@@ -36,4 +37,32 @@ def test_timeseries_plot_plot(clear_figures, sample_data):
     """Test TimeSeriesPlot plot method."""
     plot = TimeSeriesPlot(df=sample_data, x="time", y="obs")
     ax = plot.plot()
+    assert ax is not None
+
+
+def test_timeseries_stats_plot_init(clear_figures, sample_data):
+    """Test TimeSeriesStatsPlot initialization."""
+    plot = TimeSeriesStatsPlot(df=sample_data, col1="obs", col2="obs")
+    assert plot is not None
+
+
+def test_timeseries_stats_plot_plot_bias(clear_figures, sample_data):
+    """Test TimeSeriesStatsPlot plot bias."""
+    plot = TimeSeriesStatsPlot(df=sample_data, col1="obs", col2="obs")
+    ax = plot.plot(stat="bias")
+    assert ax is not None
+
+
+def test_timeseries_stats_plot_xarray(clear_figures):
+    """Test TimeSeriesStatsPlot with xarray input."""
+    time = pd.date_range("2023-01-01", periods=10, freq="D")
+    ds = xr.Dataset(
+        {
+            "obs": (["time"], np.random.rand(10)),
+            "model": (["time"], np.random.rand(10)),
+        },
+        coords={"time": time},
+    )
+    plot = TimeSeriesStatsPlot(df=ds, col1="obs", col2="model")
+    ax = plot.plot(stat="rmse", freq="W")
     assert ax is not None
