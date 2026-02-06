@@ -221,9 +221,7 @@ class TimeSeriesStatsPlot(BasePlot):
         """
         supported_stats = ["bias", "rmse", "mae", "corr"]
         if stat.lower() not in supported_stats:
-            msg = (
-                f"Statistic '{stat}' not supported. Use one of {supported_stats}"
-            )
+            msg = f"Statistic '{stat}' not supported. Use one of {supported_stats}"
             raise ValueError(msg)
 
         import xarray as xr
@@ -240,11 +238,21 @@ class TimeSeriesStatsPlot(BasePlot):
 
         for model_col in self.col2:
             if stat == "bias":
-                stat_series = (self.df[model_col] - self.df[self.col1]).resample(freq).mean()
+                stat_series = (
+                    (self.df[model_col] - self.df[self.col1]).resample(freq).mean()
+                )
             elif stat == "rmse":
-                stat_series = np.sqrt(((self.df[model_col] - self.df[self.col1]) ** 2).resample(freq).mean())
+                stat_series = np.sqrt(
+                    ((self.df[model_col] - self.df[self.col1]) ** 2)
+                    .resample(freq)
+                    .mean()
+                )
             elif stat == "mae":
-                stat_series = np.abs(self.df[model_col] - self.df[self.col1]).resample(freq).mean()
+                stat_series = (
+                    np.abs(self.df[model_col] - self.df[self.col1])
+                    .resample(freq)
+                    .mean()
+                )
             elif stat == "corr":
                 # Resampling correlation is best done via groupby apply to ensure correct alignment
                 stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
@@ -271,25 +279,37 @@ class TimeSeriesStatsPlot(BasePlot):
         if time_dim not in self.df.dims and "datetime" in self.df.dims:
             time_dim = "datetime"
         elif time_dim not in self.df.dims:
-             # Try to find a dimension with time-like name or attributes
-             for d in self.df.dims:
-                 if "time" in d.lower():
-                     time_dim = d
-                     break
+            # Try to find a dimension with time-like name or attributes
+            for d in self.df.dims:
+                if "time" in d.lower():
+                    time_dim = d
+                    break
 
         ds = self.df
         for model_col in self.col2:
             if stat == "bias":
-                stat_series = (ds[model_col] - ds[self.col1]).resample({time_dim: freq}).mean()
+                stat_series = (
+                    (ds[model_col] - ds[self.col1]).resample({time_dim: freq}).mean()
+                )
             elif stat == "rmse":
-                stat_series = np.sqrt(((ds[model_col] - ds[self.col1]) ** 2).resample({time_dim: freq}).mean())
+                stat_series = np.sqrt(
+                    ((ds[model_col] - ds[self.col1]) ** 2)
+                    .resample({time_dim: freq})
+                    .mean()
+                )
             elif stat == "mae":
-                stat_series = np.abs(ds[model_col] - ds[self.col1]).resample({time_dim: freq}).mean()
+                stat_series = (
+                    np.abs(ds[model_col] - ds[self.col1])
+                    .resample({time_dim: freq})
+                    .mean()
+                )
             elif stat == "corr":
                 # For correlation in xarray resample, we use map with our vectorized metric
                 # This preserves laziness if the inputs are dask-backed
                 stat_series = ds.resample({time_dim: freq}).map(
-                    lambda x: verification_metrics.compute_corr(x[self.col1], x[model_col])
+                    lambda x: verification_metrics.compute_corr(
+                        x[self.col1], x[model_col]
+                    )
                 )
 
             stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
@@ -301,6 +321,8 @@ class TimeSeriesStatsPlot(BasePlot):
 
         # Update history for provenance
         if isinstance(self.df, (xr.DataArray, xr.Dataset)):
-            verification_metrics._update_history(self.df, f"Plotted {stat} time series resampled at {freq}")
+            verification_metrics._update_history(
+                self.df, f"Plotted {stat} time series resampled at {freq}"
+            )
 
         return self.ax
