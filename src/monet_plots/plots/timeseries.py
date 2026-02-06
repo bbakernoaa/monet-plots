@@ -1,6 +1,5 @@
 # src/monet_plots/plots/timeseries.py
 import pandas as pd
-import numpy as np
 from .base import BasePlot
 from ..plot_utils import normalize_data
 from typing import Any, Union, List, Optional
@@ -238,25 +237,29 @@ class TimeSeriesStatsPlot(BasePlot):
 
         for model_col in self.col2:
             if stat == "bias":
-                stat_series = (
-                    (self.df[model_col] - self.df[self.col1]).resample(freq).mean()
+                stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
+                    lambda group: verification_metrics.compute_bias(
+                        group[self.col1], group[model_col]
+                    )
                 )
             elif stat == "rmse":
-                stat_series = np.sqrt(
-                    ((self.df[model_col] - self.df[self.col1]) ** 2)
-                    .resample(freq)
-                    .mean()
+                stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
+                    lambda group: verification_metrics.compute_rmse(
+                        group[self.col1], group[model_col]
+                    )
                 )
             elif stat == "mae":
-                stat_series = (
-                    np.abs(self.df[model_col] - self.df[self.col1])
-                    .resample(freq)
-                    .mean()
+                stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
+                    lambda group: verification_metrics.compute_mae(
+                        group[self.col1], group[model_col]
+                    )
                 )
             elif stat == "corr":
                 # Resampling correlation is best done via groupby apply to ensure correct alignment
                 stat_series = self.df.groupby(pd.Grouper(freq=freq)).apply(
-                    lambda group: group[self.col1].corr(group[model_col])
+                    lambda group: verification_metrics.compute_corr(
+                        group[self.col1], group[model_col]
+                    )
                 )
 
             stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
@@ -287,28 +290,31 @@ class TimeSeriesStatsPlot(BasePlot):
 
         ds = self.df
         for model_col in self.col2:
+            # For all statistics in xarray resample, we use map with our vectorized metric
+            # This preserves laziness if the inputs are dask-backed and ensures
+            # we don't reimplement the logic here.
             if stat == "bias":
-                stat_series = (
-                    (ds[model_col] - ds[self.col1]).resample({time_dim: freq}).mean()
+                stat_series = ds.resample({time_dim: freq}).map(
+                    lambda x: verification_metrics.compute_bias(
+                        x[self.col1], x[model_col], dim=time_dim
+                    )
                 )
             elif stat == "rmse":
-                stat_series = np.sqrt(
-                    ((ds[model_col] - ds[self.col1]) ** 2)
-                    .resample({time_dim: freq})
-                    .mean()
+                stat_series = ds.resample({time_dim: freq}).map(
+                    lambda x: verification_metrics.compute_rmse(
+                        x[self.col1], x[model_col], dim=time_dim
+                    )
                 )
             elif stat == "mae":
-                stat_series = (
-                    np.abs(ds[model_col] - ds[self.col1])
-                    .resample({time_dim: freq})
-                    .mean()
+                stat_series = ds.resample({time_dim: freq}).map(
+                    lambda x: verification_metrics.compute_mae(
+                        x[self.col1], x[model_col], dim=time_dim
+                    )
                 )
             elif stat == "corr":
-                # For correlation in xarray resample, we use map with our vectorized metric
-                # This preserves laziness if the inputs are dask-backed
                 stat_series = ds.resample({time_dim: freq}).map(
                     lambda x: verification_metrics.compute_corr(
-                        x[self.col1], x[model_col]
+                        x[self.col1], x[model_col], dim=time_dim
                     )
                 )
 

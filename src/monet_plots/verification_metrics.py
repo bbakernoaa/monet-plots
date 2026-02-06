@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
 from typing import Tuple, Union, Dict, Any, Optional, List
+import monet_stats
 
 
 def _update_history(obj: Any, msg: str) -> Any:
@@ -609,9 +610,10 @@ def compute_rev(
 def compute_bias(
     obs: Union[np.ndarray, xr.DataArray],
     fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
 ) -> Union[float, np.ndarray, xr.DataArray]:
     """
-    Calculates Mean Bias.
+    Calculates Mean Bias using monet-stats.
 
     Bias = (Forecast - Observation).mean()
 
@@ -621,27 +623,28 @@ def compute_bias(
         Observed values.
     fcast : Union[np.ndarray, xr.DataArray]
         Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the bias.
+        Only used if inputs are xarray objects.
 
     Returns
     -------
     Union[float, np.ndarray, xr.DataArray]
         The calculated Mean Bias.
     """
-    if isinstance(obs, (xr.DataArray, xr.Dataset)) or isinstance(
-        fcast, (xr.DataArray, xr.Dataset)
-    ):
-        res = (fcast - obs).mean()
+    res = monet_stats.MB(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
         return _update_history(res, "Calculated Mean Bias")
-
-    return float(np.mean(fcast - obs))
+    return float(res)
 
 
 def compute_rmse(
     obs: Union[np.ndarray, xr.DataArray],
     fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
 ) -> Union[float, np.ndarray, xr.DataArray]:
     """
-    Calculates Root Mean Square Error (RMSE).
+    Calculates Root Mean Square Error (RMSE) using monet-stats.
 
     RMSE = sqrt(((Forecast - Observation)**2).mean())
 
@@ -651,27 +654,28 @@ def compute_rmse(
         Observed values.
     fcast : Union[np.ndarray, xr.DataArray]
         Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the RMSE.
+        Only used if inputs are xarray objects.
 
     Returns
     -------
     Union[float, np.ndarray, xr.DataArray]
         The calculated RMSE.
     """
-    if isinstance(obs, (xr.DataArray, xr.Dataset)) or isinstance(
-        fcast, (xr.DataArray, xr.Dataset)
-    ):
-        res = np.sqrt(((fcast - obs) ** 2).mean())
+    res = monet_stats.RMSE(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
         return _update_history(res, "Calculated RMSE")
-
-    return float(np.sqrt(np.mean((fcast - obs) ** 2)))
+    return float(res)
 
 
 def compute_mae(
     obs: Union[np.ndarray, xr.DataArray],
     fcast: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, List[str]]] = None,
 ) -> Union[float, np.ndarray, xr.DataArray]:
     """
-    Calculates Mean Absolute Error (MAE).
+    Calculates Mean Absolute Error (MAE) using monet-stats.
 
     MAE = abs(Forecast - Observation).mean()
 
@@ -681,19 +685,19 @@ def compute_mae(
         Observed values.
     fcast : Union[np.ndarray, xr.DataArray]
         Forecasted values.
+    dim : str or list of str, optional
+        The dimension(s) along which to compute the MAE.
+        Only used if inputs are xarray objects.
 
     Returns
     -------
     Union[float, np.ndarray, xr.DataArray]
         The calculated MAE.
     """
-    if isinstance(obs, (xr.DataArray, xr.Dataset)) or isinstance(
-        fcast, (xr.DataArray, xr.Dataset)
-    ):
-        res = np.abs(fcast - obs).mean()
+    res = monet_stats.MAE(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
         return _update_history(res, "Calculated MAE")
-
-    return float(np.mean(np.abs(fcast - obs)))
+    return float(res)
 
 
 def compute_corr(
@@ -702,7 +706,7 @@ def compute_corr(
     dim: Optional[Union[str, List[str]]] = None,
 ) -> Union[float, np.ndarray, xr.DataArray]:
     """
-    Calculates Pearson Correlation Coefficient.
+    Calculates Pearson Correlation Coefficient using monet-stats.
 
     Parameters
     ----------
@@ -719,17 +723,7 @@ def compute_corr(
     Union[float, np.ndarray, xr.DataArray]
         The calculated Pearson Correlation.
     """
-    if isinstance(obs, (xr.DataArray, xr.Dataset)) or isinstance(
-        fcast, (xr.DataArray, xr.Dataset)
-    ):
-        # Ensure they are both DataArrays for xr.corr
-        obs_da = obs if isinstance(obs, xr.DataArray) else xr.DataArray(obs)
-        fcast_da = fcast if isinstance(fcast, xr.DataArray) else xr.DataArray(fcast)
-
-        res = xr.corr(obs_da, fcast_da, dim=dim)
+    res = monet_stats.pearsonr(obs, fcast, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
         return _update_history(res, "Calculated Pearson Correlation")
-
-    # Numpy fallback - handles NaNs by flattening and using corrcoef
-    # but corrcoef returns a matrix, we want the off-diagonal element
-    c = np.corrcoef(np.asarray(obs).flatten(), np.asarray(fcast).flatten())
-    return float(c[0, 1])
+    return float(res)
