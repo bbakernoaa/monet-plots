@@ -241,6 +241,166 @@ def compute_pofd(
     )
 
 
+def compute_bias(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Bias.
+
+    Bias = Mean(mod - obs)
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the mean.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Mean Bias.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> obs = np.array([1.0, 2.0, 3.0])
+    >>> mod = np.array([1.1, 2.1, 3.1])
+    >>> compute_bias(obs, mod)
+    0.10000000000000009
+    """
+    diff = mod - obs
+    if isinstance(diff, (xr.DataArray, xr.Dataset)):
+        res = diff.mean(dim=dim)
+        return _update_history(res, f"Calculated Mean Bias along {dim}")
+    return np.mean(diff, axis=dim)
+
+
+def compute_rmse(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Root Mean Square Error (RMSE).
+
+    RMSE = sqrt(Mean((mod - obs)**2))
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the mean.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated RMSE.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> obs = np.array([1.0, 2.0])
+    >>> mod = np.array([1.1, 2.2])
+    >>> compute_rmse(obs, mod)
+    0.158113883008419
+    """
+    diff_sq = (mod - obs) ** 2
+    if isinstance(diff_sq, (xr.DataArray, xr.Dataset)):
+        res = np.sqrt(diff_sq.mean(dim=dim))
+        return _update_history(res, f"Calculated RMSE along {dim}")
+    return np.sqrt(np.mean(diff_sq, axis=dim))
+
+
+def compute_mae(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Absolute Error (MAE).
+
+    MAE = Mean(abs(mod - obs))
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the mean.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated MAE.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> obs = np.array([1.0, 2.0])
+    >>> mod = np.array([1.1, 1.9])
+    >>> compute_mae(obs, mod)
+    0.10000000000000009
+    """
+    abs_diff = np.abs(mod - obs)
+    if isinstance(abs_diff, (xr.DataArray, xr.Dataset)):
+        res = abs_diff.mean(dim=dim)
+        return _update_history(res, f"Calculated MAE along {dim}")
+    return np.mean(abs_diff, axis=dim)
+
+
+def compute_corr(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[str] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Pearson correlation coefficient.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str, optional
+        The dimension over which to calculate the correlation.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated correlation.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> obs = np.array([1, 2, 3])
+    >>> mod = np.array([2, 4, 6])
+    >>> compute_corr(obs, mod)
+    1.0
+    """
+    if isinstance(obs, xr.DataArray) and isinstance(mod, xr.DataArray):
+        res = xr.corr(obs, mod, dim=dim)
+        return _update_history(res, f"Calculated correlation along {dim}")
+
+    # Fallback to numpy
+    if dim is not None:
+        # np.corrcoef doesn't support dim directly like xarray
+        # This is a simplification for 1D-like inputs or flattened
+        return np.corrcoef(np.asarray(obs).ravel(), np.asarray(mod).ravel())[0, 1]
+
+    return np.corrcoef(np.asarray(obs), np.asarray(mod))[0, 1]
+
+
 def compute_auc(
     x: Union[np.ndarray, xr.DataArray],
     y: Union[np.ndarray, xr.DataArray],
@@ -466,53 +626,80 @@ def compute_brier_score_components(
 def compute_rank_histogram(
     ensemble: Union[np.ndarray, xr.DataArray],
     observations: Union[np.ndarray, xr.DataArray],
+    member_dim: str = "member",
 ) -> Union[np.ndarray, xr.DataArray]:
     """
     Computes rank histogram counts.
 
+    Supports multidimensional xarray inputs with automatic broadcasting.
+
     Parameters
     ----------
-    ensemble : Any
-        Shape (n_samples, n_members).
-    observations : Any
-        Shape (n_samples,).
+    ensemble : Union[np.ndarray, xr.DataArray]
+        Ensemble data. If xarray, it must have a dimension named `member_dim`.
+    observations : Union[np.ndarray, xr.DataArray]
+        Observation data.
+    member_dim : str, optional
+        The name of the ensemble member dimension, by default "member".
 
     Returns
     -------
-    Any
+    Union[np.ndarray, xr.DataArray]
         Array or DataArray of counts for each rank (length n_members + 1).
     """
-    # Vectorized rank computation
-    # Handle Xarray/Dask
-    if isinstance(ensemble, xr.DataArray):
-        ensemble = ensemble.data
-    if isinstance(observations, xr.DataArray):
-        observations = observations.data
+    if isinstance(ensemble, xr.DataArray) and isinstance(observations, xr.DataArray):
+        # Use xarray's dimension-aware broadcasting
+        ranks = (ensemble < observations).sum(dim=member_dim)
+        n_members = ensemble.sizes[member_dim]
 
-    # ensemble < observations[:, np.newaxis] broadcast comparison
-    # This works for both numpy and dask arrays
-    obs_expanded = observations[:, np.newaxis]
-    ranks = (ensemble < obs_expanded).sum(axis=1)
+        # Flatten ranks for histogram (preserving dask if present)
+        ranks_flat = ranks.data.ravel()
 
-    if hasattr(ranks, "chunks"):
-        import dask.array as da
+        if hasattr(ranks_flat, "chunks"):
+            import dask.array as da
 
-        n_members = ensemble.shape[1]
-        counts, _ = da.histogram(ranks, bins=np.arange(n_members + 2) - 0.5)
-    else:
-        counts = np.bincount(ranks, minlength=ensemble.shape[1] + 1)
+            counts, _ = da.histogram(ranks_flat, bins=np.arange(n_members + 2) - 0.5)
+        else:
+            counts = np.bincount(ranks_flat.astype(int), minlength=n_members + 1)
 
-    # Return as Xarray for provenance if input was Xarray
-    if isinstance(ensemble, (xr.DataArray, xr.Dataset)) or isinstance(
-        observations, (xr.DataArray, xr.Dataset)
-    ):
-        counts = xr.DataArray(
+        counts_xr = xr.DataArray(
             counts,
             coords={"rank": np.arange(len(counts))},
             dims=["rank"],
             name="rank_counts",
         )
-        _update_history(counts, "Computed rank histogram")
+        return _update_history(counts_xr, "Computed rank histogram (dimension-aware)")
+
+    # Fallback for numpy or mixed (including plain dask arrays)
+    is_dask = hasattr(ensemble, "chunks") or hasattr(observations, "chunks")
+
+    # Assume member is the last dimension for fallback
+    # Or if 2D/1D pair, assume (n_samples, n_members) for backward compatibility
+    if ensemble.ndim == 2 and observations.ndim == 1:
+        obs_expanded = observations[:, np.newaxis]
+        ranks = (ensemble < obs_expanded).sum(axis=1)
+        n_members = ensemble.shape[1]
+    else:
+        # Generic case: assume last axis is members
+        obs_expanded = np.expand_dims(observations, axis=-1)
+        ranks = (ensemble < obs_expanded).sum(axis=-1)
+        n_members = ensemble.shape[-1]
+
+    if is_dask:
+        import dask.array as da
+
+        counts, _ = da.histogram(ranks.ravel(), bins=np.arange(n_members + 2) - 0.5)
+    else:
+        counts = np.bincount(ranks.astype(int).ravel(), minlength=n_members + 1)
+
+    if isinstance(ensemble, (xr.DataArray, xr.Dataset)):
+        counts_xr = xr.DataArray(
+            counts,
+            coords={"rank": np.arange(len(counts))},
+            dims=["rank"],
+            name="rank_counts",
+        )
+        return _update_history(counts_xr, "Computed rank histogram")
 
     return counts
 
