@@ -63,11 +63,24 @@ class TimeSeriesPlot(BasePlot):
         self.ylabel = ylabel
         self.label = label
 
-    def plot(self, **kwargs):
-        """Generate the timeseries plot.
+    def plot(self, **kwargs: Any) -> plt.Axes:
+        """
+        Generate the timeseries plot.
 
-        Args:
-            **kwargs: Overrides for plot settings (x, y, title, ylabel, label, etc.)
+        Parameters
+        ----------
+        **kwargs : Any
+            Overrides for plot settings (x, y, title, ylabel, label, etc.).
+
+        Returns
+        -------
+        plt.Axes
+            The matplotlib axes object containing the plot.
+
+        Examples
+        --------
+        >>> plot = TimeSeriesPlot(df, x='time', y='obs')
+        >>> ax = plot.plot(title='Observation Over Time')
         """
         # Update attributes from kwargs if provided
         for attr in ["x", "y", "title", "ylabel", "label"]:
@@ -82,8 +95,24 @@ class TimeSeriesPlot(BasePlot):
         else:
             return self._plot_dataframe(**kwargs)
 
-    def _plot_dataframe(self, **kwargs):
-        """Generate the timeseries plot from pandas DataFrame."""
+    def _plot_dataframe(self, **kwargs: Any) -> plt.Axes:
+        """
+        Generate the timeseries plot from pandas DataFrame.
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Additional plotting arguments.
+
+        Returns
+        -------
+        plt.Axes
+            The matplotlib axes object.
+
+        Examples
+        --------
+        >>> plot._plot_dataframe()
+        """
         df = self.df.copy()
         df.index = df[self.x]
         # Keep only numeric columns for grouping, but make sure self.y is there
@@ -122,8 +151,24 @@ class TimeSeriesPlot(BasePlot):
         self.fig.tight_layout()
         return self.ax
 
-    def _plot_xarray(self, **kwargs):
-        """Generate the timeseries plot from xarray DataArray or Dataset."""
+    def _plot_xarray(self, **kwargs: Any) -> plt.Axes:
+        """
+        Generate the timeseries plot from xarray DataArray or Dataset.
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Additional plotting arguments.
+
+        Returns
+        -------
+        plt.Axes
+            The matplotlib axes object.
+
+        Examples
+        --------
+        >>> plot._plot_xarray()
+        """
         import xarray as xr
 
         # Ensure we have the right data structure

@@ -646,6 +646,14 @@ def compute_rank_histogram(
     -------
     Union[np.ndarray, xr.DataArray]
         Array or DataArray of counts for each rank (length n_members + 1).
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> ens = np.array([[1, 5], [2, 4], [3, 3]])
+    >>> obs = np.array([2, 3, 4])
+    >>> compute_rank_histogram(ens, obs)
+    array([0, 2, 1])
     """
     if isinstance(ensemble, xr.DataArray) and isinstance(observations, xr.DataArray):
         # Use xarray's dimension-aware broadcasting
