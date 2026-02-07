@@ -1,6 +1,6 @@
 # src/monet_plots/__init__.py
 from .plots.spatial import SpatialPlot
-from .plots.timeseries import TimeSeriesPlot
+from .plots.timeseries import TimeSeriesPlot, TimeSeriesStatsPlot
 from .plots.taylor_diagram import TaylorDiagramPlot
 from .plots.kde import KDEPlot
 from .plots.scatter import ScatterPlot
@@ -27,6 +27,7 @@ from .plots.profile import ProfilePlot
 __all__ = [
     "SpatialPlot",
     "TimeSeriesPlot",
+    "TimeSeriesStatsPlot",
     "TaylorDiagramPlot",
     "KDEPlot",
     "ScatterPlot",

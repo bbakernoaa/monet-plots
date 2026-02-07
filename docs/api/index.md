@@ -17,3 +17,5 @@ This is the API reference for MONET Plots.
 ::: monet_plots.taylordiagram
 
 ::: monet_plots.tools
+
+::: monet_plots.verification_metrics
