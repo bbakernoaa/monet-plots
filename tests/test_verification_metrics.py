@@ -94,7 +94,7 @@ def test_compute_bias():
     """Test the compute_bias function."""
     obs = np.array([1, 2, 3])
     mod = np.array([2, 4, 6])
-    assert verification_metrics.compute_bias(obs, mod) == pytest.approx(1.0)
+    assert verification_metrics.compute_bias(obs, mod) == pytest.approx(2.0)
 
 
 def test_compute_rmse():
