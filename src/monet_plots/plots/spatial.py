@@ -93,6 +93,11 @@ class SpatialPlot(BasePlot):
         # Initialize the base plot, which creates the figure and axes.
         super().__init__(fig=fig, ax=ax, figsize=figsize, subplot_kw=current_subplot_kw)
 
+        # If BasePlot didn't create an axes (e.g. because fig was provided),
+        # create one now.
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(1, 1, 1, **current_subplot_kw)
+
         # Add features from kwargs
         self.add_features(**kwargs)
 
@@ -417,6 +422,22 @@ class SpatialTrack(SpatialPlot):
             The scatter plot artist created by `ax.scatter`.
         """
         from ..plot_utils import get_plot_kwargs
+
+        # Automatically compute extent if not provided
+        if "extent" not in kwargs:
+            lon = self.data[self.lon_coord]
+            lat = self.data[self.lat_coord]
+            # Add a small buffer to the extent
+            lon_min, lon_max = lon.min().item(), lon.max().item()
+            lat_min, lat_max = lat.min().item(), lat.max().item()
+            lon_buf = (lon_max - lon_min) * 0.1 if lon_max > lon_min else 1.0
+            lat_buf = (lat_max - lat_min) * 0.1 if lat_max > lat_min else 1.0
+            kwargs["extent"] = [
+                lon_min - lon_buf,
+                lon_max + lon_buf,
+                lat_min - lat_buf,
+                lat_max + lat_buf,
+            ]
 
         # Add features and get remaining kwargs for scatter
         scatter_kwargs = self.add_features(**kwargs)

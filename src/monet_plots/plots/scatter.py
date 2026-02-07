@@ -81,6 +81,9 @@ class ScatterPlot(BasePlot):
             Additional keyword arguments passed to BasePlot.
         """
         super().__init__(fig=fig, ax=ax, **kwargs)
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(1, 1, 1)
+
         self.data = normalize_data(data if data is not None else df)
         self.x = x
         self.y = [y] if isinstance(y, str) else (y if y is not None else [])

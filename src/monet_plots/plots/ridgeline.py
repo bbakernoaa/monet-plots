@@ -66,6 +66,9 @@ class RidgelinePlot(BasePlot):
             **kwargs: Additional keyword arguments for BasePlot (figure/axes creation).
         """
         super().__init__(**kwargs)
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(1, 1, 1)
+
         self.data = normalize_data(data)
         self.group_dim = group_dim
         self.x = x

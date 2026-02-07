@@ -58,7 +58,6 @@ def sample_dataarray():
 def test_spatial_plot_init_default(clear_figures):
     """Test SpatialPlot default initialization with features."""
     plot = SpatialPlot()
-    plot.fig.canvas.draw()
     assert isinstance(plot.fig, plt.Figure)
     assert isinstance(plot.ax, GeoAxes)
     assert isinstance(plot.ax.projection, ccrs.PlateCarree)
@@ -76,7 +75,6 @@ def test_spatial_plot_init_with_features(clear_figures):
         extent=[-120, -70, 20, 50],
         resolution="110m",
     )
-    plot.fig.canvas.draw()
 
     assert isinstance(plot.ax, GeoAxes)
     assert isinstance(plot.ax.projection, ccrs.AlbersEqualArea)
@@ -95,17 +93,22 @@ def test_spatial_plot_init_custom_fig_ax(clear_figures):
     assert isinstance(plot.ax.projection, ccrs.LambertConformal)
 
 
+def test_spatial_plot_init_with_fig_only(clear_figures):
+    """Test SpatialPlot initialization with existing figure but no axes."""
+    fig = plt.figure()
+    plot = SpatialPlot(fig=fig, projection=ccrs.PlateCarree())
+    assert plot.fig is fig
+    assert plot.ax is not None
+    assert isinstance(plot.ax, GeoAxes)
+    assert len(fig.axes) == 1
+
+
 def test_add_features_default_styles(spatial_plot):
     """Test adding features with default styles (e.g., states=True)."""
-    # Force a render to ensure collections are populated before asserting
-    spatial_plot.fig.canvas.draw()
     initial_collections = len(spatial_plot.ax.collections)
 
     # Add states and coastlines
     spatial_plot.add_features(states=True, coastlines=True, resolution="110m")
-
-    # Force a re-render to update the collections
-    spatial_plot.fig.canvas.draw()
 
     # Assert that new collections were added to the axes
     assert len(spatial_plot.ax.collections) > initial_collections
@@ -128,11 +131,9 @@ def test_add_features_custom_styles_mocked(mock_add_feature, spatial_plot):
 
 def test_add_features_disabled(spatial_plot):
     """Test that features are not added when the style is False."""
-    spatial_plot.fig.canvas.draw()
     initial_collections = len(spatial_plot.ax.collections)
 
     spatial_plot.add_features(states=False, coastlines=False)
-    spatial_plot.fig.canvas.draw()
 
     assert len(spatial_plot.ax.collections) == initial_collections
 

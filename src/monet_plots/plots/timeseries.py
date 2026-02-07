@@ -42,6 +42,9 @@ class TimeSeriesPlot(BasePlot):
             *args, **kwargs: Arguments passed to BasePlot.
         """
         super().__init__(*args, **kwargs)
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(1, 1, 1)
+
         self.df = normalize_data(df)
         self.x = x
         self.y = y
@@ -183,6 +186,9 @@ class TimeSeriesStatsPlot(BasePlot):
             *args, **kwargs: Arguments passed to BasePlot.
         """
         super().__init__(*args, **kwargs)
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(1, 1, 1)
+
         self.df = normalize_data(df)
         if not isinstance(self.df.index, pd.DatetimeIndex):
             # Attempt to set 'time' or 'datetime' column as index if not already

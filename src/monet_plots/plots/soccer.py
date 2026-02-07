@@ -84,6 +84,9 @@ class SoccerPlot(BasePlot):
             Arguments passed to BasePlot.
         """
         super().__init__(fig=fig, ax=ax, **kwargs)
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(1, 1, 1)
+
         self.data = normalize_data(data)
         self.bias_col = bias_col
         self.error_col = error_col

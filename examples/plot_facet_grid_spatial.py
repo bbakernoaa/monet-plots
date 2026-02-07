@@ -2,16 +2,29 @@
 Facet Grid Spatial
 ==================
 
-<<<<<<<< HEAD:examples/plot_facet_grid_spatial.py
-This example demonstrates how to create a Facet Grid Spatial.
-========
-This example demonstrates Facet Grid Spatial.
->>>>>>>> origin/main:examples/example_facet_grid_spatial.py
+**What it's for:**
+Facet Grid Spatial is an extension of the facet grid concept applied to geographic
+maps. It allows you to create a matrix of maps, where each map represents a different
+subset of your data (e.g., different models and different timestamps).
+
+**When to use:**
+Use this when you need to compare spatial patterns across multiple dimensions
+simultaneously, such as comparing the output of several different models at
+multiple points in time. It is the most effective way to identify where and
+when models diverge in their spatial predictions.
+
+**How to read:**
+*   **Rows/Columns:** Represent different categorical dimensions (e.g., Time vs. Model).
+*   **Subplots:** Each facet is a complete `SpatialPlot` showing the geographic
+    distribution of a variable.
+*   **Interpretation:** Look for spatial shifts or intensity differences between
+    the maps in different rows and columns.
 """
 
-import xarray as xr
+import cartopy.crs as ccrs
 import numpy as np
 import pandas as pd
+import xarray as xr
 import matplotlib.pyplot as plt
 from monet_plots.plots.facet_grid import FacetGridPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
@@ -63,7 +76,8 @@ def plot_spatial_imshow(*args, **kwargs):
     temp_da = data.set_index(["lat", "lon"]).to_xarray()[var_name]
 
     # Create and plot using SpatialImshowPlot
-    plotter = SpatialImshowPlot(temp_da, gridobj=None, **kwargs)
+    # We pass ax=plt.gca() to ensure it draws on the current facet's axes
+    plotter = SpatialImshowPlot(temp_da, gridobj=None, ax=plt.gca(), **kwargs)
     plotter.plot()
     # The figure and axes are managed by FacetGrid, so we don't call plotter.show() or plotter.save() here.
     # We just ensure the plot is drawn on the current active axes, which FacetGrid handles.
@@ -71,12 +85,14 @@ def plot_spatial_imshow(*args, **kwargs):
 
 # 3. Create the FacetGridPlot
 # We want 'time' as rows and 'model' as columns
+# We must pass subplot_kws to ensure Cartopy GeoAxes are created for each facet
 grid = FacetGridPlot(
     ds,
     row="time",
     col="model",
     height=4,
     aspect=1.2,
+    subplot_kws={"projection": ccrs.PlateCarree()},
 )
 
 # 4. Map the spatial plotting function to the grid

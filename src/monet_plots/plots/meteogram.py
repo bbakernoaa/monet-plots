@@ -24,6 +24,8 @@ class Meteogram(BasePlot):
         **kwargs
             Keyword arguments passed to the parent class.
         """
+        if "fig" not in kwargs and "ax" not in kwargs:
+            kwargs["fig"] = plt.figure()
         super().__init__(**kwargs)
         self.df = df
         self.variables = variables
