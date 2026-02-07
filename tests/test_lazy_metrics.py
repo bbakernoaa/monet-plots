@@ -163,3 +163,48 @@ def test_lazy_auc():
         x_multi[0, 0, :], y_multi[0, 0, :]
     )
     np.testing.assert_allclose(auc_pixel_lazy, auc_pixel_eager)
+
+
+def test_lazy_bias_rmse_mae():
+    """Test Bias, RMSE, and MAE with lazy xarray inputs."""
+    obs_data = np.random.rand(10, 10)
+    mod_data = obs_data + 0.1
+
+    obs_lazy = xr.DataArray(obs_data, dims=["x", "y"]).chunk({"x": 5})
+    mod_lazy = xr.DataArray(mod_data, dims=["x", "y"]).chunk({"x": 5})
+
+    bias = verification_metrics.compute_bias(obs_lazy, mod_lazy)
+    rmse = verification_metrics.compute_rmse(obs_lazy, mod_lazy)
+    mae = verification_metrics.compute_mae(obs_lazy, mod_lazy)
+
+    assert bias.chunks is not None
+    assert rmse.chunks is not None
+    assert mae.chunks is not None
+
+    np.testing.assert_allclose(bias.compute(), 0.1)
+    np.testing.assert_allclose(rmse.compute(), 0.1)
+    np.testing.assert_allclose(mae.compute(), 0.1)
+
+    assert "Calculated Mean Bias" in bias.attrs["history"]
+
+
+def test_multidim_rank_histogram():
+    """Test rank histogram with multidimensional dimension-aware inputs."""
+    shape = (5, 5, 10)  # lat, lon, member
+    ensemble_data = np.random.rand(*shape)
+    obs_data = np.random.rand(5, 5)
+
+    ens_xr = xr.DataArray(
+        ensemble_data, dims=["lat", "lon", "member"], name="ensemble"
+    ).chunk({"lat": 2})
+    obs_xr = xr.DataArray(obs_data, dims=["lat", "lon"], name="obs").chunk({"lat": 2})
+
+    counts = verification_metrics.compute_rank_histogram(
+        ens_xr, obs_xr, member_dim="member"
+    )
+
+    assert isinstance(counts, xr.DataArray)
+    assert counts.chunks is not None
+    assert counts.shape == (11,)
+    assert counts.sum().compute() == 25  # 5*5 samples
+    assert "dimension-aware" in counts.attrs["history"]
