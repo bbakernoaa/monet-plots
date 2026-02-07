@@ -5,13 +5,15 @@ import xarray as xr
 import matplotlib.pyplot as plt
 from monet_plots.plots.timeseries import TimeSeriesStatsPlot
 
+
 @pytest.fixture
 def sample_ts_data():
     """Create sample data for testing."""
     dates = pd.date_range("2023-01-01", periods=20, freq="h")
-    obs = np.sin(np.linspace(0, 2*np.pi, 20))
+    obs = np.sin(np.linspace(0, 2 * np.pi, 20))
     mod = obs + 0.1
     return dates, obs, mod
+
 
 def test_timeseries_stats_pandas(sample_ts_data):
     """Test TimeSeriesStatsPlot with pandas DataFrame."""
@@ -27,6 +29,7 @@ def test_timeseries_stats_pandas(sample_ts_data):
     # Check if lines were plotted
     assert len(ax.get_lines()) == 1
     plt.close(plot.fig)
+
 
 def test_timeseries_stats_xarray_lazy(sample_ts_data):
     """Test TimeSeriesStatsPlot with dask-backed xarray."""
@@ -55,6 +58,7 @@ def test_timeseries_stats_xarray_lazy(sample_ts_data):
     # but the history and lack of error is good.
     plt.close(plot.fig)
 
+
 def test_timeseries_stats_multiple_models(sample_ts_data):
     """Test TimeSeriesStatsPlot with multiple model columns."""
     dates, obs, mod = sample_ts_data
@@ -72,6 +76,7 @@ def test_timeseries_stats_multiple_models(sample_ts_data):
 
     assert len(ax.get_lines()) == 2
     plt.close(plot.fig)
+
 
 def test_timeseries_stats_invalid_stat(sample_ts_data):
     """Test TimeSeriesStatsPlot with unsupported statistic."""
