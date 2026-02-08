@@ -799,3 +799,90 @@ def compute_rev(
         out=np.zeros_like(denominator, dtype=float),
         where=denominator != 0,
     )
+
+def compute_crps(
+    ensemble: Union[np.ndarray, xr.DataArray],
+    observation: Union[np.ndarray, xr.DataArray],
+    member_dim: str = "member",
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Continuous Ranked Probability Score (CRPS).
+
+    CRPS measures the difference between the cumulative distribution function (CDF)
+    of a probabilistic forecast and the empirical CDF of the observation.
+    This implementation uses the efficient O(M log M) sorted ensemble method.
+
+    Parameters
+    ----------
+    ensemble : Union[np.ndarray, xr.DataArray]
+        Ensemble data. If xarray, it must have a dimension named `member_dim`.
+    observation : Union[np.ndarray, xr.DataArray]
+        Observation data.
+    member_dim : str, optional
+        The name of the ensemble member dimension, by default "member".
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated CRPS. Returns xarray.DataArray if inputs are xarray.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> ens = np.array([1.0, 2.0, 3.0])
+    >>> obs = 2.0
+    >>> compute_crps(ens, obs)
+    0.2222222222222222
+    """
+
+    def _crps_ufunc(ens_arr, obs_arr):
+        # ens_arr has member dimension as last axis
+        # obs_arr is scalar relative to the member dimension
+        m = ens_arr.shape[-1]
+
+        # Absolute difference from observation
+        mae = np.mean(np.abs(ens_arr - np.expand_dims(obs_arr, axis=-1)), axis=-1)
+
+        # Internal ensemble spread (Gini mean difference)
+        ens_sorted = np.sort(ens_arr, axis=-1)
+        i = np.arange(1, m + 1)
+        # Using the formula: 2 * sum((2i - m - 1) * X_i) / m^2
+        # Note: i is 1-based index
+        spread = np.sum((2 * i - m - 1) * ens_sorted, axis=-1) / (m * m)
+
+        return mae - spread
+
+    if isinstance(ensemble, xr.DataArray) and isinstance(observation, xr.DataArray):
+        # Ensure member dim is not chunked for the ufunc
+        ensemble = ensemble.chunk({member_dim: -1})
+
+        res = xr.apply_ufunc(
+            _crps_ufunc,
+            ensemble,
+            observation,
+            input_core_dims=[[member_dim], []],
+            dask="parallelized",
+            output_dtypes=[float],
+        )
+        return _update_history(res, f"Calculated CRPS (member_dim={member_dim})")
+
+    # Fallback for numpy or mixed
+    ens_val = np.asarray(ensemble)
+    obs_val = np.asarray(observation)
+
+    # Simple case for 1D ensemble and scalar observation
+    if ens_val.ndim == 1 and obs_val.ndim == 0:
+        return float(_crps_ufunc(ens_val, obs_val))
+
+    # For more complex numpy shapes, we might need more logic,
+    # but the ufunc logic is generally applicable if axes are aligned.
+    # For simplicity, we assume the last axis is members if not xarray.
+    res_val = _crps_ufunc(ens_val, obs_val)
+
+    if isinstance(ensemble, (xr.DataArray, xr.Dataset)) or isinstance(
+        observation, (xr.DataArray, xr.Dataset)
+    ):
+        res_xr = xr.DataArray(res_val, name="crps")
+        return _update_history(res_xr, "Calculated CRPS")
+
+    return res_val
