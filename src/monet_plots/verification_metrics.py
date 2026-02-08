@@ -800,6 +800,7 @@ def compute_rev(
         where=denominator != 0,
     )
 
+
 def compute_crps(
     ensemble: Union[np.ndarray, xr.DataArray],
     observation: Union[np.ndarray, xr.DataArray],

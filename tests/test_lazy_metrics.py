@@ -209,6 +209,7 @@ def test_multidim_rank_histogram():
     assert counts.sum().compute() == 25  # 5*5 samples
     assert "dimension-aware" in counts.attrs["history"]
 
+
 def test_lazy_crps():
     """Test CRPS with lazy multidimensional inputs."""
     shape = (5, 5, 10)  # lat, lon, member
@@ -229,12 +230,10 @@ def test_lazy_crps():
     ens_xr = xr.DataArray(
         da.from_array(ensemble_data, chunks=(5, 5, 10)),
         dims=["lat", "lon", "member"],
-        name="ensemble"
+        name="ensemble",
     )
     obs_xr = xr.DataArray(
-        da.from_array(obs_data, chunks=(5, 5)),
-        dims=["lat", "lon"],
-        name="obs"
+        da.from_array(obs_data, chunks=(5, 5)), dims=["lat", "lon"], name="obs"
     )
 
     crps_lazy = verification_metrics.compute_crps(ens_xr, obs_xr, member_dim="member")
