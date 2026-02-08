@@ -208,3 +208,39 @@ def test_multidim_rank_histogram():
     assert counts.shape == (11,)
     assert counts.sum().compute() == 25  # 5*5 samples
     assert "dimension-aware" in counts.attrs["history"]
+
+
+def test_lazy_crps():
+    """Test CRPS with lazy multidimensional inputs."""
+    shape = (5, 5, 10)  # lat, lon, member
+    ensemble_data = np.random.rand(*shape)
+    obs_data = np.random.rand(5, 5)
+
+    # Eager calculation for reference
+    ens_pixel = ensemble_data[0, 0, :]
+    obs_pixel = obs_data[0, 0]
+
+    # Manual CRPS for one pixel (O(M^2) for verification)
+    m = len(ens_pixel)
+    mae = np.mean(np.abs(ens_pixel - obs_pixel))
+    diffs = np.abs(ens_pixel[:, None] - ens_pixel[None, :])
+    spread = np.sum(diffs) / (2 * m * m)
+    expected_pixel = mae - spread
+
+    ens_xr = xr.DataArray(
+        da.from_array(ensemble_data, chunks=(5, 5, 10)),
+        dims=["lat", "lon", "member"],
+        name="ensemble",
+    )
+    obs_xr = xr.DataArray(
+        da.from_array(obs_data, chunks=(5, 5)), dims=["lat", "lon"], name="obs"
+    )
+
+    crps_lazy = verification_metrics.compute_crps(ens_xr, obs_xr, member_dim="member")
+
+    assert crps_lazy.chunks is not None
+    assert crps_lazy.dims == ("lat", "lon")
+
+    # Check pixel value
+    np.testing.assert_allclose(crps_lazy.compute()[0, 0], expected_pixel)
+    assert "Calculated CRPS" in crps_lazy.attrs["history"]
