@@ -241,6 +241,26 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
 
         # Ensure 'c' is an xarray.DataArray wrapping a dask array
         assert isinstance(c_arg, xr.DataArray), "The 'c' argument is not a DataArray."
-        assert isinstance(c_arg.data, dask.array.Array), (
-            "The underlying data is not a dask array."
-        )
+        assert isinstance(
+            c_arg.data, dask.array.Array
+        ), "The underlying data is not a dask array."
+
+
+def test_spatial_plot_coastlines_default():
+    """Verify that SpatialPlot enables coastlines by default."""
+    from monet_plots.plots.spatial import SpatialPlot
+
+    # Initialize with default coastlines=True (stored in kwargs and passed to add_features)
+    # SpatialPlot doesn't store 'coastlines' as an attribute, but we can check if they were added.
+    sp = SpatialPlot()
+    # Check if coastlines were added to the axes.
+    # Note: Cartopy's add_feature adds to ax.collections or other artists.
+    assert len(sp.ax.collections) > 0
+
+    # Initialize with explicit coastlines=False
+    sp2 = SpatialPlot(coastlines=False)
+    # If no other features are added, collections should be empty
+    # But wait, BasePlot might add something? No.
+    # Actually, default in SpatialPlot.__init__ is to add coastlines if not in kwargs.
+    # If we pass coastlines=False, it won't add them.
+    assert len(sp2.ax.collections) == 0

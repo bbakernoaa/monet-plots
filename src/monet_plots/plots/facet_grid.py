@@ -141,7 +141,6 @@ class SpatialFacetGridPlot(FacetGridPlot):
         aspect: float = 1.2,
         **kwargs: Any,
     ) -> None:
-        self.original_data = data
         """Initialize Spatial Facet Grid.
 
         Parameters
@@ -163,6 +162,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
         **kwargs : Any
             Additional arguments for FacetGrid.
         """
+        self.original_data = data
         import cartopy.crs as ccrs
 
         self.projection = projection or ccrs.PlateCarree()
@@ -309,32 +309,37 @@ class SpatialFacetGridPlot(FacetGridPlot):
         ]
         feature_kwargs = {k: kwargs.pop(k) for k in feature_keys if k in kwargs}
 
+        # Check for colorbar requirement before popping from kwargs
+        add_shared_cb = kwargs.pop("add_colorbar", False)
+
         self.map_dataframe(_mapped_plot, **kwargs)
 
-        # Add features and colorbar
+        # Add features
         self.add_map_features(**feature_kwargs)
 
-        if kwargs.get("add_colorbar", False):
+        # Add shared colorbar if requested
+        if add_shared_cb:
             self._add_shared_colorbar(**kwargs)
 
     def _add_shared_colorbar(self, **kwargs: Any) -> None:
         """Add a shared colorbar to the figure."""
-        # Find the last mappable object in the facets
+        # Find the last mappable object in the facets and the last valid axis
         mappable = None
+        target_ax = None
         for ax in reversed(self.grid.axes.flatten()):
             if ax is None:
                 continue
-            if ax.collections:
+            if target_ax is None:
+                target_ax = ax
+            if ax.collections and mappable is None:
                 mappable = ax.collections[0]
-                break
-            if ax.images:
+            if ax.images and mappable is None:
                 mappable = ax.images[0]
-                break
 
-        if mappable:
-            # Add colorbar to the last axis
+        if mappable and target_ax:
+            # Add colorbar to the last valid axis
             self.add_colorbar(
                 mappable,
-                ax=self.grid.axes.flatten()[-1],
+                ax=target_ax,
                 label=kwargs.get("label", ""),
             )
