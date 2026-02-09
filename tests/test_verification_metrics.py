@@ -118,3 +118,46 @@ def test_compute_corr():
     obs = np.array([1, 2, 3])
     mod = np.array([2, 4, 6])
     assert verification_metrics.compute_corr(obs, mod) == pytest.approx(1.0)
+
+
+def test_compute_brier_skill_score():
+    """Test the compute_brier_skill_score function."""
+    # Near-perfect forecast
+    fcst = np.array([0.1, 0.9])
+    obs = np.array([0, 1])
+    # For n_bins=5, centers are 0.1, 0.3, 0.5, 0.7, 0.9
+    # Rel = ((0.1-0)^2 + (0.9-1)^2)/2 = 0.01
+    # Res = 0.25, Unc = 0.25 -> BS = 0.01
+    # BSS = 1 - 0.01/0.25 = 0.96
+    assert verification_metrics.compute_brier_skill_score(fcst, obs, n_bins=5) == pytest.approx(
+        0.96
+    )
+
+    # Climatology forecast
+    obs = np.array([0, 1, 0, 1])
+    fcst = np.array([0.5, 0.5, 0.5, 0.5])
+    # For n_bins=5, center is 0.5. Rel=0, Res=0, Unc=0.25 -> BS=0.25
+    # BSS = 1 - 0.25/0.25 = 0.0
+    assert verification_metrics.compute_brier_skill_score(fcst, obs, n_bins=5) == pytest.approx(
+        0.0
+    )
+
+
+def test_compute_crp_skill_score():
+    """Test the compute_crp_skill_score function."""
+    ens = np.array([1.0, 2.0, 3.0])
+    obs = 2.0
+    crps = verification_metrics.compute_crps(ens, obs)
+
+    # BSS relative to self should be 0
+    assert verification_metrics.compute_crp_skill_score(
+        ens, obs, reference_crps=crps
+    ) == pytest.approx(0.0)
+
+    # BSS relative to worse reference should be positive
+    assert verification_metrics.compute_crp_skill_score(
+        ens, obs, reference_crps=crps * 2
+    ) == pytest.approx(0.5)
+
+    with pytest.raises(ValueError, match="reference_crps must be provided"):
+        verification_metrics.compute_crp_skill_score(ens, obs)
