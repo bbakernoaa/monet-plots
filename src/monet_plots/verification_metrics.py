@@ -1,5 +1,6 @@
 import numpy as np
 import xarray as xr
+
 try:
     import dask.array as da
 except ImportError:
@@ -509,12 +510,9 @@ def compute_reliability_curve(
 
     # Handle Dask for "Lazy by Default"
     is_dask = (
-        (
-            hasattr(forecasts, "chunks")
-            or (isinstance(forecasts, xr.DataArray) and forecasts.chunks is not None)
-        )
-        and da is not None
-    )
+        hasattr(forecasts, "chunks")
+        or (isinstance(forecasts, xr.DataArray) and forecasts.chunks is not None)
+    ) and da is not None
 
     if is_dask:
         f_data = forecasts.data if isinstance(forecasts, xr.DataArray) else forecasts
@@ -1000,7 +998,9 @@ def compute_crp_skill_score(
         return _update_history(crpss, "Calculated CRPSS")
 
     # Fallback for numpy or dask
-    if (hasattr(crps, "chunks") or hasattr(reference_crps, "chunks")) and da is not None:
+    if (
+        hasattr(crps, "chunks") or hasattr(reference_crps, "chunks")
+    ) and da is not None:
         ratio = da.where(reference_crps != 0, crps / reference_crps, 1.0)
         return 1.0 - ratio
 

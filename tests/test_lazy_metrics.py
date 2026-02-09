@@ -309,7 +309,9 @@ def test_raw_dask_skill_scores():
     observations = da.from_array(np.random.randint(0, 2, 100), chunks=50)
 
     # BSS
-    bss = verification_metrics.compute_brier_skill_score(forecasts, observations, n_bins=5)
+    bss = verification_metrics.compute_brier_skill_score(
+        forecasts, observations, n_bins=5
+    )
     assert hasattr(bss, "chunks")
     res_bss = bss.compute()
     assert isinstance(res_bss, (float, np.ndarray))

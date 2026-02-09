@@ -129,18 +129,18 @@ def test_compute_brier_skill_score():
     # Rel = ((0.1-0)^2 + (0.9-1)^2)/2 = 0.01
     # Res = 0.25, Unc = 0.25 -> BS = 0.01
     # BSS = 1 - 0.01/0.25 = 0.96
-    assert verification_metrics.compute_brier_skill_score(fcst, obs, n_bins=5) == pytest.approx(
-        0.96
-    )
+    assert verification_metrics.compute_brier_skill_score(
+        fcst, obs, n_bins=5
+    ) == pytest.approx(0.96)
 
     # Climatology forecast
     obs = np.array([0, 1, 0, 1])
     fcst = np.array([0.5, 0.5, 0.5, 0.5])
     # For n_bins=5, center is 0.5. Rel=0, Res=0, Unc=0.25 -> BS=0.25
     # BSS = 1 - 0.25/0.25 = 0.0
-    assert verification_metrics.compute_brier_skill_score(fcst, obs, n_bins=5) == pytest.approx(
-        0.0
-    )
+    assert verification_metrics.compute_brier_skill_score(
+        fcst, obs, n_bins=5
+    ) == pytest.approx(0.0)
 
 
 def test_compute_crp_skill_score():
