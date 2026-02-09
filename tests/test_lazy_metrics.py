@@ -244,3 +244,83 @@ def test_lazy_crps():
     # Check pixel value
     np.testing.assert_allclose(crps_lazy.compute()[0, 0], expected_pixel)
     assert "Calculated CRPS" in crps_lazy.attrs["history"]
+
+
+def test_lazy_brier_skill_score():
+    """Test Brier Skill Score with lazy xarray inputs."""
+    shape = (10, 10)
+    forecasts = np.random.rand(*shape)
+    observations = np.random.randint(0, 2, shape)
+
+    f_lazy = xr.DataArray(da.from_array(forecasts, chunks=5), dims=["x", "y"])
+    o_lazy = xr.DataArray(da.from_array(observations, chunks=5), dims=["x", "y"])
+
+    bss = verification_metrics.compute_brier_skill_score(f_lazy, o_lazy, n_bins=5)
+
+    assert isinstance(bss, xr.DataArray)
+    assert bss.chunks is not None
+
+    # Verify correctness against eager
+    bss_eager = verification_metrics.compute_brier_skill_score(
+        forecasts.flatten(), observations.flatten(), n_bins=5
+    )
+    np.testing.assert_allclose(bss.compute(), bss_eager)
+    assert "Calculated Brier Skill Score" in bss.attrs["history"]
+
+
+def test_lazy_crp_skill_score():
+    """Test CRPSS with lazy xarray inputs."""
+    shape = (5, 5, 10)  # lat, lon, member
+    ensemble_data = np.random.rand(*shape)
+    obs_data = np.random.rand(5, 5)
+
+    ens_xr = xr.DataArray(
+        da.from_array(ensemble_data, chunks=(5, 5, 10)),
+        dims=["lat", "lon", "member"],
+        name="ensemble",
+    )
+    obs_xr = xr.DataArray(
+        da.from_array(obs_data, chunks=(5, 5)), dims=["lat", "lon"], name="obs"
+    )
+
+    # Use a dummy reference CRPS (lazy)
+    ref_crps = xr.DataArray(da.ones((5, 5), chunks=5) * 0.5, dims=["lat", "lon"])
+
+    crpss = verification_metrics.compute_crp_skill_score(
+        ens_xr, obs_xr, reference_crps=ref_crps
+    )
+
+    assert isinstance(crpss, xr.DataArray)
+    assert crpss.chunks is not None
+    assert crpss.dims == ("lat", "lon")
+
+    # Verify value for one pixel
+    crps_pixel = verification_metrics.compute_crps(
+        ensemble_data[0, 0, :], obs_data[0, 0]
+    )
+    expected_crpss = 1.0 - (crps_pixel / 0.5)
+    np.testing.assert_allclose(crpss.compute()[0, 0], expected_crpss)
+    assert "Calculated CRPSS" in crpss.attrs["history"]
+
+
+def test_raw_dask_skill_scores():
+    """Test skill scores with raw dask arrays (not wrapped in xarray)."""
+    forecasts = da.from_array(np.random.rand(100), chunks=50)
+    observations = da.from_array(np.random.randint(0, 2, 100), chunks=50)
+
+    # BSS
+    bss = verification_metrics.compute_brier_skill_score(
+        forecasts, observations, n_bins=5
+    )
+    assert hasattr(bss, "chunks")
+    res_bss = bss.compute()
+    assert isinstance(res_bss, (float, np.ndarray))
+
+    # CRPSS
+    ens = da.from_array(np.random.rand(100, 5), chunks=(50, 5))
+    obs = da.from_array(np.random.rand(100), chunks=50)
+    ref = da.from_array(np.random.rand(100) * 0.5 + 0.1, chunks=50)
+    crpss = verification_metrics.compute_crp_skill_score(ens, obs, reference_crps=ref)
+    assert hasattr(crpss, "chunks")
+    res_crpss = crpss.compute()
+    assert isinstance(res_crpss, np.ndarray)

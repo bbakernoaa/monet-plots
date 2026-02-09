@@ -1,5 +1,10 @@
 import numpy as np
 import xarray as xr
+
+try:
+    import dask.array as da
+except ImportError:
+    da = None
 from typing import Tuple, Union, Dict, Any, Optional
 
 
@@ -504,13 +509,12 @@ def compute_reliability_curve(
     bin_centers = (bins[:-1] + bins[1:]) / 2
 
     # Handle Dask for "Lazy by Default"
-    is_dask = hasattr(forecasts, "chunks") or (
-        isinstance(forecasts, xr.DataArray) and forecasts.chunks is not None
-    )
+    is_dask = (
+        hasattr(forecasts, "chunks")
+        or (isinstance(forecasts, xr.DataArray) and forecasts.chunks is not None)
+    ) and da is not None
 
     if is_dask:
-        import dask.array as da
-
         f_data = forecasts.data if isinstance(forecasts, xr.DataArray) else forecasts
         o_data = (
             observations.data
@@ -548,6 +552,68 @@ def compute_reliability_curve(
         _update_history(observed_frequencies, "Computed reliability curve")
 
     return bin_centers, observed_frequencies, bin_counts
+
+
+def compute_brier_skill_score(
+    forecasts: Union[np.ndarray, xr.DataArray],
+    observations: Union[np.ndarray, xr.DataArray],
+    n_bins: int = 10,
+    reference_bs: Optional[Union[float, np.ndarray, xr.DataArray]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Brier Skill Score (BSS).
+
+    BSS = 1 - (BS_forecast / BS_reference)
+    By default, the reference is climatology: BS_ref = mean_obs * (1 - mean_obs).
+
+    Parameters
+    ----------
+    forecasts : Union[np.ndarray, xr.DataArray]
+        Array-like of forecast probabilities [0, 1].
+    observations : Union[np.ndarray, xr.DataArray]
+        Array-like of binary outcomes (0 or 1).
+    n_bins : int, optional
+        Number of bins for Brier Score decomposition, by default 10.
+    reference_bs : Union[float, np.ndarray, xr.DataArray], optional
+        Reference Brier Score. If None, it is calculated from climatology.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Brier Skill Score. Returns xarray.DataArray if inputs
+        are xarray.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> # Perfect forecast relative to bin centers
+    >>> fcst = np.array([0.05, 0.95])
+    >>> obs = np.array([0, 1])
+    >>> compute_brier_skill_score(fcst, obs, n_bins=10)
+    1.0
+    """
+    components = compute_brier_score_components(forecasts, observations, n_bins=n_bins)
+    bs = components["brier_score"]
+
+    if reference_bs is None:
+        reference_bs = components["uncertainty"]
+
+    if isinstance(bs, (xr.DataArray, xr.Dataset)):
+        bss = 1.0 - (bs / reference_bs)
+        bss = bss.where(reference_bs != 0, 0)
+        return _update_history(bss, "Calculated Brier Skill Score")
+
+    # Fallback for numpy or dask
+    if (hasattr(bs, "chunks") or hasattr(reference_bs, "chunks")) and da is not None:
+        ratio = da.where(reference_bs != 0, bs / reference_bs, 1.0)
+        return 1.0 - ratio
+
+    return 1.0 - np.divide(
+        bs,
+        reference_bs,
+        out=np.ones_like(bs, dtype=float),
+        where=reference_bs != 0,
+    )
 
 
 def compute_brier_score_components(
@@ -588,23 +654,22 @@ def compute_brier_score_components(
         forecasts, observations, n_bins
     )
 
-    # Filter out empty bins. Need to compute mask if it's Dask to allow indexing.
-    # obs_freq is small (n_bins), so this is safe and necessary for Xarray.
-    is_lazy = hasattr(obs_freq, "chunks") and obs_freq.chunks is not None
-    if is_lazy:
-        mask = (~np.isnan(obs_freq)).compute()
-    else:
-        mask = ~np.isnan(obs_freq)
-
-    bin_centers = bin_centers[mask]
-    obs_freq = obs_freq[mask]
-    bin_counts = bin_counts[mask]
+    # Calculate components using sum to maintain lazy evaluation.
+    # We avoid explicit masking with .compute() by using fillna or nansum.
 
     # Reliability: Weighted average of (forecast - observed_freq)^2
-    reliability = (bin_counts * (bin_centers - obs_freq) ** 2).sum() / N
+    sq_diff_rel = (bin_centers - obs_freq) ** 2
+    if isinstance(sq_diff_rel, xr.DataArray):
+        reliability = (bin_counts * sq_diff_rel.fillna(0)).sum() / N
+    else:
+        reliability = np.nansum(bin_counts * sq_diff_rel) / N
 
     # Resolution: Weighted average of (observed_freq - base_rate)**2
-    resolution = (bin_counts * (obs_freq - base_rate) ** 2).sum() / N
+    sq_diff_res = (obs_freq - base_rate) ** 2
+    if isinstance(sq_diff_res, xr.DataArray):
+        resolution = (bin_counts * sq_diff_res.fillna(0)).sum() / N
+    else:
+        resolution = np.nansum(bin_counts * sq_diff_res) / N
 
     bs = reliability - resolution + uncertainty
 
@@ -887,3 +952,61 @@ def compute_crps(
         return _update_history(res_xr, "Calculated CRPS")
 
     return res_val
+
+
+def compute_crp_skill_score(
+    ensemble: Union[np.ndarray, xr.DataArray],
+    observation: Union[np.ndarray, xr.DataArray],
+    member_dim: str = "member",
+    reference_crps: Optional[Union[float, np.ndarray, xr.DataArray]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Continuous Ranked Probability Skill Score (CRPSS).
+
+    CRPSS = 1 - (CRPS_forecast / CRPS_reference)
+    If reference_crps is not provided, it must be provided by the user.
+
+    Parameters
+    ----------
+    ensemble : Union[np.ndarray, xr.DataArray]
+        Ensemble data. If xarray, it must have a dimension named `member_dim`.
+    observation : Union[np.ndarray, xr.DataArray]
+        Observation data.
+    member_dim : str, optional
+        The name of the ensemble member dimension, by default "member".
+    reference_crps : Union[float, np.ndarray, xr.DataArray], optional
+        Reference CRPS value. If None, a ValueError is raised.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated CRPSS. Returns xarray.DataArray if inputs are xarray.
+
+    Raises
+    ------
+    ValueError
+        If reference_crps is not provided.
+    """
+    crps = compute_crps(ensemble, observation, member_dim=member_dim)
+
+    if reference_crps is None:
+        raise ValueError("reference_crps must be provided for CRPSS calculation.")
+
+    if isinstance(crps, (xr.DataArray, xr.Dataset)):
+        crpss = 1.0 - (crps / reference_crps)
+        crpss = crpss.where(reference_crps != 0, 0)
+        return _update_history(crpss, "Calculated CRPSS")
+
+    # Fallback for numpy or dask
+    if (
+        hasattr(crps, "chunks") or hasattr(reference_crps, "chunks")
+    ) and da is not None:
+        ratio = da.where(reference_crps != 0, crps / reference_crps, 1.0)
+        return 1.0 - ratio
+
+    return 1.0 - np.divide(
+        crps,
+        reference_crps,
+        out=np.ones_like(crps, dtype=float),
+        where=reference_crps != 0,
+    )
