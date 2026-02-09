@@ -23,3 +23,12 @@ def test_windrose_plot_creates_plot(clear_figures, sample_data):
     plot = Windrose(wd=sample_data["wd"], ws=sample_data["ws"])
     plot.plot()
     assert plot.ax is not None
+    # Verify only one axis exists
+    assert len(plot.fig.axes) == 1
+
+
+def test_windrose_invalid_axes(clear_figures, sample_data):
+    """Test that Windrose raises error for non-polar axes."""
+    fig, ax = plt.subplots()
+    with pytest.raises(ValueError, match="Windrose plot requires a polar axis."):
+        Windrose(wd=sample_data["wd"], ws=sample_data["ws"], ax=ax)
