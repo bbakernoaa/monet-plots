@@ -453,6 +453,129 @@ def _dynamic_fig_size(obj):
     return figsize
 
 
+def identify_coords(data: xr.DataArray | xr.Dataset) -> tuple[str, str]:
+    """Identify latitude and longitude coordinates in an xarray object.
+
+    Uses CF conventions (units, axis, standard_name) and common naming
+    patterns to find the spatial dimensions.
+
+    Parameters
+    ----------
+    data : xr.DataArray or xr.Dataset
+        The data object to inspect.
+
+    Returns
+    -------
+    tuple[str, str]
+        A tuple of (lat_name, lon_name).
+
+    Raises
+    ----------
+    ValueError
+        If coordinates cannot be unambiguously identified.
+    """
+    if xr is None:
+        raise ImportError("xarray is required for coordinate identification.")
+
+    lat_names = ["lat", "latitude", "y", "lat_2d"]
+    lon_names = ["lon", "longitude", "x", "lon_2d"]
+
+    def is_lat(c):
+        # Check units
+        units = c.attrs.get("units", "").lower()
+        if "degree" in units and ("north" in units or "n" == units):
+            return True
+        # Check standard_name
+        if c.attrs.get("standard_name", "") == "latitude":
+            return True
+        # Check axis
+        if c.attrs.get("axis", "") == "Y":
+            return True
+        # Check common names
+        if any(name == str(c.name).lower() for name in lat_names):
+            return True
+        return False
+
+    def is_lon(c):
+        # Check units
+        units = c.attrs.get("units", "").lower()
+        if "degree" in units and ("east" in units or "e" == units):
+            return True
+        # Check standard_name
+        if c.attrs.get("standard_name", "") == "longitude":
+            return True
+        # Check axis
+        if c.attrs.get("axis", "") == "X":
+            return True
+        # Check common names
+        if any(name == str(c.name).lower() for name in lon_names):
+            return True
+        return False
+
+    found_lat = None
+    found_lon = None
+
+    # Check coordinates first
+    for name in data.coords:
+        coord = data.coords[name]
+        if is_lat(coord):
+            found_lat = name
+        if is_lon(coord):
+            found_lon = name
+
+    # Fallback to dims if not found in coords (though usually they are the same)
+    if not found_lat or not found_lon:
+        for name in data.dims:
+            if name in data.coords:
+                continue  # already checked
+            # If it's a dim but not a coord, it's harder to check attrs
+            # but we can check the name
+            if not found_lat and name.lower() in lat_names:
+                found_lat = name
+            if not found_lon and name.lower() in lon_names:
+                found_lon = name
+
+    if not found_lat or not found_lon:
+        raise ValueError(
+            f"Could not identify spatial coordinates. Found lat={found_lat}, lon={found_lon}. "
+            f"Available coords: {list(data.coords.keys())}"
+        )
+
+    return found_lat, found_lon
+
+
+def ensure_monotonic(data: xr.DataArray, lat_name: str, lon_name: str) -> xr.DataArray:
+    """Ensure latitude is increasing and data is properly oriented.
+
+    Parameters
+    ----------
+    data : xr.DataArray
+        The data to orient.
+    lat_name : str
+        The name of the latitude coordinate.
+    lon_name : str
+        The name of the longitude coordinate.
+
+    Returns
+    -------
+    xr.DataArray
+        The oriented data array.
+    """
+    # We only handle 1D coordinates for monotonicity check for now
+    # If coordinates are 2D, we assume they are correct or handled by the transform
+    if data[lat_name].ndim == 1:
+        if data[lat_name][0] > data[lat_name][-1]:
+            data = data.sortby(lat_name, ascending=True)
+
+    if data[lon_name].ndim == 1:
+        # For longitude, we often want to ensure it's -180 to 180 or 0 to 360 consistently
+        # But most importantly, it should be monotonic
+        if data[lon_name][0] > data[lon_name][-1]:
+            data = data.sortby(lon_name, ascending=True)
+
+    return data
+
+
 def _set_outline_patch_alpha(ax, alpha=0):
     """Set the transparency of map outline patches for Cartopy GeoAxes.
 

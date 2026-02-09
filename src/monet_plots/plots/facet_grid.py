@@ -167,6 +167,14 @@ class SpatialFacetGridPlot(FacetGridPlot):
 
         self.projection = projection or ccrs.PlateCarree()
 
+        # Try to identify spatial coordinates
+        from ..plot_utils import identify_coords
+
+        try:
+            self._lat_name, self._lon_name = identify_coords(data)
+        except Exception:
+            self._lat_name, self._lon_name = "lat", "lon"
+
         # Handle xr.Dataset by converting to DataArray if faceting by variable
         self.is_dataset = isinstance(data, xr.Dataset)
         if self.is_dataset:
@@ -265,8 +273,8 @@ class SpatialFacetGridPlot(FacetGridPlot):
         self,
         plotter_class: type,
         *,
-        x: str = "lon",
-        y: str = "lat",
+        x: str | None = None,
+        y: str | None = None,
         var_name: str | None = None,
         **kwargs: Any,
     ) -> None:
@@ -286,6 +294,11 @@ class SpatialFacetGridPlot(FacetGridPlot):
         **kwargs : Any
             Arguments passed to the plotter and map features.
         """
+        if x is None:
+            x = self._lon_name
+        if y is None:
+            y = self._lat_name
+
         if var_name is None:
             if "variable" in self.data.columns:
                 var_name = "value"

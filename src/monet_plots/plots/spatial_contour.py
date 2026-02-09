@@ -22,7 +22,7 @@ class SpatialContourPlot(SpatialPlot):
     def __init__(
         self,
         modelvar: Any,
-        gridobj,
+        gridobj=None,
         date=None,
         discrete: bool = True,
         ncolors: int = None,
@@ -36,10 +36,8 @@ class SpatialContourPlot(SpatialPlot):
         Args:
             modelvar (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray):
                 2D model variable array to contour.
-            modelvar (np.ndarray, pd.DataFrame, pd.Series, xr.DataArray):
-                2D model variable array to contour.
-            gridobj (object): Object with LAT and LON variables.
-            date (datetime.datetime): Date/time for the plot title.
+            gridobj (object, optional): Object with LAT and LON variables.
+            date (datetime.datetime, optional): Date/time for the plot title.
             discrete (bool): If True, use a discrete colorbar.
             ncolors (int, optional): Number of discrete colors.
             dtype (str): Data type for colorbar tick labels.
@@ -47,7 +45,7 @@ class SpatialContourPlot(SpatialPlot):
                 projection and features.
         """
         super().__init__(*args, **kwargs)
-        self.modelvar = np.asarray(modelvar)
+        self.modelvar = modelvar
         self.gridobj = gridobj
         self.date = date
         self.discrete = discrete
@@ -56,33 +54,61 @@ class SpatialContourPlot(SpatialPlot):
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial contour plot."""
-        # Draw map features and get remaining kwargs for contourf
-        plot_kwargs = self.add_features(**kwargs)
+        # Combine kwargs: plot() arguments override constructor-passed plot_kwargs
+        plot_kwargs = self.plot_kwargs.copy()
+        plot_kwargs.update(self.add_features(**kwargs))
 
-        # Try to handle different gridobj structures
-        if hasattr(self.gridobj, "variables"):
-            lat_var = self.gridobj.variables["LAT"]
-            lon_var = self.gridobj.variables["LON"]
+        import xarray as xr
 
-            # Flexible indexing based on dimension count
-            if lat_var.ndim == 4:
-                lat = lat_var[0, 0, :, :].squeeze()
-                lon = lon_var[0, 0, :, :].squeeze()
-            elif lat_var.ndim == 3:
-                lat = lat_var[0, :, :].squeeze()
-                lon = lon_var[0, :, :].squeeze()
-            else:
-                lat = lat_var.squeeze()
-                lon = lon_var.squeeze()
+        # Try to identify coordinates if using xarray
+        if isinstance(self.modelvar, xr.DataArray):
+            try:
+                lat_name, lon_name = self._identify_coords(self.modelvar)
+                data = self._ensure_monotonic(self.modelvar, lat_name, lon_name)
+                lat = data[lat_name]
+                lon = data[lon_name]
+                model_data = data.values
+                # For contourf, if lat/lon are 1D, we might need meshgrid
+                # but matplotlib often handles 1D lat/lon for contourf if they match dims
+            except (ValueError, AttributeError):
+                model_data = np.asarray(self.modelvar)
+                lat, lon = None, None
         else:
-            # Assume it's already an array or similar
-            lat = self.gridobj.LAT
-            lon = self.gridobj.LON
+            model_data = np.asarray(self.modelvar)
+            lat, lon = None, None
+
+        # Try to handle different gridobj structures if xarray failed or not present
+        if lat is None or lon is None:
+            if hasattr(self.gridobj, "variables"):
+                lat_var = self.gridobj.variables["LAT"]
+                lon_var = self.gridobj.variables["LON"]
+
+                # Flexible indexing based on dimension count
+                if lat_var.ndim == 4:
+                    lat = lat_var[0, 0, :, :].squeeze()
+                    lon = lon_var[0, 0, :, :].squeeze()
+                elif lat_var.ndim == 3:
+                    lat = lat_var[0, :, :].squeeze()
+                    lon = lon_var[0, :, :].squeeze()
+                else:
+                    lat = lat_var.squeeze()
+                    lon = lon_var.squeeze()
+            elif hasattr(self.gridobj, "LAT") and hasattr(self.gridobj, "LON"):
+                # Assume it's already an array or similar
+                lat = self.gridobj.LAT
+                lon = self.gridobj.LON
 
         # Data is in lat/lon, so specify transform
         plot_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        mesh = self.ax.contourf(lon, lat, self.modelvar, **plot_kwargs)
+        # Remove arguments that contourf doesn't support (common in FacetGrid)
+        plot_kwargs.pop("color", None)
+        plot_kwargs.pop("label", None)
+
+        if lat is not None and lon is not None:
+            mesh = self.ax.contourf(lon, lat, model_data, **plot_kwargs)
+        else:
+            mesh = self.ax.contourf(model_data, **plot_kwargs)
 
         cmap = plot_kwargs.get("cmap")
         levels = plot_kwargs.get("levels")
@@ -94,21 +120,23 @@ class SpatialContourPlot(SpatialPlot):
                 if isinstance(levels, int):
                     ncolors = levels - 1
                     levels_seq = np.linspace(
-                        np.nanmin(self.modelvar), np.nanmax(self.modelvar), levels
+                        np.nanmin(model_data), np.nanmax(model_data), levels
                     )
                 else:
                     ncolors = len(levels) - 1
                     levels_seq = levels
             else:
                 levels_seq = levels
-            c, _ = colorbar_index(
-                ncolors,
-                cmap,
-                minval=levels_seq[0],
-                maxval=levels_seq[-1],
-                dtype=self.dtype,
-                ax=self.ax,
-            )
+
+            if levels_seq is not None:
+                c, _ = colorbar_index(
+                    ncolors,
+                    cmap,
+                    minval=levels_seq[0],
+                    maxval=levels_seq[-1],
+                    dtype=self.dtype,
+                    ax=self.ax,
+                )
         else:
             self.add_colorbar(mesh)
 
