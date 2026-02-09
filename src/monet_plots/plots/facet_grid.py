@@ -193,38 +193,53 @@ class SpatialFacetGridPlot(FacetGridPlot):
             if ax is None:
                 continue
             title = ax.get_title()
-            if " = " in title:
-                dim, val = title.split(" = ")
-                dim = dim.strip()
-                val = val.strip()
 
-                # Handle date-time formatting
-                try:
-                    dt = pd.to_datetime(val)
-                    val = dt.strftime("%Y-%m-%d %H:%M")
-                except (ValueError, TypeError):
-                    pass
+            # Handle titles that might have multiple facets (e.g. "row = val | col = val")
+            parts = title.split(" | ")
+            new_parts = []
 
-                # Handle long_name for dimensions/variables
-                if dim == "variable" and self.is_dataset:
-                    try:
-                        # self.original_data is the original Dataset
-                        var_obj = self.original_data[val]
-                        long_name = var_obj.attrs.get("long_name", val)
-                        units = var_obj.attrs.get("units", "")
-                        val = f"{long_name} ({units})" if units else long_name
-                        dim = ""
-                    except (KeyError, AttributeError):
-                        pass
-                elif dim in self.original_data.coords:
-                    try:
-                        coord_obj = self.original_data.coords[dim]
-                        long_name = coord_obj.attrs.get("long_name", dim)
-                        dim = long_name
-                    except (KeyError, AttributeError):
-                        pass
+            for part in parts:
+                if " = " in part:
+                    # Use split(" = ", 1) to handle values that might contain " = "
+                    dim_val = part.split(" = ", 1)
+                    if len(dim_val) == 2:
+                        dim, val = dim_val
+                        dim = dim.strip()
+                        val = val.strip()
 
-                ax.set_title(f"{dim} {val}".strip())
+                        # Handle date-time formatting
+                        try:
+                            dt = pd.to_datetime(val)
+                            val = dt.strftime("%Y-%m-%d %H:%M")
+                        except (ValueError, TypeError):
+                            pass
+
+                        # Handle long_name for dimensions/variables
+                        if dim == "variable" and self.is_dataset:
+                            try:
+                                # self.original_data is the original Dataset
+                                var_obj = self.original_data[val]
+                                long_name = var_obj.attrs.get("long_name", val)
+                                units = var_obj.attrs.get("units", "")
+                                val = f"{long_name} ({units})" if units else long_name
+                                dim = ""
+                            except (KeyError, AttributeError):
+                                pass
+                        elif dim in self.original_data.coords:
+                            try:
+                                coord_obj = self.original_data.coords[dim]
+                                long_name = coord_obj.attrs.get("long_name", dim)
+                                dim = long_name
+                            except (KeyError, AttributeError):
+                                pass
+
+                        new_parts.append(f"{dim} {val}".strip())
+                    else:
+                        new_parts.append(part)
+                else:
+                    new_parts.append(part)
+
+            ax.set_title(" | ".join(new_parts))
 
     def add_map_features(self, **kwargs: Any) -> None:
         """Add cartopy features to all facets.
