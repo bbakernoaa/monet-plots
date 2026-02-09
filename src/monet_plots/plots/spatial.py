@@ -104,11 +104,15 @@ class SpatialPlot(BasePlot):
     def _identify_coords(self, data: xr.DataArray | xr.Dataset) -> tuple[str, str]:
         """Identify latitude and longitude coordinates in an xarray object."""
         from ..plot_utils import identify_coords
+
         return identify_coords(data)
 
-    def _ensure_monotonic(self, data: xr.DataArray, lat_name: str, lon_name: str) -> xr.DataArray:
+    def _ensure_monotonic(
+        self, data: xr.DataArray, lat_name: str, lon_name: str
+    ) -> xr.DataArray:
         """Ensure latitude is increasing and data is properly oriented."""
         from ..plot_utils import ensure_monotonic
+
         return ensure_monotonic(data, lat_name, lon_name)
 
     def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:

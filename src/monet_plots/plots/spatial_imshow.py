@@ -104,7 +104,12 @@ class SpatialImshowPlot(SpatialPlot):
             try:
                 lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
                 lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
-                extent = [float(lon.min()), float(lon.max()), float(lat.min()), float(lat.max())]
+                extent = [
+                    float(lon.min()),
+                    float(lon.max()),
+                    float(lat.min()),
+                    float(lat.max()),
+                ]
             except (KeyError, AttributeError, TypeError):
                 extent = imshow_kwargs.get("extent", None)
             model_data = np.asarray(self.modelvar)
