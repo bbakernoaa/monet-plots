@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
 import numpy as np
+import xarray as xr
 
 from ..colorbars import colorbar_index
 from .spatial import SpatialPlot
@@ -18,6 +19,17 @@ class SpatialContourPlot(SpatialPlot):
 
     This plot is useful for visualizing spatial data with continuous values.
     """
+
+    def __new__(cls, modelvar, *args, **kwargs):
+        if (
+            isinstance(modelvar, xr.Dataset)
+            and kwargs.get("ax") is None
+            and kwargs.get("fig") is None
+        ):
+            from .facet_grid import SpatialFacetGridPlot
+
+            return SpatialFacetGridPlot(modelvar, **kwargs).map_monet(cls, **kwargs)
+        return super().__new__(cls)
 
     def __init__(
         self,
@@ -52,13 +64,15 @@ class SpatialContourPlot(SpatialPlot):
         self.ncolors = ncolors
         self.dtype = dtype
 
+        # Automatically plot if data is provided and we're not faceting
+        if self.modelvar is not None:
+            self.plot()
+
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial contour plot."""
         # Combine kwargs: plot() arguments override constructor-passed plot_kwargs
         plot_kwargs = self.plot_kwargs.copy()
         plot_kwargs.update(self.add_features(**kwargs))
-
-        import xarray as xr
 
         # Try to identify coordinates if using xarray
         if isinstance(self.modelvar, xr.DataArray):

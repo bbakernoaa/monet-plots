@@ -6,10 +6,7 @@ import numpy as np
 import pandas as pd
 
 # Optional xarray import - will be used if available
-try:
-    import xarray as xr
-except ImportError:
-    xr = None
+import xarray as xr
 
 
 def to_dataframe(data: Any) -> pd.DataFrame:

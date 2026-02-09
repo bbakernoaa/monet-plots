@@ -413,6 +413,9 @@ class SpatialTrack(SpatialPlot):
         history = self.data.attrs.get("history", "")
         self.data.attrs["history"] = f"Plotted with monet-plots.SpatialTrack; {history}"
 
+        # Automatically plot
+        self.plot()
+
     def plot(self, **kwargs: Any) -> plt.Artist:
         """Plot the trajectory on the map.
 

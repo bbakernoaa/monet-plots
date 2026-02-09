@@ -21,6 +21,20 @@ class SpatialBiasScatterPlot(SpatialPlot):
     by the absolute magnitude of this difference, making larger biases more visible.
     """
 
+    def __new__(cls, df, *args, **kwargs):
+        import xarray as xr
+
+        if (
+            isinstance(df, xr.Dataset)
+            and kwargs.get("ax") is None
+            and kwargs.get("fig") is None
+            and ("col" in kwargs or "row" in kwargs)
+        ):
+            from .facet_grid import SpatialFacetGridPlot
+
+            return SpatialFacetGridPlot(df, **kwargs).map_monet(cls, **kwargs)
+        return super().__new__(cls)
+
     def __init__(
         self,
         df: Any,
@@ -59,6 +73,10 @@ class SpatialBiasScatterPlot(SpatialPlot):
         self.ncolors = ncolors
         self.fact = fact
         self.cmap = cmap
+
+        # Automatically plot
+        if self.df is not None:
+            self.plot()
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial bias scatter plot."""

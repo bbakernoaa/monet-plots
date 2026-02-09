@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
 import numpy as np
+import xarray as xr
 
 from ..colorbars import colorbar_index
 from .spatial import SpatialPlot
@@ -18,6 +19,17 @@ class SpatialImshowPlot(SpatialPlot):
 
     This plot is useful for visualizing 2D model data on a map.
     """
+
+    def __new__(cls, modelvar, *args, **kwargs):
+        if (
+            isinstance(modelvar, xr.Dataset)
+            and kwargs.get("ax") is None
+            and kwargs.get("fig") is None
+        ):
+            from .facet_grid import SpatialFacetGridPlot
+
+            return SpatialFacetGridPlot(modelvar, **kwargs).map_monet(cls, **kwargs)
+        return super().__new__(cls)
 
     def __init__(
         self,
@@ -56,6 +68,10 @@ class SpatialImshowPlot(SpatialPlot):
         self.ncolors = ncolors
         self.discrete = discrete
 
+        # Automatically plot if data is provided and we're not faceting
+        if self.modelvar is not None:
+            self.plot()
+
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial imshow plot.
 
@@ -76,8 +92,6 @@ class SpatialImshowPlot(SpatialPlot):
         imshow_kwargs.setdefault("transform", ccrs.PlateCarree())
 
         # Handle data orientation and coordinate identification if using xarray
-        import xarray as xr
-
         if isinstance(self.modelvar, xr.DataArray):
             try:
                 lat_name, lon_name = self._identify_coords(self.modelvar)
