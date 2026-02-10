@@ -15,7 +15,9 @@ def test_soccer_plot_calculation():
     assert len(plot.bias_data) == 3
     assert len(plot.error_data) == 3
     # MFB = 2 * (12-10)/(12+10) = 2 * 2 / 22 = 4/22 approx 0.1818 -> 18.18%
-    bias0 = plot.bias_data.iloc[0] if hasattr(plot.bias_data, "iloc") else plot.bias_data[0]
+    bias0 = (
+        plot.bias_data.iloc[0] if hasattr(plot.bias_data, "iloc") else plot.bias_data[0]
+    )
     assert np.isclose(bias0, 200.0 * 2 / 22)
 
     # Test plotting

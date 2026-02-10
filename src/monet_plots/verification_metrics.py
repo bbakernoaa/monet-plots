@@ -1233,7 +1233,9 @@ def compute_rps(
     >>> compute_rps(fcst, obs)
     0.025
     """
-    if isinstance(forecast_probs, xr.DataArray) and isinstance(observed_probs, xr.DataArray):
+    if isinstance(forecast_probs, xr.DataArray) and isinstance(
+        observed_probs, xr.DataArray
+    ):
         # Cumulative sum along category dimension
         cp = forecast_probs.cumsum(dim=category_dim)
         co = observed_probs.cumsum(dim=category_dim)
