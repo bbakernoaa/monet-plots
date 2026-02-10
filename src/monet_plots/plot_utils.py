@@ -4,12 +4,7 @@ from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
-
-# Optional xarray import - will be used if available
-try:
-    import xarray as xr
-except ImportError:
-    xr = None
+import xarray as xr
 
 
 def to_dataframe(data: Any) -> pd.DataFrame:
@@ -29,95 +24,13 @@ def to_dataframe(data: Any) -> pd.DataFrame:
     if isinstance(data, pd.DataFrame):
         return data
 
-    # Using hasattr to avoid direct dependency on xarray for users who don't have it
-    # installed.
     if hasattr(data, "to_dataframe"):  # Works for both xarray DataArray and Dataset
         return data.to_dataframe()
 
     if isinstance(data, np.ndarray):
-        if data.ndim == 1:
-            return pd.DataFrame(data, columns=["col_0"])
-            return pd.DataFrame(data, columns=["col_0"])
-        elif data.ndim == 2:
-            return pd.DataFrame(
-                data, columns=[f"col_{i}" for i in range(data.shape[1])]
-            )
-            return pd.DataFrame(
-                data, columns=[f"col_{i}" for i in range(data.shape[1])]
-            )
-        else:
-            raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
+        return _convert_numpy_to_dataframe(data)
 
     raise TypeError(f"Unsupported data type: {type(data).__name__}")
-
-
-def _validate_spatial_plot_params(kwargs):
-    """Validate parameters specific to SpatialPlot."""
-    if "discrete" in kwargs:
-        discrete = kwargs["discrete"]
-        if not isinstance(discrete, bool):
-            raise TypeError(
-                f"discrete parameter must be boolean, got {type(discrete).__name__}"
-            )
-
-    if "ncolors" in kwargs:
-        ncolors = kwargs["ncolors"]
-        if not isinstance(ncolors, int):
-            raise TypeError(
-                f"ncolors parameter must be integer, got {type(ncolors).__name__}"
-            )
-        if ncolors <= 0 or ncolors > 1000:
-            raise ValueError(
-                f"ncolors parameter must be between 1 and 1000, got {ncolors}"
-            )
-
-    _validate_plotargs(kwargs.get("plotargs"))
-
-
-def _validate_timeseries_plot_params(kwargs):
-    """Validate parameters specific to TimeSeriesPlot."""
-    if "x" in kwargs:
-        x = kwargs["x"]
-        if not isinstance(x, str):
-            raise TypeError(f"x parameter must be string, got {type(x).__name__}")
-
-    if "y" in kwargs:
-        y = kwargs["y"]
-        if not isinstance(y, str):
-            raise TypeError(f"y parameter must be string, got {type(y).__name__}")
-
-    _validate_plotargs(kwargs.get("plotargs"))
-    _validate_fillargs(kwargs.get("fillargs"))
-
-
-def _validate_plotargs(plotargs):
-    """Validate plotargs parameter."""
-    if plotargs is not None:
-        if not isinstance(plotargs, dict):
-            raise TypeError(
-                f"plotargs parameter must be dict, got {type(plotargs).__name__}"
-            )
-
-        if "cmap" in plotargs:
-            cmap = plotargs["cmap"]
-            if not isinstance(cmap, str):
-                raise TypeError(f"colormap must be string, got {type(cmap).__name__}")
-
-
-def _validate_fillargs(fillargs):
-    """Validate fillargs parameter."""
-    if fillargs is not None:
-        if not isinstance(fillargs, dict):
-            raise TypeError(
-                f"fillargs parameter must be dict, got {type(fillargs).__name__}"
-            )
-
-        if "alpha" in fillargs:
-            alpha = fillargs["alpha"]
-            if not isinstance(alpha, (int, float)):
-                raise TypeError(f"alpha must be numeric, got {type(alpha).__name__}")
-            if not 0 <= alpha <= 1:
-                raise ValueError(f"alpha must be between 0 and 1, got {alpha}")
 
 
 def _validate_spatial_plot_params(kwargs):
@@ -206,10 +119,6 @@ def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:
         _validate_spatial_plot_params(kwargs)
     elif plot_class == "TimeSeriesPlot" and method == "plot":
         _validate_timeseries_plot_params(kwargs)
-    if plot_class == "SpatialPlot" and method == "plot":
-        _validate_spatial_plot_params(kwargs)
-    elif plot_class == "TimeSeriesPlot" and method == "plot":
-        _validate_timeseries_plot_params(kwargs)
 
 
 def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None:
@@ -237,9 +146,6 @@ def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None
 
         for dim in required_dims:
             if dim not in data.dims:
-                raise ValueError(
-                    f"required dimension '{dim}' not found in data dimensions {data.dims}"
-                )
                 raise ValueError(
                     f"required dimension '{dim}' not found in data dimensions {data.dims}"
                 )
@@ -274,44 +180,10 @@ def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None
 
 def _try_xarray_conversion(data):
     """Try to convert data to xarray format."""
-    if xr is None:
-        return None
-
     # Check if already xarray
-    if hasattr(xr, "DataArray") and isinstance(data, xr.DataArray):
+    if isinstance(data, xr.DataArray):
         return data
-    if hasattr(xr, "Dataset") and isinstance(data, xr.Dataset):
-        return data
-
-    # Try xarray-like conversion
-    if hasattr(data, "to_dataset") and hasattr(data, "to_dataframe"):
-        try:
-            return data.to_dataset()
-        except Exception:
-            return None
-
-    return None
-
-
-def _convert_numpy_to_dataframe(data):
-    """Convert numpy array to DataFrame."""
-    if data.ndim == 1:
-        return pd.DataFrame(data, columns=["col_0"])
-    elif data.ndim == 2:
-        return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
-    else:
-        raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
-
-
-def _try_xarray_conversion(data):
-    """Try to convert data to xarray format."""
-    if xr is None:
-        return None
-
-    # Check if already xarray
-    if hasattr(xr, "DataArray") and isinstance(data, xr.DataArray):
-        return data
-    if hasattr(xr, "Dataset") and isinstance(data, xr.Dataset):
+    if isinstance(data, xr.Dataset):
         return data
 
     # Try xarray-like conversion
@@ -357,10 +229,6 @@ def _normalize_data(data: Any) -> Any:
     xarray_result = _try_xarray_conversion(data)
     if xarray_result is not None:
         return xarray_result
-    # Try xarray conversion first
-    xarray_result = _try_xarray_conversion(data)
-    if xarray_result is not None:
-        return xarray_result
 
     # Check if data is a pandas DataFrame
     if isinstance(data, pd.DataFrame):
@@ -368,7 +236,6 @@ def _normalize_data(data: Any) -> Any:
 
     # Check if data is numpy array
     if isinstance(data, np.ndarray):
-        return _convert_numpy_to_dataframe(data)
         return _convert_numpy_to_dataframe(data)
 
     # Fall back to existing to_dataframe logic for backward compatibility
@@ -451,6 +318,126 @@ def _dynamic_fig_size(obj):
 
     figsize = (10, 10 * scale)
     return figsize
+
+
+def identify_coords(data: xr.DataArray | xr.Dataset) -> tuple[str, str]:
+    """Identify latitude and longitude coordinates in an xarray object.
+
+    Uses CF conventions (units, axis, standard_name) and common naming
+    patterns to find the spatial dimensions.
+
+    Parameters
+    ----------
+    data : xr.DataArray or xr.Dataset
+        The data object to inspect.
+
+    Returns
+    -------
+    tuple[str, str]
+        A tuple of (lat_name, lon_name).
+
+    Raises
+    ----------
+    ValueError
+        If coordinates cannot be unambiguously identified.
+    """
+    lat_names = ["lat", "latitude", "y", "lat_2d"]
+    lon_names = ["lon", "longitude", "x", "lon_2d"]
+
+    def is_lat(c):
+        # Check units
+        units = c.attrs.get("units", "").lower()
+        if "degree" in units and ("north" in units or "n" == units):
+            return True
+        # Check standard_name
+        if c.attrs.get("standard_name", "") == "latitude":
+            return True
+        # Check axis
+        if c.attrs.get("axis", "") == "Y":
+            return True
+        # Check common names
+        if any(name == str(c.name).lower() for name in lat_names):
+            return True
+        return False
+
+    def is_lon(c):
+        # Check units
+        units = c.attrs.get("units", "").lower()
+        if "degree" in units and ("east" in units or "e" == units):
+            return True
+        # Check standard_name
+        if c.attrs.get("standard_name", "") == "longitude":
+            return True
+        # Check axis
+        if c.attrs.get("axis", "") == "X":
+            return True
+        # Check common names
+        if any(name == str(c.name).lower() for name in lon_names):
+            return True
+        return False
+
+    found_lat = None
+    found_lon = None
+
+    # Check coordinates first
+    for name in data.coords:
+        coord = data.coords[name]
+        if is_lat(coord):
+            found_lat = name
+        if is_lon(coord):
+            found_lon = name
+
+    # Fallback to dims if not found in coords (though usually they are the same)
+    if not found_lat or not found_lon:
+        for name in data.dims:
+            if name in data.coords:
+                continue  # already checked
+            # If it's a dim but not a coord, it's harder to check attrs
+            # but we can check the name
+            if not found_lat and name.lower() in lat_names:
+                found_lat = name
+            if not found_lon and name.lower() in lon_names:
+                found_lon = name
+
+    if not found_lat or not found_lon:
+        raise ValueError(
+            f"Could not identify spatial coordinates. Found lat={found_lat}, lon={found_lon}. "
+            f"Available coords: {list(data.coords.keys())}"
+        )
+
+    return found_lat, found_lon
+
+
+def ensure_monotonic(data: xr.DataArray, lat_name: str, lon_name: str) -> xr.DataArray:
+    """Ensure latitude is increasing and data is properly oriented.
+
+    Parameters
+    ----------
+    data : xr.DataArray
+        The data to orient.
+    lat_name : str
+        The name of the latitude coordinate.
+    lon_name : str
+        The name of the longitude coordinate.
+
+    Returns
+    -------
+    xr.DataArray
+        The oriented data array.
+    """
+    # We only handle 1D coordinates for monotonicity check for now
+    # If coordinates are 2D, we assume they are correct or handled by the transform
+    if data[lat_name].ndim == 1:
+        if data[lat_name][0] > data[lat_name][-1]:
+            data = data.sortby(lat_name, ascending=True)
+
+    if data[lon_name].ndim == 1:
+        # For longitude, we often want to ensure it's -180 to 180 or 0 to 360 consistently
+        # But most importantly, it should be monotonic
+        if data[lon_name][0] > data[lon_name][-1]:
+            data = data.sortby(lon_name, ascending=True)
+
+    return data
 
 
 def _set_outline_patch_alpha(ax, alpha=0):

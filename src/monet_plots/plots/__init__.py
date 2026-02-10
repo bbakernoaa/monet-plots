@@ -5,7 +5,7 @@ from .conditional_quantile import ConditionalQuantilePlot
 from .curtain import CurtainPlot
 from .diurnal_error import DiurnalErrorPlot
 from .ensemble import SpreadSkillPlot
-from .facet_grid import FacetGridPlot
+from .facet_grid import FacetGridPlot, SpatialFacetGridPlot
 from .fingerprint import FingerprintPlot
 from .kde import KDEPlot
 from .performance_diagram import PerformanceDiagramPlot
@@ -40,6 +40,7 @@ __all__ = [
     "WindBarbsPlot",
     "WindQuiverPlot",
     "FacetGridPlot",
+    "SpatialFacetGridPlot",
     "SpatialBiasScatterPlot",
     "SpatialContourPlot",
     "SpatialImshowPlot",

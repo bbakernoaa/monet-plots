@@ -22,8 +22,8 @@ def test_spatial_facet_grid_init():
     )
 
     grid = SpatialFacetGridPlot(data, col="time")
-    assert len(grid.grid.axes.flatten()) == 2
-    assert isinstance(grid.grid.axes.flatten()[0], GeoAxes)
+    assert len(grid.axs_flattened) == 2
+    assert isinstance(grid.axs_flattened[0], GeoAxes)
     plt.close()
 
 
@@ -40,7 +40,7 @@ def test_spatial_facet_grid_dataset_variable():
     ds["temp"].attrs["long_name"] = "Temperature"
 
     grid = SpatialFacetGridPlot(ds, col="variable")
-    titles = [ax.get_title() for ax in grid.grid.axes.flatten()]
+    titles = [ax.get_title() for ax in grid.axs_flattened]
     assert "Temperature" in titles[0]
     assert "pres" in titles[1]
     plt.close()
@@ -64,6 +64,6 @@ def test_spatial_facet_grid_map_monet():
     grid.map_monet(SpatialImshowPlot, coastlines=True)
 
     # Check that each axis has images (from imshow)
-    for ax in grid.grid.axes.flatten():
+    for ax in grid.axs_flattened:
         assert len(ax.images) > 0
     plt.close()

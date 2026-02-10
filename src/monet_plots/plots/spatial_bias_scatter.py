@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
+import xarray as xr
 import matplotlib.pyplot as plt
 from scipy.stats import scoreatpercentile as score
 
@@ -21,6 +22,18 @@ class SpatialBiasScatterPlot(SpatialPlot):
     by the absolute magnitude of this difference, making larger biases more visible.
     """
 
+    def __new__(cls, df, *args, **kwargs):
+        if (
+            isinstance(df, xr.Dataset)
+            and kwargs.get("ax") is None
+            and kwargs.get("fig") is None
+            and ("col" in kwargs or "row" in kwargs)
+        ):
+            from .facet_grid import SpatialFacetGridPlot
+
+            return SpatialFacetGridPlot(df, **kwargs).map_monet(cls, **kwargs)
+        return super().__new__(cls)
+
     def __init__(
         self,
         df: Any,
@@ -31,6 +44,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
         ncolors: int = 15,
         fact: float = 1.5,
         cmap: str = "RdBu_r",
+        *args,
         **kwargs,
     ):
         """
@@ -50,7 +64,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
                       include `projection`, `figsize`, `ax`, and cartopy
                       features like `states`, `coastlines`, etc.
         """
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
         self.df = to_dataframe(df)
         self.col1 = col1
         self.col2 = col2
@@ -59,6 +73,10 @@ class SpatialBiasScatterPlot(SpatialPlot):
         self.ncolors = ncolors
         self.fact = fact
         self.cmap = cmap
+
+        # Automatically plot
+        if self.df is not None:
+            self.plot()
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial bias scatter plot."""
