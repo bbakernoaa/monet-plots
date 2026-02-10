@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import xarray as xr
@@ -145,7 +146,6 @@ class FacetGridPlot(BasePlot):
             )
 
         # Initialize BasePlot with the figure and first axes from the grid
-        import numpy as np
 
         # xarray uses 'axs', seaborn uses 'axes'
         grid_axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
@@ -160,8 +160,6 @@ class FacetGridPlot(BasePlot):
     @property
     def axs_flattened(self):
         """Returns a flattened array of axes from the grid."""
-        import numpy as np
-
         grid_axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
         return np.array(grid_axes).flatten()
 

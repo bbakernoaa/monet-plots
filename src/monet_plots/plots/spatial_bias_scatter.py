@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
+import xarray as xr
 import matplotlib.pyplot as plt
 from scipy.stats import scoreatpercentile as score
 
@@ -22,8 +23,6 @@ class SpatialBiasScatterPlot(SpatialPlot):
     """
 
     def __new__(cls, df, *args, **kwargs):
-        import xarray as xr
-
         if (
             isinstance(df, xr.Dataset)
             and kwargs.get("ax") is None
@@ -45,6 +44,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
         ncolors: int = 15,
         fact: float = 1.5,
         cmap: str = "RdBu_r",
+        *args,
         **kwargs,
     ):
         """
@@ -64,7 +64,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
                       include `projection`, `figsize`, `ax`, and cartopy
                       features like `states`, `coastlines`, etc.
         """
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
         self.df = to_dataframe(df)
         self.col1 = col1
         self.col2 = col2
