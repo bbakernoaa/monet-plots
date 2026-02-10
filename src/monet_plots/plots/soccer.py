@@ -111,7 +111,7 @@ class SoccerPlot(BasePlot):
             self.error_data = self.data[error_col]
 
     def _calculate_metrics(self, obs_col: str, mod_col: str) -> None:
-        """Calculate MFB/MFE or NMB/NME using vectorized operations.
+        """Calculate MFB/MFE or NMB/NME using vectorized operations from verification_metrics.
 
         Parameters
         ----------
@@ -120,63 +120,27 @@ class SoccerPlot(BasePlot):
         mod_col : str
             Column/variable name for model values.
         """
+        from .. import verification_metrics
+
         obs = self.data[obs_col]
         mod = self.data[mod_col]
 
+        # Use dim=[] to avoid reduction, getting per-point values for the scatter plot.
+        # This maintains lazy evaluation if the input is Dask-backed.
+        dim: list[str] | tuple[()] = [] if isinstance(obs, xr.DataArray) else ()
+
         if self.metric == "fractional":
-            # Mean Fractional Bias and Error
-            denom = (obs + mod).astype(float)
-            num_bias = 200.0 * (mod - obs)
-            num_error = 200.0 * np.abs(mod - obs)
-
-            if isinstance(denom, xr.DataArray):
-                self.bias_data = (num_bias / denom).where(denom != 0, np.nan)
-                self.error_data = (num_error / denom).where(denom != 0, np.nan)
-            else:
-                self.bias_data = np.divide(
-                    num_bias, denom, out=np.full(denom.shape, np.nan), where=denom != 0
-                )
-                self.error_data = np.divide(
-                    num_error, denom, out=np.full(denom.shape, np.nan), where=denom != 0
-                )
-
+            self.bias_data = verification_metrics.compute_mfb(obs, mod, dim=dim)
+            self.error_data = verification_metrics.compute_mfe(obs, mod, dim=dim)
             self.xlabel = "Mean Fractional Bias (%)"
             self.ylabel = "Mean Fractional Error (%)"
-
         elif self.metric == "normalized":
-            # Normalized Mean Bias and Error
-            obs_float = obs.astype(float)
-            num_bias = 100.0 * (mod - obs)
-            num_error = 100.0 * np.abs(mod - obs)
-
-            if isinstance(obs_float, xr.DataArray):
-                self.bias_data = (num_bias / obs_float).where(obs_float != 0, np.nan)
-                self.error_data = (num_error / obs_float).where(obs_float != 0, np.nan)
-            else:
-                self.bias_data = np.divide(
-                    num_bias,
-                    obs_float,
-                    out=np.full(obs_float.shape, np.nan),
-                    where=obs_float != 0,
-                )
-                self.error_data = np.divide(
-                    num_error,
-                    obs_float,
-                    out=np.full(obs_float.shape, np.nan),
-                    where=obs_float != 0,
-                )
-
+            self.bias_data = verification_metrics.compute_nmb(obs, mod, dim=dim)
+            self.error_data = verification_metrics.compute_nme(obs, mod, dim=dim)
             self.xlabel = "Normalized Mean Bias (%)"
             self.ylabel = "Normalized Mean Error (%)"
         else:
             raise ValueError("metric must be 'fractional' or 'normalized'")
-
-        # Update history if Xarray
-        if isinstance(self.bias_data, xr.DataArray):
-            history = self.bias_data.attrs.get("history", "")
-            self.bias_data.attrs["history"] = (
-                f"Calculated {self.metric} soccer metrics; {history}"
-            )
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the soccer plot.
@@ -220,14 +184,12 @@ class SoccerPlot(BasePlot):
             )
             self.ax.add_patch(rect_goal)
 
-        # Plot points - compute if lazy
+        # Plot points - handle lazy evaluation gracefully.
+        # Matplotlib's scatter can handle xarray DataArrays, which may trigger
+        # computation internally, but we avoid explicit .compute() here to
+        # maintain the Dask graph as long as possible.
         bias = self.bias_data
         error = self.error_data
-
-        if hasattr(bias, "compute"):
-            bias = bias.compute()
-        if hasattr(error, "compute"):
-            error = error.compute()
 
         scatter_kwargs = {"zorder": 5}
         scatter_kwargs.update(kwargs)

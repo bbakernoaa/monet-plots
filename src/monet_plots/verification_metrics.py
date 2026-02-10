@@ -246,6 +246,194 @@ def compute_pofd(
     )
 
 
+def compute_mfb(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Fractional Bias (MFB).
+
+    MFB = 200 * Mean((mod - obs) / (mod + obs))
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the mean.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated MFB.
+    """
+    denominator = (mod + obs).astype(float)
+    numerator = 200.0 * (mod - obs)
+
+    if isinstance(obs, (xr.DataArray, xr.Dataset)):
+        res = (numerator / denominator).mean(dim=dim)
+        res = res.where(denominator.mean(dim=dim) != 0, 0)
+        return _update_history(res, "Calculated Mean Fractional Bias")
+
+    # Fallback for numpy/pandas. Converting to numpy avoids pandas axis issues with axis=()
+    obs_vals = np.asarray(obs)
+    mod_vals = np.asarray(mod)
+    denominator_vals = (mod_vals + obs_vals).astype(float)
+    numerator_vals = 200.0 * (mod_vals - obs_vals)
+
+    return np.mean(
+        np.divide(
+            numerator_vals,
+            denominator_vals,
+            out=np.zeros_like(denominator_vals, dtype=float),
+            where=denominator_vals != 0,
+        ),
+        axis=dim,
+    )
+
+
+def compute_mfe(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Fractional Error (MFE).
+
+    MFE = 200 * Mean(abs(mod - obs) / (mod + obs))
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the mean.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated MFE.
+    """
+    denominator = (mod + obs).astype(float)
+    numerator = 200.0 * np.abs(mod - obs)
+
+    if isinstance(obs, (xr.DataArray, xr.Dataset)):
+        res = (numerator / denominator).mean(dim=dim)
+        res = res.where(denominator.mean(dim=dim) != 0, 0)
+        return _update_history(res, "Calculated Mean Fractional Error")
+
+    # Fallback for numpy/pandas
+    obs_vals = np.asarray(obs)
+    mod_vals = np.asarray(mod)
+    denominator_vals = (mod_vals + obs_vals).astype(float)
+    numerator_vals = 200.0 * np.abs(mod_vals - obs_vals)
+
+    return np.mean(
+        np.divide(
+            numerator_vals,
+            denominator_vals,
+            out=np.zeros_like(denominator_vals, dtype=float),
+            where=denominator_vals != 0,
+        ),
+        axis=dim,
+    )
+
+
+def compute_nmb(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Normalized Mean Bias (NMB).
+
+    NMB = 100 * Sum(mod - obs) / Sum(obs)
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the sum.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated NMB.
+    """
+    if isinstance(obs, (xr.DataArray, xr.Dataset)):
+        denominator = obs.sum(dim=dim).astype(float)
+        numerator = 100.0 * (mod - obs).sum(dim=dim)
+        res = numerator / denominator
+        res = res.where(denominator != 0, 0)
+        return _update_history(res, "Calculated Normalized Mean Bias")
+
+    # Fallback for numpy/pandas
+    obs_vals = np.asarray(obs)
+    mod_vals = np.asarray(mod)
+    denominator = np.sum(obs_vals, axis=dim).astype(float)
+    numerator = 100.0 * np.sum(mod_vals - obs_vals, axis=dim)
+
+    return np.divide(
+        numerator,
+        denominator,
+        out=np.zeros_like(denominator, dtype=float),
+        where=denominator != 0,
+    )
+
+
+def compute_nme(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Normalized Mean Error (NME).
+
+    NME = 100 * Sum(abs(mod - obs)) / Sum(obs)
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the sum.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated NME.
+    """
+    if isinstance(obs, (xr.DataArray, xr.Dataset)):
+        denominator = obs.sum(dim=dim).astype(float)
+        numerator = 100.0 * np.abs(mod - obs).sum(dim=dim)
+        res = numerator / denominator
+        res = res.where(denominator != 0, 0)
+        return _update_history(res, "Calculated Normalized Mean Error")
+
+    # Fallback for numpy/pandas
+    obs_vals = np.asarray(obs)
+    mod_vals = np.asarray(mod)
+    denominator = np.sum(obs_vals, axis=dim).astype(float)
+    numerator = 100.0 * np.sum(np.abs(mod_vals - obs_vals), axis=dim)
+
+    return np.divide(
+        numerator,
+        denominator,
+        out=np.zeros_like(denominator, dtype=float),
+        where=denominator != 0,
+    )
+
+
 def compute_bias(
     obs: Union[np.ndarray, xr.DataArray],
     mod: Union[np.ndarray, xr.DataArray],
@@ -1010,3 +1198,65 @@ def compute_crp_skill_score(
         out=np.ones_like(crps, dtype=float),
         where=reference_crps != 0,
     )
+
+
+def compute_rps(
+    forecast_probs: Union[np.ndarray, xr.DataArray],
+    observed_probs: Union[np.ndarray, xr.DataArray],
+    category_dim: str = "category",
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Ranked Probability Score (RPS).
+
+    RPS = 1/(K-1) * Sum_{k=1}^{K-1} (CP_k - CO_k)^2
+    where CP and CO are cumulative probabilities for forecast and observation.
+
+    Parameters
+    ----------
+    forecast_probs : Union[np.ndarray, xr.DataArray]
+        Forecast probabilities for each category. Sum over categories should be 1.
+    observed_probs : Union[np.ndarray, xr.DataArray]
+        Observed probabilities (usually one-hot encoded).
+    category_dim : str, optional
+        The name of the category dimension, by default "category".
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated RPS. Returns xarray.DataArray if inputs are xarray.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> fcst = np.array([0.1, 0.7, 0.2])
+    >>> obs = np.array([0, 1, 0])
+    >>> compute_rps(fcst, obs)
+    0.025
+    """
+    if isinstance(forecast_probs, xr.DataArray) and isinstance(observed_probs, xr.DataArray):
+        # Cumulative sum along category dimension
+        cp = forecast_probs.cumsum(dim=category_dim)
+        co = observed_probs.cumsum(dim=category_dim)
+
+        k = forecast_probs.sizes[category_dim]
+        # We only sum up to K-1 categories
+        sq_diff = (cp - co) ** 2
+        # Use isel to exclude the last category if it's the 1.0/1.0 cumulative sum
+        # but the standard formula often just sums all and the last is 0.
+        # Actually, the standard formula is 1/(K-1) * sum_{k=1}^{K-1}.
+        # If we sum all K categories, the last term is (1-1)^2 = 0,
+        # so we can just sum all and divide by (K-1).
+        rps = sq_diff.sum(dim=category_dim) / (k - 1)
+        return _update_history(rps, f"Calculated RPS along {category_dim}")
+
+    # Fallback for numpy
+    cp = np.cumsum(forecast_probs, axis=-1)
+    co = np.cumsum(observed_probs, axis=-1)
+    k = forecast_probs.shape[-1]
+    rps = np.sum((cp - co) ** 2, axis=-1) / (k - 1)
+
+    if isinstance(forecast_probs, (xr.DataArray, xr.Dataset)):
+        res = xr.DataArray(rps, name="rps")
+        return _update_history(res, "Calculated RPS")
+
+    return rps

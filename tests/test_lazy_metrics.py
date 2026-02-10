@@ -324,3 +324,61 @@ def test_raw_dask_skill_scores():
     assert hasattr(crpss, "chunks")
     res_crpss = crpss.compute()
     assert isinstance(res_crpss, np.ndarray)
+
+
+def test_lazy_fractional_metrics():
+    """Test MFB, MFE, NMB, NME with lazy inputs."""
+    obs_data = np.array([10.0, 20.0, 30.0])
+    mod_data = np.array([12.0, 18.0, 33.0])
+
+    obs_lazy = xr.DataArray(obs_data, dims=["x"]).chunk({"x": 2})
+    mod_lazy = xr.DataArray(mod_data, dims=["x"]).chunk({"x": 2})
+
+    # Test MFB
+    mfb = verification_metrics.compute_mfb(obs_lazy, mod_lazy)
+    assert mfb.chunks is not None
+    expected_mfb = np.mean(200.0 * (mod_data - obs_data) / (mod_data + obs_data))
+    np.testing.assert_allclose(mfb.compute(), expected_mfb)
+    assert "Calculated Mean Fractional Bias" in mfb.attrs["history"]
+
+    # Test NMB
+    nmb = verification_metrics.compute_nmb(obs_lazy, mod_lazy)
+    assert nmb.chunks is not None
+    expected_nmb = 100.0 * np.sum(mod_data - obs_data) / np.sum(obs_data)
+    np.testing.assert_allclose(nmb.compute(), expected_nmb)
+
+    # Test per-point (dim=[])
+    fb_lazy = verification_metrics.compute_mfb(obs_lazy, mod_lazy, dim=[])
+    assert fb_lazy.chunks is not None
+    assert fb_lazy.shape == (3,)
+    np.testing.assert_allclose(
+        fb_lazy.compute(), 200.0 * (mod_data - obs_data) / (mod_data + obs_data)
+    )
+
+
+def test_lazy_rps():
+    """Test RPS with lazy multidimensional inputs."""
+    # (samples=5, categories=3)
+    fcst_data = np.array(
+        [[0.8, 0.1, 0.1], [0.2, 0.6, 0.2], [0.1, 0.2, 0.7], [0.4, 0.4, 0.2], [0.1, 0.1, 0.8]]
+    )
+    obs_data = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0], [0, 0, 1]])
+
+    fcst_lazy = xr.DataArray(
+        da.from_array(fcst_data, chunks=(2, 3)), dims=["sample", "category"]
+    )
+    obs_lazy = xr.DataArray(
+        da.from_array(obs_data, chunks=(2, 3)), dims=["sample", "category"]
+    )
+
+    rps_lazy = verification_metrics.compute_rps(fcst_lazy, obs_lazy)
+
+    assert rps_lazy.chunks is not None
+    assert rps_lazy.dims == ("sample",)
+
+    # Manual calculation for first sample
+    # CP = [0.8, 0.9, 1.0], CO = [1, 1, 1]
+    # (CP-CO)^2 = [0.04, 0.01, 0] -> sum = 0.05
+    # RPS = 0.05 / 2 = 0.025
+    np.testing.assert_allclose(rps_lazy.compute()[0], 0.025)
+    assert "Calculated RPS" in rps_lazy.attrs["history"]
