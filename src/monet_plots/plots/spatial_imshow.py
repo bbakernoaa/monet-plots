@@ -21,8 +21,17 @@ class SpatialImshowPlot(SpatialPlot):
     """
 
     def __new__(cls, modelvar, *args, **kwargs):
+        # Automatically redirect to SpatialFacetGridPlot if:
+        # 1. modelvar is a Dataset OR it's a DataArray and col/row are provided
+        # 2. No pre-existing axes are provided
         if (
-            isinstance(modelvar, xr.Dataset)
+            (
+                isinstance(modelvar, xr.Dataset)
+                or (
+                    isinstance(modelvar, xr.DataArray)
+                    and ("col" in kwargs or "row" in kwargs)
+                )
+            )
             and kwargs.get("ax") is None
             and kwargs.get("fig") is None
         ):

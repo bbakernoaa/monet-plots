@@ -99,6 +99,30 @@ def test_facet_grid_xarray_auto_coords():
     plt.close(sfg.fig)
 
 
+def test_imshow_dataarray_faceting_redirect():
+    """Verify that SpatialImshowPlot(DataArray, col='...') redirects to SpatialFacetGridPlot."""
+    time = [0, 1]
+    latitude = np.linspace(30, 40, 10)
+    longitude = np.linspace(-100, -90, 10)
+    da = xr.DataArray(
+        np.random.rand(2, 10, 10),
+        coords={"time": time, "latitude": latitude, "longitude": longitude},
+        dims=["time", "latitude", "longitude"],
+        name="val",
+    )
+
+    # Calling SpatialImshowPlot with 'col' should return a SpatialFacetGridPlot result
+    # which is the result of map_monet
+    res = SpatialImshowPlot(da, col="time")
+
+    # In my implementation, SpatialFacetGridPlot.map_monet returns self
+    from monet_plots.plots.facet_grid import SpatialFacetGridPlot
+
+    assert isinstance(res, SpatialFacetGridPlot)
+    assert len(res.grid.axes.flatten()) == 2
+    plt.close(res.fig)
+
+
 def test_constructor_kwargs_persistence():
     """Verify that kwargs passed to constructor are used in plot()."""
     da = xr.DataArray(
