@@ -90,7 +90,7 @@ def test_facet_grid_xarray_auto_coords():
     # Should use 'latitude' and 'longitude' automatically
     sfg.map_monet(SpatialImshowPlot)
 
-    for ax in sfg.grid.axes.flatten():
+    for ax in sfg.axs_flattened:
         if ax is not None:
             assert len(ax.images) > 0
             extent = ax.images[0].get_extent()
@@ -119,7 +119,7 @@ def test_imshow_dataarray_faceting_redirect():
     from monet_plots.plots.facet_grid import SpatialFacetGridPlot
 
     assert isinstance(res, SpatialFacetGridPlot)
-    assert len(res.grid.axes.flatten()) == 2
+    assert len(res.axs_flattened) == 2
     plt.close(res.fig)
 
 

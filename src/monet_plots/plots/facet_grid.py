@@ -416,6 +416,21 @@ class SpatialFacetGridPlot(FacetGridPlot):
         for arg in fg_args:
             kwargs.pop(arg, None)
 
+        # Discovery of var_name if not provided
+        if var_name is None:
+            if self.engine == "seaborn":
+                if "variable" in self.data.columns:
+                    var_name = "value"
+                elif isinstance(self.raw_data, xr.DataArray):
+                    var_name = self.raw_data.name
+                elif isinstance(self.raw_data, xr.Dataset):
+                    var_name = list(self.raw_data.data_vars)[0]
+            else:  # xarray engine
+                if isinstance(self.grid.data, xr.DataArray):
+                    var_name = self.grid.data.name
+                elif isinstance(self.grid.data, xr.Dataset):
+                    var_name = list(self.grid.data.data_vars)[0]
+
         if self.engine == "xarray":
             # For xarray engine, we manually iterate over facets to have better
             # control over data slicing and plotting.
@@ -425,16 +440,21 @@ class SpatialFacetGridPlot(FacetGridPlot):
                 plt.sca(ax)
                 # Slice the data for this facet
                 da_slice = self.grid.data.sel(name_dict)
+
+                # If the slice is a Dataset, convert to DataArray
+                if isinstance(da_slice, xr.Dataset):
+                    if var_name is not None and var_name in da_slice.data_vars:
+                        da_slice = da_slice[var_name]
+                    elif len(da_slice.data_vars) == 1:
+                        da_slice = da_slice[list(da_slice.data_vars)[0]]
+                    else:
+                        raise ValueError(
+                            f"Ambiguous plot: Dataset has multiple variables {list(da_slice.data_vars)} and no var_name was specified."
+                        )
+
                 # Create plotter instance (automatically plots)
                 plotter_class(da_slice, ax=ax, **kwargs)
         else:
-            if var_name is None:
-                if "variable" in self.data.columns:
-                    var_name = "value"
-                elif isinstance(self.raw_data, xr.DataArray):
-                    var_name = self.raw_data.name
-                elif isinstance(self.raw_data, xr.Dataset):
-                    var_name = list(self.raw_data.data_vars)[0]
 
             def _mapped_plot_sns(*args, **kwargs_inner):
                 data_df = kwargs_inner.pop("data")
