@@ -258,52 +258,242 @@ def compute_pofd(
 # --- Wrapped monet-stats metrics ---
 
 
-def compute_mfb(obs, mod, dim=None):
+def compute_mfb(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Fractional Bias (MFB).
+
+    MFB = Mean(200 * (mod - obs) / (mod + obs))
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the metric.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Mean Fractional Bias.
+    """
     if FB is None:
         raise ImportError("monet-stats is required for compute_mfb")
-    return FB(obs, mod, axis=dim)
+    res = FB(obs, mod, axis=dim)
+    return _update_history(res, f"Calculated Mean Fractional Bias along {dim}")
 
 
-def compute_mfe(obs, mod, dim=None):
+def compute_mfe(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Fractional Error (MFE).
+
+    MFE = Mean(200 * abs(mod - obs) / (mod + obs))
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the metric.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Mean Fractional Error.
+    """
     if FE is None:
         raise ImportError("monet-stats is required for compute_mfe")
-    return FE(obs, mod, axis=dim)
+    res = FE(obs, mod, axis=dim)
+    return _update_history(res, f"Calculated Mean Fractional Error along {dim}")
 
 
-def compute_nmb(obs, mod, dim=None):
+def compute_nmb(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Normalized Mean Bias (NMB).
+
+    NMB = 100 * Sum(mod - obs) / Sum(obs)
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the metric.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Normalized Mean Bias.
+    """
     if NMB is None:
         raise ImportError("monet-stats is required for compute_nmb")
-    return NMB(obs, mod, axis=dim)
+    res = NMB(obs, mod, axis=dim)
+    return _update_history(res, f"Calculated Normalized Mean Bias along {dim}")
 
 
-def compute_nme(obs, mod, dim=None):
+def compute_nme(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Normalized Mean Error (NME).
+
+    NME = 100 * Sum(abs(mod - obs)) / Sum(obs)
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the metric.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Normalized Mean Error.
+    """
     if NME is None:
         raise ImportError("monet-stats is required for compute_nme")
-    return NME(obs, mod, axis=dim)
+    res = NME(obs, mod, axis=dim)
+    return _update_history(res, f"Calculated Normalized Mean Error along {dim}")
 
 
-def compute_bias(obs, mod, dim=None):
+def compute_bias(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Bias (MB).
+
+    MB = Mean(mod - obs)
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the metric.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated Mean Bias.
+    """
     if MB is None:
         raise ImportError("monet-stats is required for compute_bias")
-    return MB(obs, mod, axis=dim)
+    res = MB(obs, mod, axis=dim)
+    return _update_history(res, f"Calculated Mean Bias along {dim}")
 
 
-def compute_rmse(obs, mod, dim=None):
+def compute_rmse(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Root Mean Square Error (RMSE).
+
+    RMSE = sqrt(Mean((mod - obs)**2))
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the metric.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated RMSE.
+    """
     if RMSE is None:
         raise ImportError("monet-stats is required for compute_rmse")
-    return RMSE(obs, mod, axis=dim)
+    res = RMSE(obs, mod, axis=dim)
+    return _update_history(res, f"Calculated RMSE along {dim}")
 
 
-def compute_mae(obs, mod, dim=None):
+def compute_mae(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Mean Absolute Error (MAE).
+
+    MAE = Mean(abs(mod - obs))
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the metric.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated MAE.
+    """
     if MAE is None:
         raise ImportError("monet-stats is required for compute_mae")
-    return MAE(obs, mod, axis=dim)
+    res = MAE(obs, mod, axis=dim)
+    return _update_history(res, f"Calculated MAE along {dim}")
 
 
-def compute_corr(obs, mod, dim=None):
+def compute_corr(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Pearson correlation coefficient.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the correlation.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated correlation.
+    """
     if corr is None:
         raise ImportError("monet-stats is required for compute_corr")
-    return corr(obs, mod, axis=dim)
+    res = corr(obs, mod, axis=dim)
+    return _update_history(res, f"Calculated correlation along {dim}")
 
 
 # --- End monet-stats wrappers ---
