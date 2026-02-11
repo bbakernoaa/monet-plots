@@ -10,6 +10,58 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 from monet_plots.plots.scatter import ScatterPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
+from monet_plots.plots.taylor_diagram import TaylorDiagramPlot
+
+
+@pytest.mark.skipif(da is None, reason="dask not installed")
+def test_taylor_diagram_lazy_parity():
+    """Verify TaylorDiagramPlot handles lazy data and matches eager results."""
+    # Create test data
+    x = np.linspace(0, 10, 100)
+    obs = np.sin(x)
+    mod1 = obs + 0.1 * np.random.randn(100)
+    mod2 = 0.8 * obs + 0.2 * np.random.randn(100)
+
+    ds_eager = xr.Dataset(
+        {
+            "obs": (["time"], obs),
+            "model1": (["time"], mod1),
+            "model2": (["time"], mod2),
+        },
+        coords={"time": x},
+    )
+    ds_lazy = ds_eager.chunk({"time": 50})
+
+    # Track A: Eager
+    plot_eager = TaylorDiagramPlot(ds_eager, col1="obs", col2=["model1", "model2"])
+    dia_eager = plot_eager.plot()
+    assert dia_eager is not None
+    # Reference point + 2 models
+    assert len(dia_eager.samplePoints) == 3
+    plt.close(dia_eager._ax.figure)
+
+    # Track B: Lazy
+    plot_lazy = TaylorDiagramPlot(ds_lazy, col1="obs", col2=["model1", "model2"])
+    # History check (Initialized)
+    assert "Initialized TaylorDiagramPlot" in plot_lazy.df.attrs["history"]
+
+    dia_lazy = plot_lazy.plot()
+    assert dia_lazy is not None
+    assert len(dia_lazy.samplePoints) == 3
+
+    # Check history (Generated)
+    assert "Generated TaylorDiagramPlot" in plot_lazy.df.attrs["history"]
+
+    # Parity check: compare coordinates of sample points (theta, r)
+    # The first sample is always the reference point at (0, obs_std)
+    for i in range(3):
+        # dia_lazy.samplePoints[i] is a Line2D object
+        theta_eager, r_eager = dia_eager.samplePoints[i].get_data()
+        theta_lazy, r_lazy = dia_lazy.samplePoints[i].get_data()
+        np.testing.assert_allclose(theta_eager, theta_lazy)
+        np.testing.assert_allclose(r_eager, r_lazy)
+
+    plt.close(dia_lazy._ax.figure)
 
 
 @pytest.mark.skipif(da is None, reason="dask not installed")
