@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
-import numpy as np
 import xarray as xr
 
 from .. import taylordiagram as td
@@ -11,7 +10,6 @@ from ..plot_utils import normalize_data
 from .base import BasePlot
 
 if TYPE_CHECKING:
-    import matplotlib.figure
 
     from ..taylordiagram import TaylorDiagram
 
@@ -174,8 +172,6 @@ class TaylorDiagramPlot(BasePlot):
 
         # Update provenance
         if isinstance(self.df, (xr.DataArray, xr.Dataset)):
-            verification_metrics._update_history(
-                self.df, "Generated TaylorDiagramPlot"
-            )
+            verification_metrics._update_history(self.df, "Generated TaylorDiagramPlot")
 
         return self.dia
