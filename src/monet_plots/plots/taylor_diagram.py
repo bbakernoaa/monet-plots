@@ -155,6 +155,10 @@ class TaylorDiagramPlot(BasePlot):
             plt.clabel(contours, inline=1, fontsize=10)
 
         # 4. Add samples to the diagram
+        # Ensure symbols are used by default
+        kwargs.setdefault("marker", "o")
+        kwargs.setdefault("ls", "")
+
         for model_col in self.col2:
             model_std = float(computed_stats[f"{model_col}_std"])
             cc = float(computed_stats[f"{model_col}_corr"])

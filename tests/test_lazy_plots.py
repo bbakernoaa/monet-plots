@@ -61,6 +61,11 @@ def test_taylor_diagram_lazy_parity():
         np.testing.assert_allclose(theta_eager, theta_lazy)
         np.testing.assert_allclose(r_eager, r_lazy)
 
+        # Style check: ensure models (indices 1 and 2) are symbols, not lines
+        if i > 0:
+            assert dia_lazy.samplePoints[i].get_linestyle() in ["", "None"]
+            assert dia_lazy.samplePoints[i].get_marker() not in ["", "None", None]
+
     plt.close(dia_lazy._ax.figure)
 
 
