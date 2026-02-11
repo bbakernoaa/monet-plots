@@ -186,6 +186,7 @@ def test_lazy_bias_rmse_mae():
     np.testing.assert_allclose(mae.compute(), 0.1)
 
     assert "Calculated Mean Bias" in bias.attrs["history"]
+    assert "(monet-plots)" in bias.attrs["history"]
 
 
 def test_multidim_rank_histogram():
@@ -324,3 +325,34 @@ def test_raw_dask_skill_scores():
     assert hasattr(crpss, "chunks")
     res_crpss = crpss.compute()
     assert isinstance(res_crpss, np.ndarray)
+
+
+def test_lazy_fractional_metrics():
+    """Test MFB, MFE, NMB, NME with lazy inputs."""
+    obs_data = np.array([10.0, 20.0, 30.0])
+    mod_data = np.array([12.0, 18.0, 33.0])
+
+    obs_lazy = xr.DataArray(obs_data, dims=["x"]).chunk({"x": 2})
+    mod_lazy = xr.DataArray(mod_data, dims=["x"]).chunk({"x": 2})
+
+    # Test MFB
+    mfb = verification_metrics.compute_mfb(obs_lazy, mod_lazy)
+    assert mfb.chunks is not None
+    expected_mfb = np.mean(200.0 * (mod_data - obs_data) / (mod_data + obs_data))
+    np.testing.assert_allclose(mfb.compute(), expected_mfb)
+    assert "Calculated Mean Fractional Bias" in mfb.attrs["history"]
+    assert "(monet-plots)" in mfb.attrs["history"]
+
+    # Test NMB
+    nmb = verification_metrics.compute_nmb(obs_lazy, mod_lazy)
+    assert nmb.chunks is not None
+    expected_nmb = 100.0 * np.sum(mod_data - obs_data) / np.sum(obs_data)
+    np.testing.assert_allclose(nmb.compute(), expected_nmb)
+
+    # Test per-point (dim=[])
+    fb_lazy = verification_metrics.compute_mfb(obs_lazy, mod_lazy, dim=[])
+    assert fb_lazy.chunks is not None
+    assert fb_lazy.shape == (3,)
+    np.testing.assert_allclose(
+        fb_lazy.compute(), 200.0 * (mod_data - obs_data) / (mod_data + obs_data)
+    )
