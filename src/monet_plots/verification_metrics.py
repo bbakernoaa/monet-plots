@@ -7,6 +7,15 @@ except ImportError:
     da = None
 from typing import Tuple, Union, Dict, Any, Optional
 
+# Bridge to monet-stats for consolidated statistics
+try:
+    from monet_stats.relative_metrics import FB, FE, NMB, NME
+    from monet_stats.error_metrics import MB, RMSE, MAE
+    from monet_stats.correlation_metrics import pearsonr as corr
+except ImportError:
+    # Fallback to None if monet-stats is not available (though it is a dependency now)
+    FB = FE = NMB = NME = MB = RMSE = MAE = corr = None
+
 
 def _update_history(obj: Any, msg: str) -> Any:
     """Updates the history attribute of an xarray object.
@@ -246,352 +255,58 @@ def compute_pofd(
     )
 
 
-def compute_mfb(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Mean Fractional Bias (MFB).
-
-    MFB = 200 * Mean((mod - obs) / (mod + obs))
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str or list of str, optional
-        The dimension(s) over which to calculate the mean.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated MFB.
-    """
-    denominator = (mod + obs).astype(float)
-    numerator = 200.0 * (mod - obs)
-
-    if isinstance(obs, (xr.DataArray, xr.Dataset)):
-        res = (numerator / denominator).mean(dim=dim)
-        res = res.where(denominator.mean(dim=dim) != 0, 0)
-        return _update_history(res, "Calculated Mean Fractional Bias")
-
-    # Fallback for numpy/pandas. Converting to numpy avoids pandas axis issues with axis=()
-    obs_vals = np.asarray(obs)
-    mod_vals = np.asarray(mod)
-    denominator_vals = (mod_vals + obs_vals).astype(float)
-    numerator_vals = 200.0 * (mod_vals - obs_vals)
-
-    return np.mean(
-        np.divide(
-            numerator_vals,
-            denominator_vals,
-            out=np.zeros_like(denominator_vals, dtype=float),
-            where=denominator_vals != 0,
-        ),
-        axis=dim,
-    )
+# --- Wrapped monet-stats metrics ---
 
 
-def compute_mfe(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Mean Fractional Error (MFE).
-
-    MFE = 200 * Mean(abs(mod - obs) / (mod + obs))
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str or list of str, optional
-        The dimension(s) over which to calculate the mean.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated MFE.
-    """
-    denominator = (mod + obs).astype(float)
-    numerator = 200.0 * np.abs(mod - obs)
-
-    if isinstance(obs, (xr.DataArray, xr.Dataset)):
-        res = (numerator / denominator).mean(dim=dim)
-        res = res.where(denominator.mean(dim=dim) != 0, 0)
-        return _update_history(res, "Calculated Mean Fractional Error")
-
-    # Fallback for numpy/pandas
-    obs_vals = np.asarray(obs)
-    mod_vals = np.asarray(mod)
-    denominator_vals = (mod_vals + obs_vals).astype(float)
-    numerator_vals = 200.0 * np.abs(mod_vals - obs_vals)
-
-    return np.mean(
-        np.divide(
-            numerator_vals,
-            denominator_vals,
-            out=np.zeros_like(denominator_vals, dtype=float),
-            where=denominator_vals != 0,
-        ),
-        axis=dim,
-    )
+def compute_mfb(obs, mod, dim=None):
+    if FB is None:
+        raise ImportError("monet-stats is required for compute_mfb")
+    return FB(obs, mod, axis=dim)
 
 
-def compute_nmb(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Normalized Mean Bias (NMB).
-
-    NMB = 100 * Sum(mod - obs) / Sum(obs)
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str or list of str, optional
-        The dimension(s) over which to calculate the sum.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated NMB.
-    """
-    if isinstance(obs, (xr.DataArray, xr.Dataset)):
-        denominator = obs.sum(dim=dim).astype(float)
-        numerator = 100.0 * (mod - obs).sum(dim=dim)
-        res = numerator / denominator
-        res = res.where(denominator != 0, 0)
-        return _update_history(res, "Calculated Normalized Mean Bias")
-
-    # Fallback for numpy/pandas
-    obs_vals = np.asarray(obs)
-    mod_vals = np.asarray(mod)
-    denominator = np.sum(obs_vals, axis=dim).astype(float)
-    numerator = 100.0 * np.sum(mod_vals - obs_vals, axis=dim)
-
-    return np.divide(
-        numerator,
-        denominator,
-        out=np.zeros_like(denominator, dtype=float),
-        where=denominator != 0,
-    )
+def compute_mfe(obs, mod, dim=None):
+    if FE is None:
+        raise ImportError("monet-stats is required for compute_mfe")
+    return FE(obs, mod, axis=dim)
 
 
-def compute_nme(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Normalized Mean Error (NME).
-
-    NME = 100 * Sum(abs(mod - obs)) / Sum(obs)
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str or list of str, optional
-        The dimension(s) over which to calculate the sum.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated NME.
-    """
-    if isinstance(obs, (xr.DataArray, xr.Dataset)):
-        denominator = obs.sum(dim=dim).astype(float)
-        numerator = 100.0 * np.abs(mod - obs).sum(dim=dim)
-        res = numerator / denominator
-        res = res.where(denominator != 0, 0)
-        return _update_history(res, "Calculated Normalized Mean Error")
-
-    # Fallback for numpy/pandas
-    obs_vals = np.asarray(obs)
-    mod_vals = np.asarray(mod)
-    denominator = np.sum(obs_vals, axis=dim).astype(float)
-    numerator = 100.0 * np.sum(np.abs(mod_vals - obs_vals), axis=dim)
-
-    return np.divide(
-        numerator,
-        denominator,
-        out=np.zeros_like(denominator, dtype=float),
-        where=denominator != 0,
-    )
+def compute_nmb(obs, mod, dim=None):
+    if NMB is None:
+        raise ImportError("monet-stats is required for compute_nmb")
+    return NMB(obs, mod, axis=dim)
 
 
-def compute_bias(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Mean Bias.
-
-    Bias = Mean(mod - obs)
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str or list of str, optional
-        The dimension(s) over which to calculate the mean.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated Mean Bias.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> obs = np.array([1.0, 2.0, 3.0])
-    >>> mod = np.array([1.1, 2.1, 3.1])
-    >>> compute_bias(obs, mod)
-    0.10000000000000009
-    """
-    diff = mod - obs
-    if isinstance(diff, (xr.DataArray, xr.Dataset)):
-        res = diff.mean(dim=dim)
-        return _update_history(res, f"Calculated Mean Bias along {dim}")
-    return np.mean(diff, axis=dim)
+def compute_nme(obs, mod, dim=None):
+    if NME is None:
+        raise ImportError("monet-stats is required for compute_nme")
+    return NME(obs, mod, axis=dim)
 
 
-def compute_rmse(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Root Mean Square Error (RMSE).
-
-    RMSE = sqrt(Mean((mod - obs)**2))
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str or list of str, optional
-        The dimension(s) over which to calculate the mean.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated RMSE.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> obs = np.array([1.0, 2.0])
-    >>> mod = np.array([1.1, 2.2])
-    >>> compute_rmse(obs, mod)
-    0.158113883008419
-    """
-    diff_sq = (mod - obs) ** 2
-    if isinstance(diff_sq, (xr.DataArray, xr.Dataset)):
-        res = np.sqrt(diff_sq.mean(dim=dim))
-        return _update_history(res, f"Calculated RMSE along {dim}")
-    return np.sqrt(np.mean(diff_sq, axis=dim))
+def compute_bias(obs, mod, dim=None):
+    if MB is None:
+        raise ImportError("monet-stats is required for compute_bias")
+    return MB(obs, mod, axis=dim)
 
 
-def compute_mae(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Mean Absolute Error (MAE).
-
-    MAE = Mean(abs(mod - obs))
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str or list of str, optional
-        The dimension(s) over which to calculate the mean.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated MAE.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> obs = np.array([1.0, 2.0])
-    >>> mod = np.array([1.1, 1.9])
-    >>> compute_mae(obs, mod)
-    0.10000000000000009
-    """
-    abs_diff = np.abs(mod - obs)
-    if isinstance(abs_diff, (xr.DataArray, xr.Dataset)):
-        res = abs_diff.mean(dim=dim)
-        return _update_history(res, f"Calculated MAE along {dim}")
-    return np.mean(abs_diff, axis=dim)
+def compute_rmse(obs, mod, dim=None):
+    if RMSE is None:
+        raise ImportError("monet-stats is required for compute_rmse")
+    return RMSE(obs, mod, axis=dim)
 
 
-def compute_corr(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[str] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Pearson correlation coefficient.
+def compute_mae(obs, mod, dim=None):
+    if MAE is None:
+        raise ImportError("monet-stats is required for compute_mae")
+    return MAE(obs, mod, axis=dim)
 
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str, optional
-        The dimension over which to calculate the correlation.
 
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated correlation.
+def compute_corr(obs, mod, dim=None):
+    if corr is None:
+        raise ImportError("monet-stats is required for compute_corr")
+    return corr(obs, mod, axis=dim)
 
-    Examples
-    --------
-    >>> import numpy as np
-    >>> obs = np.array([1, 2, 3])
-    >>> mod = np.array([2, 4, 6])
-    >>> compute_corr(obs, mod)
-    1.0
-    """
-    if isinstance(obs, xr.DataArray) and isinstance(mod, xr.DataArray):
-        res = xr.corr(obs, mod, dim=dim)
-        return _update_history(res, f"Calculated correlation along {dim}")
 
-    # Fallback to numpy
-    if dim is not None:
-        # np.corrcoef doesn't support dim directly like xarray
-        # This is a simplification for 1D-like inputs or flattened
-        return np.corrcoef(np.asarray(obs).ravel(), np.asarray(mod).ravel())[0, 1]
-
-    return np.corrcoef(np.asarray(obs), np.asarray(mod))[0, 1]
+# --- End monet-stats wrappers ---
 
 
 def compute_auc(

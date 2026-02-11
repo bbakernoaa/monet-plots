@@ -56,7 +56,7 @@ def test_soccer_lazy_xarray(sample_data):
     # Verify it's still lazy
     assert isinstance(plot.bias_data.data, da.Array)
     assert "history" in plot.bias_data.attrs
-    assert "Calculated Mean Fractional Bias" in plot.bias_data.attrs["history"]
+    assert "Calculated Fractional Bias" in plot.bias_data.attrs["history"]
 
     # Trigger plot (which calls compute)
     ax = plot.plot()

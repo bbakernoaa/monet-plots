@@ -26,6 +26,7 @@ dependencies = [
     "numpy",
     "statsmodels",
     "dask",
+    "monet-stats @ git+https://github.com/noaa-oar-arl/monet-stats.git",
 ]
 
 [project.urls]

@@ -185,7 +185,7 @@ def test_lazy_bias_rmse_mae():
     np.testing.assert_allclose(rmse.compute(), 0.1)
     np.testing.assert_allclose(mae.compute(), 0.1)
 
-    assert "Calculated Mean Bias" in bias.attrs["history"]
+    assert "Calculated MB" in bias.attrs["history"]
 
 
 def test_multidim_rank_histogram():
@@ -339,7 +339,7 @@ def test_lazy_fractional_metrics():
     assert mfb.chunks is not None
     expected_mfb = np.mean(200.0 * (mod_data - obs_data) / (mod_data + obs_data))
     np.testing.assert_allclose(mfb.compute(), expected_mfb)
-    assert "Calculated Mean Fractional Bias" in mfb.attrs["history"]
+    assert "Calculated Fractional Bias" in mfb.attrs["history"]
 
     # Test NMB
     nmb = verification_metrics.compute_nmb(obs_lazy, mod_lazy)

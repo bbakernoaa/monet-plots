@@ -111,7 +111,7 @@ class SoccerPlot(BasePlot):
             self.error_data = self.data[error_col]
 
     def _calculate_metrics(self, obs_col: str, mod_col: str) -> None:
-        """Calculate MFB/MFE or NMB/NME using vectorized operations from verification_metrics.
+        """Calculate MFB/MFE or NMB/NME using vectorized operations from monet_stats wrappers.
 
         Parameters
         ----------
@@ -125,7 +125,7 @@ class SoccerPlot(BasePlot):
         obs = self.data[obs_col]
         mod = self.data[mod_col]
 
-        # Use dim=[] to avoid reduction, getting per-point values for the scatter plot.
+        # Use dim=[] (or None if not reducing) to maintain per-point values for the scatter plot.
         # This maintains lazy evaluation if the input is Dask-backed.
         dim: list[str] | tuple[()] = [] if isinstance(obs, xr.DataArray) else ()
 
