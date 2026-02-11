@@ -10,7 +10,6 @@ from ..plot_utils import normalize_data
 from .base import BasePlot
 
 if TYPE_CHECKING:
-
     from ..taylordiagram import TaylorDiagram
 
 
