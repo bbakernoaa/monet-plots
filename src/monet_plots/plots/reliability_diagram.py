@@ -59,7 +59,11 @@ class ReliabilityDiagramPlot(BasePlot):
         """
         import xarray as xr
 
-        if isinstance(data, (xr.DataArray, xr.Dataset)) and forecasts_col and observations_col:
+        if (
+            isinstance(data, (xr.DataArray, xr.Dataset))
+            and forecasts_col
+            and observations_col
+        ):
             # Native Xarray path - maintain laziness as long as possible
             ds = data
             f = ds[forecasts_col]
@@ -81,7 +85,9 @@ class ReliabilityDiagramPlot(BasePlot):
                     else:
                         c_val = climatology
 
-                    bc, of, ct = compute_reliability_curve(f_sub, o_sub, n_bins=n_bins, dim=dim)
+                    bc, of, ct = compute_reliability_curve(
+                        f_sub, o_sub, n_bins=n_bins, dim=dim
+                    )
 
                     # Aggregate remaining dimensions if any
                     if of.ndim > 1:
@@ -90,14 +96,18 @@ class ReliabilityDiagramPlot(BasePlot):
                         of = (of * ct).sum(dim=other_dims) / ct.sum(dim=other_dims)
                         ct = ct.sum(dim=other_dims)
 
-                    plot_data_list.append(pd.DataFrame({
-                        x_col: bc.values,
-                        y_col: of.values,
-                        "count": ct.values,
-                        label_col: label
-                    }))
+                    plot_data_list.append(
+                        pd.DataFrame(
+                            {
+                                x_col: bc.values,
+                                y_col: of.values,
+                                "count": ct.values,
+                                label_col: label,
+                            }
+                        )
+                    )
                     if climatology is None:
-                        climatology = c_val # Use the first group's climatology for reference lines if needed
+                        climatology = c_val  # Use the first group's climatology for reference lines if needed
                 plot_data = pd.concat(plot_data_list)
 
             else:
@@ -112,11 +122,9 @@ class ReliabilityDiagramPlot(BasePlot):
                     of = (of * ct).sum(dim=other_dims) / ct.sum(dim=other_dims)
                     ct = ct.sum(dim=other_dims)
 
-                plot_data = pd.DataFrame({
-                    x_col: bc.values,
-                    y_col: of.values,
-                    "count": ct.values
-                })
+                plot_data = pd.DataFrame(
+                    {x_col: bc.values, y_col: of.values, "count": ct.values}
+                )
 
         else:
             # Legacy/Fallback path
@@ -126,7 +134,9 @@ class ReliabilityDiagramPlot(BasePlot):
                 if climatology is None:
                     climatology = float(df[observations_col].mean())
                 bin_centers, obs_freq, bin_counts = compute_reliability_curve(
-                    np.asarray(df[forecasts_col]), np.asarray(df[observations_col]), n_bins
+                    np.asarray(df[forecasts_col]),
+                    np.asarray(df[observations_col]),
+                    n_bins,
                 )
                 plot_data = pd.DataFrame(
                     {x_col: bin_centers, y_col: obs_freq, "count": bin_counts}

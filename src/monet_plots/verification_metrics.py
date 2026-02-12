@@ -646,14 +646,15 @@ def compute_reliability_curve(
                 coords[c] = forecasts.coords[c]
 
         bin_centers_xr = xr.DataArray(
-            bin_centers, coords={"bin": np.arange(n_bins)}, dims=["bin"], name="bin_center"
+            bin_centers,
+            coords={"bin": np.arange(n_bins)},
+            dims=["bin"],
+            name="bin_center",
         )
         observed_frequencies = observed_frequencies.assign_coords(coords)
         bin_counts = bin_counts.assign_coords(coords)
 
-        _update_history(
-            observed_frequencies, f"Computed reliability curve along {dim}"
-        )
+        _update_history(observed_frequencies, f"Computed reliability curve along {dim}")
         return bin_centers_xr, observed_frequencies, bin_counts
 
     # Fallback for numpy or dask arrays
