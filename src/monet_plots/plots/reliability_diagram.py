@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import Optional, Any
+from typing import Optional, Any, Union
 from ..verification_metrics import compute_reliability_curve
 from .base import BasePlot
 from ..plot_utils import validate_dataframe, to_dataframe
@@ -38,6 +38,7 @@ class ReliabilityDiagramPlot(BasePlot):
         climatology: Optional[float] = None,
         label_col: Optional[str] = None,
         show_hist: bool = False,
+        dim: Optional[Union[str, list[str]]] = None,
         **kwargs,
     ):
         """
@@ -53,22 +54,96 @@ class ReliabilityDiagramPlot(BasePlot):
             climatology (Optional[float]): Sample climatology (mean(observations)).
             label_col (str, optional): Grouping column.
             show_hist (bool): Whether to show frequency of usage histogram.
+            dim (str or list of str, optional): Dimension(s) to aggregate over.
             **kwargs: Matplotlib kwargs.
         """
-        df = to_dataframe(data)
-        # Compute if raw data provided
-        if forecasts_col and observations_col:
-            if climatology is None:
-                climatology = float(df[observations_col].mean())
-            bin_centers, obs_freq, bin_counts = compute_reliability_curve(
-                np.asarray(df[forecasts_col]), np.asarray(df[observations_col]), n_bins
-            )
-            plot_data = pd.DataFrame(
-                {x_col: bin_centers, y_col: obs_freq, "count": bin_counts}
-            )
+        import xarray as xr
+
+        if (
+            isinstance(data, (xr.DataArray, xr.Dataset))
+            and forecasts_col
+            and observations_col
+        ):
+            # Native Xarray path - maintain laziness as long as possible
+            ds = data
+            f = ds[forecasts_col]
+            o = ds[observations_col]
+
+            if label_col:
+                # If grouping by label_col, we do it in a loop for now as
+                # ReliabilityDiagram is usually for small number of groups.
+                # Each group calculation is still lazy.
+                plot_data_list = []
+                unique_labels = np.unique(ds[label_col].values)
+                for label in unique_labels:
+                    f_sub = f.where(ds[label_col] == label, drop=True)
+                    o_sub = o.where(ds[label_col] == label, drop=True)
+
+                    if climatology is None:
+                        # Compute climatology for this group if not provided
+                        c_val = float(o_sub.mean().compute())
+                    else:
+                        c_val = climatology
+
+                    bc, of, ct = compute_reliability_curve(
+                        f_sub, o_sub, n_bins=n_bins, dim=dim
+                    )
+
+                    # Aggregate remaining dimensions if any
+                    if of.ndim > 1:
+                        other_dims = set(of.dims) - {"bin"}
+                        # Weighted mean for frequency
+                        of = (of * ct).sum(dim=other_dims) / ct.sum(dim=other_dims)
+                        ct = ct.sum(dim=other_dims)
+
+                    plot_data_list.append(
+                        pd.DataFrame(
+                            {
+                                x_col: bc.values,
+                                y_col: of.values,
+                                "count": ct.values,
+                                label_col: label,
+                            }
+                        )
+                    )
+                    if climatology is None:
+                        climatology = c_val  # Use the first group's climatology for reference lines if needed
+                plot_data = pd.concat(plot_data_list)
+
+            else:
+                if climatology is None:
+                    climatology = float(o.mean().compute())
+
+                bc, of, ct = compute_reliability_curve(f, o, n_bins=n_bins, dim=dim)
+
+                # Aggregate remaining dimensions if any
+                if of.ndim > 1:
+                    other_dims = set(of.dims) - {"bin"}
+                    of = (of * ct).sum(dim=other_dims) / ct.sum(dim=other_dims)
+                    ct = ct.sum(dim=other_dims)
+
+                plot_data = pd.DataFrame(
+                    {x_col: bc.values, y_col: of.values, "count": ct.values}
+                )
+
         else:
-            validate_dataframe(df, required_columns=[x_col, y_col])
-            plot_data = df
+            # Legacy/Fallback path
+            df = to_dataframe(data)
+            # Compute if raw data provided
+            if forecasts_col and observations_col:
+                if climatology is None:
+                    climatology = float(df[observations_col].mean())
+                bin_centers, obs_freq, bin_counts = compute_reliability_curve(
+                    np.asarray(df[forecasts_col]),
+                    np.asarray(df[observations_col]),
+                    n_bins,
+                )
+                plot_data = pd.DataFrame(
+                    {x_col: bin_centers, y_col: obs_freq, "count": bin_counts}
+                )
+            else:
+                validate_dataframe(df, required_columns=[x_col, y_col])
+                plot_data = df
 
         # Draw Reference Lines
         self.ax.plot([0, 1], [0, 1], "k--", label="Perfect Reliability")
@@ -104,6 +179,8 @@ class ReliabilityDiagramPlot(BasePlot):
         self.ax.set_aspect("equal")
         self.ax.grid(True, alpha=0.3)
         self.ax.legend()
+
+        return self.ax
 
     def _draw_skill_regions(self, clim):
         """Shades areas where BSS > 0."""

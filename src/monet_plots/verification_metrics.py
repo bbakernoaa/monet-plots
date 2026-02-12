@@ -576,22 +576,28 @@ def compute_reliability_curve(
     forecasts: Union[np.ndarray, xr.DataArray],
     observations: Union[np.ndarray, xr.DataArray],
     n_bins: int = 10,
+    dim: Optional[Union[str, list[str]]] = None,
 ) -> Tuple[
-    Union[np.ndarray, xr.DataArray],
-    Union[np.ndarray, xr.DataArray],
-    Union[np.ndarray, xr.DataArray],
+    Union[np.ndarray, xr.DataArray, float],
+    Union[np.ndarray, xr.DataArray, float],
+    Union[np.ndarray, xr.DataArray, float],
 ]:
     """
     Computes reliability curve statistics.
 
+    Supports lazy evaluation via Dask and multidimensional xarray objects.
+
     Parameters
     ----------
-    forecasts : Any
+    forecasts : Union[np.ndarray, xr.DataArray]
         Array-like of forecast probabilities [0, 1].
-    observations : Any
+    observations : Union[np.ndarray, xr.DataArray]
         Array-like of binary outcomes (0 or 1).
     n_bins : int, optional
         Number of bins, by default 10.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the metric. If None,
+        calculated over all dimensions.
 
     Returns
     -------
@@ -601,21 +607,66 @@ def compute_reliability_curve(
     bins = np.linspace(0, 1, n_bins + 1)
     bin_centers = (bins[:-1] + bins[1:]) / 2
 
-    # Handle Dask for "Lazy by Default"
+    if isinstance(forecasts, xr.DataArray) and isinstance(observations, xr.DataArray):
+        if dim is None:
+            dim = list(forecasts.dims)
+        elif isinstance(dim, str):
+            dim = [dim]
+
+        # Ensure reduced dimensions are not chunked for the ufunc
+        forecasts = forecasts.chunk({d: -1 for d in dim})
+        observations = observations.chunk({d: -1 for d in dim})
+
+        def _reliability_ufunc(f, o):
+            # When vectorize=True, f and o are passed with only core dimensions.
+            # We flatten them to handle multi-dim core dimensions (like [lat, lon]).
+            c, _ = np.histogram(f.ravel(), bins=bins)
+            s, _ = np.histogram(f.ravel(), bins=bins, weights=o.ravel())
+            return c, s
+
+        bin_counts, obs_sum = xr.apply_ufunc(
+            _reliability_ufunc,
+            forecasts,
+            observations,
+            input_core_dims=[dim, dim],
+            output_core_dims=[["bin"], ["bin"]],
+            dask="parallelized",
+            vectorize=True,
+            output_dtypes=[int, float],
+            dask_gufunc_kwargs={"output_sizes": {"bin": n_bins}},
+        )
+
+        observed_frequencies = xr.where(bin_counts > 0, obs_sum / bin_counts, np.nan)
+
+        # Assign coordinates
+        coords = {"bin": np.arange(n_bins), "bin_center": ("bin", bin_centers)}
+        # Add non-reduced coordinates from forecasts
+        for c in forecasts.coords:
+            if c not in dim and c not in coords:
+                coords[c] = forecasts.coords[c]
+
+        bin_centers_xr = xr.DataArray(
+            bin_centers,
+            coords={"bin": np.arange(n_bins)},
+            dims=["bin"],
+            name="bin_center",
+        )
+        observed_frequencies = observed_frequencies.assign_coords(coords)
+        bin_counts = bin_counts.assign_coords(coords)
+
+        _update_history(observed_frequencies, f"Computed reliability curve along {dim}")
+        return bin_centers_xr, observed_frequencies, bin_counts
+
+    # Fallback for numpy or dask arrays
     is_dask = (
-        hasattr(forecasts, "chunks")
-        or (isinstance(forecasts, xr.DataArray) and forecasts.chunks is not None)
+        hasattr(forecasts, "chunks") or hasattr(observations, "chunks")
     ) and da is not None
 
     if is_dask:
-        f_data = forecasts.data if isinstance(forecasts, xr.DataArray) else forecasts
-        o_data = (
-            observations.data
-            if isinstance(observations, xr.DataArray)
-            else observations
-        )
-        bin_counts, _ = da.histogram(f_data, bins=bins)
-        obs_sum, _ = da.histogram(f_data, bins=bins, weights=o_data)
+        f_data = forecasts.data if hasattr(forecasts, "data") else forecasts
+        o_data = observations.data if hasattr(observations, "data") else observations
+        bin_counts, _ = da.histogram(f_data.ravel(), bins=bins)
+        obs_sum, _ = da.histogram(f_data.ravel(), bins=bins, weights=o_data.ravel())
     else:
         bin_counts, _ = np.histogram(forecasts, bins=bins)
         obs_sum, _ = np.histogram(forecasts, bins=bins, weights=observations)
@@ -627,22 +678,24 @@ def compute_reliability_curve(
         where=bin_counts > 0,
     )
 
-    # Return as Xarray for provenance if inputs were Xarray
     if isinstance(forecasts, (xr.DataArray, xr.Dataset)):
-        coords = {"bin_center": bin_centers}
+        # This handles cases where only one of the inputs was xarray or
+        # they were xarray but didn't enter the apply_ufunc block (unlikely now)
+        coords = {"bin": np.arange(n_bins), "bin_center": ("bin", bin_centers)}
         observed_frequencies = xr.DataArray(
             observed_frequencies,
             coords=coords,
-            dims=["bin_center"],
+            dims=["bin"],
             name="observed_frequency",
         )
         bin_counts = xr.DataArray(
-            bin_counts, coords=coords, dims=["bin_center"], name="bin_count"
+            bin_counts, coords=coords, dims=["bin"], name="bin_count"
         )
-        bin_centers = xr.DataArray(
-            bin_centers, coords=coords, dims=["bin_center"], name="bin_center"
+        bin_centers_xr = xr.DataArray(
+            bin_centers, coords=coords, dims=["bin"], name="bin_center"
         )
         _update_history(observed_frequencies, "Computed reliability curve")
+        return bin_centers_xr, observed_frequencies, bin_counts
 
     return bin_centers, observed_frequencies, bin_counts
 
@@ -652,6 +705,7 @@ def compute_brier_skill_score(
     observations: Union[np.ndarray, xr.DataArray],
     n_bins: int = 10,
     reference_bs: Optional[Union[float, np.ndarray, xr.DataArray]] = None,
+    dim: Optional[Union[str, list[str]]] = None,
 ) -> Union[float, np.ndarray, xr.DataArray]:
     """
     Calculates Brier Skill Score (BSS).
@@ -669,6 +723,8 @@ def compute_brier_skill_score(
         Number of bins for Brier Score decomposition, by default 10.
     reference_bs : Union[float, np.ndarray, xr.DataArray], optional
         Reference Brier Score. If None, it is calculated from climatology.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the metric.
 
     Returns
     -------
@@ -685,7 +741,9 @@ def compute_brier_skill_score(
     >>> compute_brier_skill_score(fcst, obs, n_bins=10)
     1.0
     """
-    components = compute_brier_score_components(forecasts, observations, n_bins=n_bins)
+    components = compute_brier_score_components(
+        forecasts, observations, n_bins=n_bins, dim=dim
+    )
     bs = components["brier_score"]
 
     if reference_bs is None:
@@ -713,6 +771,7 @@ def compute_brier_score_components(
     forecasts: Union[np.ndarray, xr.DataArray],
     observations: Union[np.ndarray, xr.DataArray],
     n_bins: int = 10,
+    dim: Optional[Union[str, list[str]]] = None,
 ) -> Dict[str, Union[float, xr.DataArray]]:
     """
     Decomposes Brier Score into Reliability, Resolution, and Uncertainty.
@@ -727,6 +786,8 @@ def compute_brier_score_components(
         Array-like of binary outcomes (0 or 1).
     n_bins : int, optional
         Number of bins for reliability curve, by default 10.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the metric.
 
     Returns
     -------
@@ -734,34 +795,54 @@ def compute_brier_score_components(
         Dictionary with keys 'reliability', 'resolution', 'uncertainty',
         and 'brier_score'.
     """
-    # Use .size for dimensionality awareness
-    if hasattr(forecasts, "size"):
-        N = forecasts.size
+    if isinstance(forecasts, xr.DataArray) and isinstance(observations, xr.DataArray):
+        if dim is None:
+            dim = list(forecasts.dims)
+        elif isinstance(dim, str):
+            dim = [dim]
+
+        # Samples per calculation
+        N = 1
+        for d in dim:
+            N *= forecasts.sizes[d]
+
+        base_rate = observations.mean(dim=dim)
+        uncertainty = base_rate * (1.0 - base_rate)
+
+        bin_centers, obs_freq, bin_counts = compute_reliability_curve(
+            forecasts, observations, n_bins=n_bins, dim=dim
+        )
+
+        # Reliability: Weighted average of (forecast - observed_freq)^2
+        # bin_centers is 1D, obs_freq is (..., bin)
+        sq_diff_rel = (bin_centers - obs_freq) ** 2
+        reliability = (bin_counts * sq_diff_rel.fillna(0)).sum(dim="bin") / N
+
+        # Resolution: Weighted average of (observed_freq - base_rate)**2
+        # base_rate is (...), obs_freq is (..., bin)
+        sq_diff_res = (obs_freq - base_rate) ** 2
+        resolution = (bin_counts * sq_diff_res.fillna(0)).sum(dim="bin") / N
+
     else:
-        N = len(forecasts)
+        # Fallback for numpy or dask
+        if hasattr(forecasts, "size"):
+            N = forecasts.size
+        else:
+            N = len(forecasts)
 
-    base_rate = observations.mean()
-    uncertainty = base_rate * (1.0 - base_rate)
+        base_rate = observations.mean()
+        uncertainty = base_rate * (1.0 - base_rate)
 
-    bin_centers, obs_freq, bin_counts = compute_reliability_curve(
-        forecasts, observations, n_bins
-    )
+        bin_centers, obs_freq, bin_counts = compute_reliability_curve(
+            forecasts, observations, n_bins=n_bins
+        )
 
-    # Calculate components using sum to maintain lazy evaluation.
-    # We avoid explicit masking with .compute() by using fillna or nansum.
-
-    # Reliability: Weighted average of (forecast - observed_freq)^2
-    sq_diff_rel = (bin_centers - obs_freq) ** 2
-    if isinstance(sq_diff_rel, xr.DataArray):
-        reliability = (bin_counts * sq_diff_rel.fillna(0)).sum() / N
-    else:
+        # Reliability: Weighted average of (forecast - observed_freq)^2
+        sq_diff_rel = (bin_centers - obs_freq) ** 2
         reliability = np.nansum(bin_counts * sq_diff_rel) / N
 
-    # Resolution: Weighted average of (observed_freq - base_rate)**2
-    sq_diff_res = (obs_freq - base_rate) ** 2
-    if isinstance(sq_diff_res, xr.DataArray):
-        resolution = (bin_counts * sq_diff_res.fillna(0)).sum() / N
-    else:
+        # Resolution: Weighted average of (observed_freq - base_rate)**2
+        sq_diff_res = (obs_freq - base_rate) ** 2
         resolution = np.nansum(bin_counts * sq_diff_res) / N
 
     bs = reliability - resolution + uncertainty
