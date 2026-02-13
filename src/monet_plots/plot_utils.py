@@ -1,6 +1,5 @@
 import warnings
-from typing import Any, Optional
-
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -10,6 +9,93 @@ try:
     import xarray as xr
 except ImportError:
     xr = None
+
+
+def identify_coords(da: Any) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Identify latitude and longitude coordinates in an xarray object.
+
+    This function uses coordinate names, CF standard names, and units
+    to robustly identify geospatial coordinates.
+
+    Args:
+        da: Input xarray DataArray or Dataset.
+
+    Returns:
+        A tuple of (lon_coord, lat_coord) names.
+    """
+    if xr is None or not isinstance(da, (xr.DataArray, xr.Dataset)):
+        return None, None
+
+    lon = None
+    lat = None
+
+    # Check for standard names or units in attributes
+    for coord in da.coords:
+        attrs = da[coord].attrs
+        standard_name = attrs.get("standard_name", "").lower()
+        units = attrs.get("units", "").lower()
+        axis = attrs.get("axis", "").lower()
+
+        # Longitude identification
+        if (
+            any(x in str(coord).lower() for x in ["lon", "longitude"])
+            or standard_name == "longitude"
+            or "degrees_east" in units
+            or axis == "x"
+        ):
+            lon = str(coord)
+        # Latitude identification
+        elif (
+            any(x in str(coord).lower() for x in ["lat", "latitude"])
+            or standard_name == "latitude"
+            or "degrees_north" in units
+            or axis == "y"
+        ):
+            lat = str(coord)
+
+    return lon, lat
+
+
+if xr is not None:
+
+    @xr.register_dataarray_accessor("mplots")
+    class MonetDataArrayAccessor:
+        """Xarray accessor for MONET plotting on DataArrays."""
+
+        def __init__(self, xarray_obj: xr.DataArray):
+            self._obj = xarray_obj
+
+        def imshow(self, **kwargs: Any) -> Any:
+            """Create a spatial imshow plot using MONET."""
+            from .plots.spatial_imshow import SpatialImshowPlot
+
+            return SpatialImshowPlot(self._obj, **kwargs).plot()
+
+        def contourf(self, **kwargs: Any) -> Any:
+            """Create a spatial contourf plot using MONET."""
+            from .plots.spatial_contour import SpatialContourPlot
+
+            return SpatialContourPlot(self._obj, **kwargs).plot()
+
+    @xr.register_dataset_accessor("mplots")
+    class MonetDatasetAccessor:
+        """Xarray accessor for MONET plotting on Datasets."""
+
+        def __init__(self, xarray_obj: xr.Dataset):
+            self._obj = xarray_obj
+
+        def imshow(self, **kwargs: Any) -> Any:
+            """Create a spatial imshow plot using MONET."""
+            from .plots.spatial_imshow import SpatialImshowPlot
+
+            return SpatialImshowPlot(self._obj, **kwargs).plot()
+
+        def contourf(self, **kwargs: Any) -> Any:
+            """Create a spatial contourf plot using MONET."""
+            from .plots.spatial_contour import SpatialContourPlot
+
+            return SpatialContourPlot(self._obj, **kwargs).plot()
 
 
 def to_dataframe(data: Any) -> pd.DataFrame:
@@ -35,89 +121,9 @@ def to_dataframe(data: Any) -> pd.DataFrame:
         return data.to_dataframe()
 
     if isinstance(data, np.ndarray):
-        if data.ndim == 1:
-            return pd.DataFrame(data, columns=["col_0"])
-            return pd.DataFrame(data, columns=["col_0"])
-        elif data.ndim == 2:
-            return pd.DataFrame(
-                data, columns=[f"col_{i}" for i in range(data.shape[1])]
-            )
-            return pd.DataFrame(
-                data, columns=[f"col_{i}" for i in range(data.shape[1])]
-            )
-        else:
-            raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
+        return _convert_numpy_to_dataframe(data)
 
     raise TypeError(f"Unsupported data type: {type(data).__name__}")
-
-
-def _validate_spatial_plot_params(kwargs):
-    """Validate parameters specific to SpatialPlot."""
-    if "discrete" in kwargs:
-        discrete = kwargs["discrete"]
-        if not isinstance(discrete, bool):
-            raise TypeError(
-                f"discrete parameter must be boolean, got {type(discrete).__name__}"
-            )
-
-    if "ncolors" in kwargs:
-        ncolors = kwargs["ncolors"]
-        if not isinstance(ncolors, int):
-            raise TypeError(
-                f"ncolors parameter must be integer, got {type(ncolors).__name__}"
-            )
-        if ncolors <= 0 or ncolors > 1000:
-            raise ValueError(
-                f"ncolors parameter must be between 1 and 1000, got {ncolors}"
-            )
-
-    _validate_plotargs(kwargs.get("plotargs"))
-
-
-def _validate_timeseries_plot_params(kwargs):
-    """Validate parameters specific to TimeSeriesPlot."""
-    if "x" in kwargs:
-        x = kwargs["x"]
-        if not isinstance(x, str):
-            raise TypeError(f"x parameter must be string, got {type(x).__name__}")
-
-    if "y" in kwargs:
-        y = kwargs["y"]
-        if not isinstance(y, str):
-            raise TypeError(f"y parameter must be string, got {type(y).__name__}")
-
-    _validate_plotargs(kwargs.get("plotargs"))
-    _validate_fillargs(kwargs.get("fillargs"))
-
-
-def _validate_plotargs(plotargs):
-    """Validate plotargs parameter."""
-    if plotargs is not None:
-        if not isinstance(plotargs, dict):
-            raise TypeError(
-                f"plotargs parameter must be dict, got {type(plotargs).__name__}"
-            )
-
-        if "cmap" in plotargs:
-            cmap = plotargs["cmap"]
-            if not isinstance(cmap, str):
-                raise TypeError(f"colormap must be string, got {type(cmap).__name__}")
-
-
-def _validate_fillargs(fillargs):
-    """Validate fillargs parameter."""
-    if fillargs is not None:
-        if not isinstance(fillargs, dict):
-            raise TypeError(
-                f"fillargs parameter must be dict, got {type(fillargs).__name__}"
-            )
-
-        if "alpha" in fillargs:
-            alpha = fillargs["alpha"]
-            if not isinstance(alpha, (int, float)):
-                raise TypeError(f"alpha must be numeric, got {type(alpha).__name__}")
-            if not 0 <= alpha <= 1:
-                raise ValueError(f"alpha must be between 0 and 1, got {alpha}")
 
 
 def _validate_spatial_plot_params(kwargs):
@@ -206,10 +212,6 @@ def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:
         _validate_spatial_plot_params(kwargs)
     elif plot_class == "TimeSeriesPlot" and method == "plot":
         _validate_timeseries_plot_params(kwargs)
-    if plot_class == "SpatialPlot" and method == "plot":
-        _validate_spatial_plot_params(kwargs)
-    elif plot_class == "TimeSeriesPlot" and method == "plot":
-        _validate_timeseries_plot_params(kwargs)
 
 
 def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None:
@@ -237,9 +239,6 @@ def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None
 
         for dim in required_dims:
             if dim not in data.dims:
-                raise ValueError(
-                    f"required dimension '{dim}' not found in data dimensions {data.dims}"
-                )
                 raise ValueError(
                     f"required dimension '{dim}' not found in data dimensions {data.dims}"
                 )
@@ -272,15 +271,13 @@ def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None
         raise ValueError("DataFrame cannot be empty")
 
 
-def _try_xarray_conversion(data):
+def _try_xarray_conversion(data: Any) -> Any:
     """Try to convert data to xarray format."""
     if xr is None:
         return None
 
     # Check if already xarray
-    if hasattr(xr, "DataArray") and isinstance(data, xr.DataArray):
-        return data
-    if hasattr(xr, "Dataset") and isinstance(data, xr.Dataset):
+    if isinstance(data, (xr.DataArray, xr.Dataset)):
         return data
 
     # Try xarray-like conversion
@@ -293,7 +290,7 @@ def _try_xarray_conversion(data):
     return None
 
 
-def _convert_numpy_to_dataframe(data):
+def _convert_numpy_to_dataframe(data: np.ndarray) -> pd.DataFrame:
     """Convert numpy array to DataFrame."""
     if data.ndim == 1:
         return pd.DataFrame(data, columns=["col_0"])
@@ -303,38 +300,7 @@ def _convert_numpy_to_dataframe(data):
         raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
 
 
-def _try_xarray_conversion(data):
-    """Try to convert data to xarray format."""
-    if xr is None:
-        return None
-
-    # Check if already xarray
-    if hasattr(xr, "DataArray") and isinstance(data, xr.DataArray):
-        return data
-    if hasattr(xr, "Dataset") and isinstance(data, xr.Dataset):
-        return data
-
-    # Try xarray-like conversion
-    if hasattr(data, "to_dataset") and hasattr(data, "to_dataframe"):
-        try:
-            return data.to_dataset()
-        except Exception:
-            return None
-
-    return None
-
-
-def _convert_numpy_to_dataframe(data):
-    """Convert numpy array to DataFrame."""
-    if data.ndim == 1:
-        return pd.DataFrame(data, columns=["col_0"])
-    elif data.ndim == 2:
-        return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
-    else:
-        raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
-
-
-def _normalize_data(data: Any) -> Any:
+def normalize_data(data: Any) -> Any:
     """
     Normalize input data to a standardized format, preferring xarray objects when possible.
 
@@ -357,10 +323,6 @@ def _normalize_data(data: Any) -> Any:
     xarray_result = _try_xarray_conversion(data)
     if xarray_result is not None:
         return xarray_result
-    # Try xarray conversion first
-    xarray_result = _try_xarray_conversion(data)
-    if xarray_result is not None:
-        return xarray_result
 
     # Check if data is a pandas DataFrame
     if isinstance(data, pd.DataFrame):
@@ -369,25 +331,9 @@ def _normalize_data(data: Any) -> Any:
     # Check if data is numpy array
     if isinstance(data, np.ndarray):
         return _convert_numpy_to_dataframe(data)
-        return _convert_numpy_to_dataframe(data)
 
     # Fall back to existing to_dataframe logic for backward compatibility
     return to_dataframe(data)
-
-
-def normalize_data(data: Any) -> Any:
-    """
-    Public API for normalizing data, preferring xarray objects when possible.
-
-    This is the same as _normalize_data but exposed as a public API.
-
-    Args:
-        data: Input data of various types
-
-    Returns:
-        Either an xarray DataArray, xarray Dataset, or pandas DataFrame
-    """
-    return _normalize_data(data)
 
 
 def get_plot_kwargs(cmap: Any = None, norm: Any = None, **kwargs: Any) -> dict:
@@ -423,37 +369,37 @@ def get_plot_kwargs(cmap: Any = None, norm: Any = None, **kwargs: Any) -> dict:
     return kwargs
 
 
-def _dynamic_fig_size(obj):
+def _dynamic_fig_size(obj: Any) -> Tuple[float, float]:
     """Try to determine a generic figure size based on the shape of obj
 
     Parameters
     ----------
     obj : A 2D xarray DataArray
-        Description of parameter `obj`.
+        Data object to determine size from.
 
     Returns
     -------
-    type
-        Description of returned object.
-
+    tuple
+        Width, height in inches.
     """
     scale = 1.0  # Default scale
 
-    if "x" in obj.dims:
-        nx, ny = len(obj.x), len(obj.y)
-        scale = float(ny) / float(nx)
-    elif "latitude" in obj.dims:
-        nx, ny = len(obj.longitude), len(obj.latitude)
-        scale = float(ny) / float(nx)
-    elif "lat" in obj.dims:
-        nx, ny = len(obj.lon), len(obj.lat)
-        scale = float(ny) / float(nx)
+    if hasattr(obj, "dims"):
+        if "x" in obj.dims and "y" in obj.dims:
+            nx, ny = len(obj.x), len(obj.y)
+            scale = float(ny) / float(nx)
+        elif "latitude" in obj.dims and "longitude" in obj.dims:
+            nx, ny = len(obj.longitude), len(obj.latitude)
+            scale = float(ny) / float(nx)
+        elif "lat" in obj.dims and "lon" in obj.dims:
+            nx, ny = len(obj.lon), len(obj.lat)
+            scale = float(ny) / float(nx)
 
     figsize = (10, 10 * scale)
     return figsize
 
 
-def _set_outline_patch_alpha(ax, alpha=0):
+def _set_outline_patch_alpha(ax: Any, alpha: float = 0):
     """Set the transparency of map outline patches for Cartopy GeoAxes.
 
     This function attempts multiple methods to set the alpha (transparency) of
@@ -478,7 +424,7 @@ def _set_outline_patch_alpha(ax, alpha=0):
     ]:
         try:
             f(alpha)
-        except AttributeError:
+        except (AttributeError, KeyError):
             continue
         else:
             break

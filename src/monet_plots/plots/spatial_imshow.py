@@ -4,20 +4,41 @@ from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
 import numpy as np
+import xarray as xr
 
 from ..colorbars import colorbar_index
+from ..plot_utils import identify_coords
 from .spatial import SpatialPlot
 
 if TYPE_CHECKING:
     import matplotlib.axes
-    import matplotlib.colorbar
 
 
 class SpatialImshowPlot(SpatialPlot):
     """Create a basic spatial plot using imshow.
 
     This plot is useful for visualizing 2D model data on a map.
+    It leverages xarray's plotting capabilities when possible.
     """
+
+    def __new__(
+        cls,
+        modelvar: Any,
+        gridobj: Any | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> SpatialImshowPlot | Any:
+        """
+        Intersects initialization to redirect to SpatialFacetGridPlot if needed.
+        """
+        if isinstance(modelvar, (xr.DataArray, xr.Dataset)) and (
+            "col" in kwargs or "row" in kwargs
+        ):
+            from .facet_grid import SpatialFacetGridPlot
+
+            kwargs.setdefault("plot_func", "imshow")
+            return SpatialFacetGridPlot(modelvar, **kwargs)
+        return super().__new__(cls)
 
     def __init__(
         self,
@@ -52,7 +73,7 @@ class SpatialImshowPlot(SpatialPlot):
         super().__init__(*args, **kwargs)
         self.modelvar = modelvar
         self.gridobj = gridobj
-        self.plotargs = plotargs
+        self.plotargs = plotargs or {}
         self.ncolors = ncolors
         self.discrete = discrete
 
@@ -68,32 +89,46 @@ class SpatialImshowPlot(SpatialPlot):
         if self.plotargs:
             imshow_kwargs.update(self.plotargs)
 
-        # Handle eager vs lazy data by delaying conversion until plotting
-        # we still eventually need a numpy array for imshow.
-        model_data = np.asarray(self.modelvar)
-
-        if self.gridobj is not None:
-            lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
-            lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
-            extent = [lon.min(), lon.max(), lat.min(), lat.max()]
-        elif hasattr(self.modelvar, "lat") and hasattr(self.modelvar, "lon"):
-            lat = self.modelvar.lat
-            lon = self.modelvar.lon
-            extent = [lon.min(), lon.max(), lat.min(), lat.max()]
-        else:
-            # Fallback to extent from plotargs or default
-            extent = imshow_kwargs.get("extent", None)
-
-        # imshow requires the extent [lon_min, lon_max, lat_min, lat_max]
-
         imshow_kwargs.setdefault("cmap", "viridis")
         imshow_kwargs.setdefault("origin", "lower")
         imshow_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        img = self.ax.imshow(model_data, extent=extent, **imshow_kwargs)
+        if isinstance(self.modelvar, xr.DataArray):
+            # Use xarray's built-in plotting
+            lon_coord, lat_coord = identify_coords(self.modelvar)
+            imshow_kwargs.setdefault("x", lon_coord)
+            imshow_kwargs.setdefault("y", lat_coord)
+            imshow_kwargs.setdefault("ax", self.ax)
+            imshow_kwargs.setdefault("add_colorbar", not self.discrete)
+
+            img = self.modelvar.plot.imshow(**imshow_kwargs)
+        else:
+            # Fallback to manual plotting for non-xarray data
+            model_data = np.asarray(self.modelvar)
+
+            if self.gridobj is not None:
+                lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
+                lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+                extent = [lon.min(), lon.max(), lat.min(), lat.max()]
+            elif hasattr(self.modelvar, "lat") and hasattr(self.modelvar, "lon"):
+                lat = self.modelvar.lat
+                lon = self.modelvar.lon
+                extent = [lon.min(), lon.max(), lat.min(), lat.max()]
+            else:
+                extent = imshow_kwargs.get("extent", None)
+
+            img = self.ax.imshow(model_data, extent=extent, **imshow_kwargs)
 
         if self.discrete:
-            vmin, vmax = img.get_clim()
+            # Handle discrete colorbar
+            if hasattr(img, "get_clim"):
+                vmin, vmax = img.get_clim()
+            else:
+                vmin, vmax = (
+                    imshow_kwargs.get("vmin", np.nanmin(np.asarray(self.modelvar))),
+                    imshow_kwargs.get("vmax", np.nanmax(np.asarray(self.modelvar))),
+                )
+
             colorbar_index(
                 self.ncolors,
                 imshow_kwargs["cmap"],
@@ -101,7 +136,10 @@ class SpatialImshowPlot(SpatialPlot):
                 maxval=vmax,
                 ax=self.ax,
             )
-        else:
-            self.add_colorbar(img)
+        elif not isinstance(self.modelvar, xr.DataArray) or imshow_kwargs.get(
+            "add_colorbar"
+        ):
+            if not isinstance(self.modelvar, xr.DataArray):
+                self.add_colorbar(img)
 
         return self.ax
