@@ -79,6 +79,12 @@ class SpatialContourPlot(SpatialPlot):
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial contour plot."""
+        # Automatically compute extent if not provided and using xarray
+        if "extent" not in kwargs and isinstance(self.modelvar, xr.DataArray):
+            extent = self._get_extent_from_data(self.modelvar)
+            if extent:
+                kwargs["extent"] = extent
+
         # Combine kwargs: plot() arguments override constructor-passed plot_kwargs
         plot_kwargs = self.plot_kwargs.copy()
         plot_kwargs.update(self.add_features(**kwargs))
@@ -87,10 +93,11 @@ class SpatialContourPlot(SpatialPlot):
         if isinstance(self.modelvar, xr.DataArray):
             try:
                 lat_name, lon_name = self._identify_coords(self.modelvar)
-                data = self._ensure_monotonic(self.modelvar, lat_name, lon_name)
-                lat = data[lat_name]
-                lon = data[lon_name]
-                model_data = data.values
+                self.modelvar = self._ensure_monotonic(self.modelvar, lat_name, lon_name)
+                lat = self.modelvar[lat_name]
+                lon = self.modelvar[lon_name]
+                # Maintain as xarray/dask object for lazy evaluation
+                model_data = self.modelvar
                 # For contourf, if lat/lon are 1D, we might need meshgrid
                 # but matplotlib often handles 1D lat/lon for contourf if they match dims
             except (ValueError, AttributeError):

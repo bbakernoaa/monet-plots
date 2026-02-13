@@ -65,6 +65,13 @@ class SpatialBiasScatterPlot(SpatialPlot):
                       features like `states`, `coastlines`, etc.
         """
         super().__init__(*args, **kwargs)
+
+        # Automatically compute extent if not provided and using xarray
+        if "extent" not in self.plot_kwargs and isinstance(df, (xr.DataArray, xr.Dataset)):
+            extent = self._get_extent_from_data(df)
+            if extent:
+                self._set_extent(extent)
+
         self.df = to_dataframe(df)
         self.col1 = col1
         self.col2 = col2
