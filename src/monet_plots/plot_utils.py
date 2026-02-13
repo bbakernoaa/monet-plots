@@ -78,6 +78,46 @@ if xr is not None:
 
             return SpatialContourPlot(self._obj, **kwargs).plot()
 
+        def contour(self, **kwargs: Any) -> Any:
+            """Create a spatial contour plot using MONET."""
+            from .plots.spatial_contour import SpatialContourPlot
+
+            kwargs.setdefault("plot_func", "contour")
+            return SpatialContourPlot(self._obj, **kwargs).plot()
+
+        def pcolormesh(self, **kwargs: Any) -> Any:
+            """Create a spatial pcolormesh plot using MONET."""
+            from .plots.spatial_imshow import SpatialImshowPlot
+
+            kwargs.setdefault("plot_func", "pcolormesh")
+            return SpatialImshowPlot(self._obj, **kwargs).plot()
+
+        def scatter(self, **kwargs: Any) -> Any:
+            """Create a spatial scatter plot using MONET."""
+            if "col" in kwargs or "row" in kwargs:
+                from .plots.facet_grid import SpatialFacetGridPlot
+
+                kwargs.setdefault("plot_func", "scatter")
+                return SpatialFacetGridPlot(self._obj, **kwargs).plot()
+            else:
+                from .plots.spatial import SpatialPlot
+
+                lon_coord, lat_coord = identify_coords(self._obj)
+                kwargs.setdefault("x", lon_coord)
+                kwargs.setdefault("y", lat_coord)
+                import cartopy.crs as ccrs
+
+                kwargs.setdefault("transform", ccrs.PlateCarree())
+                sp = SpatialPlot(**kwargs)
+                self._obj.plot.scatter(ax=sp.ax, **kwargs)
+                return sp.ax
+
+        def track(self, **kwargs: Any) -> Any:
+            """Create a spatial track plot using MONET."""
+            from .plots.spatial import SpatialTrack
+
+            return SpatialTrack(self._obj, **kwargs).plot()
+
     @xr.register_dataset_accessor("mplots")
     class MonetDatasetAccessor:
         """Xarray accessor for MONET plotting on Datasets."""
@@ -96,6 +136,20 @@ if xr is not None:
             from .plots.spatial_contour import SpatialContourPlot
 
             return SpatialContourPlot(self._obj, **kwargs).plot()
+
+        def contour(self, **kwargs: Any) -> Any:
+            """Create a spatial contour plot using MONET."""
+            from .plots.spatial_contour import SpatialContourPlot
+
+            kwargs.setdefault("plot_func", "contour")
+            return SpatialContourPlot(self._obj, **kwargs).plot()
+
+        def pcolormesh(self, **kwargs: Any) -> Any:
+            """Create a spatial pcolormesh plot using MONET."""
+            from .plots.spatial_imshow import SpatialImshowPlot
+
+            kwargs.setdefault("plot_func", "pcolormesh")
+            return SpatialImshowPlot(self._obj, **kwargs).plot()
 
 
 def to_dataframe(data: Any) -> pd.DataFrame:

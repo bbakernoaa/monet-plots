@@ -37,7 +37,8 @@ class SpatialContourPlot(SpatialPlot):
         ):
             from .facet_grid import SpatialFacetGridPlot
 
-            kwargs.setdefault("plot_func", "contourf")
+            # Pass plot_func to FacetGrid if provided, otherwise default to contourf
+            kwargs.setdefault("plot_func", kwargs.get("plot_func", "contourf"))
             return SpatialFacetGridPlot(modelvar, **kwargs)
         return super().__new__(cls)
 
@@ -49,6 +50,7 @@ class SpatialContourPlot(SpatialPlot):
         discrete: bool = True,
         ncolors: int | None = None,
         dtype: str = "int",
+        plot_func: str = "contourf",
         *args: Any,
         **kwargs: Any,
     ):
@@ -62,6 +64,7 @@ class SpatialContourPlot(SpatialPlot):
             discrete (bool): If True, use a discrete colorbar.
             ncolors (int, optional): Number of discrete colors.
             dtype (str): Data type for colorbar tick labels.
+            plot_func (str): Plotting function to use ('contour' or 'contourf').
             *args: Positional arguments for SpatialPlot.
             **kwargs: Keyword arguments passed to SpatialPlot for
                 projection and features.
@@ -73,10 +76,11 @@ class SpatialContourPlot(SpatialPlot):
         self.discrete = discrete
         self.ncolors = ncolors
         self.dtype = dtype
+        self.plot_func = plot_func
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial contour plot."""
-        # Draw map features and get remaining kwargs for contourf
+        # Draw map features and get remaining kwargs for contour/contourf
         plot_kwargs = self.add_features(**kwargs)
 
         plot_kwargs.setdefault("transform", ccrs.PlateCarree())
@@ -89,7 +93,8 @@ class SpatialContourPlot(SpatialPlot):
             plot_kwargs.setdefault("ax", self.ax)
             plot_kwargs.setdefault("add_colorbar", not self.discrete)
 
-            mesh = self.modelvar.plot.contourf(**plot_kwargs)
+            func = getattr(self.modelvar.plot, self.plot_func)
+            mesh = func(**plot_kwargs)
         else:
             # Fallback to manual plotting
             model_data = np.asarray(self.modelvar)
@@ -110,10 +115,14 @@ class SpatialContourPlot(SpatialPlot):
                     lon = lon_var.squeeze()
             else:
                 # Assume it's already an array or similar
-                lat = self.gridobj.LAT
-                lon = self.gridobj.LON
+                lat = getattr(self.gridobj, "LAT", None)
+                lon = getattr(self.gridobj, "LON", None)
 
-            mesh = self.ax.contourf(lon, lat, model_data, **plot_kwargs)
+            func = getattr(self.ax, self.plot_func)
+            if lat is not None and lon is not None:
+                mesh = func(lon, lat, model_data, **plot_kwargs)
+            else:
+                mesh = func(model_data, **plot_kwargs)
 
         cmap = plot_kwargs.get("cmap")
         levels = plot_kwargs.get("levels")

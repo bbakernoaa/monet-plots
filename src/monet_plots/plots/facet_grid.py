@@ -6,6 +6,7 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import xarray as xr
 
 from ..plot_utils import identify_coords, to_dataframe
 from ..style import wiley_style
@@ -155,6 +156,8 @@ class SpatialFacetGridPlot(BasePlot):
             Cartopy projection for the facets, by default ccrs.PlateCarree().
         subplot_kws : dict, optional
             Additional keyword arguments for subplot creation.
+        plot_func : str
+            Default plotting function to use.
         **kwargs : Any
             Additional keyword arguments passed to xarray's FacetGrid.
         """
@@ -250,16 +253,31 @@ class SpatialFacetGridPlot(BasePlot):
         final_kwargs.update(kwargs)
 
         # We need to map the appropriate xarray plotting function
-        from xarray.plot import contour, contourf, imshow, pcolormesh
+        from xarray.plot import (
+            contour,
+            contourf,
+            imshow,
+            pcolormesh,
+            scatter,
+        )
 
         mapping = {
             "imshow": imshow,
             "contourf": contourf,
             "contour": contour,
             "pcolormesh": pcolormesh,
+            "scatter": scatter,
         }
 
         func = mapping.get(plot_func, imshow)
+
+        if plot_func == "scatter":
+            # For scatter, we often want to use the DataArray/Dataset method directly
+            # to ensure coordinate names are handled correctly within FacetGrid.
+            def _scatter_func(d, x, y, **kwargs):
+                return d.plot.scatter(x=x, y=y, **kwargs)
+
+            func = _scatter_func
 
         # Identify coordinates if not provided
         lon_coord, lat_coord = identify_coords(self.data)
@@ -290,7 +308,11 @@ class SpatialFacetGridPlot(BasePlot):
         y = final_kwargs.pop("y")
 
         # Map the plotting function
-        self.grid.map_dataarray(func, x, y, **final_kwargs)
+        # Using map_dataarray for DataArray facets and map for Dataset facets
+        if isinstance(self.data, xr.DataArray):
+            self.grid.map_dataarray(func, x, y, **final_kwargs)
+        else:
+            self.grid.map(func, x, y, **final_kwargs)
 
         # Add map features to all facets
         if map_features or "coastlines" not in map_features:
