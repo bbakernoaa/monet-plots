@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd

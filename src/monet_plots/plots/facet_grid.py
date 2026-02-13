@@ -282,7 +282,9 @@ class SpatialFacetGridPlot(BasePlot):
             "resolution",
             "natural_earth",
         ]
-        map_features = {k: final_kwargs.pop(k) for k in map_feature_keys if k in final_kwargs}
+        map_features = {
+            k: final_kwargs.pop(k) for k in map_feature_keys if k in final_kwargs
+        }
 
         x = final_kwargs.pop("x")
         y = final_kwargs.pop("y")
