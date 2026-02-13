@@ -104,20 +104,13 @@ class SpatialImshowPlot(SpatialPlot):
         if isinstance(self.modelvar, xr.DataArray):
             try:
                 lat_name, lon_name = self._identify_coords(self.modelvar)
-                data = self._ensure_monotonic(self.modelvar, lat_name, lon_name)
-
-                # Compute extent from coordinates
-                lon = data[lon_name]
-                lat = data[lat_name]
-
-                # Ensure we have scalar floats for extent
-                lon_min = float(lon.min())
-                lon_max = float(lon.max())
-                lat_min = float(lat.min())
-                lat_max = float(lat.max())
-                extent = [lon_min, lon_max, lat_min, lat_max]
-
-                model_data = data.values
+                # Ensure monotonic for correct display orientation
+                self.modelvar = self._ensure_monotonic(
+                    self.modelvar, lat_name, lon_name
+                )
+                extent = self._get_extent_from_data(self.modelvar)
+                # Maintain as xarray/dask object for lazy evaluation
+                model_data = self.modelvar
             except (ValueError, AttributeError, TypeError):
                 # Fallback if coordinate detection fails
                 model_data = np.asarray(self.modelvar)

@@ -115,6 +115,61 @@ class SpatialPlot(BasePlot):
 
         return ensure_monotonic(data, lat_name, lon_name)
 
+    def _get_extent_from_data(
+        self, data: xr.DataArray | xr.Dataset, buffer: float = 0.0
+    ) -> list[float]:
+        """Compute spatial extent from an xarray object efficiently.
+
+        This method identifies coordinates, ensures monotonicity, and uses
+        dask.compute() if necessary to fetch min/max values in a single
+        parallel operation.
+
+        Parameters
+        ----------
+        data : xr.DataArray or xr.Dataset
+            The data object to inspect.
+        buffer : float, optional
+            A buffer to add to the extent (as a fraction of the range),
+            by default 0.0.
+
+        Returns
+        -------
+        list[float]
+            The spatial extent as [lon_min, lon_max, lat_min, lat_max].
+        """
+        try:
+            lat_name, lon_name = self._identify_coords(data)
+            # Only DataArray supports ensure_monotonic
+            if isinstance(data, xr.DataArray):
+                data = self._ensure_monotonic(data, lat_name, lon_name)
+
+            lon = data[lon_name]
+            lat = data[lat_name]
+
+            # Use dask.compute for efficient parallel calculation if chunked
+            import dask
+
+            lon_min, lon_max, lat_min, lat_max = dask.compute(
+                lon.min(), lon.max(), lat.min(), lat.max()
+            )
+
+            # Ensure they are scalar floats
+            lon_min, lon_max = float(lon_min), float(lon_max)
+            lat_min, lat_max = float(lat_min), float(lat_max)
+
+            if buffer > 0:
+                lon_buf = (lon_max - lon_min) * buffer if lon_max > lon_min else 1.0
+                lat_buf = (lat_max - lat_min) * buffer if lat_max > lat_min else 1.0
+                lon_min -= lon_buf
+                lon_max += lon_buf
+                lat_min -= lat_buf
+                lat_max += lat_buf
+
+            return [lon_min, lon_max, lat_min, lat_max]
+        except (ValueError, AttributeError, TypeError):
+            # Fallback if coordinate detection fails
+            return None
+
     def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:
         """Return a registry of cartopy features and their default styles.
 
@@ -442,28 +497,9 @@ class SpatialTrack(SpatialPlot):
 
         # Automatically compute extent if not provided
         if "extent" not in kwargs:
-            lon = self.data[self.lon_coord]
-            lat = self.data[self.lat_coord]
-            # Add a small buffer to the extent.
-            # Use dask.compute for efficient parallel calculation of min/max
-            # if the data is chunked.
-            import dask
-
-            lon_min, lon_max, lat_min, lat_max = dask.compute(
-                lon.min(), lon.max(), lat.min(), lat.max()
-            )
-            # Ensure they are scalar values (handles both numpy and dask returns)
-            lon_min, lon_max = float(lon_min), float(lon_max)
-            lat_min, lat_max = float(lat_min), float(lat_max)
-
-            lon_buf = (lon_max - lon_min) * 0.1 if lon_max > lon_min else 1.0
-            lat_buf = (lat_max - lat_min) * 0.1 if lat_max > lat_min else 1.0
-            kwargs["extent"] = [
-                lon_min - lon_buf,
-                lon_max + lon_buf,
-                lat_min - lat_buf,
-                lat_max + lat_buf,
-            ]
+            extent = self._get_extent_from_data(self.data, buffer=0.1)
+            if extent:
+                kwargs["extent"] = extent
 
         # Add features and get remaining kwargs for scatter
         scatter_kwargs = self.add_features(**kwargs)
