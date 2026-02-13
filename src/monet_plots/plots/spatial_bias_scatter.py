@@ -67,7 +67,9 @@ class SpatialBiasScatterPlot(SpatialPlot):
         super().__init__(*args, **kwargs)
 
         # Automatically compute extent if not provided and using xarray
-        if "extent" not in self.plot_kwargs and isinstance(df, (xr.DataArray, xr.Dataset)):
+        if "extent" not in self.plot_kwargs and isinstance(
+            df, (xr.DataArray, xr.Dataset)
+        ):
             extent = self._get_extent_from_data(df)
             if extent:
                 self._set_extent(extent)

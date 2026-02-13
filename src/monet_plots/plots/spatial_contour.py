@@ -93,7 +93,9 @@ class SpatialContourPlot(SpatialPlot):
         if isinstance(self.modelvar, xr.DataArray):
             try:
                 lat_name, lon_name = self._identify_coords(self.modelvar)
-                self.modelvar = self._ensure_monotonic(self.modelvar, lat_name, lon_name)
+                self.modelvar = self._ensure_monotonic(
+                    self.modelvar, lat_name, lon_name
+                )
                 lat = self.modelvar[lat_name]
                 lon = self.modelvar[lon_name]
                 # Maintain as xarray/dask object for lazy evaluation

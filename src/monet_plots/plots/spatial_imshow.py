@@ -105,7 +105,9 @@ class SpatialImshowPlot(SpatialPlot):
             try:
                 lat_name, lon_name = self._identify_coords(self.modelvar)
                 # Ensure monotonic for correct display orientation
-                self.modelvar = self._ensure_monotonic(self.modelvar, lat_name, lon_name)
+                self.modelvar = self._ensure_monotonic(
+                    self.modelvar, lat_name, lon_name
+                )
                 extent = self._get_extent_from_data(self.modelvar)
                 # Maintain as xarray/dask object for lazy evaluation
                 model_data = self.modelvar
