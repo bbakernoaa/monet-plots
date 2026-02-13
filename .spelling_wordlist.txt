@@ -381,3 +381,12 @@ ylabel
 YlOrRd
 ytick
 zorder
+accessor
+ccrs
+contourf
+FacetGrid
+func
+mplots
+PlateCarree
+SpatialFacetGridPlot
+Accessor
