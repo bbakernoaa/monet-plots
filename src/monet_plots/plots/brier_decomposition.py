@@ -1,9 +1,17 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional, Union
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from typing import Optional, Any
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_brier_score_components
 from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
+
+if TYPE_CHECKING:
+    import matplotlib.axes
 
 
 class BrierScoreDecompositionPlot(BasePlot):
@@ -28,53 +36,124 @@ class BrierScoreDecompositionPlot(BasePlot):
         observations_col: Optional[str] = None,
         n_bins: int = 10,
         label_col: Optional[str] = None,
-        **kwargs,
-    ):
+        dim: Optional[Union[str, list[str]]] = None,
+        **kwargs: Any,
+    ) -> matplotlib.axes.Axes:
         """
         Main plotting method.
 
-        Args:
-            data: Input data.
-            reliability_col/resolution_col/uncertainty_col (str):
-                Pre-computed component columns.
-            forecasts_col/observations_col (str, optional):
-                Raw forecast probabilities and binary observations.
-            n_bins (int): Bins for decomposition if raw data.
-            label_col (str, optional): Grouping column.
-            **kwargs: Matplotlib kwargs.
+        Parameters
+        ----------
+        data : Any
+            Input data. Can be a pandas DataFrame, xarray DataArray,
+            xarray Dataset, or numpy ndarray.
+        reliability_col : str, optional
+            Pre-computed reliability column name, by default "reliability".
+        resolution_col : str, optional
+            Pre-computed resolution column name, by default "resolution".
+        uncertainty_col : str, optional
+            Pre-computed uncertainty column name, by default "uncertainty".
+        forecasts_col : str, optional
+            Column of raw forecast probabilities [0, 1].
+        observations_col : str, optional
+            Column of binary observations {0, 1}.
+        n_bins : int, optional
+            Number of bins for decomposition if raw data is provided, by default 10.
+        label_col : str, optional
+            Grouping column for multiple decompositions.
+        dim : Union[str, list[str]], optional
+            Dimension(s) to aggregate over when using Xarray/Dask raw data.
+        **kwargs : Any
+            Additional keyword arguments passed to ax.bar or suptitle.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object with the Brier Score decomposition plot.
         """
+        import xarray as xr
+
+        # Track provenance if Xarray
+        if isinstance(data, (xr.DataArray, xr.Dataset)):
+            history = data.attrs.get("history", "")
+            data.attrs["history"] = f"Generated BrierScoreDecompositionPlot; {history}"
+
         title = kwargs.pop("title", "Brier Score Decomposition")
-        df = to_dataframe(data)
-        # Compute components if raw data provided
-        if forecasts_col and observations_col:
+
+        if (
+            isinstance(data, (xr.DataArray, xr.Dataset))
+            and forecasts_col
+            and observations_col
+        ):
+            # Native Xarray path
+            ds = data
+            f = ds[forecasts_col]
+            o = ds[observations_col]
+
             components_list = []
             if label_col:
-                for name, group in df.groupby(label_col):
+                labels_concrete = ds[label_col].values
+                unique_labels = np.unique(labels_concrete)
+                for label in unique_labels:
+                    # Select using mask for boolean dask indexing safety
+                    mask = labels_concrete == label
+                    f_sub = f.isel({f.dims[0]: mask})
+                    o_sub = o.isel({o.dims[0]: mask})
+
                     comps = compute_brier_score_components(
-                        np.asarray(group[forecasts_col]),
-                        np.asarray(group[observations_col]),
-                        n_bins,
+                        f_sub, o_sub, n_bins=n_bins, dim=dim
                     )
-                    row = pd.Series(comps)
-                    row["model"] = str(name)
+                    # Comps might be lazy, need to compute for the bar plot
+                    row = {
+                        k: float(v.compute()) if hasattr(v, "compute") else float(v)
+                        for k, v in comps.items()
+                    }
+                    row["model"] = str(label)
                     components_list.append(row)
             else:
-                comps = compute_brier_score_components(
-                    np.asarray(df[forecasts_col]),
-                    np.asarray(df[observations_col]),
-                    n_bins,
-                )
-                row = pd.Series(comps)
+                comps = compute_brier_score_components(f, o, n_bins=n_bins, dim=dim)
+                row = {
+                    k: float(v.compute()) if hasattr(v, "compute") else float(v)
+                    for k, v in comps.items()
+                }
                 row["model"] = "Model"
                 components_list.append(row)
 
             df_plot = pd.DataFrame(components_list)
             plot_label_col = "model"
         else:
-            required_cols = [reliability_col, resolution_col, uncertainty_col]
-            validate_dataframe(df, required_columns=required_cols)
-            df_plot = df
-            plot_label_col = label_col
+            # Fallback path
+            df = to_dataframe(data)
+            # Compute components if raw data provided
+            if forecasts_col and observations_col:
+                components_list = []
+                if label_col:
+                    for name, group in df.groupby(label_col):
+                        comps = compute_brier_score_components(
+                            np.asarray(group[forecasts_col]),
+                            np.asarray(group[observations_col]),
+                            n_bins,
+                        )
+                        row = pd.Series(comps)
+                        row["model"] = str(name)
+                        components_list.append(row)
+                else:
+                    comps = compute_brier_score_components(
+                        np.asarray(df[forecasts_col]),
+                        np.asarray(df[observations_col]),
+                        n_bins,
+                    )
+                    row = pd.Series(comps)
+                    row["model"] = "Model"
+                    components_list.append(row)
+
+                df_plot = pd.DataFrame(components_list)
+                plot_label_col = "model"
+            else:
+                required_cols = [reliability_col, resolution_col, uncertainty_col]
+                validate_dataframe(df, required_columns=required_cols)
+                df_plot = df
+                plot_label_col = label_col
 
         # Prepare for plotting: make resolution negative for visualization
         df_plot = df_plot.copy()

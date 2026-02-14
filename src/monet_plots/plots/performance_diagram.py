@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, List, Optional, Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-from typing import Optional, Any, List, Union
+
 from .base import BasePlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
 from ..plot_utils import validate_dataframe, normalize_data
 from ..verification_metrics import (
     compute_pod,
@@ -36,8 +43,8 @@ class PerformanceDiagramPlot(BasePlot):
         threshold: Optional[float] = None,
         label_col: Optional[str] = None,
         dim: Optional[Union[str, List[str]]] = None,
-        **kwargs,
-    ) -> plt.Axes:
+        **kwargs: Any,
+    ) -> matplotlib.axes.Axes:
         """
         Generate the Performance Diagram.
 
