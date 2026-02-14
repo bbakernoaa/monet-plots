@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import matplotlib.pyplot as plt
+import matplotlib
 import pandas as pd
 import seaborn as sns
 import xarray as xr
@@ -117,20 +117,16 @@ class RegionalDistributionPlot(BasePlot):
                 f"Dimension '{self.group_dim}' not found in DataArray for {label}"
             )
 
-        non_group_dims = [d for d in da.dims if d != self.group_dim]
-
-        if non_group_dims:
-            da_stacked = da.stack(samples=non_group_dims)
-        else:
-            da_stacked = da
-
-        # to_dataframe() will compute dask arrays
-        df_temp = da_stacked.to_dataframe(name="value").reset_index()
+        # Convert to series to avoid issues with non-dimension coordinates
+        # being included as columns during to_dataframe() or reset_index failures
+        # when a dimension name overlaps with another coordinate name.
+        # to_series() handles all dimensions and results in a MultiIndex series.
+        df_temp = da.to_series().to_frame(name="value").reset_index()
         df_temp = df_temp[[self.group_dim, "value"]]
         df_temp[self.hue] = label
         return df_temp.dropna(subset=["value"])
 
-    def plot(self, **kwargs: Any) -> plt.Axes:
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """
         Generate the regional distribution plot.
 
@@ -141,7 +137,7 @@ class RegionalDistributionPlot(BasePlot):
 
         Returns
         -------
-        plt.Axes
+        matplotlib.axes.Axes
             The matplotlib axes containing the plot.
         """
         from ..style import CB_COLORS
@@ -198,7 +194,7 @@ class RegionalDistributionPlot(BasePlot):
 
     def add_inset_map(
         self, extent: list[float] | None = None, **kwargs: Any
-    ) -> plt.Axes:
+    ) -> matplotlib.axes.Axes:
         """
         Add a geospatial inset map to the plot.
 
@@ -213,7 +209,7 @@ class RegionalDistributionPlot(BasePlot):
 
         Returns
         -------
-        plt.Axes
+        matplotlib.axes.Axes
             The inset axes.
         """
         from .spatial import SpatialPlot
