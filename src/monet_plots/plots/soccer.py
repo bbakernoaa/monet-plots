@@ -3,8 +3,11 @@
 
 import matplotlib.patches as patches
 import numpy as np
+import pandas as pd
+import xarray as xr
 from .base import BasePlot
-from ..plot_utils import to_dataframe
+from ..plot_utils import normalize_data
+from ..verification_metrics import compute_fb, compute_fe, compute_nmb, compute_nme
 from typing import Any, Optional, Dict
 
 
@@ -34,7 +37,7 @@ class SoccerPlot(BasePlot):
         Initialize Soccer Plot.
 
         Args:
-            data: Input data (DataFrame, DataArray, etc.).
+            data: Input data (DataFrame, DataArray, Dataset).
             obs_col: Column name for observations. Required if bias/error not provided.
             mod_col: Column name for model values. Required if bias/error not provided.
             bias_col: Column name for pre-calculated bias.
@@ -46,7 +49,7 @@ class SoccerPlot(BasePlot):
             **kwargs: Arguments passed to BasePlot.
         """
         super().__init__(**kwargs)
-        self.df = to_dataframe(data)
+        self.data = normalize_data(data)
         self.bias_col = bias_col
         self.error_col = error_col
         self.label_col = label_col
@@ -61,50 +64,38 @@ class SoccerPlot(BasePlot):
                 )
             self._calculate_metrics(obs_col, mod_col)
         else:
-            self.bias_data = self.df[bias_col]
-            self.error_data = self.df[error_col]
+            self.bias_data = self.data[bias_col]
+            self.error_data = self.data[error_col]
 
     def _calculate_metrics(self, obs_col: str, mod_col: str):
-        """Calculate MFB/MFE or NMB/NME."""
-        obs = self.df[obs_col]
-        mod = self.df[mod_col]
+        """Calculate MFB/MFE or NMB/NME preserving granularity."""
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
+            obs = self.data[obs_col]
+            mod = self.data[mod_col]
+            # Use dim=[] to maintain per-sample granularity (no aggregation)
+            dim_arg = []
+        else:
+            obs = self.data[obs_col].values
+            mod = self.data[mod_col].values
+            dim_arg = ()
 
         if self.metric == "fractional":
-            # Mean Fractional Bias and Error
-            denom = (obs + mod).astype(float)
-            self.bias_data = np.divide(
-                200.0 * (mod - obs),
-                denom,
-                out=np.full(denom.shape, np.nan),
-                where=denom != 0,
-            )
-            self.error_data = np.divide(
-                200.0 * np.abs(mod - obs),
-                denom,
-                out=np.full(denom.shape, np.nan),
-                where=denom != 0,
-            )
+            self.bias_data = compute_fb(obs, mod, dim=dim_arg)
+            self.error_data = compute_fe(obs, mod, dim=dim_arg)
             self.xlabel = "Mean Fractional Bias (%)"
             self.ylabel = "Mean Fractional Error (%)"
         elif self.metric == "normalized":
-            # Normalized Mean Bias and Error
-            obs_float = obs.astype(float)
-            self.bias_data = np.divide(
-                100.0 * (mod - obs),
-                obs_float,
-                out=np.full(obs_float.shape, np.nan),
-                where=obs_float != 0,
-            )
-            self.error_data = np.divide(
-                100.0 * np.abs(mod - obs),
-                obs_float,
-                out=np.full(obs_float.shape, np.nan),
-                where=obs_float != 0,
-            )
+            self.bias_data = compute_nmb(obs, mod, dim=dim_arg)
+            self.error_data = compute_nme(obs, mod, dim=dim_arg)
             self.xlabel = "Normalized Mean Bias (%)"
             self.ylabel = "Normalized Mean Error (%)"
         else:
             raise ValueError("metric must be 'fractional' or 'normalized'")
+
+        # Ensure consistent output types for DataFrame inputs
+        if isinstance(self.data, pd.DataFrame):
+            self.bias_data = pd.Series(self.bias_data, index=self.data.index)
+            self.error_data = pd.Series(self.error_data, index=self.data.index)
 
     def plot(self, **kwargs):
         """Generate the soccer plot."""
@@ -144,22 +135,44 @@ class SoccerPlot(BasePlot):
 
         # Labels
         if self.label_col is not None:
-            for i, txt in enumerate(self.df[self.label_col]):
+            labels = (
+                self.data[self.label_col].values
+                if isinstance(self.data, (xr.DataArray, xr.Dataset))
+                else self.data[self.label_col]
+            )
+            bias_vals = (
+                self.bias_data.values
+                if hasattr(self.bias_data, "values")
+                else self.bias_data
+            )
+            error_vals = (
+                self.error_data.values
+                if hasattr(self.error_data, "values")
+                else self.error_data
+            )
+            for i, txt in enumerate(labels):
                 self.ax.annotate(
                     txt,
-                    (self.bias_data.iloc[i], self.error_data.iloc[i]),
+                    (bias_vals[i], error_vals[i]),
                     xytext=(5, 5),
                     textcoords="offset points",
                 )
 
-        # Setup axes
+        # Setup axes - use compute() for dask objects to get limits
+        bias_max = np.abs(self.bias_data).max()
+        error_max = self.error_data.max()
+        if hasattr(bias_max, "compute"):
+            import dask
+
+            bias_max, error_max = dask.compute(bias_max, error_max)
+
         limit = 0
         if self.criteria:
             limit = max(limit, self.criteria["bias"] * 1.1)
             limit_y = self.criteria["error"] * 1.1
         else:
-            limit = max(limit, self.bias_data.abs().max() * 1.1)
-            limit_y = self.error_data.max() * 1.1
+            limit = max(limit, float(bias_max) * 1.1)
+            limit_y = float(error_max) * 1.1
 
         self.ax.set_xlim(-limit, limit)
         self.ax.set_ylim(0, limit_y)

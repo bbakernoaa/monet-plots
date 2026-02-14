@@ -1,5 +1,133 @@
 import numpy as np
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union, Dict, Any
+
+try:
+    import monet_stats
+except ImportError:
+    monet_stats = None
+
+# Optional xarray import - will be used if available
+try:
+    import xarray as xr
+except ImportError:
+    xr = None
+
+
+def _update_history(obj: Any, msg: str) -> Any:
+    """
+    Update the 'history' attribute of an xarray object to track provenance.
+    """
+    if xr is not None and isinstance(obj, (xr.DataArray, xr.Dataset)):
+        history = obj.attrs.get("history", "")
+        new_history = f"{msg} (monet-plots); {history}".strip("; ")
+        obj.attrs["history"] = new_history
+    return obj
+
+
+def _is_xarray(obj: Any) -> bool:
+    """Check if object is an xarray DataArray or Dataset."""
+    return xr is not None and isinstance(obj, (xr.DataArray, xr.Dataset))
+
+
+def _mean(obj: Any, dim: Any) -> Any:
+    """Polymorphic mean that handles xarray 'dim' and numpy 'axis'."""
+    if _is_xarray(obj):
+        return obj.mean(dim=dim)
+    return np.mean(obj, axis=dim)
+
+
+def _sum(obj: Any, dim: Any) -> Any:
+    """Polymorphic sum that handles xarray 'dim' and numpy 'axis'."""
+    if _is_xarray(obj):
+        return obj.sum(dim=dim)
+    return np.sum(obj, axis=dim)
+
+
+def compute_mb(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Mean Bias (MB)."""
+    if monet_stats is None:
+        diff = mod - obs
+        res = _mean(diff, dim)
+        return _update_history(res, "Computed MB")
+    # monet-stats.MB returns (obs - mod), so we swap arguments to get (mod - obs)
+    res = monet_stats.MB(mod, obs, axis=dim)
+    return _update_history(res, "Computed MB")
+
+
+def compute_rmse(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Root Mean Square Error (RMSE)."""
+    if monet_stats is None:
+        diff_sq = (mod - obs) ** 2
+        res = np.sqrt(_mean(diff_sq, dim))
+        return _update_history(res, "Computed RMSE")
+    res = monet_stats.RMSE(obs, mod, axis=dim)
+    return _update_history(res, "Computed RMSE")
+
+
+def compute_mae(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Mean Absolute Error (MAE)."""
+    if monet_stats is None:
+        abs_diff = np.abs(mod - obs)
+        res = _mean(abs_diff, dim)
+        return _update_history(res, "Computed MAE")
+    res = monet_stats.MAE(obs, mod, axis=dim)
+    return _update_history(res, "Computed MAE")
+
+
+def compute_correlation(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Pearson Correlation Coefficient."""
+    if monet_stats is None:
+        # Simplified fallback for NumPy/Xarray
+        o = obs.values if hasattr(obs, "values") else obs
+        m = mod.values if hasattr(mod, "values") else mod
+        return np.corrcoef(o.ravel(), m.ravel())[0, 1]
+    res = monet_stats.pearsonr(obs, mod, axis=dim)
+    return _update_history(res, "Computed Correlation")
+
+
+def compute_fb(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Fractional Bias (FB)."""
+    if monet_stats is None:
+        term = (mod - obs) / (mod + obs)
+        res = 200.0 * _mean(term, dim)
+        return _update_history(res, "Computed FB")
+    res = monet_stats.FB(obs, mod, axis=dim)
+    return _update_history(res, "Computed FB")
+
+
+def compute_fe(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Fractional Error (FE)."""
+    if monet_stats is None:
+        term = np.abs(mod - obs) / (mod + obs)
+        res = 200.0 * _mean(term, dim)
+        return _update_history(res, "Computed FE")
+    res = monet_stats.FE(obs, mod, axis=dim)
+    return _update_history(res, "Computed FE")
+
+
+def compute_nmb(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Normalized Mean Bias (NMB)."""
+    if monet_stats is None:
+        diff = mod - obs
+        num = _sum(diff, dim)
+        den = _sum(obs, dim)
+        res = 100.0 * num / den
+        return _update_history(res, "Computed NMB")
+    res = monet_stats.NMB(obs, mod, axis=dim)
+    return _update_history(res, "Computed NMB")
+
+
+def compute_nme(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Normalized Mean Error (NME)."""
+    if monet_stats is None:
+        abs_diff = np.abs(mod - obs)
+        num = _sum(abs_diff, dim)
+        den = _sum(obs, dim)
+        res = 100.0 * num / den
+        return _update_history(res, "Computed NME")
+    # monet-stats uses MNE for Mean Normalized Error (Gross Error)
+    res = monet_stats.MNE(obs, mod, axis=dim)
+    return _update_history(res, "Computed NME")
 
 
 def compute_pod(
@@ -123,15 +251,16 @@ def compute_auc(x: np.ndarray, y: np.ndarray) -> float:
 
 
 def compute_reliability_curve(
-    forecasts: np.ndarray, observations: np.ndarray, n_bins: int = 10
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    forecasts: Any, observations: Any, n_bins: int = 10, dim: Any = None
+) -> Tuple[np.ndarray, Any, Any]:
     """
-    Computes reliability curve statistics.
+    Computes reliability curve statistics, supporting lazy evaluation and multidimensional input.
 
     Args:
-        forecasts: Array of forecast probabilities [0, 1]
-        observations: Array of binary outcomes (0 or 1)
-        n_bins: Number of bins
+        forecasts: Forecast probabilities [0, 1].
+        observations: Binary outcomes (0 or 1).
+        n_bins: Number of bins.
+        dim: Dimension(s) to aggregate over. If None, aggregates over all dimensions.
 
     Returns:
         Tuple of (bin_centers, observed_frequencies, bin_counts)
@@ -139,26 +268,64 @@ def compute_reliability_curve(
     bins = np.linspace(0, 1, n_bins + 1)
     bin_centers = (bins[:-1] + bins[1:]) / 2
 
-    # Digitize returns indices of bins
-    bin_indices = np.digitize(forecasts, bins) - 1
+    if xr is not None and isinstance(forecasts, (xr.DataArray, xr.Dataset)):
+        if dim is None:
+            dim = list(forecasts.dims)
+        elif isinstance(dim, str):
+            dim = [dim]
 
-    # Adjust for values exactly at 1.0 (put in last bin)
-    bin_indices[bin_indices == n_bins] = n_bins - 1
+        def _core_reliability(f, o):
+            indices = np.digitize(f, bins) - 1
+            indices[indices == n_bins] = n_bins - 1
 
-    observed_frequencies = []
-    bin_counts = []
+            freq = np.full(n_bins, np.nan)
+            counts = np.zeros(n_bins)
+            for i in range(n_bins):
+                mask = indices == i
+                c = np.sum(mask)
+                counts[i] = c
+                if c > 0:
+                    freq[i] = np.mean(o[mask])
+            return freq, counts
 
-    for i in range(n_bins):
-        mask = bin_indices == i
-        count = np.sum(mask)
-        bin_counts.append(count)
+        # Ensure core dimensions are unchunked for apply_ufunc
+        forecasts = forecasts.chunk({d: -1 for d in dim})
+        observations = observations.chunk({d: -1 for d in dim})
 
-        if count > 0:
-            observed_frequencies.append(np.mean(observations[mask]))
-        else:
-            observed_frequencies.append(np.nan)
+        res_freq, res_counts = xr.apply_ufunc(
+            _core_reliability,
+            forecasts,
+            observations,
+            input_core_dims=[dim, dim],
+            output_core_dims=[["bin"], ["bin"]],
+            dask="parallelized",
+            vectorize=True,
+            output_dtypes=[float, float],
+            dask_gufunc_kwargs={"output_sizes": {"bin": n_bins}},
+        )
+        res_freq = res_freq.assign_coords(bin=bin_centers)
+        res_counts = res_counts.assign_coords(bin=bin_centers)
 
-    return bin_centers, np.array(observed_frequencies), np.array(bin_counts)
+        return bin_centers, res_freq, res_counts
+    else:
+        # Numpy implementation
+        bin_indices = np.digitize(forecasts, bins) - 1
+        bin_indices[bin_indices == n_bins] = n_bins - 1
+
+        observed_frequencies = []
+        bin_counts = []
+
+        for i in range(n_bins):
+            mask = bin_indices == i
+            count = np.sum(mask)
+            bin_counts.append(count)
+
+            if count > 0:
+                observed_frequencies.append(np.mean(observations[mask]))
+            else:
+                observed_frequencies.append(np.nan)
+
+        return bin_centers, np.array(observed_frequencies), np.array(bin_counts)
 
 
 def compute_brier_score_components(
