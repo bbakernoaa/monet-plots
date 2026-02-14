@@ -53,11 +53,15 @@ df = pd.DataFrame(data_list)
 
 # 2. Initialize and create the plot
 plot = ScorecardPlot(
-    df, x_col="Lead Time", y_col="Variable", val_col="Metric Value", figsize=(10, 7)
-)
-plot.plot(
+    df,
+    x_col="Lead Time",
+    y_col="Variable",
+    val_col="Metric Value",
     cmap="RdYlGn_r",  # Red-Yellow-Green colormap, reversed so green is good (negative values)
     center=0,  # Center the colormap at 0
+    figsize=(10, 7),
+)
+plot.plot(
     linewidths=0.5,  # Add lines between cells
     linecolor="black",
 )

@@ -48,18 +48,19 @@ class ConditionalBiasPlot(BasePlot):
         Args:
             **kwargs: Matplotlib kwargs.
         """
+        n_bins = kwargs.pop("n_bins", self.n_bins)
         df_plot = self.data.copy()
         df_plot["bias"] = df_plot[self.fcst_col] - df_plot[self.obs_col]
 
         if self.label_col:
             for name, group in df_plot.groupby(self.label_col):
                 self._plot_binned_bias(
-                    group, self.obs_col, "bias", self.n_bins, label=str(name), **kwargs
+                    group, self.obs_col, "bias", n_bins, label=str(name), **kwargs
                 )
             self.ax.legend(loc="best")
         else:
             self._plot_binned_bias(
-                df_plot, self.obs_col, "bias", self.n_bins, label="Model", **kwargs
+                df_plot, self.obs_col, "bias", n_bins, label="Model", **kwargs
             )
 
         self.ax.axhline(

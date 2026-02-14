@@ -48,9 +48,13 @@ class RelativeEconomicValuePlot(BasePlot):
         Args:
             **kwargs: Matplotlib kwargs.
         """
-        validate_dataframe(self.data, required_columns=self.counts_cols)
+        counts_cols = kwargs.pop("counts_cols", self.counts_cols)
+        climatology = kwargs.pop("climatology", self.climatology)
+        cost_loss_ratios = kwargs.pop("cost_loss_ratios", self.cost_loss_ratios)
 
-        if self.climatology is None:
+        validate_dataframe(self.data, required_columns=counts_cols)
+
+        if climatology is None:
             total_events = (
                 self.data[self.counts_cols[0]].sum()
                 + self.data[self.counts_cols[1]].sum()
@@ -66,19 +70,17 @@ class RelativeEconomicValuePlot(BasePlot):
 
         if self.cost_loss_ratios is None:
             cost_loss_ratios = np.linspace(0.001, 0.999, 100)
-        else:
-            cost_loss_ratios = self.cost_loss_ratios
 
         if self.label_col:
             for name, group in self.data.groupby(self.label_col):
                 rev_values = self._calculate_rev(
-                    group, self.counts_cols, cost_loss_ratios, climatology
+                    group, counts_cols, cost_loss_ratios, climatology
                 )
                 self.ax.plot(cost_loss_ratios, rev_values, label=str(name), **kwargs)
             self.ax.legend(loc="best")
         else:
             rev_values = self._calculate_rev(
-                self.data, self.counts_cols, cost_loss_ratios, climatology
+                self.data, counts_cols, cost_loss_ratios, climatology
             )
             self.ax.plot(cost_loss_ratios, rev_values, label="Model", **kwargs)
 

@@ -48,6 +48,8 @@ class RankHistogramPlot(BasePlot):
         Args:
             **kwargs: Matplotlib kwargs.
         """
+        self.normalize = kwargs.pop("normalize", self.normalize)
+
         if self.n_members is None:
             n_members = int(self.data[self.rank_col].max())
         else:

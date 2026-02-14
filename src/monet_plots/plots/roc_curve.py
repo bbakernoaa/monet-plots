@@ -49,6 +49,8 @@ class ROCCurvePlot(BasePlot):
         Args:
             **kwargs: Matplotlib kwargs.
         """
+        show_auc = kwargs.pop("show_auc", self.show_auc)
+
         # Draw No Skill Line
         self.ax.plot([0, 1], [0, 1], "k--", label="No Skill", alpha=0.5)
         self.ax.grid(True, alpha=0.3)
@@ -61,7 +63,7 @@ class ROCCurvePlot(BasePlot):
                     self.x_col,
                     self.y_col,
                     label=str(name),
-                    show_auc=self.show_auc,
+                    show_auc=show_auc,
                     **kwargs,
                 )
             self.ax.legend(loc="lower right")
@@ -71,7 +73,7 @@ class ROCCurvePlot(BasePlot):
                 self.x_col,
                 self.y_col,
                 label="Model",
-                show_auc=self.show_auc,
+                show_auc=show_auc,
                 **kwargs,
             )
 

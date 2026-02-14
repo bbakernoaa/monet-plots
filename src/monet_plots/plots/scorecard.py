@@ -61,11 +61,13 @@ class ScorecardPlot(BasePlot):
         )
 
         # Plot Heatmap
+        cmap = kwargs.pop("cmap", self.cmap)
+        center = kwargs.pop("center", self.center)
         sns.heatmap(
             pivot_data,
             ax=self.ax,
-            cmap=self.cmap,
-            center=self.center,
+            cmap=cmap,
+            center=center,
             annot=True,
             fmt=".2f",
             cbar_kws={"label": "Relative Performance"},
