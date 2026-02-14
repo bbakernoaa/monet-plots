@@ -60,8 +60,6 @@ class ScorecardPlot(BasePlot):
             index=self.y_col, columns=self.x_col, values=self.val_col
         )
 
-        # TDD Anchor: Test pivot structure
-
         # Plot Heatmap
         sns.heatmap(
             pivot_data,
@@ -109,10 +107,6 @@ class ScorecardPlot(BasePlot):
                         color="black",
                         zorder=5,
                     )
-
-    # TDD Anchors:
-    # 1. test_pivot_logic: Verify long-to-wide conversion.
-    # 2. test_significance_overlay: Verify markers are placed only on significant cells.
 
     def hvplot(self, **kwargs):
         """Generate an interactive scorecard plot using hvPlot."""

@@ -69,8 +69,6 @@ class RelativeEconomicValuePlot(BasePlot):
         else:
             cost_loss_ratios = self.cost_loss_ratios
 
-        # TDD Anchor: Test REV calculation logic
-
         if self.label_col:
             for name, group in self.data.groupby(self.label_col):
                 rev_values = self._calculate_rev(
@@ -101,10 +99,6 @@ class RelativeEconomicValuePlot(BasePlot):
         fa = df[cols[2]].sum()
         cn = df[cols[3]].sum()
         return compute_rev(hits, misses, fa, cn, ratios, clim)
-
-    # TDD Anchors:
-    # 1. test_rev_max_value: REV should never exceed 1.
-    # 2. test_rev_at_climatology: REV should be 0 if forecast equals climatology strategy.
 
     def hvplot(self, **kwargs):
         """Generate an interactive Relative Economic Value plot using hvPlot."""

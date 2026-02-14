@@ -30,6 +30,8 @@ from monet_plots import (
     ProfilePlot,
     FacetGridPlot,
     BivariatePolarPlot,
+    StickPlot,
+    VerticalBoxPlot,
 )
 
 
@@ -275,5 +277,23 @@ def test_facet_grid_hvplot():
 def test_bivariate_polar_hvplot():
     df = pd.DataFrame({"ws": [1, 2], "wd": [45, 90], "val": [10, 20]})
     plot = BivariatePolarPlot(df, ws_col="ws", wd_col="wd", val_col="val")
+    hv_obj = plot.hvplot()
+    assert isinstance(hv_obj, (hv.Element, hv.Layout, hv.Overlay, hv.NdLayout))
+
+
+def test_stick_plot_hvplot():
+    u = np.array([1, 2, 3])
+    v = np.array([0.5, 1, 1.5])
+    y = np.array([10, 20, 30])
+    plot = StickPlot(u, v, y)
+    hv_obj = plot.hvplot()
+    assert isinstance(hv_obj, (hv.Element, hv.Layout, hv.Overlay, hv.NdLayout))
+
+
+def test_vertical_box_plot_hvplot():
+    data = np.random.rand(100)
+    y = np.random.rand(100) * 100
+    thresholds = [0, 50, 100]
+    plot = VerticalBoxPlot(data, y, thresholds)
     hv_obj = plot.hvplot()
     assert isinstance(hv_obj, (hv.Element, hv.Layout, hv.Overlay, hv.NdLayout))

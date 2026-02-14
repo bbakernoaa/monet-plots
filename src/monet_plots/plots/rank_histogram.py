@@ -60,8 +60,6 @@ class RankHistogramPlot(BasePlot):
         else:
             expected = len(self.data) / num_bins
 
-        # TDD Anchor: Validate inputs
-
         if self.label_col:
             for name, group in self.data.groupby(self.label_col):
                 counts = (
@@ -97,14 +95,6 @@ class RankHistogramPlot(BasePlot):
         self.ax.set_xticks(np.arange(n_members + 1))
         self.ax.set_xlim(-0.5, n_members + 0.5)
         self.ax.grid(True, alpha=0.3)
-
-        # TDD Anchor: test_normalization: Check sum of frequencies is 1.0.
-        # TDD Anchor: test_missing_ranks: Ensure ranks with 0 counts are plotted as 0.
-
-    # TDD Anchors:
-    # 1. test_flat_distribution: Verify perfectly uniform ranks yield flat line.
-    # 2. test_normalization: Check sum of frequencies is 1.0.
-    # 3. test_missing_ranks: Ensure ranks with 0 counts are plotted as 0.
 
     def hvplot(self, **kwargs):
         """Generate an interactive rank histogram using hvPlot."""

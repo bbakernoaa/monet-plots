@@ -42,7 +42,6 @@ class PerformanceDiagramPlot(BasePlot):
         self.y_col = y_col
         self.counts_cols = counts_cols
         self.label_col = label_col
-        # TDD Anchor: Test validation raises error on missing cols
         self._validate_inputs(self.data, self.x_col, self.y_col, self.counts_cols)
 
     def plot(self, **kwargs):
@@ -61,7 +60,6 @@ class PerformanceDiagramPlot(BasePlot):
         self._draw_background()
 
         # Plot Data
-        # TDD Anchor: Verify scatter points match input data coordinates
         if self.label_col:
             for name, group in df_plot.groupby(self.label_col):
                 self.ax.plot(
@@ -99,7 +97,6 @@ class PerformanceDiagramPlot(BasePlot):
     def _prepare_data(self, data, x, y, counts):
         """
         Calculates metrics if counts provided, otherwise returns subset.
-        TDD Anchor: Test calculation logic: SR = hits/(hits+fa), POD = hits/(hits+miss).
         """
         df = data.copy()
         if counts:
@@ -152,8 +149,6 @@ class PerformanceDiagramPlot(BasePlot):
         # Perfect forecast line
         self.ax.plot([0.01, 0.99], [0.01, 0.99], "k-", linewidth=1.5, alpha=0.8)
 
-        # TDD Anchor: Test that contours are within 0-1 range.
-
     def hvplot(self, **kwargs):
         """Generate an interactive performance diagram using hvPlot."""
         import hvplot.pandas  # noqa: F401
@@ -193,8 +188,4 @@ class PerformanceDiagramPlot(BasePlot):
         )
 
 
-# TDD Anchors (Unit Tests):
-# 1. test_metric_calculation_from_counts: Provide hits/misses/fa, verify SR/POD output.
-# 2. test_perfect_score_location: Ensure perfect forecast plots at (1,1).
-# 3. test_missing_columns_error: Assert ValueError if cols missing.
 # 4. test_background_drawing: Mock plt.contour, verify calls with correct grids.

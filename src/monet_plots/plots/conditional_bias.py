@@ -97,10 +97,6 @@ class ConditionalBiasPlot(BasePlot):
                 **kwargs,
             )
 
-    # TDD Anchors:
-    # 1. test_zero_bias_line: Verify line exists at y=0.
-    # 2. test_binning_consistency: Ensure bins cover full range of obs.
-
     def hvplot(self, **kwargs):
         """Generate an interactive conditional bias plot using hvPlot."""
         import hvplot.pandas  # noqa: F401

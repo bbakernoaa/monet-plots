@@ -40,7 +40,6 @@ class ROCCurvePlot(BasePlot):
         self.y_col = y_col
         self.label_col = label_col
         self.show_auc = show_auc
-        # TDD Anchor: Test validation raises error on missing cols
         validate_dataframe(self.data, required_columns=[self.x_col, self.y_col])
 
     def plot(self, **kwargs):
@@ -95,9 +94,7 @@ class ROCCurvePlot(BasePlot):
             label += f" (AUC={auc:.3f})"
         4. self.ax.plot(x, y, label=label, **kwargs)
         """
-        # TDD Anchor: Test AUC calculation against sklearn.metrics.auc or manual known
         # values.
-        # TDD Anchor: Ensure sorting is applied correctly.
 
         df_sorted = df.sort_values(by=x_col).dropna(subset=[x_col, y_col])
         x = df_sorted[x_col].values
@@ -141,9 +138,3 @@ class ROCCurvePlot(BasePlot):
         )
 
         return (no_skill * df.hvplot(**plot_kwargs)).opts(title="ROC Curve")
-
-
-# TDD Anchors (Unit Tests):
-# 1. test_auc_calculation: Provide points for a known square/triangle, verify AUC.
-# 2. test_sorting_order: Provide unsorted ROC points, ensure plot is monotonic.
-# 3. test_single_point_auc: Handle case where only 1 threshold point is provided.

@@ -47,15 +47,8 @@ class BrierScoreDecompositionPlot(BasePlot):
             ]
             validate_dataframe(self.data, required_columns=required_cols)
 
-    def plot(self, **kwargs):
-        """
-        Main plotting method.
-
-        Args:
-            **kwargs: Matplotlib kwargs.
-        """
-        title = kwargs.pop("title", "Brier Score Decomposition")
-        # Compute components if raw data provided
+    def _prepare_plot_data(self):
+        """Helper to compute components if raw data provided or use existing ones."""
         if self.forecasts_col and self.observations_col:
             components_list = []
             if self.label_col:
@@ -83,6 +76,18 @@ class BrierScoreDecompositionPlot(BasePlot):
         else:
             df_plot = self.data
             plot_label_col = self.label_col
+        return df_plot, plot_label_col
+
+    def plot(self, **kwargs):
+        """
+        Main plotting method.
+
+        Args:
+            **kwargs: Matplotlib kwargs.
+        """
+        title = kwargs.pop("title", "Brier Score Decomposition")
+        # Compute components if raw data provided
+        df_plot, plot_label_col = self._prepare_plot_data()
 
         # Prepare for plotting: make resolution negative for visualization
         df_plot = df_plot.copy()
@@ -147,33 +152,7 @@ class BrierScoreDecompositionPlot(BasePlot):
         """Generate an interactive Brier Score decomposition plot using hvPlot."""
         import hvplot.pandas  # noqa: F401
 
-        if self.forecasts_col and self.observations_col:
-            components_list = []
-            if self.label_col:
-                for name, group in self.data.groupby(self.label_col):
-                    comps = compute_brier_score_components(
-                        np.asarray(group[self.forecasts_col]),
-                        np.asarray(group[self.observations_col]),
-                        self.n_bins,
-                    )
-                    row = pd.Series(comps)
-                    row["model"] = str(name)
-                    components_list.append(row)
-            else:
-                comps = compute_brier_score_components(
-                    np.asarray(self.data[self.forecasts_col]),
-                    np.asarray(self.data[self.observations_col]),
-                    self.n_bins,
-                )
-                row = pd.Series(comps)
-                row["model"] = "Model"
-                components_list.append(row)
-
-            df_plot = pd.DataFrame(components_list)
-            plot_label_col = "model"
-        else:
-            df_plot = self.data
-            plot_label_col = self.label_col
+        df_plot, plot_label_col = self._prepare_plot_data()
 
         df_plot_melted = df_plot.melt(
             id_vars=[plot_label_col] if plot_label_col else [],
