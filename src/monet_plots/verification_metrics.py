@@ -49,7 +49,8 @@ def compute_mb(obs: Any, mod: Any, dim: Any = None) -> Any:
         diff = mod - obs
         res = _mean(diff, dim)
         return _update_history(res, "Computed MB")
-    res = monet_stats.MB(obs, mod, axis=dim)
+    # monet-stats.MB returns (obs - mod), so we swap arguments to get (mod - obs)
+    res = monet_stats.MB(mod, obs, axis=dim)
     return _update_history(res, "Computed MB")
 
 
