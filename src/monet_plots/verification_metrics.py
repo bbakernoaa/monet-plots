@@ -38,6 +38,83 @@ def _update_history(obj: Any, msg: str) -> Any:
     return obj
 
 
+def compute_contingency_table(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    threshold: float,
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Dict[str, Union[float, np.ndarray, xr.DataArray]]:
+    """
+    Computes contingency table counts (hits, misses, false alarms, correct negatives).
+
+    Supports lazy evaluation via Dask and multidimensional xarray objects.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    threshold : float
+        The threshold value for categorizing events.
+    dim : str or list of str, optional
+        The dimension(s) over which to aggregate the counts. If None,
+        counts are computed point-wise (preserving dimensionality).
+
+    Returns
+    -------
+    Dict[str, Union[float, np.ndarray, xr.DataArray]]
+        A dictionary with keys 'hits', 'misses', 'fa', and 'cn'.
+
+    Examples
+    --------
+    >>> import xarray as xr
+    >>> obs = xr.DataArray([1, 0, 1], dims="time")
+    >>> mod = xr.DataArray([1, 1, 0], dims="time")
+    >>> table = compute_contingency_table(obs, mod, threshold=0.5, dim="time")
+    >>> table['hits'].values
+    array(1)
+    """
+    obs_event = obs >= threshold
+    mod_event = mod >= threshold
+
+    hits = obs_event & mod_event
+    misses = obs_event & ~mod_event
+    fa = ~obs_event & mod_event
+    cn = ~obs_event & ~mod_event
+
+    if dim is not None:
+        if isinstance(obs, xr.DataArray):
+            hits = hits.sum(dim=dim)
+            misses = misses.sum(dim=dim)
+            fa = fa.sum(dim=dim)
+            cn = cn.sum(dim=dim)
+        else:
+            hits = np.sum(hits, axis=dim)
+            misses = np.sum(misses, axis=dim)
+            fa = np.sum(fa, axis=dim)
+            cn = np.sum(cn, axis=dim)
+    else:
+        # Cast to int to ensure we have counts even if not summed
+        if isinstance(hits, xr.DataArray):
+            hits = hits.astype(int)
+            misses = misses.astype(int)
+            fa = fa.astype(int)
+            cn = cn.astype(int)
+        else:
+            hits = np.asarray(hits).astype(int)
+            misses = np.asarray(misses).astype(int)
+            fa = np.asarray(fa).astype(int)
+            cn = np.asarray(cn).astype(int)
+
+    res = {"hits": hits, "misses": misses, "fa": fa, "cn": cn}
+
+    for key in res:
+        _update_history(res[key], f"Computed {key} at threshold {threshold}")
+
+    return res
+
+
 def compute_pod(
     hits: Union[int, np.ndarray, xr.DataArray],
     misses: Union[int, np.ndarray, xr.DataArray],
@@ -46,6 +123,8 @@ def compute_pod(
     Calculates Probability of Detection (POD) or Hit Rate.
 
     POD = Hits / (Hits + Misses)
+
+    Supports lazy evaluation via Dask and multidimensional xarray objects.
 
     Parameters
     ----------
@@ -82,6 +161,8 @@ def compute_far(
 
     FAR = False Alarms / (Hits + False Alarms)
 
+    Supports lazy evaluation via Dask and multidimensional xarray objects.
+
     Parameters
     ----------
     hits : Union[int, np.ndarray, xr.DataArray]
@@ -116,6 +197,8 @@ def compute_success_ratio(
     Calculates Success Ratio (SR).
 
     SR = 1 - FAR = Hits / (Hits + False Alarms)
+
+    Supports lazy evaluation via Dask and multidimensional xarray objects.
 
     Parameters
     ----------
@@ -152,6 +235,8 @@ def compute_csi(
     Calculates Critical Success Index (CSI).
 
     CSI = Hits / (Hits + Misses + False Alarms)
+
+    Supports lazy evaluation via Dask and multidimensional xarray objects.
 
     Parameters
     ----------
@@ -191,6 +276,8 @@ def compute_frequency_bias(
 
     Bias = (Hits + False Alarms) / (Hits + Misses)
 
+    Supports lazy evaluation via Dask and multidimensional xarray objects.
+
     Parameters
     ----------
     hits : Union[int, np.ndarray, xr.DataArray]
@@ -218,6 +305,67 @@ def compute_frequency_bias(
         out=np.zeros_like(denominator, dtype=float),
         where=denominator != 0,
     )
+
+
+def compute_categorical_metrics(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    threshold: float,
+    dim: Optional[Union[str, list[str]]] = None,
+    metrics: Optional[list[str]] = None,
+) -> Dict[str, Union[float, np.ndarray, xr.DataArray]]:
+    """
+    Computes multiple categorical metrics from raw data and a threshold.
+
+    Supports lazy evaluation via Dask and multidimensional xarray objects.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    threshold : float
+        The threshold value for categorizing events.
+    dim : str or list of str, optional
+        The dimension(s) over which to aggregate the counts. If None,
+        counts are computed point-wise.
+    metrics : list of str, optional
+        List of metrics to compute (e.g., ['pod', 'far', 'csi']).
+        If None, all available categorical metrics are computed.
+
+    Returns
+    -------
+    Dict[str, Union[float, np.ndarray, xr.DataArray]]
+        A dictionary containing the requested metrics.
+
+    Examples
+    --------
+    >>> import xarray as xr
+    >>> obs = xr.DataArray([1, 0, 1], dims="time")
+    >>> mod = xr.DataArray([1, 1, 0], dims="time")
+    >>> m = compute_categorical_metrics(obs, mod, threshold=0.5, dim="time")
+    >>> m['pod'].values
+    array(0.5)
+    """
+    table = compute_contingency_table(obs, mod, threshold, dim=dim)
+    h, m, fa, cn = table["hits"], table["misses"], table["fa"], table["cn"]
+
+    results = {}
+    if metrics is None or "pod" in metrics:
+        results["pod"] = compute_pod(h, m)
+    if metrics is None or "far" in metrics:
+        results["far"] = compute_far(h, fa)
+    if metrics is None or "success_ratio" in metrics:
+        results["success_ratio"] = compute_success_ratio(h, fa)
+    if metrics is None or "csi" in metrics:
+        results["csi"] = compute_csi(h, m, fa)
+    if metrics is None or "frequency_bias" in metrics:
+        results["frequency_bias"] = compute_frequency_bias(h, m, fa)
+    if metrics is None or "pofd" in metrics:
+        results["pofd"] = compute_pofd(fa, cn)
+
+    return results
 
 
 def compute_pofd(
