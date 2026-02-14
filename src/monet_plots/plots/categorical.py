@@ -1,6 +1,6 @@
+import matplotlib.pyplot as plt
 import seaborn as sns
 import xarray as xr
-import matplotlib.pyplot as plt
 
 
 def categorical_plot(

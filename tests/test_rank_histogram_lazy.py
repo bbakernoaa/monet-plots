@@ -1,6 +1,7 @@
+import dask.array as da
 import numpy as np
 import xarray as xr
-import dask.array as da
+
 from monet_plots.plots.rank_histogram import RankHistogramPlot
 
 

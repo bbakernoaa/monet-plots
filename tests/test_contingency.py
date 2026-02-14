@@ -7,11 +7,11 @@ try:
 except ImportError:
     da = None
 
-from monet_plots.verification_metrics import (
-    compute_contingency_table,
-    compute_categorical_metrics,
-)
 from monet_plots.plots.performance_diagram import PerformanceDiagramPlot
+from monet_plots.verification_metrics import (
+    compute_categorical_metrics,
+    compute_contingency_table,
+)
 
 
 def test_contingency_table_parity():

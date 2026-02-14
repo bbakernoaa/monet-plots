@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
-import xarray as xr
 import matplotlib.pyplot as plt
+import xarray as xr
 from scipy.stats import scoreatpercentile as score
 
 from ..colorbars import get_discrete_scale

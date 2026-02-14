@@ -21,8 +21,9 @@ ridges, troughs, jet streams, and other features that drive surface weather.
     wind typically flows roughly parallel to the height contours (geostrophic flow).
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from monet_plots.plots.upper_air import UpperAir
 
 # 1. Prepare sample data

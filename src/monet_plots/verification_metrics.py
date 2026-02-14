@@ -7,13 +7,13 @@ try:
     import dask.array as da
 except ImportError:
     da = None
-from typing import Tuple, Union, Dict, Any, Optional
+from typing import Any, Dict, Optional, Tuple, Union
 
 # Bridge to monet-stats for consolidated statistics
 try:
-    from monet_stats.relative_metrics import FB, FE, NMB, NME
-    from monet_stats.error_metrics import MB, RMSE, MAE
     from monet_stats.correlation_metrics import pearsonr as corr
+    from monet_stats.error_metrics import MAE, MB, RMSE
+    from monet_stats.relative_metrics import FB, FE, NMB, NME
 except ImportError:
     # Fallback to None if monet-stats is not available (though it is a dependency now)
     FB = FE = NMB = NME = MB = RMSE = MAE = corr = None

@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import xarray as xr
+
 from monet_plots.plots.spatial import SpatialPlot
 
 try:

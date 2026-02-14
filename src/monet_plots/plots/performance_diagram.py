@@ -9,12 +9,12 @@ from .base import BasePlot
 
 if TYPE_CHECKING:
     import matplotlib.axes
-from ..plot_utils import validate_dataframe, normalize_data
+from ..plot_utils import normalize_data, validate_dataframe
 from ..verification_metrics import (
+    _update_history,
+    compute_categorical_metrics,
     compute_pod,
     compute_success_ratio,
-    compute_categorical_metrics,
-    _update_history,
 )
 
 

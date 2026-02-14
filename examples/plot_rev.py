@@ -23,8 +23,9 @@ is better than simply relying on climatology or always taking a protective actio
     forecast system is most beneficial.
 """
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
+
 from monet_plots.plots.rev import RelativeEconomicValuePlot
 
 # 1. Prepare sample data with contingency table counts
