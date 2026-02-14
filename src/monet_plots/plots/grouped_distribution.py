@@ -10,10 +10,10 @@ import xarray as xr
 from .base import BasePlot
 
 
-class RegionalDistributionPlot(BasePlot):
+class GroupedDistributionPlot(BasePlot):
     """
-    Generates a grouped boxplot comparison from two pre-processed xarray DataArrays
-    or a Dataset, organized by a grouping dimension (e.g., region).
+    Generates a grouped boxplot comparison from multiple pre-processed xarray
+    DataArrays or a Dataset, organized by a grouping dimension.
 
     This plot follows the Aero Protocol, supporting lazy evaluation of Xarray/Dask
     objects and providing both static (Matplotlib) and interactive (hvPlot)
@@ -31,7 +31,7 @@ class RegionalDistributionPlot(BasePlot):
         **kwargs: Any,
     ):
         """
-        Initialize the RegionalDistributionPlot.
+        Initialize the GroupedDistributionPlot.
 
         Parameters
         ----------
@@ -40,7 +40,8 @@ class RegionalDistributionPlot(BasePlot):
         labels : list[str], optional
             Names for the legend. Defaults to None.
         group_dim : str, optional
-            The dimension name representing the regions. Defaults to "region".
+            The dimension name representing the groups/categories.
+            Defaults to "region".
         var_label : str, optional
             Label for the Y-axis. Defaults to "Value".
         hue : str, optional
@@ -64,7 +65,7 @@ class RegionalDistributionPlot(BasePlot):
             if hasattr(obj, "attrs"):
                 history = obj.attrs.get("history", "")
                 obj.attrs["history"] = (
-                    f"Plotted with monet-plots.RegionalDistributionPlot; {history}"
+                    f"Plotted with monet-plots.GroupedDistributionPlot; {history}"
                 )
 
         if isinstance(self.data, list):
@@ -80,17 +81,31 @@ class RegionalDistributionPlot(BasePlot):
 
         dfs = []
 
-        # Standardize labels
+        # Standardize labels (hue labels)
         labels = self.labels
         if labels is None:
             if isinstance(self.data, list):
-                labels = [f"Model {i + 1}" for i in range(len(self.data))]
+                labels = [
+                    da.name if hasattr(da, "name") and da.name else f"Model {i + 1}"
+                    for i, da in enumerate(self.data)
+                ]
             elif isinstance(self.data, xr.Dataset):
                 labels = list(self.data.data_vars)
             elif isinstance(self.data, xr.DataArray):
                 labels = [self.data.name if self.data.name else "Model"]
             else:
                 labels = ["Model"]
+        self.labels = labels
+
+        # Try to determine var_label from data if it's default
+        if self.var_label == "Value":
+            if isinstance(self.data, list) and len(self.data) > 0:
+                first_da = self.data[0]
+                if hasattr(first_da, "name") and first_da.name:
+                    self.var_label = first_da.name
+            elif isinstance(self.data, xr.DataArray):
+                if self.data.name:
+                    self.var_label = self.data.name
 
         # Handle different input types
         if isinstance(self.data, list):
@@ -128,7 +143,7 @@ class RegionalDistributionPlot(BasePlot):
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """
-        Generate the regional distribution plot.
+        Generate the grouped distribution plot.
 
         Parameters
         ----------
@@ -173,67 +188,27 @@ class RegionalDistributionPlot(BasePlot):
 
         # Formatting
         self.ax.set_ylabel(self.var_label, fontweight="bold")
-        self.ax.set_xlabel("")
+        self.ax.set_xlabel(self.group_dim.capitalize(), fontweight="bold")
 
-        # Handle title if labels are available
-        labels = self.labels
-        if labels is None:
-            labels = self.df_plot[self.hue].unique().tolist()
-
+        # Handle title
+        title = f"{self.group_dim.capitalize()} Distribution of {self.var_label}"
+        labels = self.df_plot[self.hue].unique().tolist()
         if len(labels) >= 2:
             if len(labels) == 2:
-                title = f"Regional comparisons of {labels[0]} to {labels[1]} Total {self.var_label}"
+                title += f": {labels[0]} vs {labels[1]}"
             else:
-                title = f"Regional comparisons of {', '.join(labels[:-1])} and {labels[-1]} Total {self.var_label}"
-            self.ax.set_title(title, fontsize=12, fontweight="bold", pad=15)
+                title += f": {', '.join(labels[:-1])} and {labels[-1]}"
+
+        self.ax.set_title(title, fontsize=12, fontweight="bold", pad=15)
 
         # Legend
         self.ax.legend(title=self.hue.lower(), loc="upper right")
 
         return self.ax
 
-    def add_inset_map(
-        self, extent: list[float] | None = None, **kwargs: Any
-    ) -> matplotlib.axes.Axes:
-        """
-        Add a geospatial inset map to the plot.
-
-        Parameters
-        ----------
-        extent : list[float], optional
-            Geographic extent [lon_min, lon_max, lat_min, lat_max].
-        **kwargs : Any
-            Additional keyword arguments passed to SpatialPlot.
-            Use 'inset_pos' to specify the position [left, bottom, width, height]
-            in axes coordinates. Default is [0.2, 0.5, 0.3, 0.4].
-
-        Returns
-        -------
-        matplotlib.axes.Axes
-            The inset axes.
-        """
-        from .spatial import SpatialPlot
-        import cartopy.crs as ccrs
-
-        # Default position for the inset map
-        inset_pos = kwargs.pop("inset_pos", [0.2, 0.5, 0.3, 0.4])
-
-        # Create inset axes with the specified projection
-        projection = kwargs.pop("projection", ccrs.PlateCarree())
-        ax_inset = self.ax.inset_axes(inset_pos, projection=projection)
-
-        # Ensure coastlines are enabled by default for the inset
-        if "coastlines" not in kwargs:
-            kwargs["coastlines"] = True
-
-        # Use SpatialPlot to handle features and extent
-        SpatialPlot(ax=ax_inset, projection=projection, extent=extent, **kwargs)
-
-        return ax_inset
-
     def hvplot(self, **kwargs: Any) -> Any:
         """
-        Generate an interactive regional distribution plot using hvPlot.
+        Generate an interactive grouped distribution plot using hvPlot.
 
         Parameters
         ----------
@@ -254,7 +229,7 @@ class RegionalDistributionPlot(BasePlot):
             "y": "value",
             "c": self.hue,
             "kind": "box",
-            "title": f"Regional Distribution of {self.var_label}",
+            "title": f"Distribution of {self.var_label} by {self.group_dim}",
         }
         plot_kwargs.update(kwargs)
 
