@@ -1,8 +1,9 @@
 # tests/plots/test_curtain.py
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import xarray as xr
-import numpy as np
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.curtain import CurtainPlot
 
 

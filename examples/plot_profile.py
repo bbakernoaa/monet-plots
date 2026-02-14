@@ -19,8 +19,9 @@ atmosphere or the structure of the planetary boundary layer.
     variable (e.g., the lapse rate for temperature).
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from monet_plots.plots.profile import ProfilePlot
 
 # 1. Prepare sample 1D data

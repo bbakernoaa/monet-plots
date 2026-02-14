@@ -23,8 +23,9 @@ pollutants from a local source.
     distribution of wind speeds for that specific direction.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from monet_plots.plots.windrose import Windrose
 
 # 1. Prepare sample data

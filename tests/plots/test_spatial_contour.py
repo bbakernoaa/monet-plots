@@ -1,6 +1,8 @@
-import numpy as np
 import datetime
 from unittest.mock import MagicMock
+
+import numpy as np
+
 from monet_plots.plots.spatial_contour import SpatialContourPlot
 
 

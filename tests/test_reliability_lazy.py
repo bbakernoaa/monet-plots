@@ -1,9 +1,10 @@
+import dask.array as da
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-import dask.array as da
+
 from monet_plots import verification_metrics
 from monet_plots.plots.reliability_diagram import ReliabilityDiagramPlot
-import matplotlib.pyplot as plt
 
 
 def test_reliability_curve_multidim_lazy():

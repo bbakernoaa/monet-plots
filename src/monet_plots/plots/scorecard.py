@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
+
 import pandas as pd
 import seaborn as sns
-from typing import Optional, Any
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
+
+if TYPE_CHECKING:
+    import matplotlib.axes
 
 
 class ScorecardPlot(BasePlot):
@@ -35,22 +42,52 @@ class ScorecardPlot(BasePlot):
         sig_col: Optional[str] = None,
         cmap: str = "RdYlGn",
         center: float = 0.0,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> matplotlib.axes.Axes:
         """
         Main plotting method.
 
-        Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Long-format dataframe.
-            x_col (str): Column for x-axis (Columns).
-            y_col (str): Column for y-axis (Rows).
-            val_col (str): Column for cell values (color).
-            sig_col (str, optional): Column for significance (marker).
-            cmap (str): Colormap.
-            center (float): Center value for colormap divergence.
-            **kwargs: Seaborn heatmap kwargs.
+        Parameters
+        ----------
+        data : Any
+            Input data in long format. Can be a pandas DataFrame,
+            xarray DataArray, xarray Dataset, or numpy ndarray.
+        x_col : str
+            Column name for x-axis (heatmap columns).
+        y_col : str
+            Column name for y-axis (heatmap rows).
+        val_col : str
+            Column name for cell values (color).
+        sig_col : str, optional
+            Column name for significance markers.
+        cmap : str, optional
+            Colormap name, by default "RdYlGn".
+        center : float, optional
+            Center value for colormap divergence, by default 0.0.
+        **kwargs : Any
+            Additional keyword arguments passed to seaborn.heatmap.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object with the scorecard.
         """
-        df = to_dataframe(data)
+        import xarray as xr
+
+        # Track provenance if Xarray
+        if isinstance(data, (xr.DataArray, xr.Dataset)):
+            history = data.attrs.get("history", "")
+            data.attrs["history"] = f"Generated ScorecardPlot; {history}"
+
+        if isinstance(data, (xr.DataArray, xr.Dataset)):
+            cols = [x_col, y_col, val_col]
+            if sig_col:
+                cols.append(sig_col)
+            # Minimize data before conversion
+            df = data[cols].to_dataframe().reset_index()
+        else:
+            df = to_dataframe(data)
+
         validate_dataframe(df, required_columns=[x_col, y_col, val_col])
 
         # Pivot Data
@@ -80,7 +117,9 @@ class ScorecardPlot(BasePlot):
         self.ax.tick_params(axis="x", rotation=45)
         self.ax.set_title("Performance Scorecard")
 
-    def _overlay_significance(self, data_grid, sig_grid):
+    def _overlay_significance(
+        self, data_grid: pd.DataFrame, sig_grid: pd.DataFrame
+    ) -> None:
         """
         Overlays markers for significant differences.
 

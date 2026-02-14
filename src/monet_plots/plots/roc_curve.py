@@ -1,7 +1,15 @@
-from typing import Optional, Any
-from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
+
+import numpy as np
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_auc
+from .base import BasePlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
 
 
 class ROCCurvePlot(BasePlot):
@@ -33,38 +41,96 @@ class ROCCurvePlot(BasePlot):
         y_col: str = "pod",
         label_col: Optional[str] = None,
         show_auc: bool = True,
-        **kwargs,
-    ):
+        dim: Optional[str] = None,
+        **kwargs: Any,
+    ) -> matplotlib.axes.Axes:
         """
         Main plotting method.
 
-        Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Input data containing ROC points.
-            x_col (str): Column name for POFD (False Alarm Rate).
-            y_col (str): Column name for POD (Hit Rate).
-            label_col (str, optional): Column for grouping different curves.
-            show_auc (bool): Whether to calculate and append AUC to labels.
-            **kwargs: Matplotlib kwargs.
+        Parameters
+        ----------
+        data : Any
+            Input data containing ROC points. Can be a pandas DataFrame,
+            xarray DataArray, xarray Dataset, or numpy ndarray.
+        x_col : str, optional
+            Variable name for POFD (False Alarm Rate), by default "pofd".
+        y_col : str, optional
+            Variable name for POD (Hit Rate), by default "pod".
+        label_col : str, optional
+            Grouping for different curves.
+        show_auc : bool, optional
+            Whether to calculate and append AUC to labels, by default True.
+        dim : str, optional
+            Dimension along which to integrate AUC if data is multidimensional Xarray.
+        **kwargs : Any
+            Additional keyword arguments passed to ax.plot.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object with the ROC curve.
         """
-        df = to_dataframe(data)
-        # TDD Anchor: Test validation raises error on missing cols
-        validate_dataframe(df, required_columns=[x_col, y_col])
+        import xarray as xr
+
+        # Track provenance if Xarray
+        if isinstance(data, (xr.DataArray, xr.Dataset)):
+            history = data.attrs.get("history", "")
+            data.attrs["history"] = f"Generated ROCCurvePlot; {history}"
 
         # Draw No Skill Line
         self.ax.plot([0, 1], [0, 1], "k--", label="No Skill", alpha=0.5)
         self.ax.grid(True, alpha=0.3)
 
-        if label_col:
-            groups = df.groupby(label_col)
-            for name, group in groups:
+        if isinstance(data, (xr.DataArray, xr.Dataset)):
+            # Native Xarray path
+            ds = data
+            if label_col:
+                labels_concrete = ds[label_col].values
+                unique_labels = np.unique(labels_concrete)
+                for label in unique_labels:
+                    # Select using mask for boolean dask indexing safety
+                    mask = labels_concrete == label
+                    dim_name = list(ds.dims)[0]
+                    ds_sub = ds.isel({dim_name: mask})
+                    self._plot_single_curve(
+                        ds_sub,
+                        x_col,
+                        y_col,
+                        label=str(label),
+                        show_auc=show_auc,
+                        dim=dim,
+                        **kwargs,
+                    )
+            else:
                 self._plot_single_curve(
-                    group, x_col, y_col, label=str(name), show_auc=show_auc, **kwargs
+                    ds,
+                    x_col,
+                    y_col,
+                    label="Model",
+                    show_auc=show_auc,
+                    dim=dim,
+                    **kwargs,
                 )
-            self.ax.legend(loc="lower right")
         else:
-            self._plot_single_curve(
-                df, x_col, y_col, label="Model", show_auc=show_auc, **kwargs
-            )
+            # Fallback path
+            df = to_dataframe(data)
+            validate_dataframe(df, required_columns=[x_col, y_col])
+
+            if label_col:
+                groups = df.groupby(label_col)
+                for name, group in groups:
+                    self._plot_single_curve(
+                        group,
+                        x_col,
+                        y_col,
+                        label=str(name),
+                        show_auc=show_auc,
+                        **kwargs,
+                    )
+            else:
+                self._plot_single_curve(
+                    df, x_col, y_col, label="Model", show_auc=show_auc, **kwargs
+                )
 
         # Formatting
         self.ax.set_xlim(0, 1)
@@ -72,35 +138,57 @@ class ROCCurvePlot(BasePlot):
         self.ax.set_xlabel("Probability of False Detection (POFD)")
         self.ax.set_ylabel("Probability of Detection (POD)")
         self.ax.set_aspect("equal")
+        self.ax.legend(loc="lower right")
 
-    def _plot_single_curve(self, df, x_col, y_col, label, show_auc, **kwargs):
-        """
-        Helper to plot a single ROC curve and calc AUC.
+        return self.ax
 
-        Pseudocode:
-        1. Sort df by x_col (POFD) ascending.
-        2. Get x (POFD) and y (POD) arrays.
-        3. If show_auc:
-            auc = trapz(y, x)
-            label += f" (AUC={auc:.3f})"
-        4. self.ax.plot(x, y, label=label, **kwargs)
-        """
-        # TDD Anchor: Test AUC calculation against sklearn.metrics.auc or manual known
-        # values.
-        # TDD Anchor: Ensure sorting is applied correctly.
+    def _plot_single_curve(
+        self,
+        data: Any,
+        x_col: str,
+        y_col: str,
+        label: str,
+        show_auc: bool,
+        dim: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Helper to plot a single ROC curve and calculate AUC."""
+        import xarray as xr
 
-        df_sorted = df.sort_values(by=x_col).dropna(subset=[x_col, y_col])
-        x = df_sorted[x_col].values
-        y = df_sorted[y_col].values
+        if isinstance(data, (xr.DataArray, xr.Dataset)):
+            # Xarray path
+            ds = data
+            # Sort by x_col
+            ds_sorted = ds.sortby(x_col)
+            x = ds_sorted[x_col]
+            y = ds_sorted[y_col]
 
-        auc_str = ""
-        if len(x) >= 2 and show_auc:
-            auc = compute_auc(x, y)
-            auc_str = f" (AUC={auc:.3f})"
+            auc_str = ""
+            if show_auc:
+                # compute_auc handles xarray/dask
+                auc = compute_auc(x, y, dim=dim)
+                auc_val = (
+                    float(auc.compute()) if hasattr(auc, "compute") else float(auc)
+                )
+                auc_str = f" (AUC={auc_val:.3f})"
+
+            x_plot = x.values
+            y_plot = y.values
+        else:
+            # Pandas path
+            df = data
+            df_sorted = df.sort_values(by=x_col).dropna(subset=[x_col, y_col])
+            x_plot = df_sorted[x_col].values
+            y_plot = df_sorted[y_col].values
+
+            auc_str = ""
+            if len(x_plot) >= 2 and show_auc:
+                auc = compute_auc(x_plot, y_plot)
+                auc_str = f" (AUC={auc:.3f})"
 
         full_label = label + auc_str
-        self.ax.plot(x, y, label=full_label, **kwargs)
-        self.ax.fill_between(x, 0, y, alpha=0.2, **kwargs)
+        self.ax.plot(x_plot, y_plot, label=full_label, **kwargs)
+        self.ax.fill_between(x_plot, 0, y_plot, alpha=0.2, **kwargs)
 
 
 # TDD Anchors (Unit Tests):

@@ -13,6 +13,7 @@ from numpy.typing import ArrayLike
 from .base import BasePlot
 
 if TYPE_CHECKING:
+    import matplotlib.artist
     import matplotlib.axes
     import matplotlib.figure
 
@@ -53,10 +54,10 @@ class SpatialPlot(BasePlot):
         ----------
         projection : ccrs.Projection, optional
             The cartopy projection for the map, by default ccrs.PlateCarree().
-        fig : plt.Figure | None, optional
+        fig : matplotlib.figure.Figure | None, optional
             An existing matplotlib Figure object. If None, a new one is
             created, by default None.
-        ax : plt.Axes | None, optional
+        ax : matplotlib.axes.Axes | None, optional
             An existing matplotlib Axes object. If None, a new one is created,
             by default None.
         figsize : tuple[float, float] | None, optional
@@ -73,9 +74,9 @@ class SpatialPlot(BasePlot):
 
         Attributes
         ----------
-        fig : plt.Figure
+        fig : matplotlib.figure.Figure
             The matplotlib Figure object.
-        ax : plt.Axes
+        ax : matplotlib.axes.Axes
             The matplotlib Axes (or GeoAxes) object.
         resolution : str
             The default resolution for cartopy features.
@@ -471,7 +472,7 @@ class SpatialTrack(SpatialPlot):
         # Automatically plot
         self.plot()
 
-    def plot(self, **kwargs: Any) -> plt.Artist:
+    def plot(self, **kwargs: Any) -> matplotlib.artist.Artist:
         """Plot the trajectory on the map.
 
         The track is rendered as a scatter plot, where each point is colored

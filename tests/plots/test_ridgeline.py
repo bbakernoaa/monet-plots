@@ -1,8 +1,9 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import xarray as xr
 import pytest
-import matplotlib.pyplot as plt
+import xarray as xr
+
 from monet_plots.plots import RidgelinePlot
 
 

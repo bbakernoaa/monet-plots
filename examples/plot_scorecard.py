@@ -23,9 +23,10 @@ for identifying which meteorological variables or forecast horizons are most pro
     indicate a drop in performance at a specific lead time.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.scorecard import ScorecardPlot
 
 # 1. Prepare sample data in long format

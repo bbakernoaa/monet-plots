@@ -1,8 +1,21 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, List, Optional, Union
+
 import numpy as np
-from typing import Optional, Any, List
+import xarray as xr
+
 from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
-from ..verification_metrics import compute_pod, compute_success_ratio
+
+if TYPE_CHECKING:
+    import matplotlib.axes
+from ..plot_utils import normalize_data, validate_dataframe
+from ..verification_metrics import (
+    _update_history,
+    compute_categorical_metrics,
+    compute_pod,
+    compute_success_ratio,
+)
 
 
 class PerformanceDiagramPlot(BasePlot):
@@ -10,19 +23,9 @@ class PerformanceDiagramPlot(BasePlot):
     Performance Diagram Plot (Roebber).
 
     Visualizes the relationship between Probability of Detection (POD),
-    Success Ratio (SR),
-    Critical Success Index (CSI), and Bias.
+    Success Ratio (SR), Critical Success Index (CSI), and Bias.
 
-    Functional Requirements:
-    1. Plot POD (y-axis) vs Success Ratio (x-axis).
-    2. Draw background isolines for CSI and Bias.
-    3. Support input as pre-calculated metrics or contingency table counts.
-    4. Handle multiple models/configurations via grouping.
-
-    Edge Cases:
-    - SR or POD being 0 or 1 (division by zero in bias/CSI calculations).
-    - Empty DataFrame.
-    - Missing required columns.
+    Supports lazy evaluation via Xarray and Dask for large datasets.
     """
 
     def __init__(self, fig=None, ax=None, **kwargs):
@@ -34,43 +37,89 @@ class PerformanceDiagramPlot(BasePlot):
         x_col: str = "success_ratio",
         y_col: str = "pod",
         counts_cols: Optional[List[str]] = None,
+        obs_col: Optional[str] = None,
+        mod_col: Optional[str] = None,
+        threshold: Optional[float] = None,
         label_col: Optional[str] = None,
-        **kwargs,
-    ):
+        dim: Optional[Union[str, List[str]]] = None,
+        **kwargs: Any,
+    ) -> matplotlib.axes.Axes:
         """
-        Main plotting method.
+        Generate the Performance Diagram.
 
-        Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Input data.
-            x_col (str): Column name for Success Ratio (1-FAR).
-            y_col (str): Column name for POD.
-            counts_cols (list, optional): List of columns [hits, misses, fa, cn]
-                                        to calculate metrics if x_col/y_col not present.
-            label_col (str, optional): Column to use for legend labels.
-            **kwargs: Matplotlib kwargs.
+        Parameters
+        ----------
+        data : Any
+            Input data. Can be a pandas DataFrame, xarray DataArray,
+            xarray Dataset, or numpy ndarray.
+        x_col : str, default 'success_ratio'
+            Column or variable name for Success Ratio (1-FAR).
+        y_col : str, default 'pod'
+            Column or variable name for Probability of Detection (POD).
+        counts_cols : list, optional
+            List of columns/variables [hits, misses, fa, cn] to calculate
+            metrics if x_col and y_col are not present.
+        obs_col : str, optional
+            Variable name for observations. Required if `threshold` is used.
+        mod_col : str, optional
+            Variable name for model values. Required if `threshold` is used.
+        threshold : float, optional
+            Threshold for converting raw data to categorical events.
+        label_col : str, optional
+            Column or coordinate to use for legend labels and grouping.
+        dim : str or list of str, optional
+            Dimension(s) to reduce over when calculating metrics from raw data.
+        **kwargs : Any
+            Keyword arguments passed to `ax.plot` for the data points.
         """
-        df = to_dataframe(data)
-        # TDD Anchor: Test validation raises error on missing cols
-        self._validate_inputs(df, x_col, y_col, counts_cols)
+        data = normalize_data(data)
+
+        # Track provenance
+        if isinstance(data, (xr.DataArray, xr.Dataset)):
+            _update_history(data, "Plotted with PerformanceDiagramPlot")
 
         # Data Preparation
-        df_plot = self._prepare_data(df, x_col, y_col, counts_cols)
+        if threshold is not None and obs_col and mod_col:
+            m = compute_categorical_metrics(
+                data[obs_col], data[mod_col], threshold, dim=dim
+            )
+            df_plot = xr.Dataset({x_col: m["success_ratio"], y_col: m["pod"]})
+            # Try to preserve label_col if it's still there after reduction
+            if label_col and label_col in data.coords:
+                df_plot = df_plot.assign_coords({label_col: data[label_col]})
+        else:
+            # Traditional counts or pre-calculated metrics
+            if not isinstance(data, (xr.DataArray, xr.Dataset)):
+                self._validate_inputs(data, x_col, y_col, counts_cols)
+            df_plot = self._prepare_data(data, x_col, y_col, counts_cols)
 
         # Plot Background (Isolines)
         self._draw_background()
 
         # Plot Data
-        # TDD Anchor: Verify scatter points match input data coordinates
         if label_col:
-            for name, group in df_plot.groupby(label_col):
-                self.ax.plot(
-                    group[x_col],
-                    group[y_col],
-                    marker="o",
-                    label=name,
-                    linestyle="none",
-                    **kwargs,
-                )
+            # Handle both Xarray and Pandas grouping
+            if isinstance(df_plot, (xr.DataArray, xr.Dataset)):
+                groups = df_plot.groupby(label_col)
+                for name, group in groups:
+                    self.ax.plot(
+                        group[x_col],
+                        group[y_col],
+                        marker="o",
+                        label=name,
+                        linestyle="none",
+                        **kwargs,
+                    )
+            else:
+                for name, group in df_plot.groupby(label_col):
+                    self.ax.plot(
+                        group[x_col],
+                        group[y_col],
+                        marker="o",
+                        label=name,
+                        linestyle="none",
+                        **kwargs,
+                    )
             self.ax.legend(loc="best")
         else:
             self.ax.plot(
@@ -83,6 +132,7 @@ class PerformanceDiagramPlot(BasePlot):
         self.ax.set_xlabel("Success Ratio (1-FAR)")
         self.ax.set_ylabel("Probability of Detection (POD)")
         self.ax.set_aspect("equal")
+        return self.ax
 
     def _validate_inputs(self, data, x, y, counts):
         """Validates input dataframe structure."""
@@ -94,14 +144,23 @@ class PerformanceDiagramPlot(BasePlot):
     def _prepare_data(self, data, x, y, counts):
         """
         Calculates metrics if counts provided, otherwise returns subset.
-        TDD Anchor: Test calculation logic: SR = hits/(hits+fa), POD = hits/(hits+miss).
         """
-        df = data.copy()
         if counts:
             hits_col, misses_col, fa_col, cn_col = counts
-            df[x] = compute_success_ratio(df[hits_col], df[fa_col])
-            df[y] = compute_pod(df[hits_col], df[misses_col])
-        return df
+            if isinstance(data, (xr.DataArray, xr.Dataset)):
+                # Vectorized Xarray calculation (lazy if Dask-backed)
+                res_x = compute_success_ratio(data[hits_col], data[fa_col])
+                res_y = compute_pod(data[hits_col], data[misses_col])
+                if isinstance(data, xr.Dataset):
+                    data = data.assign({x: res_x, y: res_y})
+                else:
+                    data = xr.Dataset({x: res_x, y: res_y})
+            else:
+                # Pandas calculation
+                data = data.copy()
+                data[x] = compute_success_ratio(data[hits_col], data[fa_col])
+                data[y] = compute_pod(data[hits_col], data[misses_col])
+        return data
 
     def _draw_background(self):
         """

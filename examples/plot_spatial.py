@@ -19,8 +19,9 @@ standalone for custom map visualizations.
     gradients of a variable across a region.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from monet_plots.plots.spatial import SpatialPlot
 
 data = np.random.random((20, 30)) * 100

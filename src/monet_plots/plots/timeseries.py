@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 
@@ -63,7 +62,7 @@ class TimeSeriesPlot(BasePlot):
         self.ylabel = ylabel
         self.label = label
 
-    def plot(self, **kwargs: Any) -> plt.Axes:
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """
         Generate the timeseries plot.
 
@@ -74,7 +73,7 @@ class TimeSeriesPlot(BasePlot):
 
         Returns
         -------
-        plt.Axes
+        matplotlib.axes.Axes
             The matplotlib axes object containing the plot.
 
         Examples
@@ -95,7 +94,7 @@ class TimeSeriesPlot(BasePlot):
         else:
             return self._plot_dataframe(**kwargs)
 
-    def _plot_dataframe(self, **kwargs: Any) -> plt.Axes:
+    def _plot_dataframe(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """
         Generate the timeseries plot from pandas DataFrame.
 
@@ -106,7 +105,7 @@ class TimeSeriesPlot(BasePlot):
 
         Returns
         -------
-        plt.Axes
+        matplotlib.axes.Axes
             The matplotlib axes object.
 
         Examples
@@ -151,7 +150,7 @@ class TimeSeriesPlot(BasePlot):
         self.fig.tight_layout()
         return self.ax
 
-    def _plot_xarray(self, **kwargs: Any) -> plt.Axes:
+    def _plot_xarray(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """
         Generate the timeseries plot from xarray DataArray or Dataset.
 
@@ -162,7 +161,7 @@ class TimeSeriesPlot(BasePlot):
 
         Returns
         -------
-        plt.Axes
+        matplotlib.axes.Axes
             The matplotlib axes object.
 
         Examples
@@ -307,7 +306,9 @@ class TimeSeriesStatsPlot(BasePlot):
             "Could not identify time coordinate. Please specify 'x' parameter."
         )
 
-    def plot(self, stat: str = "bias", freq: str = "D", **kwargs: Any) -> plt.Axes:
+    def plot(
+        self, stat: str = "bias", freq: str = "D", **kwargs: Any
+    ) -> matplotlib.axes.Axes:
         """
         Generate the time series plot for the chosen statistic.
 

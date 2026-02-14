@@ -5,8 +5,8 @@ import numpy as np
 
 try:
     import cartopy.crs as ccrs
-    from cartopy.mpl.geoaxes import GeoAxes
     import cartopy.feature as cfeature
+    from cartopy.mpl.geoaxes import GeoAxes
 except ImportError:
     ccrs = None
     GeoAxes = None

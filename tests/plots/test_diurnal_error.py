@@ -1,7 +1,8 @@
 # tests/plots/test_diurnal_error.py
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 from monet_plots.plots.diurnal_error import DiurnalErrorPlot
 
 

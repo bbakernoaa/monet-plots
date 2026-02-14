@@ -1,6 +1,8 @@
-import pytest
-import numpy as np
 from unittest.mock import MagicMock
+
+import numpy as np
+import pytest
+
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 
 

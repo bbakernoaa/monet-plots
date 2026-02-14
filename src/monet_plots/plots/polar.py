@@ -1,10 +1,12 @@
 # src/monet_plots/plots/polar.py
 """Bivariate polar plot for analyzing variable dependence on wind."""
 
-import numpy as np
-from .base import BasePlot
-from ..plot_utils import to_dataframe
 from typing import Any, Optional
+
+import numpy as np
+
+from ..plot_utils import to_dataframe
+from .base import BasePlot
 
 
 class BivariatePolarPlot(BasePlot):

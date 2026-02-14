@@ -18,8 +18,9 @@ observing the overall structure of a field.
     (rapid change over distance), while widely spaced lines indicate a flat field.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from monet_plots.plots.spatial_contour import SpatialContourPlot
 
 

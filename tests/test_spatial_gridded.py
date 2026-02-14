@@ -1,10 +1,11 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import xarray as xr
-import matplotlib.pyplot as plt
-from monet_plots.plots.spatial_imshow import SpatialImshowPlot
-from monet_plots.plots.spatial_contour import SpatialContourPlot
+
 from monet_plots.plots.facet_grid import SpatialFacetGridPlot
+from monet_plots.plots.spatial_contour import SpatialContourPlot
+from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 
 
 def test_imshow_robust_coords():
