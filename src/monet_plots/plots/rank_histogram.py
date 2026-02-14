@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from ..plot_utils import to_dataframe, validate_dataframe
@@ -113,7 +112,11 @@ class RankHistogramPlot(BasePlot):
                 self.ax.legend()
                 # Use mean expected for simplicity if normalizing, otherwise hard to define
                 # for multiple groups with different sizes on one axis without normalization.
-                expected = 1.0 / num_bins if normalize else ranks.size / num_bins / len(unique_labels)
+                expected = (
+                    1.0 / num_bins
+                    if normalize
+                    else ranks.size / num_bins / len(unique_labels)
+                )
             else:
                 if hasattr(ranks.data, "chunks"):
                     import dask.array as da
@@ -151,7 +154,11 @@ class RankHistogramPlot(BasePlot):
                         counts.index, freq.values, label=str(name), alpha=0.7, **kwargs
                     )
                 self.ax.legend()
-                expected = 1.0 / num_bins if normalize else len(df) / num_bins / len(unique_labels)
+                expected = (
+                    1.0 / num_bins
+                    if normalize
+                    else len(df) / num_bins / len(unique_labels)
+                )
             else:
                 counts = (
                     df[rank_col]

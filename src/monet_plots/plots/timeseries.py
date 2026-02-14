@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 

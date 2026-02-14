@@ -1,9 +1,8 @@
 import numpy as np
-import pandas as pd
 import xarray as xr
-import pytest
 import dask.array as da
 from monet_plots.plots.brier_decomposition import BrierScoreDecompositionPlot
+
 
 def test_brier_decomposition_lazy_parity():
     # 1. Create Data
@@ -11,15 +10,16 @@ def test_brier_decomposition_lazy_parity():
     forecasts = np.random.rand(n_samples)
     observations = (np.random.rand(n_samples) > 0.5).astype(int)
 
-    ds_eager = xr.Dataset({
-        "fcst": (("sample"), forecasts),
-        "obs": (("sample"), observations)
-    })
+    ds_eager = xr.Dataset(
+        {"fcst": (("sample"), forecasts), "obs": (("sample"), observations)}
+    )
 
-    ds_lazy = xr.Dataset({
-        "fcst": (("sample"), da.from_array(forecasts, chunks=50)),
-        "obs": (("sample"), da.from_array(observations, chunks=50))
-    })
+    ds_lazy = xr.Dataset(
+        {
+            "fcst": (("sample"), da.from_array(forecasts, chunks=50)),
+            "obs": (("sample"), da.from_array(observations, chunks=50)),
+        }
+    )
 
     # 2. Plot Eager
     plot_eager = BrierScoreDecompositionPlot()
@@ -39,17 +39,20 @@ def test_brier_decomposition_lazy_parity():
 
     assert "Generated BrierScoreDecompositionPlot" in ds_lazy.attrs["history"]
 
+
 def test_brier_decomposition_grouping_lazy():
     n_samples = 200
     forecasts = np.random.rand(n_samples)
     observations = (np.random.rand(n_samples) > 0.5).astype(int)
     labels = np.repeat(["A", "B"], n_samples // 2)
 
-    ds_lazy = xr.Dataset({
-        "fcst": (("sample"), da.from_array(forecasts, chunks=50)),
-        "obs": (("sample"), da.from_array(observations, chunks=50)),
-        "model": (("sample"), labels)
-    })
+    ds_lazy = xr.Dataset(
+        {
+            "fcst": (("sample"), da.from_array(forecasts, chunks=50)),
+            "obs": (("sample"), da.from_array(observations, chunks=50)),
+            "model": (("sample"), labels),
+        }
+    )
 
     plot = BrierScoreDecompositionPlot()
     plot.plot(ds_lazy, forecasts_col="fcst", observations_col="obs", label_col="model")

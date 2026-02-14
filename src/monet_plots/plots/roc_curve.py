@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from ..plot_utils import to_dataframe, validate_dataframe
@@ -104,7 +103,13 @@ class ROCCurvePlot(BasePlot):
                     )
             else:
                 self._plot_single_curve(
-                    ds, x_col, y_col, label="Model", show_auc=show_auc, dim=dim, **kwargs
+                    ds,
+                    x_col,
+                    y_col,
+                    label="Model",
+                    show_auc=show_auc,
+                    dim=dim,
+                    **kwargs,
                 )
         else:
             # Fallback path
@@ -115,7 +120,12 @@ class ROCCurvePlot(BasePlot):
                 groups = df.groupby(label_col)
                 for name, group in groups:
                     self._plot_single_curve(
-                        group, x_col, y_col, label=str(name), show_auc=show_auc, **kwargs
+                        group,
+                        x_col,
+                        y_col,
+                        label=str(name),
+                        show_auc=show_auc,
+                        **kwargs,
                     )
             else:
                 self._plot_single_curve(
@@ -157,7 +167,9 @@ class ROCCurvePlot(BasePlot):
             if show_auc:
                 # compute_auc handles xarray/dask
                 auc = compute_auc(x, y, dim=dim)
-                auc_val = float(auc.compute()) if hasattr(auc, "compute") else float(auc)
+                auc_val = (
+                    float(auc.compute()) if hasattr(auc, "compute") else float(auc)
+                )
                 auc_str = f" (AUC={auc_val:.3f})"
 
             x_plot = x.values

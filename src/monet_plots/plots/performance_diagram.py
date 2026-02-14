@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
