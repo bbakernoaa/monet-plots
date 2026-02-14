@@ -24,11 +24,30 @@ def _update_history(obj: Any, msg: str) -> Any:
     return obj
 
 
+def _is_xarray(obj: Any) -> bool:
+    """Check if object is an xarray DataArray or Dataset."""
+    return xr is not None and isinstance(obj, (xr.DataArray, xr.Dataset))
+
+
+def _mean(obj: Any, dim: Any) -> Any:
+    """Polymorphic mean that handles xarray 'dim' and numpy 'axis'."""
+    if _is_xarray(obj):
+        return obj.mean(dim=dim)
+    return np.mean(obj, axis=dim)
+
+
+def _sum(obj: Any, dim: Any) -> Any:
+    """Polymorphic sum that handles xarray 'dim' and numpy 'axis'."""
+    if _is_xarray(obj):
+        return obj.sum(dim=dim)
+    return np.sum(obj, axis=dim)
+
+
 def compute_mb(obs: Any, mod: Any, dim: Any = None) -> Any:
     """Mean Bias (MB)."""
     if monet_stats is None:
         diff = mod - obs
-        res = diff.mean(dim=dim) if hasattr(diff, "mean") else np.mean(diff, axis=dim)
+        res = _mean(diff, dim)
         return _update_history(res, "Computed MB")
     res = monet_stats.MB(obs, mod, axis=dim)
     return _update_history(res, "Computed MB")
@@ -38,11 +57,7 @@ def compute_rmse(obs: Any, mod: Any, dim: Any = None) -> Any:
     """Root Mean Square Error (RMSE)."""
     if monet_stats is None:
         diff_sq = (mod - obs) ** 2
-        res = (
-            np.sqrt(diff_sq.mean(dim=dim))
-            if hasattr(diff_sq, "mean")
-            else np.sqrt(np.mean(diff_sq, axis=dim))
-        )
+        res = np.sqrt(_mean(diff_sq, dim))
         return _update_history(res, "Computed RMSE")
     res = monet_stats.RMSE(obs, mod, axis=dim)
     return _update_history(res, "Computed RMSE")
@@ -52,11 +67,7 @@ def compute_mae(obs: Any, mod: Any, dim: Any = None) -> Any:
     """Mean Absolute Error (MAE)."""
     if monet_stats is None:
         abs_diff = np.abs(mod - obs)
-        res = (
-            abs_diff.mean(dim=dim)
-            if hasattr(abs_diff, "mean")
-            else np.mean(abs_diff, axis=dim)
-        )
+        res = _mean(abs_diff, dim)
         return _update_history(res, "Computed MAE")
     res = monet_stats.MAE(obs, mod, axis=dim)
     return _update_history(res, "Computed MAE")
@@ -77,9 +88,7 @@ def compute_fb(obs: Any, mod: Any, dim: Any = None) -> Any:
     """Fractional Bias (FB)."""
     if monet_stats is None:
         term = (mod - obs) / (mod + obs)
-        res = 2.0 * (
-            term.mean(dim=dim) if hasattr(term, "mean") else np.mean(term, axis=dim)
-        )
+        res = 200.0 * _mean(term, dim)
         return _update_history(res, "Computed FB")
     res = monet_stats.FB(obs, mod, axis=dim)
     return _update_history(res, "Computed FB")
@@ -89,9 +98,7 @@ def compute_fe(obs: Any, mod: Any, dim: Any = None) -> Any:
     """Fractional Error (FE)."""
     if monet_stats is None:
         term = np.abs(mod - obs) / (mod + obs)
-        res = 2.0 * (
-            term.mean(dim=dim) if hasattr(term, "mean") else np.mean(term, axis=dim)
-        )
+        res = 200.0 * _mean(term, dim)
         return _update_history(res, "Computed FE")
     res = monet_stats.FE(obs, mod, axis=dim)
     return _update_history(res, "Computed FE")
@@ -101,8 +108,8 @@ def compute_nmb(obs: Any, mod: Any, dim: Any = None) -> Any:
     """Normalized Mean Bias (NMB)."""
     if monet_stats is None:
         diff = mod - obs
-        num = diff.sum(dim=dim) if hasattr(diff, "sum") else np.sum(diff, axis=dim)
-        den = obs.sum(dim=dim) if hasattr(obs, "sum") else np.sum(obs, axis=dim)
+        num = _sum(diff, dim)
+        den = _sum(obs, dim)
         res = 100.0 * num / den
         return _update_history(res, "Computed NMB")
     res = monet_stats.NMB(obs, mod, axis=dim)
@@ -113,12 +120,8 @@ def compute_nme(obs: Any, mod: Any, dim: Any = None) -> Any:
     """Normalized Mean Error (NME)."""
     if monet_stats is None:
         abs_diff = np.abs(mod - obs)
-        num = (
-            abs_diff.sum(dim=dim)
-            if hasattr(abs_diff, "sum")
-            else np.sum(abs_diff, axis=dim)
-        )
-        den = obs.sum(dim=dim) if hasattr(obs, "sum") else np.sum(obs, axis=dim)
+        num = _sum(abs_diff, dim)
+        den = _sum(obs, dim)
         res = 100.0 * num / den
         return _update_history(res, "Computed NME")
     # monet-stats uses MNE for Mean Normalized Error (Gross Error)
