@@ -76,3 +76,16 @@ class ScatterPlot(BasePlot):
         if self.title:
             self.ax.set_title(self.title)
         return self.ax
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive scatter plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+
+        plot_kwargs = {"x": self.x, "y": self.y}
+        if self.c:
+            plot_kwargs["c"] = self.c
+        if self.title:
+            plot_kwargs["title"] = self.title
+
+        plot_kwargs.update(kwargs)
+        return self.df.hvplot.scatter(**plot_kwargs)

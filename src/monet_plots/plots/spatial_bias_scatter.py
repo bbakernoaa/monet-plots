@@ -110,3 +110,29 @@ class SpatialBiasScatterPlot(SpatialPlot):
             **final_scatter_kwargs,
         )
         return self.ax
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive spatial bias scatter plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+
+        new = (
+            self.df[["latitude", "longitude", self.col1, self.col2]]
+            .dropna()
+            .copy(deep=True)
+        )
+        new["bias"] = new[self.col2] - new[self.col1]
+        new["abs_bias"] = new["bias"].abs()
+
+        plot_kwargs = {
+            "x": "longitude",
+            "y": "latitude",
+            "c": "bias",
+            "s": "abs_bias",
+            "geo": True,
+            "kind": "scatter",
+            "cmap": self.cmap,
+            "hover_cols": [self.col1, self.col2, "bias"],
+        }
+        plot_kwargs.update(kwargs)
+
+        return new.hvplot(**plot_kwargs)

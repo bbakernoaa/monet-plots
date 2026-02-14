@@ -244,3 +244,28 @@ class RidgelinePlot(BasePlot):
         self.ax.spines["left"].set_visible(False)
 
         return self.ax
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive ridgeline plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+        import xarray as xr
+
+        plot_kwargs = {
+            "by": self.group_dim,
+            "subplots": True,
+            "shared_axes": True,
+            "legend": False,
+        }
+        if self.title:
+            plot_kwargs["title"] = self.title
+
+        plot_kwargs.update(kwargs)
+
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
+            import hvplot.xarray  # noqa: F401
+
+            return self.data.hvplot.kde(**plot_kwargs)
+        else:
+            if self.x:
+                plot_kwargs["y"] = self.x
+            return self.data.hvplot.kde(**plot_kwargs)

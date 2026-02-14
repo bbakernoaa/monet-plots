@@ -164,3 +164,18 @@ class SpatialContourPlot(SpatialPlot):
             self.ax.set_title(titstring)
         self.fig.tight_layout()
         return self.ax
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive spatial contour plot using hvPlot."""
+        import hvplot.xarray  # noqa: F401
+
+        if not isinstance(self.modelvar, xr.DataArray):
+            raise TypeError("hvplot requires an xarray.DataArray for spatial plots.")
+
+        plot_kwargs = {"geo": True, "kind": self.plot_func}
+        if self.date:
+            plot_kwargs["title"] = self.date.strftime("%B %d %Y %H")
+
+        plot_kwargs.update(kwargs)
+
+        return self.modelvar.hvplot(**plot_kwargs)

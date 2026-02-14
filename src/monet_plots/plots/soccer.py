@@ -183,3 +183,60 @@ class SoccerPlot(BasePlot):
         self.ax.grid(True, linestyle=":", alpha=0.6)
 
         return self.ax
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive soccer plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+        import holoviews as hv
+
+        df_soccer = pd.DataFrame(
+            {"bias": self.bias_data, "error": self.error_data}
+        ).reset_index(drop=True)
+        if self.label_col is not None:
+            labels = (
+                self.data[self.label_col].values
+                if isinstance(self.data, (xr.DataArray, xr.Dataset))
+                else self.data[self.label_col]
+            )
+            df_soccer["label"] = labels
+
+        plot_kwargs = {
+            "x": "bias",
+            "y": "error",
+            "kind": "scatter",
+            "xlabel": getattr(self, "xlabel", "Bias (%)"),
+            "ylabel": getattr(self, "ylabel", "Error (%)"),
+            "title": "Soccer Plot",
+        }
+        if "label" in df_soccer.columns:
+            plot_kwargs["hover_cols"] = ["label"]
+
+        plot_kwargs.update(kwargs)
+
+        p = df_soccer.hvplot(**plot_kwargs)
+
+        # Add zones
+        zones = []
+        if self.criteria:
+            zones.append(
+                hv.Rectangles(
+                    [
+                        (
+                            -self.criteria["bias"],
+                            0,
+                            self.criteria["bias"],
+                            self.criteria["error"],
+                        )
+                    ]
+                ).opts(alpha=0.2, color="lightgrey", title="Criteria")
+            )
+        if self.goal:
+            zones.append(
+                hv.Rectangles(
+                    [(-self.goal["bias"], 0, self.goal["bias"], self.goal["error"])]
+                ).opts(alpha=0.2, color="grey", title="Goal")
+            )
+
+        if zones:
+            return hv.Overlay(zones) * p
+        return p

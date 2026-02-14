@@ -329,6 +329,26 @@ class SpatialPlot(BasePlot):
         gridline_kwargs = self._get_style(style, gridline_defaults)
         self.ax.gridlines(**gridline_kwargs)
 
+    def hvplot(self, **kwargs):
+        """Generate an interactive spatial plot using hvPlot/GeoViews.
+
+        This is a generic implementation for SpatialPlot subclasses.
+        Subclasses should override this if they need specific behavior.
+        """
+        import hvplot.xarray  # noqa: F401
+        import geoviews as gv  # noqa: F401
+
+        # Generic spatial hvplot often involves xarray data
+        if isinstance(getattr(self, "data", None), xr.DataArray):
+            return self.data.hvplot(geo=True, **kwargs)
+        if isinstance(getattr(self, "modelvar", None), xr.DataArray):
+            return self.modelvar.hvplot(geo=True, **kwargs)
+
+        raise NotImplementedError(
+            f"hvplot is not specifically implemented for {self.__class__.__name__} "
+            "and no standard data attribute was found."
+        )
+
 
 class SpatialTrack(SpatialPlot):
     """Plot a trajectory from an xarray.DataArray on a map.
@@ -452,3 +472,18 @@ class SpatialTrack(SpatialPlot):
 
         sc = self.ax.scatter(longitude, latitude, **final_kwargs)
         return sc
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive spatial track plot using hvPlot."""
+        import hvplot.xarray  # noqa: F401
+
+        plot_kwargs = {
+            "x": self.lon_coord,
+            "y": self.lat_coord,
+            "c": self.data.name if self.data.name else "value",
+            "geo": True,
+            "kind": "scatter",
+        }
+        plot_kwargs.update(kwargs)
+
+        return self.data.hvplot(**plot_kwargs)

@@ -59,6 +59,19 @@ class BasePlot:
         """Closes the plot figure."""
         plt.close(self.fig)
 
+    def hvplot(self, **kwargs):
+        """Generates an interactive version of the plot using hvPlot.
+
+        This method should be overridden by subclasses to provide specific
+        hvPlot implementations.
+
+        Raises:
+            NotImplementedError: If the subclass does not implement hvplot.
+        """
+        raise NotImplementedError(
+            f"hvplot is not implemented for {self.__class__.__name__}"
+        )
+
     def add_colorbar(
         self,
         mappable: matplotlib.cm.ScalarMappable,

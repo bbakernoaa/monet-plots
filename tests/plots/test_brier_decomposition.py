@@ -23,8 +23,8 @@ def sample_data():
 
 def test_brier_decomposition_plot(clear_figures, sample_data):
     """Test BrierScoreDecompositionPlot."""
-    plot = BrierScoreDecompositionPlot()
-    plot.plot(
+    plot = BrierScoreDecompositionPlot(
         data=sample_data, forecasts_col="forecasts", observations_col="observations"
     )
+    plot.plot()
     assert plot.ax is not None

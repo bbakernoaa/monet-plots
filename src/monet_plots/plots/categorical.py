@@ -101,3 +101,49 @@ def categorical_timeseries(data, **kwargs):
     (Placeholder for future implementation)
     """
     raise NotImplementedError("Categorical timeseries plots are not yet implemented.")
+
+
+def categorical_hvplot(
+    data,
+    *,
+    kind="bar",
+    title=None,
+    xlabel=None,
+    ylabel=None,
+    **kwargs,
+):
+    """Make an interactive categorical plot using hvPlot.
+
+    Parameters
+    ----------
+    data : xarray.Dataset or xarray.DataArray
+        Data to be plotted.
+    kind : str, optional
+        Type of plot, 'bar' or 'violin', by default 'bar'.
+    title : str, optional
+        Plot title, by default None.
+    xlabel : str, optional
+        X-axis label, by default None.
+    ylabel : str, optional
+        Y-axis label, by default None.
+    **kwargs
+        Additional keyword arguments passed to hvplot().
+
+    Returns
+        A HoloViews object.
+    """
+    import hvplot.pandas  # noqa: F401
+    import hvplot.xarray  # noqa: F401
+
+    if "x" not in kwargs or "y" not in kwargs:
+        raise ValueError("x and y must be provided as keyword arguments")
+
+    plot_kwargs = {
+        "kind": kind,
+        "title": title,
+        "xlabel": xlabel,
+        "ylabel": ylabel,
+    }
+    plot_kwargs.update(kwargs)
+
+    return data.hvplot(**plot_kwargs)

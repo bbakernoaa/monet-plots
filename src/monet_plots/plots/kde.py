@@ -38,3 +38,35 @@ class KDEPlot(BasePlot):
                 self.ax.set_title(self.title)
             sns.despine()
         return self.ax
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive KDE plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+        import xarray as xr
+
+        if self.y:
+            # Bivariate KDE
+            plot_kwargs = {"x": self.x, "y": self.y}
+            if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+                import hvplot.xarray  # noqa: F401
+
+                method = self.df.hvplot.bivariate
+            else:
+                method = self.df.hvplot.bivariate
+        else:
+            # Univariate KDE
+            plot_kwargs = {"y": self.x}
+            if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+                import hvplot.xarray  # noqa: F401
+
+                method = self.df.hvplot.kde
+            else:
+                method = self.df.hvplot.kde
+
+        if self.title:
+            plot_kwargs["title"] = self.title
+        if self.label:
+            plot_kwargs["label"] = self.label
+
+        plot_kwargs.update(kwargs)
+        return method(**plot_kwargs)

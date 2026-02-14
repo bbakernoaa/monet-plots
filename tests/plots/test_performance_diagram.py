@@ -23,6 +23,6 @@ def sample_data():
 
 def test_performance_diagram_plot(clear_figures, sample_data):
     """Test PerformanceDiagramPlot."""
-    plot = PerformanceDiagramPlot()
-    plot.plot(data=sample_data, x_col="success_ratio", y_col="pod")
+    plot = PerformanceDiagramPlot(data=sample_data, x_col="success_ratio", y_col="pod")
+    plot.plot()
     assert plot.ax is not None
