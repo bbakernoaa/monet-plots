@@ -23,47 +23,58 @@ class ROCCurvePlot(BasePlot):
     - Missing columns.
     """
 
-    def __init__(self, fig=None, ax=None, **kwargs):
-        super().__init__(fig=fig, ax=ax, **kwargs)
-
-    def plot(
+    def __init__(
         self,
         data: Any,
         x_col: str = "pofd",
         y_col: str = "pod",
         label_col: Optional[str] = None,
         show_auc: bool = True,
+        fig=None,
+        ax=None,
         **kwargs,
     ):
+        super().__init__(fig=fig, ax=ax, **kwargs)
+        self.data = to_dataframe(data)
+        self.x_col = x_col
+        self.y_col = y_col
+        self.label_col = label_col
+        self.show_auc = show_auc
+        validate_dataframe(self.data, required_columns=[self.x_col, self.y_col])
+
+    def plot(self, **kwargs):
         """
         Main plotting method.
 
         Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Input data containing ROC points.
-            x_col (str): Column name for POFD (False Alarm Rate).
-            y_col (str): Column name for POD (Hit Rate).
-            label_col (str, optional): Column for grouping different curves.
-            show_auc (bool): Whether to calculate and append AUC to labels.
             **kwargs: Matplotlib kwargs.
         """
-        df = to_dataframe(data)
-        # TDD Anchor: Test validation raises error on missing cols
-        validate_dataframe(df, required_columns=[x_col, y_col])
+        show_auc = kwargs.pop("show_auc", self.show_auc)
 
         # Draw No Skill Line
         self.ax.plot([0, 1], [0, 1], "k--", label="No Skill", alpha=0.5)
         self.ax.grid(True, alpha=0.3)
 
-        if label_col:
-            groups = df.groupby(label_col)
+        if self.label_col:
+            groups = self.data.groupby(self.label_col)
             for name, group in groups:
                 self._plot_single_curve(
-                    group, x_col, y_col, label=str(name), show_auc=show_auc, **kwargs
+                    group,
+                    self.x_col,
+                    self.y_col,
+                    label=str(name),
+                    show_auc=show_auc,
+                    **kwargs,
                 )
             self.ax.legend(loc="lower right")
         else:
             self._plot_single_curve(
-                df, x_col, y_col, label="Model", show_auc=show_auc, **kwargs
+                self.data,
+                self.x_col,
+                self.y_col,
+                label="Model",
+                show_auc=show_auc,
+                **kwargs,
             )
 
         # Formatting
@@ -85,9 +96,7 @@ class ROCCurvePlot(BasePlot):
             label += f" (AUC={auc:.3f})"
         4. self.ax.plot(x, y, label=label, **kwargs)
         """
-        # TDD Anchor: Test AUC calculation against sklearn.metrics.auc or manual known
         # values.
-        # TDD Anchor: Ensure sorting is applied correctly.
 
         df_sorted = df.sort_values(by=x_col).dropna(subset=[x_col, y_col])
         x = df_sorted[x_col].values
@@ -102,8 +111,32 @@ class ROCCurvePlot(BasePlot):
         self.ax.plot(x, y, label=full_label, **kwargs)
         self.ax.fill_between(x, 0, y, alpha=0.2, **kwargs)
 
+    def hvplot(self, **kwargs):
+        """Generate an interactive ROC curve plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+        import holoviews as hv
 
-# TDD Anchors (Unit Tests):
-# 1. test_auc_calculation: Provide points for a known square/triangle, verify AUC.
-# 2. test_sorting_order: Provide unsorted ROC points, ensure plot is monotonic.
-# 3. test_single_point_auc: Handle case where only 1 threshold point is provided.
+        df = self.data.sort_values(by=self.x_col).dropna(
+            subset=[self.x_col, self.y_col]
+        )
+
+        plot_kwargs = {
+            "x": self.x_col,
+            "y": self.y_col,
+            "kind": "area",
+            "xlabel": "Probability of False Detection (POFD)",
+            "ylabel": "Probability of Detection (POD)",
+            "xlim": (0, 1),
+            "ylim": (0, 1),
+            "alpha": 0.2,
+        }
+        if self.label_col:
+            plot_kwargs["by"] = self.label_col
+
+        plot_kwargs.update(kwargs)
+
+        no_skill = hv.Curve([(0, 0), (1, 1)]).opts(
+            color="black", alpha=0.5, line_dash="dashed"
+        )
+
+        return (no_skill * df.hvplot(**plot_kwargs)).opts(title="ROC Curve")

@@ -162,6 +162,26 @@ class TimeSeriesPlot(BasePlot):
         self.fig.tight_layout()
         return self.ax
 
+    def hvplot(self, **kwargs):
+        """Generate an interactive timeseries plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+        import xarray as xr
+
+        plot_kwargs = {"x": self.x, "y": self.y}
+        if self.title:
+            plot_kwargs["title"] = self.title
+        if self.ylabel:
+            plot_kwargs["ylabel"] = self.ylabel
+
+        plot_kwargs.update(kwargs)
+
+        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+            import hvplot.xarray  # noqa: F401
+
+            return self.df.hvplot.line(**plot_kwargs)
+        else:
+            return self.df.hvplot.line(**plot_kwargs)
+
 
 class TimeSeriesStatsPlot(BasePlot):
     """
@@ -257,3 +277,28 @@ class TimeSeriesStatsPlot(BasePlot):
         self.fig.tight_layout()
 
         return self.ax
+
+    def hvplot(self, stat: str = "bias", freq: str = "D", **kwargs):
+        """Generate an interactive timeseries plot of the chosen statistic."""
+        import hvplot.pandas  # noqa: F401
+
+        if stat.lower() not in self.stats:
+            msg = f"Statistic '{stat}' not supported. Use one of {list(self.stats.keys())}"
+            raise ValueError(msg)
+
+        all_stats = []
+        for model_col in self.col2:
+
+            def stat_func(group):
+                return self.stats[stat.lower()](group, model_col)
+
+            stat_series = self.df.resample(freq).apply(stat_func)
+            stat_series.name = model_col
+            all_stats.append(stat_series)
+
+        df_stats = pd.concat(all_stats, axis=1)
+
+        plot_kwargs = {"title": f"{stat.upper()} Over Time", "ylabel": stat.upper()}
+        plot_kwargs.update(kwargs)
+
+        return df_stats.hvplot.line(**plot_kwargs)

@@ -103,3 +103,40 @@ class TrajectoryPlot(BasePlot):
 
         self.ax = [ax0, ax1]
         return self.ax
+
+    def hvplot(self, **kwargs: t.Any):
+        """Generate an interactive trajectory plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+        import hvplot.xarray  # noqa: F401
+
+        # Spatial track
+        lon = np.asarray(self.longitude)
+        lat = np.asarray(self.latitude)
+        values = np.asarray(self.data)
+        time_dim = np.arange(len(lon))
+        coords = {"time": time_dim, "lon": ("time", lon), "lat": ("time", lat)}
+        track_da = xr.DataArray(values, dims=["time"], coords=coords, name="track_data")
+
+        track_plot = track_da.hvplot(
+            x="lon",
+            y="lat",
+            c="track_data",
+            geo=True,
+            kind="scatter",
+            title="Spatial Track",
+        )
+
+        # Timeseries
+        if isinstance(self.time, pd.DataFrame):
+            ts_df = self.time
+        else:
+            ts_df = pd.DataFrame({"time": self.time, "value": np.asarray(self.ts_data)})
+
+        ts_plot = ts_df.hvplot(
+            x="time",
+            y=self.ts_data if isinstance(self.time, pd.DataFrame) else "value",
+            kind="line",
+            title="Timeseries",
+        )
+
+        return (track_plot + ts_plot).cols(1)

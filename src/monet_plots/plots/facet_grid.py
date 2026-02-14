@@ -121,6 +121,21 @@ class FacetGridPlot(BasePlot):
         """Closes the plot."""
         plt.close(self.fig)
 
+    def hvplot(self, **kwargs: Any):
+        """Generate an interactive facet grid plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+
+        plot_kwargs = {
+            "by": [f for f in [self.row, self.col] if f is not None],
+            "subplots": True,
+        }
+        if self.hue:
+            plot_kwargs["c"] = self.hue
+
+        plot_kwargs.update(kwargs)
+
+        return self.data.hvplot(**plot_kwargs)
+
 
 class SpatialFacetGridPlot(BasePlot):
     """Creates a geospatial facet grid plot using xarray.
@@ -322,3 +337,20 @@ class SpatialFacetGridPlot(BasePlot):
             self.add_features(**map_features)
 
         return self.grid
+
+    def hvplot(self, plot_func: str | None = None, **kwargs: Any) -> Any:
+        """Generate an interactive spatial facet grid plot using hvPlot."""
+        import hvplot.xarray  # noqa: F401
+
+        if plot_func is None:
+            plot_func = self.default_plot_func
+
+        plot_kwargs = {
+            "row": self.row,
+            "col": self.col,
+            "geo": True,
+            "kind": plot_func if plot_func != "imshow" else "image",
+        }
+        plot_kwargs.update(kwargs)
+
+        return self.data.hvplot(**plot_kwargs)

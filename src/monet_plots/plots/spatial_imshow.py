@@ -164,3 +164,21 @@ class SpatialImshowPlot(SpatialPlot):
                 self.add_colorbar(img)
 
         return self.ax
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive spatial plot using hvPlot."""
+        import hvplot.xarray  # noqa: F401
+
+        if not isinstance(self.modelvar, xr.DataArray):
+            raise TypeError("hvplot requires an xarray.DataArray for spatial plots.")
+
+        plot_kwargs = {"geo": True}
+        if self.plot_func == "imshow":
+            kind = "image"
+        else:
+            kind = "quadmesh"
+
+        plot_kwargs["kind"] = kind
+        plot_kwargs.update(kwargs)
+
+        return self.modelvar.hvplot(**plot_kwargs)

@@ -21,8 +21,8 @@ def sample_data():
 
 def test_conditional_bias_plot(clear_figures, sample_data):
     """Test ConditionalBiasPlot."""
-    plot = ConditionalBiasPlot()
-    plot.plot(data=sample_data, obs_col="obs", fcst_col="fcst")
+    plot = ConditionalBiasPlot(data=sample_data, obs_col="obs", fcst_col="fcst")
+    plot.plot()
     assert plot.ax is not None
 
 
@@ -34,15 +34,19 @@ def test_conditional_bias_plot_with_label_col(clear_figures):
             "group": np.random.choice(["A", "B"], size=100),
         }
     )
-    plot = ConditionalBiasPlot()
-    plot.plot(data=df, obs_col="obs", fcst_col="fcst", label_col="group")
+    plot = ConditionalBiasPlot(
+        data=df, obs_col="obs", fcst_col="fcst", label_col="group"
+    )
+    plot.plot()
     # Should have a legend for groups
     assert plot.ax.get_legend() is not None
 
 
 def test_conditional_bias_plot_n_bins(clear_figures, sample_data):
-    plot = ConditionalBiasPlot()
-    plot.plot(data=sample_data, obs_col="obs", fcst_col="fcst", n_bins=5)
+    plot = ConditionalBiasPlot(
+        data=sample_data, obs_col="obs", fcst_col="fcst", n_bins=5
+    )
+    plot.plot()
     # Should have 5 or fewer points (bins with >=5 samples)
     lines = plot.ax.get_lines()
     assert any(len(line.get_xdata()) <= 5 for line in lines)
@@ -50,23 +54,21 @@ def test_conditional_bias_plot_n_bins(clear_figures, sample_data):
 
 def test_conditional_bias_plot_empty_df(clear_figures):
     df = pd.DataFrame({"obs": [], "fcst": []})
-    plot = ConditionalBiasPlot()
     with pytest.raises(ValueError):
-        plot.plot(data=df, obs_col="obs", fcst_col="fcst")
+        ConditionalBiasPlot(data=df, obs_col="obs", fcst_col="fcst")
 
 
 def test_conditional_bias_plot_missing_column(clear_figures, sample_data):
     df = sample_data.drop(columns=["obs"])
-    plot = ConditionalBiasPlot()
     with pytest.raises(ValueError):
-        plot.plot(data=df, obs_col="obs", fcst_col="fcst")
+        ConditionalBiasPlot(data=df, obs_col="obs", fcst_col="fcst")
 
 
 def test_conditional_bias_plot_few_samples_per_bin(clear_figures):
     # Only 1 sample per bin, so no points should be plotted
     df = pd.DataFrame({"obs": np.arange(10), "fcst": np.arange(10) + 1})
-    plot = ConditionalBiasPlot()
-    plot.plot(data=df, obs_col="obs", fcst_col="fcst", n_bins=10)
+    plot = ConditionalBiasPlot(data=df, obs_col="obs", fcst_col="fcst", n_bins=10)
+    plot.plot()
     # No error, but no data points (lines) should be present except axhline
     lines = plot.ax.get_lines()
     # Only the zero-bias line should be present
@@ -74,8 +76,8 @@ def test_conditional_bias_plot_few_samples_per_bin(clear_figures):
 
 
 def test_conditional_bias_zero_bias_line(clear_figures, sample_data):
-    plot = ConditionalBiasPlot()
-    plot.plot(data=sample_data, obs_col="obs", fcst_col="fcst")
+    plot = ConditionalBiasPlot(data=sample_data, obs_col="obs", fcst_col="fcst")
+    plot.plot()
     # Check for a horizontal line at y=0
     found = any(
         getattr(line, "get_ydata", lambda: [])()[0] == 0

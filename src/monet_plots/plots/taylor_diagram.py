@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from numpy import corrcoef
 from .base import BasePlot
 from .. import taylordiagram as td
@@ -84,3 +86,31 @@ class TaylorDiagramPlot(BasePlot):
         )
         self.fig.tight_layout()
         return self.dia
+
+    def hvplot(self, **kwargs):
+        """Generate a simplified interactive Taylor diagram using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+
+        stats = []
+        obs_std = self.df[self.col1].std()
+        stats.append({"name": self.label1, "std": obs_std, "corr": 1.0})
+
+        for model_col in self.col2:
+            model_std = self.df[model_col].std()
+            cc = np.corrcoef(self.df[self.col1].values, self.df[model_col].values)[0, 1]
+            stats.append({"name": model_col, "std": model_std, "corr": cc})
+
+        df_stats = pd.DataFrame(stats)
+
+        plot_kwargs = {
+            "x": "std",
+            "y": "corr",
+            "kind": "scatter",
+            "hover_cols": ["name"],
+            "title": "Simplified Taylor Diagram (Std vs Corr)",
+            "xlim": (0, df_stats["std"].max() * 1.1),
+            "ylim": (-1.1, 1.1),
+        }
+        plot_kwargs.update(kwargs)
+
+        return df_stats.hvplot(**plot_kwargs)

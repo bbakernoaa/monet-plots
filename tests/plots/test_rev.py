@@ -28,6 +28,6 @@ def sample_data():
 
 def test_rev_plot(clear_figures, sample_data):
     """Test RelativeEconomicValuePlot."""
-    plot = RelativeEconomicValuePlot()
-    plot.plot(data=sample_data)
+    plot = RelativeEconomicValuePlot(data=sample_data)
+    plot.plot()
     assert plot.ax is not None

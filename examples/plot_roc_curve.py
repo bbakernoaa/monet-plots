@@ -48,8 +48,8 @@ df = (
 )
 
 # 2. Initialize and create the plot
-plot = ROCCurvePlot(figsize=(8, 8))
-plot.plot(df, x_col="pofd", y_col="pod", color="blue", linewidth=2)
+plot = ROCCurvePlot(df, x_col="pofd", y_col="pod", figsize=(8, 8))
+plot.plot(color="blue", linewidth=2)
 
 # 3. Add titles and labels
 plot.ax.set_title("Receiver Operating Characteristic (ROC) Curve")
