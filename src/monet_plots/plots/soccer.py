@@ -69,14 +69,13 @@ class SoccerPlot(BasePlot):
 
     def _calculate_metrics(self, obs_col: str, mod_col: str):
         """Calculate MFB/MFE or NMB/NME preserving granularity."""
+        obs = self.data[obs_col]
+        mod = self.data[mod_col]
+
         if isinstance(self.data, (xr.DataArray, xr.Dataset)):
-            obs = self.data[obs_col]
-            mod = self.data[mod_col]
             # Use dim=[] to maintain per-sample granularity (no aggregation)
             dim_arg = []
         else:
-            obs = self.data[obs_col].values
-            mod = self.data[mod_col].values
             dim_arg = ()
 
         if self.metric == "fractional":

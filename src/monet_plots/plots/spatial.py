@@ -335,8 +335,8 @@ class SpatialPlot(BasePlot):
         This is a generic implementation for SpatialPlot subclasses.
         Subclasses should override this if they need specific behavior.
         """
-        import hvplot.xarray  # noqa: F401
         import geoviews as gv  # noqa: F401
+        import hvplot.xarray  # noqa: F401
 
         # Generic spatial hvplot often involves xarray data
         if isinstance(getattr(self, "data", None), xr.DataArray):
@@ -348,6 +348,74 @@ class SpatialPlot(BasePlot):
             f"hvplot is not specifically implemented for {self.__class__.__name__} "
             "and no standard data attribute was found."
         )
+
+    @staticmethod
+    def _identify_coords(
+        da: xr.DataArray | xr.Dataset,
+    ) -> tuple[str | None, str | None]:
+        """Identify latitude and longitude coordinates in an xarray object."""
+        from ..plot_utils import identify_coords
+
+        return identify_coords(da)
+
+    @staticmethod
+    def _ensure_monotonic(da: xr.DataArray) -> xr.DataArray:
+        """Enforce monotonic increasing latitude for correct plotting."""
+        lat_name = None
+        for dim in da.dims:
+            if "lat" in str(dim).lower() or "latitude" in str(dim).lower():
+                lat_name = dim
+                break
+
+        if lat_name:
+            lat_vals = da[lat_name].values
+            if lat_vals[0] > lat_vals[-1]:
+                return da.sortby(lat_name)
+        return da
+
+    @classmethod
+    def _get_extent_from_data(
+        cls, data: xr.DataArray | xr.Dataset, buffer: float = 0.0
+    ) -> list[float] | None:
+        """Compute spatial extent from data, supporting lazy Dask objects.
+
+        Parameters
+        ----------
+        data : xr.DataArray | xr.Dataset
+            Input data to compute extent from.
+        buffer : float, optional
+            Buffer to add to the extent (as a fraction of the range), by default 0.0.
+        """
+        lon_name, lat_name = cls._identify_coords(data)
+        if lon_name and lat_name:
+            lon = data[lon_name]
+            lat = data[lat_name]
+
+            # Efficiently compute min/max for Dask-backed objects in one operation
+            if hasattr(lon.data, "dask") or hasattr(lat.data, "dask"):
+                import dask
+
+                lon_min, lon_max, lat_min, lat_max = dask.compute(
+                    lon.min(), lon.max(), lat.min(), lat.max()
+                )
+            else:
+                lon_min, lon_max = lon.min().item(), lon.max().item()
+                lat_min, lat_max = lat.min().item(), lat.max().item()
+
+            lon_range = lon_max - lon_min
+            lat_range = lat_max - lat_min
+
+            # Add buffer if requested
+            if buffer > 0:
+                lon_buf = lon_range * buffer if lon_range > 0 else 1.0
+                lat_buf = lat_range * buffer if lat_range > 0 else 1.0
+                lon_min -= lon_buf
+                lon_max += lon_buf
+                lat_min -= lat_buf
+                lat_max += lat_buf
+
+            return [float(lon_min), float(lon_max), float(lat_min), float(lat_max)]
+        return None
 
 
 class SpatialTrack(SpatialPlot):
@@ -408,12 +476,18 @@ class SpatialTrack(SpatialPlot):
                 f"Latitude coordinate '{lat_coord}' not found in DataArray."
             )
 
+        # Ensure monotonic latitude for plotting
+        self.data = self._ensure_monotonic(data)
+
+        # Automatically compute extent if not provided
+        if "extent" not in kwargs:
+            kwargs["extent"] = self._get_extent_from_data(self.data, buffer=0.1)
+
         # Initialize the parent SpatialPlot, which creates the map canvas
         # and draws features from the keyword arguments.
         super().__init__(**kwargs)
 
         # Set data and update history for provenance
-        self.data = data
         self.lon_coord = lon_coord
         self.lat_coord = lat_coord
         history = self.data.attrs.get("history", "")
@@ -442,22 +516,6 @@ class SpatialTrack(SpatialPlot):
             The scatter plot artist created by `ax.scatter`.
         """
         from ..plot_utils import get_plot_kwargs
-
-        # Automatically compute extent if not provided
-        if "extent" not in kwargs:
-            lon = self.data[self.lon_coord]
-            lat = self.data[self.lat_coord]
-            # Add a small buffer to the extent
-            lon_min, lon_max = lon.min().item(), lon.max().item()
-            lat_min, lat_max = lat.min().item(), lat.max().item()
-            lon_buf = (lon_max - lon_min) * 0.1 if lon_max > lon_min else 1.0
-            lat_buf = (lat_max - lat_min) * 0.1 if lat_max > lat_min else 1.0
-            kwargs["extent"] = [
-                lon_min - lon_buf,
-                lon_max + lon_buf,
-                lat_min - lat_buf,
-                lat_max + lat_buf,
-            ]
 
         # Add features and get remaining kwargs for scatter
         scatter_kwargs = self.add_features(**kwargs)

@@ -40,7 +40,7 @@ class ReliabilityDiagramPlot(BasePlot):
         **kwargs,
     ):
         super().__init__(fig=fig, ax=ax, **kwargs)
-        self.data = to_dataframe(data)
+        self.data = data
         self.x_col = x_col
         self.y_col = y_col
         self.forecasts_col = forecasts_col
@@ -51,6 +51,8 @@ class ReliabilityDiagramPlot(BasePlot):
         self.show_hist = show_hist
 
         if not (self.forecasts_col and self.observations_col):
+            # If pre-computed data is passed, ensure it is a DataFrame for compatibility
+            self.data = to_dataframe(self.data)
             validate_dataframe(self.data, required_columns=[self.x_col, self.y_col])
 
     def plot(self, **kwargs):
@@ -62,15 +64,32 @@ class ReliabilityDiagramPlot(BasePlot):
         """
         # Compute if raw data provided
         if self.forecasts_col and self.observations_col:
+            forecasts = self.data[self.forecasts_col]
+            observations = self.data[self.observations_col]
+
             if self.climatology is None:
-                self.climatology = float(self.data[self.observations_col].mean())
+                # Use .mean().item() or .mean() to handle xarray/numpy/pandas
+                self.climatology = float(observations.mean())
+
             bin_centers, obs_freq, bin_counts = compute_reliability_curve(
-                np.asarray(self.data[self.forecasts_col]),
-                np.asarray(self.data[self.observations_col]),
+                forecasts,
+                observations,
                 self.n_bins,
             )
+
+            # Convert to DataFrame for easier internal plotting/labeling
+            # Note: compute_reliability_curve might return xarray if input was xarray
+            if hasattr(obs_freq, "compute"):
+                import dask
+
+                obs_freq, bin_counts = dask.compute(obs_freq, bin_counts)
+
             plot_data = pd.DataFrame(
-                {self.x_col: bin_centers, self.y_col: obs_freq, "count": bin_counts}
+                {
+                    self.x_col: bin_centers,
+                    self.y_col: np.asarray(obs_freq),
+                    "count": np.asarray(bin_counts),
+                }
             )
         else:
             plot_data = self.data
@@ -139,22 +158,33 @@ class ReliabilityDiagramPlot(BasePlot):
 
     def hvplot(self, **kwargs):
         """Generate an interactive reliability diagram using hvPlot."""
-        import hvplot.pandas  # noqa: F401
         import holoviews as hv
+        import hvplot.pandas  # noqa: F401
 
         if self.forecasts_col and self.observations_col:
+            forecasts = self.data[self.forecasts_col]
+            observations = self.data[self.observations_col]
+
             if self.climatology is None:
-                self.climatology = float(self.data[self.observations_col].mean())
+                self.climatology = float(observations.mean())
+
             bin_centers, obs_freq, bin_counts = compute_reliability_curve(
-                np.asarray(self.data[self.forecasts_col]),
-                np.asarray(self.data[self.observations_col]),
+                forecasts,
+                observations,
                 self.n_bins,
             )
+
+            # Eagerly compute for DataFrame-based hvplot path
+            if hasattr(obs_freq, "compute"):
+                import dask
+
+                obs_freq, bin_counts = dask.compute(obs_freq, bin_counts)
+
             plot_data = pd.DataFrame(
                 {
                     self.x_col: bin_centers,
-                    self.y_col: obs_freq,
-                    "count": bin_counts,
+                    self.y_col: np.asarray(obs_freq),
+                    "count": np.asarray(bin_counts),
                 }
             )
         else:

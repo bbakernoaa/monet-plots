@@ -1,7 +1,8 @@
 import numpy as np
+import pandas as pd
 from typing import Optional, Any, List
 from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
+from ..plot_utils import to_dataframe
 from ..verification_metrics import compute_pod, compute_success_ratio
 
 
@@ -31,18 +32,23 @@ class PerformanceDiagramPlot(BasePlot):
         x_col: str = "success_ratio",
         y_col: str = "pod",
         counts_cols: Optional[List[str]] = None,
+        obs_col: Optional[str] = None,
+        mod_col: Optional[str] = None,
+        thresholds: Optional[List[float]] = None,
         label_col: Optional[str] = None,
         fig=None,
         ax=None,
         **kwargs,
     ):
         super().__init__(fig=fig, ax=ax, **kwargs)
-        self.data = to_dataframe(data)
+        self.data = data
         self.x_col = x_col
         self.y_col = y_col
         self.counts_cols = counts_cols
+        self.obs_col = obs_col
+        self.mod_col = mod_col
+        self.thresholds = thresholds
         self.label_col = label_col
-        self._validate_inputs(self.data, self.x_col, self.y_col, self.counts_cols)
 
     def plot(self, **kwargs):
         """
@@ -52,9 +58,7 @@ class PerformanceDiagramPlot(BasePlot):
             **kwargs: Matplotlib kwargs.
         """
         # Data Preparation
-        df_plot = self._prepare_data(
-            self.data, self.x_col, self.y_col, self.counts_cols
-        )
+        df_plot = self._prepare_data()
 
         # Plot Background (Isolines)
         self._draw_background()
@@ -87,22 +91,47 @@ class PerformanceDiagramPlot(BasePlot):
         self.ax.set_ylabel("Probability of Detection (POD)")
         self.ax.set_aspect("equal")
 
-    def _validate_inputs(self, data, x, y, counts):
-        """Validates input dataframe structure."""
-        if counts:
-            validate_dataframe(data, required_columns=counts)
-        else:
-            validate_dataframe(data, required_columns=[x, y])
+    def _prepare_data(self):
+        """
+        Prepares data for plotting, calculating metrics from raw data or counts if necessary.
+        """
+        from ..verification_metrics import (
+            compute_categorical_metrics,
+            compute_contingency_table,
+        )
 
-    def _prepare_data(self, data, x, y, counts):
-        """
-        Calculates metrics if counts provided, otherwise returns subset.
-        """
-        df = data.copy()
-        if counts:
-            hits_col, misses_col, fa_col, cn_col = counts
-            df[x] = compute_success_ratio(df[hits_col], df[fa_col])
-            df[y] = compute_pod(df[hits_col], df[misses_col])
+        if self.obs_col and self.mod_col and self.thresholds:
+            # Plotting from raw data at various thresholds
+            obs = self.data[self.obs_col]
+            mod = self.data[self.mod_col]
+
+            rows = []
+            for t in self.thresholds:
+                ct = compute_contingency_table(obs, mod, t)
+                # If dask-backed, compute now for plotting
+                if hasattr(ct["hits"], "compute"):
+                    import dask
+
+                    ct = dask.compute(ct)[0]
+
+                metrics = compute_categorical_metrics(**ct)
+                metrics["threshold"] = t
+                rows.append(metrics)
+
+            df_plot = pd.DataFrame(rows)
+            # Threshold as label if label_col not provided
+            if self.label_col is None:
+                self.label_col = "threshold"
+            return df_plot
+
+        # Ensure we have a DataFrame for simpler plotting logic if not already
+        df = to_dataframe(self.data)
+
+        if self.counts_cols:
+            hits_col, misses_col, fa_col, cn_col = self.counts_cols
+            df[self.x_col] = compute_success_ratio(df[hits_col], df[fa_col])
+            df[self.y_col] = compute_pod(df[hits_col], df[misses_col])
+
         return df
 
     def _draw_background(self):
@@ -151,12 +180,10 @@ class PerformanceDiagramPlot(BasePlot):
 
     def hvplot(self, **kwargs):
         """Generate an interactive performance diagram using hvPlot."""
-        import hvplot.pandas  # noqa: F401
         import holoviews as hv
+        import hvplot.pandas  # noqa: F401
 
-        df_plot = self._prepare_data(
-            self.data, self.x_col, self.y_col, self.counts_cols
-        )
+        df_plot = self._prepare_data()
 
         plot_kwargs = {
             "x": self.x_col,

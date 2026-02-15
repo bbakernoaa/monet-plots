@@ -74,13 +74,22 @@ class SpatialImshowPlot(SpatialPlot):
         **kwargs : Any
             Keyword arguments passed to SpatialPlot for projection and features.
         """
-        super().__init__(*args, **kwargs)
         self.modelvar = modelvar
+        if isinstance(self.modelvar, xr.DataArray):
+            self.modelvar = self._ensure_monotonic(self.modelvar)
+            if "extent" not in kwargs:
+                kwargs["extent"] = self._get_extent_from_data(self.modelvar)
+
+        super().__init__(*args, **kwargs)
         self.gridobj = gridobj
         self.plotargs = plotargs or {}
         self.ncolors = ncolors
         self.discrete = discrete
         self.plot_func = plot_func
+
+        # Automatically trigger plot if no existing axes provided
+        if "ax" not in kwargs:
+            self.plot()
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial plot.
