@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+import xarray as xr
 from scipy.stats import scoreatpercentile as score
 
 from ..colorbars import get_discrete_scale
@@ -50,8 +51,13 @@ class SpatialBiasScatterPlot(SpatialPlot):
                       include `projection`, `figsize`, `ax`, and cartopy
                       features like `states`, `coastlines`, etc.
         """
+        self.df = df
+        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+            if "extent" not in kwargs:
+                kwargs["extent"] = self._get_extent_from_data(self.df)
+
         super().__init__(**kwargs)
-        self.df = to_dataframe(df)
+        self.df = to_dataframe(self.df)
         self.col1 = col1
         self.col2 = col2
         self.vmin = vmin
@@ -59,6 +65,10 @@ class SpatialBiasScatterPlot(SpatialPlot):
         self.ncolors = ncolors
         self.fact = fact
         self.cmap = cmap
+
+        # Automatically trigger plot if no existing axes provided
+        if "ax" not in kwargs:
+            self.plot()
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the spatial bias scatter plot."""

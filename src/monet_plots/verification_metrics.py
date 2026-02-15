@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from typing import Tuple, Union, Dict, Any
 
 try:
@@ -33,6 +34,9 @@ def _mean(obj: Any, dim: Any) -> Any:
     """Polymorphic mean that handles xarray 'dim' and numpy 'axis'."""
     if _is_xarray(obj):
         return obj.mean(dim=dim)
+    # Convert pandas to numpy to support axis=()
+    if isinstance(obj, (pd.Series, pd.DataFrame)):
+        obj = np.asarray(obj)
     return np.mean(obj, axis=dim)
 
 
@@ -40,6 +44,9 @@ def _sum(obj: Any, dim: Any) -> Any:
     """Polymorphic sum that handles xarray 'dim' and numpy 'axis'."""
     if _is_xarray(obj):
         return obj.sum(dim=dim)
+    # Convert pandas to numpy to support axis=()
+    if isinstance(obj, (pd.Series, pd.DataFrame)):
+        obj = np.asarray(obj)
     return np.sum(obj, axis=dim)
 
 
@@ -49,6 +56,11 @@ def compute_mb(obs: Any, mod: Any, dim: Any = None) -> Any:
         diff = mod - obs
         res = _mean(diff, dim)
         return _update_history(res, "Computed MB")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
     # monet-stats.MB returns (obs - mod), so we swap arguments to get (mod - obs)
     res = monet_stats.MB(mod, obs, axis=dim)
     return _update_history(res, "Computed MB")
@@ -60,6 +72,11 @@ def compute_rmse(obs: Any, mod: Any, dim: Any = None) -> Any:
         diff_sq = (mod - obs) ** 2
         res = np.sqrt(_mean(diff_sq, dim))
         return _update_history(res, "Computed RMSE")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
     res = monet_stats.RMSE(obs, mod, axis=dim)
     return _update_history(res, "Computed RMSE")
 
@@ -70,6 +87,11 @@ def compute_mae(obs: Any, mod: Any, dim: Any = None) -> Any:
         abs_diff = np.abs(mod - obs)
         res = _mean(abs_diff, dim)
         return _update_history(res, "Computed MAE")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
     res = monet_stats.MAE(obs, mod, axis=dim)
     return _update_history(res, "Computed MAE")
 
@@ -81,6 +103,11 @@ def compute_correlation(obs: Any, mod: Any, dim: Any = None) -> Any:
         o = obs.values if hasattr(obs, "values") else obs
         m = mod.values if hasattr(mod, "values") else mod
         return np.corrcoef(o.ravel(), m.ravel())[0, 1]
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
     res = monet_stats.pearsonr(obs, mod, axis=dim)
     return _update_history(res, "Computed Correlation")
 
@@ -91,6 +118,11 @@ def compute_fb(obs: Any, mod: Any, dim: Any = None) -> Any:
         term = (mod - obs) / (mod + obs)
         res = 200.0 * _mean(term, dim)
         return _update_history(res, "Computed FB")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
     res = monet_stats.FB(obs, mod, axis=dim)
     return _update_history(res, "Computed FB")
 
@@ -101,6 +133,11 @@ def compute_fe(obs: Any, mod: Any, dim: Any = None) -> Any:
         term = np.abs(mod - obs) / (mod + obs)
         res = 200.0 * _mean(term, dim)
         return _update_history(res, "Computed FE")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
     res = monet_stats.FE(obs, mod, axis=dim)
     return _update_history(res, "Computed FE")
 
@@ -113,6 +150,11 @@ def compute_nmb(obs: Any, mod: Any, dim: Any = None) -> Any:
         den = _sum(obs, dim)
         res = 100.0 * num / den
         return _update_history(res, "Computed NMB")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
     res = monet_stats.NMB(obs, mod, axis=dim)
     return _update_history(res, "Computed NMB")
 
@@ -125,6 +167,11 @@ def compute_nme(obs: Any, mod: Any, dim: Any = None) -> Any:
         den = _sum(obs, dim)
         res = 100.0 * num / den
         return _update_history(res, "Computed NME")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
     # monet-stats uses MNE for Mean Normalized Error (Gross Error)
     res = monet_stats.MNE(obs, mod, axis=dim)
     return _update_history(res, "Computed NME")
@@ -329,46 +376,65 @@ def compute_reliability_curve(
 
 
 def compute_brier_score_components(
-    forecasts: np.ndarray, observations: np.ndarray, n_bins: int = 10
+    forecasts: Any, observations: Any, n_bins: int = 10
 ) -> Dict[str, float]:
     """
     Decomposes Brier Score into Reliability, Resolution, and Uncertainty.
 
     BS = Reliability - Resolution + Uncertainty
     """
-    N = len(forecasts)
-    base_rate = float(np.mean(observations))
-    uncertainty = base_rate * (1.0 - base_rate)
+    # Use xarray/dask aware operations for N and base_rate
+    if _is_xarray(observations):
+        N = observations.size
+        base_rate = observations.mean()
+    else:
+        N = len(observations)
+        base_rate = np.mean(observations)
 
     bin_centers, obs_freq, bin_counts = compute_reliability_curve(
         forecasts, observations, n_bins
     )
 
-    # Filter out empty bins
-    mask = ~np.isnan(obs_freq)
-    bin_centers = bin_centers[mask]
-    obs_freq = obs_freq[mask]
-    bin_counts = bin_counts[mask]
+    # Use nansum and fillna to avoid eager masking
+    if _is_xarray(obs_freq):
+        # Reliability: Weighted average of (forecast - observed_freq)^2
+        rel_term = bin_counts * (bin_centers - obs_freq.fillna(bin_centers)) ** 2
+        reliability = rel_term.sum() / N
 
-    # Reliability: Weighted average of (forecast - observed_freq)^2
-    reliability = float(np.sum(bin_counts * (bin_centers - obs_freq) ** 2) / N)
+        # Resolution: Weighted average of (observed_freq - base_rate)**2
+        res_term = bin_counts * (obs_freq.fillna(base_rate) - base_rate) ** 2
+        resolution = res_term.sum() / N
 
-    # Resolution: Weighted average of (observed_freq - base_rate)**2
-    resolution = float(np.sum(bin_counts * (obs_freq - base_rate) ** 2) / N)
+        uncertainty = base_rate * (1.0 - base_rate)
+
+        # Compute results in one go if they are dask objects
+        if hasattr(reliability, "compute"):
+            import dask
+
+            reliability, resolution, uncertainty, base_rate = dask.compute(
+                reliability, resolution, uncertainty, base_rate
+            )
+    else:
+        # Numpy path
+        mask = ~np.isnan(obs_freq)
+        reliability = (
+            np.sum(bin_counts[mask] * (bin_centers[mask] - obs_freq[mask]) ** 2) / N
+        )
+        resolution = np.sum(bin_counts[mask] * (obs_freq[mask] - base_rate) ** 2) / N
+        uncertainty = base_rate * (1.0 - base_rate)
 
     return {
-        "reliability": reliability,
-        "resolution": resolution,
+        "reliability": float(reliability),
+        "resolution": float(resolution),
         "uncertainty": float(uncertainty),
         "brier_score": float(reliability - resolution + uncertainty),
+        "base_rate": float(base_rate),
     }
 
 
-def compute_rank_histogram(
-    ensemble: np.ndarray, observations: np.ndarray
-) -> np.ndarray:
+def compute_rank_histogram(ensemble: Any, observations: Any) -> np.ndarray:
     """
-    Computes rank histogram counts.
+    Computes rank histogram counts using vectorized operations.
 
     Args:
         ensemble: Shape (n_samples, n_members)
@@ -377,17 +443,80 @@ def compute_rank_histogram(
     Returns:
         Array of counts for each rank (length n_members + 1)
     """
-    n_samples, n_members = ensemble.shape
-    ranks = np.zeros(n_samples, dtype=int)
+    # Vectorized comparison: (n_samples, n_members) < (n_samples, 1)
+    if hasattr(ensemble, "values"):
+        ens_vals = ensemble.values
+    else:
+        ens_vals = ensemble
 
-    for i in range(n_samples):
-        # Count how many ensemble members are less than observation
-        # Ties handling: random or specific logic? Standard is usually <
-        # Here we implement standard count of members < observation
-        ranks[i] = np.sum(ensemble[i] < observations[i])
+    if hasattr(observations, "values"):
+        obs_vals = observations.values
+    else:
+        obs_vals = observations
 
-    counts = np.bincount(ranks, minlength=n_members + 1)
+    if len(obs_vals.shape) == 1:
+        obs_vals = obs_vals[:, np.newaxis]
+
+    ranks = np.sum(ens_vals < obs_vals, axis=1)
+
+    if hasattr(ranks, "compute"):
+        ranks = ranks.compute()
+
+    n_members = ensemble.shape[1]
+    counts = np.bincount(ranks.astype(int), minlength=n_members + 1)
     return counts
+
+
+def compute_contingency_table(
+    obs: Any, mod: Any, threshold: float, dim: Any = None
+) -> Dict[str, Any]:
+    """
+    Computes contingency table components (hits, misses, fa, cn) from raw data.
+
+    Args:
+        obs: Observations.
+        mod: Model values.
+        threshold: Threshold for event detection.
+        dim: Dimension(s) to aggregate over.
+
+    Returns:
+        Dictionary with 'hits', 'misses', 'fa', 'cn'.
+    """
+    obs_event = obs >= threshold
+    mod_event = mod >= threshold
+
+    hits = _sum(obs_event & mod_event, dim)
+    misses = _sum(obs_event & ~mod_event, dim)
+    fa = _sum(~obs_event & mod_event, dim)
+    cn = _sum(~obs_event & ~mod_event, dim)
+
+    res = {"hits": hits, "misses": misses, "fa": fa, "cn": cn}
+
+    for k in res:
+        _update_history(res[k], f"Computed {k} at threshold {threshold}")
+
+    return res
+
+
+def compute_categorical_metrics(
+    hits: Any, misses: Any, fa: Any, cn: Any
+) -> Dict[str, Any]:
+    """
+    Computes a set of categorical metrics from contingency table components.
+    """
+    pod = compute_pod(hits, misses)
+    far = compute_far(hits, fa)
+    sr = compute_success_ratio(hits, fa)
+    csi = compute_csi(hits, misses, fa)
+    fbias = compute_frequency_bias(hits, misses, fa)
+
+    return {
+        "pod": pod,
+        "far": far,
+        "success_ratio": sr,
+        "csi": csi,
+        "frequency_bias": fbias,
+    }
 
 
 def compute_rev(
