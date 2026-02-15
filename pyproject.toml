@@ -26,6 +26,9 @@ dependencies = [
     "numpy",
     "statsmodels",
     "dask",
+    "hvplot",
+    "holoviews",
+    "flox",
     "monet-stats @ git+https://github.com/noaa-oar-arl/monet-stats.git",
 ]
 
