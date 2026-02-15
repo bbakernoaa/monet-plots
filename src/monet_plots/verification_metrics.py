@@ -1334,3 +1334,90 @@ def compute_crp_skill_score(
         out=np.ones_like(crps, dtype=float),
         where=reference_crps != 0,
     )
+
+
+def compute_binned_bias(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    bins: Union[int, np.ndarray, list[float]] = 10,
+    dim: Optional[Union[str, list[str]]] = None,
+) -> xr.Dataset:
+    """
+    Calculates bias statistics binned by the observed values.
+
+    This function is optimized for large datasets using Xarray and Dask.
+    It returns the mean bias, standard deviation, and sample count for
+    each bin.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    bins : int or array-like, optional
+        Number of bins or bin edges for observed values, by default 10.
+    dim : str or list of str, optional
+        The dimension(s) over which to aggregate within each bin.
+        If None, aggregates over all dimensions.
+
+    Returns
+    -------
+    xr.Dataset
+        A dataset containing 'mean', 'std', and 'count' of the bias
+        (mod - obs) for each bin of 'obs'.
+
+    Examples
+    --------
+    >>> import xarray as xr
+    >>> import numpy as np
+    >>> obs = xr.DataArray(np.arange(100), dims="x")
+    >>> mod = obs + np.random.normal(0, 1, 100)
+    >>> stats = compute_binned_bias(obs, mod, bins=5)
+    >>> 'mean' in stats.data_vars
+    True
+    """
+    if not isinstance(obs, xr.DataArray):
+        obs = xr.DataArray(obs, dims="sample")
+    if not isinstance(mod, xr.DataArray):
+        mod = xr.DataArray(mod, dims="sample")
+
+    bias = mod - obs
+    bias.name = "bias"
+
+    # Define bins if n_bins provided
+    if isinstance(bins, int):
+        # We use a single compute() call for min/max if they are dask-backed
+        import dask
+
+        if hasattr(obs.data, "chunks"):
+            o_min, o_max = dask.compute(obs.min(), obs.max())
+        else:
+            o_min, o_max = obs.min(), obs.max()
+
+        bins = np.linspace(float(o_min), float(o_max), bins + 1)
+
+    # Group by bins of observations
+    # groupby_bins handles dask arrays by default in recent xarray
+    binned = bias.groupby_bins(obs, bins=bins, restore_coord_dims=True)
+
+    # Compute stats
+    # Note: dim=None in xarray reduction flattens the array
+    mean_bias = binned.mean(dim=dim)
+    std_bias = binned.std(dim=dim)
+    count_bias = binned.count(dim=dim)
+
+    res = xr.Dataset(
+        {"mean": mean_bias, "std": std_bias, "count": count_bias},
+    )
+
+    # Add bin centers for easier plotting
+    # The bin coordinate name is usually {obs.name}_bins
+    bin_coord = [c for c in res.coords if c.endswith("_bins")]
+    if bin_coord:
+        cname = bin_coord[0]
+        bin_centers = [interval.mid for interval in res.coords[cname].values]
+        res = res.assign_coords(bin_center=(cname, bin_centers))
+
+    msg = f"Computed binned bias with {len(bins) - 1 if not isinstance(bins, int) else bins} bins"
+    return _update_history(res, msg)
