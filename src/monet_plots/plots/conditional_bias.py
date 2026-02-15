@@ -191,7 +191,9 @@ class ConditionalBiasPlot(BasePlot):
                     obs = xr.DataArray(group[obs_col].values, dims="sample")
                     mod = xr.DataArray(group[fcst_col].values, dims="sample")
                     stats = compute_binned_bias(obs, mod, bins=bins)
-                    stats = stats.assign_coords({label_col: name}).expand_dims(label_col)
+                    stats = stats.assign_coords({label_col: name}).expand_dims(
+                        label_col
+                    )
                     results.append(stats)
                 self.stats = xr.concat(results, dim=label_col)
         else:
@@ -209,7 +211,9 @@ class ConditionalBiasPlot(BasePlot):
                 sub = self.stats.isel({label_col: i})
                 label_val = sub[label_col].values
                 label_str = (
-                    str(label_val.item()) if hasattr(label_val, "item") else str(label_val)
+                    str(label_val.item())
+                    if hasattr(label_val, "item")
+                    else str(label_val)
                 )
                 self._draw_errorbar(sub, label_str, min_samples, **kwargs)
         else:
@@ -297,9 +301,7 @@ class ConditionalBiasPlot(BasePlot):
                 else self.data.to_dataset(name="data")
             )
             for val, group in ds.groupby(label_col):
-                stats = compute_binned_bias(
-                    group[obs_col], group[fcst_col], bins=bins
-                )
+                stats = compute_binned_bias(group[obs_col], group[fcst_col], bins=bins)
                 stats = stats.assign_coords({label_col: val}).expand_dims(label_col)
                 results.append(stats)
             plot_stats = xr.concat(results, dim=label_col)

@@ -1419,5 +1419,5 @@ def compute_binned_bias(
         bin_centers = [interval.mid for interval in res.coords[cname].values]
         res = res.assign_coords(bin_center=(cname, bin_centers))
 
-    msg = f"Computed binned bias with {len(bins)-1 if not isinstance(bins, int) else bins} bins"
+    msg = f"Computed binned bias with {len(bins) - 1 if not isinstance(bins, int) else bins} bins"
     return _update_history(res, msg)
