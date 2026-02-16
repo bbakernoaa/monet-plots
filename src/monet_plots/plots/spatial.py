@@ -518,3 +518,42 @@ class SpatialTrack(SpatialPlot):
 
         sc = self.ax.scatter(longitude, latitude, **final_kwargs)
         return sc
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """
+        Generate an interactive trajectory plot using hvPlot.
+
+        This method follows Track B of the Aero Protocol, providing an
+        interactive visualization suitable for exploration.
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Additional keyword arguments passed to `hvplot.scatter`.
+            Common options include `cmap`, `size`, and `title`.
+
+        Returns
+        -------
+        holoviews.Element
+            The interactive HoloViews object.
+        """
+        import hvplot.xarray  # noqa: F401
+
+        if self.data is None:
+            raise ValueError("Data must be provided during initialization for hvplot()")
+
+        # Default settings
+        kwargs.setdefault("geo", True)
+        # Use the name of the DataArray as the color variable
+        c_var = self.data.name if self.data.name else "value"
+        kwargs.setdefault("c", c_var)
+        kwargs.setdefault("hover_cols", [self.lon_coord, self.lat_coord])
+
+        plot = self.data.hvplot.scatter(x=self.lon_coord, y=self.lat_coord, **kwargs)
+
+        # Update history for provenance
+        from ..verification_metrics import _update_history
+
+        _update_history(self.data, "Generated interactive SpatialTrack")
+
+        return plot

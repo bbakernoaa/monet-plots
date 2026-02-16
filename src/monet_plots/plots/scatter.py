@@ -231,3 +231,48 @@ class ScatterPlot(BasePlot):
             self.data.attrs["history"] = f"Generated ScatterPlot; {history}"
 
         return self.ax
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """
+        Generate an interactive scatter plot using hvPlot.
+
+        This method follows Track B of the Aero Protocol, providing an
+        interactive visualization suitable for exploration.
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Additional keyword arguments passed to `hvplot.scatter`.
+            Common options include `cmap`, `rasterize`, and `title`.
+
+        Returns
+        -------
+        holoviews.Element
+            The interactive HoloViews object.
+        """
+        import hvplot.pandas  # noqa: F401
+        import hvplot.xarray  # noqa: F401
+
+        if self.data is None:
+            raise ValueError("Data must be provided during initialization for hvplot()")
+
+        # Default settings
+        kwargs.setdefault(
+            "title",
+            self.title if self.title else f"Scatter: {self.x} vs {', '.join(self.y)}",
+        )
+        if self.c:
+            kwargs.setdefault("c", self.c)
+
+        # Performance: Use rasterize=True for large datasets (>100MB)
+        if hasattr(self.data, "nbytes") and self.data.nbytes > 1e8:
+            kwargs.setdefault("rasterize", True)
+
+        plot = self.data.hvplot.scatter(x=self.x, y=self.y, **kwargs)
+
+        # Provenance
+        from ..verification_metrics import _update_history
+
+        _update_history(self.data, "Generated interactive ScatterPlot")
+
+        return plot

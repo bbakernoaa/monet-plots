@@ -137,3 +137,57 @@ class SpatialBiasScatterPlot(SpatialPlot):
             **final_scatter_kwargs,
         )
         return self.ax
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """
+        Generate an interactive spatial bias scatter plot using hvPlot.
+
+        This method follows Track B of the Aero Protocol, providing an
+        interactive visualization suitable for exploration.
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Additional keyword arguments passed to `hvplot.scatter`.
+            Common options include `cmap`, `size`, and `title`.
+
+        Returns
+        -------
+        holoviews.Element
+            The interactive HoloViews object.
+        """
+        import hvplot.pandas  # noqa: F401
+
+        if self.df is None:
+            raise ValueError("Data must be provided during initialization for hvplot()")
+
+        # Ensure we are working with a clean copy with no NaNs in relevant columns
+        new = (
+            self.df[["latitude", "longitude", self.col1, self.col2]]
+            .dropna()
+            .copy(deep=True)
+        )
+        new["bias"] = new[self.col2] - new[self.col1]
+        new["abs_bias"] = new["bias"].abs()
+
+        # Default settings
+        kwargs.setdefault("geo", True)
+        kwargs.setdefault("c", "bias")
+        # Scale size for better visibility
+        if "s" not in kwargs and "size" not in kwargs:
+            kwargs["size"] = "abs_bias"
+            # Optional: apply some scaling to size if needed,
+            # but hvplot.scatter takes the column name directly.
+
+        kwargs.setdefault("cmap", self.cmap if self.cmap else "RdBu_r")
+        kwargs.setdefault("hover_cols", [self.col1, self.col2])
+        kwargs.setdefault("title", f"Bias: {self.col2} - {self.col1}")
+
+        plot = new.hvplot.scatter(x="longitude", y="latitude", **kwargs)
+
+        # Update history for provenance
+        from ..verification_metrics import _update_history
+
+        _update_history(new, "Generated interactive SpatialBiasScatterPlot")
+
+        return plot

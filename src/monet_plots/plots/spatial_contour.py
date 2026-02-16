@@ -177,3 +177,50 @@ class SpatialContourPlot(SpatialPlot):
             self.ax.set_title(titstring)
         self.fig.tight_layout()
         return self.ax
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """
+        Generate an interactive spatial contour plot using hvPlot.
+
+        This method follows Track B of the Aero Protocol, providing an
+        interactive visualization suitable for exploration.
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Additional keyword arguments passed to `hvplot.contourf`.
+            Common options include `cmap`, `levels`, and `title`.
+
+        Returns
+        -------
+        holoviews.Element
+            The interactive HoloViews object.
+        """
+        import hvplot.xarray  # noqa: F401
+
+        if self.modelvar is None:
+            raise ValueError("Data must be provided during initialization for hvplot()")
+
+        if not isinstance(self.modelvar, xr.DataArray):
+            raise TypeError("hvplot() currently requires an xarray.DataArray.")
+
+        # Identify coordinates
+        lat_name, lon_name = self._identify_coords(self.modelvar)
+        data = self._ensure_monotonic(self.modelvar, lat_name, lon_name)
+
+        # Default settings for interactive geospatial plots
+        kwargs.setdefault("geo", True)
+        kwargs.setdefault("cmap", self.plot_kwargs.get("cmap", "viridis"))
+
+        # If discrete levels are specified in the class, pass them to hvplot
+        if self.discrete and self.ncolors is not None:
+            kwargs.setdefault("levels", self.ncolors)
+
+        plot = data.hvplot.contourf(x=lon_name, y=lat_name, **kwargs)
+
+        # Update history for provenance
+        from ..verification_metrics import _update_history
+
+        _update_history(data, "Generated interactive SpatialContourPlot")
+
+        return plot
