@@ -92,3 +92,22 @@ class DiurnalErrorPlot(BasePlot):
         self.ax.set_title(f"Diurnal {self.metric.capitalize()}")
 
         return self.ax
+
+    def hvplot(self, cmap: str = "RdBu_r", **kwargs):
+        """Generate an interactive diurnal error heatmap using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+
+        pivot_df = self.df.pivot_table(
+            index="second_val", columns="hour", values="val", aggfunc="mean"
+        )
+
+        plot_kwargs = {
+            "kind": "heatmap",
+            "cmap": cmap,
+            "xlabel": "Hour of Day",
+            "ylabel": self.second_label,
+            "title": f"Diurnal {self.metric.capitalize()}",
+        }
+        plot_kwargs.update(kwargs)
+
+        return pivot_df.hvplot(**plot_kwargs)

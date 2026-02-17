@@ -300,6 +300,9 @@ data = xr.DataArray(
     dims=['lat', 'lon'],
     coords={'lat': range(10), 'lon': range(20)}
 )
+
+# New accessor-based plotting (Recommended for xarray)
+data.mplots.imshow(coastlines=True)
 ```
 
 ### Data Format Guidelines

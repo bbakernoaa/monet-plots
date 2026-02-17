@@ -24,10 +24,7 @@ class ReliabilityDiagramPlot(BasePlot):
     - Climatology not provided (cannot draw skill regions correctly).
     """
 
-    def __init__(self, fig=None, ax=None, **kwargs):
-        super().__init__(fig=fig, ax=ax, **kwargs)
-
-    def plot(
+    def __init__(
         self,
         data: Any,
         x_col: str = "prob",
@@ -38,63 +35,96 @@ class ReliabilityDiagramPlot(BasePlot):
         climatology: Optional[float] = None,
         label_col: Optional[str] = None,
         show_hist: bool = False,
+        fig=None,
+        ax=None,
         **kwargs,
     ):
+        super().__init__(fig=fig, ax=ax, **kwargs)
+        self.data = data
+        self.x_col = x_col
+        self.y_col = y_col
+        self.forecasts_col = forecasts_col
+        self.observations_col = observations_col
+        self.n_bins = n_bins
+        self.climatology = climatology
+        self.label_col = label_col
+        self.show_hist = show_hist
+
+        if not (self.forecasts_col and self.observations_col):
+            # If pre-computed data is passed, ensure it is a DataFrame for compatibility
+            self.data = to_dataframe(self.data)
+            validate_dataframe(self.data, required_columns=[self.x_col, self.y_col])
+
+    def plot(self, **kwargs):
         """
         Main plotting method.
 
         Args:
-            data: Input data.
-            x_col (str): Forecast Probability bin center (for pre-binned).
-            y_col (str): Observed Frequency in bin (for pre-binned).
-            forecasts_col (str, optional): Column of raw forecast probabilities [0,1].
-            observations_col (str, optional): Column of binary observations {0,1}.
-            n_bins (int): Number of bins for reliability curve computation.
-            climatology (Optional[float]): Sample climatology (mean(observations)).
-            label_col (str, optional): Grouping column.
-            show_hist (bool): Whether to show frequency of usage histogram.
             **kwargs: Matplotlib kwargs.
         """
-        df = to_dataframe(data)
         # Compute if raw data provided
-        if forecasts_col and observations_col:
-            if climatology is None:
-                climatology = float(df[observations_col].mean())
+        if self.forecasts_col and self.observations_col:
+            forecasts = self.data[self.forecasts_col]
+            observations = self.data[self.observations_col]
+
+            if self.climatology is None:
+                # Use .mean().item() or .mean() to handle xarray/numpy/pandas
+                self.climatology = float(observations.mean())
+
             bin_centers, obs_freq, bin_counts = compute_reliability_curve(
-                np.asarray(df[forecasts_col]), np.asarray(df[observations_col]), n_bins
+                forecasts,
+                observations,
+                self.n_bins,
             )
+
+            # Convert to DataFrame for easier internal plotting/labeling
+            # Note: compute_reliability_curve might return xarray if input was xarray
+            if hasattr(obs_freq, "compute"):
+                import dask
+
+                obs_freq, bin_counts = dask.compute(obs_freq, bin_counts)
+
             plot_data = pd.DataFrame(
-                {x_col: bin_centers, y_col: obs_freq, "count": bin_counts}
+                {
+                    self.x_col: bin_centers,
+                    self.y_col: np.asarray(obs_freq),
+                    "count": np.asarray(bin_counts),
+                }
             )
         else:
-            validate_dataframe(df, required_columns=[x_col, y_col])
-            plot_data = df
+            plot_data = self.data
 
         # Draw Reference Lines
         self.ax.plot([0, 1], [0, 1], "k--", label="Perfect Reliability")
-        if climatology is not None:
+        if self.climatology is not None:
             self.ax.axhline(
-                climatology, color="gray", linestyle=":", label="Climatology"
+                self.climatology, color="gray", linestyle=":", label="Climatology"
             )
-            self._draw_skill_regions(climatology)
+            self._draw_skill_regions(self.climatology)
 
         # Plot Data
-        if label_col:
-            for name, group in plot_data.groupby(label_col):
+        if self.label_col:
+            for name, group in plot_data.groupby(self.label_col):
                 # pop label from kwargs if it exists to avoid multiple values
                 k = kwargs.copy()
                 k.pop("label", None)
-                self.ax.plot(group[x_col], group[y_col], marker="o", label=name, **k)
+                self.ax.plot(
+                    group[self.x_col], group[self.y_col], marker="o", label=name, **k
+                )
         else:
             k = kwargs.copy()
             label = k.pop("label", "Model")
             self.ax.plot(
-                plot_data[x_col], plot_data[y_col], marker="o", label=label, **k
+                plot_data[self.x_col],
+                plot_data[self.y_col],
+                marker="o",
+                label=label,
+                **k,
             )
 
         # Histogram Overlay (Sharpness)
-        if show_hist and "count" in plot_data.columns:
-            self._add_sharpness_histogram(plot_data, x_col)
+        if self.show_hist and "count" in plot_data.columns:
+            self._add_sharpness_histogram(plot_data, self.x_col)
 
         # Formatting
         self.ax.set_xlim(0, 1)
@@ -125,3 +155,67 @@ class ReliabilityDiagramPlot(BasePlot):
         inset_ax.set_title("Sharpness")
         inset_ax.set_xlabel(x_col)
         inset_ax.set_ylabel("Count")
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive reliability diagram using hvPlot."""
+        import holoviews as hv
+        import hvplot.pandas  # noqa: F401
+
+        if self.forecasts_col and self.observations_col:
+            forecasts = self.data[self.forecasts_col]
+            observations = self.data[self.observations_col]
+
+            if self.climatology is None:
+                self.climatology = float(observations.mean())
+
+            bin_centers, obs_freq, bin_counts = compute_reliability_curve(
+                forecasts,
+                observations,
+                self.n_bins,
+            )
+
+            # Eagerly compute for DataFrame-based hvplot path
+            if hasattr(obs_freq, "compute"):
+                import dask
+
+                obs_freq, bin_counts = dask.compute(obs_freq, bin_counts)
+
+            plot_data = pd.DataFrame(
+                {
+                    self.x_col: bin_centers,
+                    self.y_col: np.asarray(obs_freq),
+                    "count": np.asarray(bin_counts),
+                }
+            )
+        else:
+            plot_data = self.data
+
+        plot_kwargs = {
+            "x": self.x_col,
+            "y": self.y_col,
+            "kind": "scatter",
+            "xlabel": "Forecast Probability",
+            "ylabel": "Observed Relative Frequency",
+            "title": "Reliability Diagram",
+            "xlim": (0, 1),
+            "ylim": (0, 1),
+        }
+        if self.label_col:
+            plot_kwargs["by"] = self.label_col
+
+        plot_kwargs.update(kwargs)
+
+        p = plot_data.hvplot(**plot_kwargs)
+        perfect = hv.Curve([(0, 0), (1, 1)]).opts(
+            color="black", alpha=0.5, line_dash="dashed"
+        )
+
+        overlay = perfect * p
+
+        if self.climatology is not None:
+            clim_line = hv.HLine(self.climatology).opts(
+                color="gray", alpha=0.5, line_dash="dotted"
+            )
+            overlay = overlay * clim_line
+
+        return overlay

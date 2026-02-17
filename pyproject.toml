@@ -3,12 +3,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "monet_plots"
-version = "0.0.1"
+name = "monet-plots"
+version = "0.1.0"
 authors = [
-  { name="Example Author", email="author@example.com" },
+  { name="NOAA/ARL" },
 ]
-description = "A small example package"
+description = "A plotting library for MONET"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -26,6 +26,10 @@ dependencies = [
     "numpy",
     "statsmodels",
     "dask",
+    "monet-stats @ git+https://github.com/bbakernoaa/monet-stats.git",
+    "hvplot",
+    "holoviews",
+    "geoviews",
 ]
 
 [project.urls]
@@ -49,3 +53,4 @@ docs = [
 
 [tool.ruff]
 line-length = 88
+extend-exclude = ["*.ipynb"]

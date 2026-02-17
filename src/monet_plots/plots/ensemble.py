@@ -1,5 +1,14 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
+
 import numpy as np
+
 from .base import BasePlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
+    import matplotlib.figure
 
 
 class SpreadSkillPlot(BasePlot):
@@ -10,15 +19,25 @@ class SpreadSkillPlot(BasePlot):
     should have a spread that is proportional to the forecast error.
     """
 
-    def __init__(self, spread, skill, *args, **kwargs):
+    def __init__(
+        self,
+        spread: Any,
+        skill: Any,
+        fig: Optional[matplotlib.figure.Figure] = None,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
+    ):
         """
         Initialize the plot with spread and skill data.
 
         Args:
             spread (array-like): The standard deviation of the ensemble forecast.
             skill (array-like): The root mean squared error of the ensemble mean.
+            fig (matplotlib.figure.Figure, optional): Existing figure.
+            ax (matplotlib.axes.Axes, optional): Existing axes.
+            **kwargs: Additional keyword arguments for BasePlot.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(fig=fig, ax=ax, **kwargs)
         self.spread = np.asarray(spread)
         self.skill = np.asarray(skill)
 
@@ -43,3 +62,30 @@ class SpreadSkillPlot(BasePlot):
         self.ax.set_aspect("equal", "box")
 
         return self.ax
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive spread-skill plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+        import pandas as pd
+        import holoviews as hv
+
+        df = pd.DataFrame({"spread": self.spread, "skill": self.skill})
+
+        plot_kwargs = {
+            "x": "spread",
+            "y": "skill",
+            "kind": "scatter",
+            "xlabel": "Ensemble Spread (Standard Deviation)",
+            "ylabel": "Ensemble Error (RMSE)",
+            "title": "Spread-Skill Plot",
+        }
+        plot_kwargs.update(kwargs)
+
+        p = df.hvplot(**plot_kwargs)
+
+        max_val = max(df["spread"].max(), df["skill"].max())
+        one_to_one = hv.Curve([(0, 0), (max_val, max_val)]).opts(
+            color="black", alpha=0.5, line_dash="dashed"
+        )
+
+        return one_to_one * p

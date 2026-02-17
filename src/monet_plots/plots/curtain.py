@@ -85,3 +85,27 @@ class CurtainPlot(BasePlot):
         self.ax.set_ylabel(self.y)
 
         return self.ax
+
+    def hvplot(self, kind: str = "quadmesh", **kwargs):
+        """Generate an interactive curtain plot using hvPlot."""
+        import hvplot.xarray  # noqa: F401
+
+        if not isinstance(self.data, xr.DataArray):
+            da = self.data.to_array() if hasattr(self.data, "to_array") else self.data
+        else:
+            da = self.data
+
+        if self.x is None:
+            self.x = da.dims[1]
+        if self.y is None:
+            self.y = da.dims[0]
+
+        plot_kwargs = {
+            "x": self.x,
+            "y": self.y,
+            "kind": kind,
+            "title": "Curtain Plot",
+        }
+        plot_kwargs.update(kwargs)
+
+        return da.hvplot(**plot_kwargs)

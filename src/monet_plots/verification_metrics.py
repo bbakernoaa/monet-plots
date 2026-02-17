@@ -1,27 +1,267 @@
 import numpy as np
-import xarray as xr
-from typing import Tuple, Union, Dict, Any, Optional
+import pandas as pd
+from typing import Tuple, Union, Dict, Any, Optional, List
+
+try:
+    import monet_stats
+except ImportError:
+    monet_stats = None
+
+# Optional xarray import - will be used if available
+try:
+    import xarray as xr
+except ImportError:
+    xr = None
 
 
 def _update_history(obj: Any, msg: str) -> Any:
-    """Updates the history attribute of an xarray object.
+    """
+    Update the 'history' attribute of an xarray object to track provenance.
+    """
+    if xr is not None and isinstance(obj, (xr.DataArray, xr.Dataset)):
+        history = obj.attrs.get("history", "")
+        new_history = f"{msg} (monet-plots); {history}".strip("; ")
+        obj.attrs["history"] = new_history
+    return obj
+
+
+def _is_xarray(obj: Any) -> bool:
+    """Check if object is an xarray DataArray or Dataset."""
+    return xr is not None and isinstance(obj, (xr.DataArray, xr.Dataset))
+
+
+def _mean(obj: Any, dim: Any) -> Any:
+    """Polymorphic mean that handles xarray 'dim' and numpy 'axis'."""
+    if _is_xarray(obj):
+        return obj.mean(dim=dim)
+    # Convert pandas to numpy to support axis=()
+    if isinstance(obj, (pd.Series, pd.DataFrame)):
+        obj = np.asarray(obj)
+    return np.mean(obj, axis=dim)
+
+
+def _sum(obj: Any, dim: Any) -> Any:
+    """Polymorphic sum that handles xarray 'dim' and numpy 'axis'."""
+    if _is_xarray(obj):
+        return obj.sum(dim=dim)
+    # Convert pandas to numpy to support axis=()
+    if isinstance(obj, (pd.Series, pd.DataFrame)):
+        obj = np.asarray(obj)
+    return np.sum(obj, axis=dim)
+
+
+def compute_mb(obs: Any, mod: Any, dim: Optional[Union[str, List[str]]] = None) -> Any:
+    """
+    Mean Bias (MB).
+
+    Bias = Mean(mod - obs)
 
     Parameters
     ----------
-    obj : Any
-        The object to update (typically xarray.DataArray or xarray.Dataset).
-    msg : str
-        The message to add to the history.
+    obs : Any
+        Observed values.
+    mod : Any
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the mean.
 
     Returns
     -------
     Any
-        The object with the updated history.
+        The calculated Mean Bias.
     """
-    if isinstance(obj, (xr.DataArray, xr.Dataset)):
-        history = obj.attrs.get("history", "")
-        obj.attrs["history"] = f"{msg} (monet-plots); {history}"
-    return obj
+    if monet_stats is None:
+        diff = mod - obs
+        res = _mean(diff, dim)
+        return _update_history(res, "Computed MB")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
+    # monet-stats.MB returns (obs - mod), so we swap arguments to get (mod - obs)
+    res = monet_stats.MB(mod, obs, axis=dim)
+    return _update_history(res, "Computed MB")
+
+
+def compute_bias(
+    obs: Any, mod: Any, dim: Optional[Union[str, List[str]]] = None
+) -> Any:
+    """Alias for compute_mb."""
+    return compute_mb(obs, mod, dim=dim)
+
+
+def compute_rmse(
+    obs: Any, mod: Any, dim: Optional[Union[str, List[str]]] = None
+) -> Any:
+    """
+    Root Mean Square Error (RMSE).
+
+    RMSE = sqrt(Mean((mod - obs)**2))
+
+    Parameters
+    ----------
+    obs : Any
+        Observed values.
+    mod : Any
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the mean.
+
+    Returns
+    -------
+    Any
+        The calculated RMSE.
+    """
+    if monet_stats is None:
+        diff_sq = (mod - obs) ** 2
+        res = np.sqrt(_mean(diff_sq, dim))
+        return _update_history(res, "Computed RMSE")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
+    res = monet_stats.RMSE(obs, mod, axis=dim)
+    return _update_history(res, "Computed RMSE")
+
+
+def compute_mae(obs: Any, mod: Any, dim: Optional[Union[str, List[str]]] = None) -> Any:
+    """
+    Mean Absolute Error (MAE).
+
+    MAE = Mean(abs(mod - obs))
+
+    Parameters
+    ----------
+    obs : Any
+        Observed values.
+    mod : Any
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the mean.
+
+    Returns
+    -------
+    Any
+        The calculated MAE.
+    """
+    if monet_stats is None:
+        abs_diff = np.abs(mod - obs)
+        res = _mean(abs_diff, dim)
+        return _update_history(res, "Computed MAE")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
+    res = monet_stats.MAE(obs, mod, axis=dim)
+    return _update_history(res, "Computed MAE")
+
+
+def compute_correlation(obs: Any, mod: Any, dim: Optional[str] = None) -> Any:
+    """
+    Pearson Correlation Coefficient.
+
+    Parameters
+    ----------
+    obs : Any
+        Observed values.
+    mod : Any
+        Model values.
+    dim : str, optional
+        The dimension over which to calculate the correlation.
+
+    Returns
+    -------
+    Any
+        The calculated correlation.
+    """
+    if monet_stats is None:
+        if isinstance(obs, xr.DataArray) and isinstance(mod, xr.DataArray):
+            res = xr.corr(obs, mod, dim=dim)
+            return _update_history(res, f"Calculated correlation along {dim}")
+        # Simplified fallback for NumPy/Xarray
+        o = obs.values if hasattr(obs, "values") else obs
+        m = mod.values if hasattr(mod, "values") else mod
+        return np.corrcoef(np.asarray(o).ravel(), np.asarray(m).ravel())[0, 1]
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
+    res = monet_stats.pearsonr(obs, mod, axis=dim)
+    return _update_history(res, "Computed Correlation")
+
+
+def compute_corr(obs: Any, mod: Any, dim: Optional[str] = None) -> Any:
+    """Alias for compute_correlation."""
+    return compute_correlation(obs, mod, dim=dim)
+
+
+def compute_fb(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Fractional Bias (FB)."""
+    if monet_stats is None:
+        term = (mod - obs) / (mod + obs)
+        res = 200.0 * _mean(term, dim)
+        return _update_history(res, "Computed FB")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
+    res = monet_stats.FB(obs, mod, axis=dim)
+    return _update_history(res, "Computed FB")
+
+
+def compute_fe(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Fractional Error (FE)."""
+    if monet_stats is None:
+        term = np.abs(mod - obs) / (mod + obs)
+        res = 200.0 * _mean(term, dim)
+        return _update_history(res, "Computed FE")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
+    res = monet_stats.FE(obs, mod, axis=dim)
+    return _update_history(res, "Computed FE")
+
+
+def compute_nmb(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Normalized Mean Bias (NMB)."""
+    if monet_stats is None:
+        diff = mod - obs
+        num = _sum(diff, dim)
+        den = _sum(obs, dim)
+        res = 100.0 * num / den
+        return _update_history(res, "Computed NMB")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
+    res = monet_stats.NMB(obs, mod, axis=dim)
+    return _update_history(res, "Computed NMB")
+
+
+def compute_nme(obs: Any, mod: Any, dim: Any = None) -> Any:
+    """Normalized Mean Error (NME)."""
+    if monet_stats is None:
+        abs_diff = np.abs(mod - obs)
+        num = _sum(abs_diff, dim)
+        den = _sum(obs, dim)
+        res = 100.0 * num / den
+        return _update_history(res, "Computed NME")
+    # Convert pandas to numpy for monet-stats compatibility with axis=()
+    if isinstance(obs, (pd.Series, pd.DataFrame)):
+        obs = np.asarray(obs)
+    if isinstance(mod, (pd.Series, pd.DataFrame)):
+        mod = np.asarray(mod)
+    # monet-stats uses MNE for Mean Normalized Error (Gross Error)
+    res = monet_stats.MNE(obs, mod, axis=dim)
+    return _update_history(res, "Computed NME")
 
 
 def compute_pod(
@@ -241,166 +481,6 @@ def compute_pofd(
     )
 
 
-def compute_bias(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Mean Bias.
-
-    Bias = Mean(mod - obs)
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str or list of str, optional
-        The dimension(s) over which to calculate the mean.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated Mean Bias.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> obs = np.array([1.0, 2.0, 3.0])
-    >>> mod = np.array([1.1, 2.1, 3.1])
-    >>> compute_bias(obs, mod)
-    0.10000000000000009
-    """
-    diff = mod - obs
-    if isinstance(diff, (xr.DataArray, xr.Dataset)):
-        res = diff.mean(dim=dim)
-        return _update_history(res, f"Calculated Mean Bias along {dim}")
-    return np.mean(diff, axis=dim)
-
-
-def compute_rmse(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Root Mean Square Error (RMSE).
-
-    RMSE = sqrt(Mean((mod - obs)**2))
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str or list of str, optional
-        The dimension(s) over which to calculate the mean.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated RMSE.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> obs = np.array([1.0, 2.0])
-    >>> mod = np.array([1.1, 2.2])
-    >>> compute_rmse(obs, mod)
-    0.158113883008419
-    """
-    diff_sq = (mod - obs) ** 2
-    if isinstance(diff_sq, (xr.DataArray, xr.Dataset)):
-        res = np.sqrt(diff_sq.mean(dim=dim))
-        return _update_history(res, f"Calculated RMSE along {dim}")
-    return np.sqrt(np.mean(diff_sq, axis=dim))
-
-
-def compute_mae(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Mean Absolute Error (MAE).
-
-    MAE = Mean(abs(mod - obs))
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str or list of str, optional
-        The dimension(s) over which to calculate the mean.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated MAE.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> obs = np.array([1.0, 2.0])
-    >>> mod = np.array([1.1, 1.9])
-    >>> compute_mae(obs, mod)
-    0.10000000000000009
-    """
-    abs_diff = np.abs(mod - obs)
-    if isinstance(abs_diff, (xr.DataArray, xr.Dataset)):
-        res = abs_diff.mean(dim=dim)
-        return _update_history(res, f"Calculated MAE along {dim}")
-    return np.mean(abs_diff, axis=dim)
-
-
-def compute_corr(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[str] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Pearson correlation coefficient.
-
-    Parameters
-    ----------
-    obs : Union[np.ndarray, xr.DataArray]
-        Observed values.
-    mod : Union[np.ndarray, xr.DataArray]
-        Model values.
-    dim : str, optional
-        The dimension over which to calculate the correlation.
-
-    Returns
-    -------
-    Union[float, np.ndarray, xr.DataArray]
-        The calculated correlation.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> obs = np.array([1, 2, 3])
-    >>> mod = np.array([2, 4, 6])
-    >>> compute_corr(obs, mod)
-    1.0
-    """
-    if isinstance(obs, xr.DataArray) and isinstance(mod, xr.DataArray):
-        res = xr.corr(obs, mod, dim=dim)
-        return _update_history(res, f"Calculated correlation along {dim}")
-
-    # Fallback to numpy
-    if dim is not None:
-        # np.corrcoef doesn't support dim directly like xarray
-        # This is a simplification for 1D-like inputs or flattened
-        return np.corrcoef(np.asarray(obs).ravel(), np.asarray(mod).ravel())[0, 1]
-
-    return np.corrcoef(np.asarray(obs), np.asarray(mod))[0, 1]
-
-
 def compute_auc(
     x: Union[np.ndarray, xr.DataArray],
     y: Union[np.ndarray, xr.DataArray],
@@ -475,86 +555,86 @@ def compute_auc(
 
 
 def compute_reliability_curve(
-    forecasts: Union[np.ndarray, xr.DataArray],
-    observations: Union[np.ndarray, xr.DataArray],
-    n_bins: int = 10,
-) -> Tuple[
-    Union[np.ndarray, xr.DataArray],
-    Union[np.ndarray, xr.DataArray],
-    Union[np.ndarray, xr.DataArray],
-]:
+    forecasts: Any, observations: Any, n_bins: int = 10, dim: Any = None
+) -> Tuple[np.ndarray, Any, Any]:
     """
-    Computes reliability curve statistics.
+    Computes reliability curve statistics, supporting lazy evaluation and multidimensional input.
 
-    Parameters
-    ----------
-    forecasts : Any
-        Array-like of forecast probabilities [0, 1].
-    observations : Any
-        Array-like of binary outcomes (0 or 1).
-    n_bins : int, optional
-        Number of bins, by default 10.
+    Args:
+        forecasts: Forecast probabilities [0, 1].
+        observations: Binary outcomes (0 or 1).
+        n_bins: Number of bins.
+        dim: Dimension(s) to aggregate over. If None, aggregates over all dimensions.
 
-    Returns
-    -------
-    Tuple[Any, Any, Any]
-        Tuple of (bin_centers, observed_frequencies, bin_counts).
+    Returns:
+        Tuple of (bin_centers, observed_frequencies, bin_counts)
     """
     bins = np.linspace(0, 1, n_bins + 1)
     bin_centers = (bins[:-1] + bins[1:]) / 2
 
-    # Handle Dask for "Lazy by Default"
-    is_dask = hasattr(forecasts, "chunks") or (
-        isinstance(forecasts, xr.DataArray) and forecasts.chunks is not None
-    )
+    if xr is not None and isinstance(forecasts, (xr.DataArray, xr.Dataset)):
+        if dim is None:
+            dim = list(forecasts.dims)
+        elif isinstance(dim, str):
+            dim = [dim]
 
-    if is_dask:
-        import dask.array as da
+        def _core_reliability(f, o):
+            indices = np.digitize(f, bins) - 1
+            indices[indices == n_bins] = n_bins - 1
 
-        f_data = forecasts.data if isinstance(forecasts, xr.DataArray) else forecasts
-        o_data = (
-            observations.data
-            if isinstance(observations, xr.DataArray)
-            else observations
+            freq = np.full(n_bins, np.nan)
+            counts = np.zeros(n_bins)
+            for i in range(n_bins):
+                mask = indices == i
+                c = np.sum(mask)
+                counts[i] = c
+                if c > 0:
+                    freq[i] = np.mean(o[mask])
+            return freq, counts
+
+        # Ensure core dimensions are unchunked for apply_ufunc
+        forecasts = forecasts.chunk({d: -1 for d in dim})
+        observations = observations.chunk({d: -1 for d in dim})
+
+        res_freq, res_counts = xr.apply_ufunc(
+            _core_reliability,
+            forecasts,
+            observations,
+            input_core_dims=[dim, dim],
+            output_core_dims=[["bin"], ["bin"]],
+            dask="parallelized",
+            vectorize=True,
+            output_dtypes=[float, float],
+            dask_gufunc_kwargs={"output_sizes": {"bin": n_bins}},
         )
-        bin_counts, _ = da.histogram(f_data, bins=bins)
-        obs_sum, _ = da.histogram(f_data, bins=bins, weights=o_data)
+        res_freq = res_freq.assign_coords(bin=bin_centers)
+        res_counts = res_counts.assign_coords(bin=bin_centers)
+
+        return bin_centers, res_freq, res_counts
     else:
-        bin_counts, _ = np.histogram(forecasts, bins=bins)
-        obs_sum, _ = np.histogram(forecasts, bins=bins, weights=observations)
+        # Numpy implementation
+        bin_indices = np.digitize(forecasts, bins) - 1
+        bin_indices[bin_indices == n_bins] = n_bins - 1
 
-    observed_frequencies = np.divide(
-        obs_sum,
-        bin_counts,
-        out=np.full_like(obs_sum, np.nan, dtype=float),
-        where=bin_counts > 0,
-    )
+        observed_frequencies = []
+        bin_counts = []
 
-    # Return as Xarray for provenance if inputs were Xarray
-    if isinstance(forecasts, (xr.DataArray, xr.Dataset)):
-        coords = {"bin_center": bin_centers}
-        observed_frequencies = xr.DataArray(
-            observed_frequencies,
-            coords=coords,
-            dims=["bin_center"],
-            name="observed_frequency",
-        )
-        bin_counts = xr.DataArray(
-            bin_counts, coords=coords, dims=["bin_center"], name="bin_count"
-        )
-        bin_centers = xr.DataArray(
-            bin_centers, coords=coords, dims=["bin_center"], name="bin_center"
-        )
-        _update_history(observed_frequencies, "Computed reliability curve")
+        for i in range(n_bins):
+            mask = bin_indices == i
+            count = np.sum(mask)
+            bin_counts.append(count)
 
-    return bin_centers, observed_frequencies, bin_counts
+            if count > 0:
+                observed_frequencies.append(np.mean(observations[mask]))
+            else:
+                observed_frequencies.append(np.nan)
+
+        return bin_centers, np.array(observed_frequencies), np.array(bin_counts)
 
 
 def compute_brier_score_components(
-    forecasts: Union[np.ndarray, xr.DataArray],
-    observations: Union[np.ndarray, xr.DataArray],
-    n_bins: int = 10,
-) -> Dict[str, Union[float, xr.DataArray]]:
+    forecasts: Any, observations: Any, n_bins: int = 10
+) -> Dict[str, float]:
     """
     Decomposes Brier Score into Reliability, Resolution, and Uncertainty.
 
@@ -575,47 +655,55 @@ def compute_brier_score_components(
         Dictionary with keys 'reliability', 'resolution', 'uncertainty',
         and 'brier_score'.
     """
-    # Use .size for dimensionality awareness
-    if hasattr(forecasts, "size"):
-        N = forecasts.size
+    # Use xarray/dask aware operations for N and base_rate
+    if _is_xarray(observations):
+        N = observations.size
+        base_rate = observations.mean()
     else:
-        N = len(forecasts)
-
-    base_rate = observations.mean()
-    uncertainty = base_rate * (1.0 - base_rate)
+        N = len(observations)
+        base_rate = np.mean(observations)
 
     bin_centers, obs_freq, bin_counts = compute_reliability_curve(
         forecasts, observations, n_bins
     )
 
-    # Filter out empty bins. Need to compute mask if it's Dask to allow indexing.
-    # obs_freq is small (n_bins), so this is safe and necessary for Xarray.
-    is_lazy = hasattr(obs_freq, "chunks") and obs_freq.chunks is not None
-    if is_lazy:
-        mask = (~np.isnan(obs_freq)).compute()
+    # Use nansum and fillna to avoid eager masking
+    if _is_xarray(obs_freq):
+        # Reliability: Weighted average of (forecast - observed_freq)^2
+        rel_term = bin_counts * (bin_centers - obs_freq.fillna(bin_centers)) ** 2
+        reliability = rel_term.sum() / N
+
+        # Resolution: Weighted average of (observed_freq - base_rate)**2
+        res_term = bin_counts * (obs_freq.fillna(base_rate) - base_rate) ** 2
+        resolution = res_term.sum() / N
+
+        uncertainty = base_rate * (1.0 - base_rate)
+
+        # Compute results in one go if they are dask objects
+        if hasattr(reliability, "compute"):
+            import dask
+
+            reliability, resolution, uncertainty, base_rate = dask.compute(
+                reliability, resolution, uncertainty, base_rate
+            )
     else:
+        # Numpy path
         mask = ~np.isnan(obs_freq)
-
-    bin_centers = bin_centers[mask]
-    obs_freq = obs_freq[mask]
-    bin_counts = bin_counts[mask]
-
-    # Reliability: Weighted average of (forecast - observed_freq)^2
-    reliability = (bin_counts * (bin_centers - obs_freq) ** 2).sum() / N
-
-    # Resolution: Weighted average of (observed_freq - base_rate)**2
-    resolution = (bin_counts * (obs_freq - base_rate) ** 2).sum() / N
-
-    bs = reliability - resolution + uncertainty
+        reliability = (
+            np.sum(bin_counts[mask] * (bin_centers[mask] - obs_freq[mask]) ** 2) / N
+        )
+        resolution = np.sum(bin_counts[mask] * (obs_freq[mask] - base_rate) ** 2) / N
+        uncertainty = base_rate * (1.0 - base_rate)
 
     res = {
-        "reliability": reliability,
-        "resolution": resolution,
-        "uncertainty": uncertainty,
-        "brier_score": bs,
+        "reliability": float(reliability),
+        "resolution": float(resolution),
+        "uncertainty": float(uncertainty),
+        "brier_score": float(reliability - resolution + uncertainty),
+        "base_rate": float(base_rate),
     }
 
-    # Update history for all components if they are Xarray
+    # Update history for all components if they are Xarray (though they should be floats here)
     for key, value in res.items():
         if isinstance(value, (xr.DataArray, xr.Dataset)):
             _update_history(value, f"Computed Brier Score component: {key}")
@@ -623,13 +711,9 @@ def compute_brier_score_components(
     return res
 
 
-def compute_rank_histogram(
-    ensemble: Union[np.ndarray, xr.DataArray],
-    observations: Union[np.ndarray, xr.DataArray],
-    member_dim: str = "member",
-) -> Union[np.ndarray, xr.DataArray]:
+def compute_rank_histogram(ensemble: Any, observations: Any) -> np.ndarray:
     """
-    Computes rank histogram counts.
+    Computes rank histogram counts using vectorized operations.
 
     Supports multidimensional xarray inputs with automatic broadcasting.
 
@@ -655,61 +739,80 @@ def compute_rank_histogram(
     >>> compute_rank_histogram(ens, obs)
     array([0, 2, 1])
     """
-    if isinstance(ensemble, xr.DataArray) and isinstance(observations, xr.DataArray):
-        # Use xarray's dimension-aware broadcasting
-        ranks = (ensemble < observations).sum(dim=member_dim)
-        n_members = ensemble.sizes[member_dim]
-
-        # Flatten ranks for histogram (preserving dask if present)
-        ranks_flat = ranks.data.ravel()
-
-        if hasattr(ranks_flat, "chunks"):
-            import dask.array as da
-
-            counts, _ = da.histogram(ranks_flat, bins=np.arange(n_members + 2) - 0.5)
-        else:
-            counts = np.bincount(ranks_flat.astype(int), minlength=n_members + 1)
-
-        counts_xr = xr.DataArray(
-            counts,
-            coords={"rank": np.arange(len(counts))},
-            dims=["rank"],
-            name="rank_counts",
-        )
-        return _update_history(counts_xr, "Computed rank histogram (dimension-aware)")
-
-    # Fallback for numpy or mixed (including plain dask arrays)
-    is_dask = hasattr(ensemble, "chunks") or hasattr(observations, "chunks")
-
-    # Assume member is the last dimension for fallback
-    # Or if 2D/1D pair, assume (n_samples, n_members) for backward compatibility
-    if ensemble.ndim == 2 and observations.ndim == 1:
-        obs_expanded = observations[:, np.newaxis]
-        ranks = (ensemble < obs_expanded).sum(axis=1)
-        n_members = ensemble.shape[1]
+    # Vectorized comparison: (n_samples, n_members) < (n_samples, 1)
+    if hasattr(ensemble, "values"):
+        ens_vals = ensemble.values
     else:
-        # Generic case: assume last axis is members
-        obs_expanded = np.expand_dims(observations, axis=-1)
-        ranks = (ensemble < obs_expanded).sum(axis=-1)
-        n_members = ensemble.shape[-1]
+        ens_vals = ensemble
 
-    if is_dask:
-        import dask.array as da
-
-        counts, _ = da.histogram(ranks.ravel(), bins=np.arange(n_members + 2) - 0.5)
+    if hasattr(observations, "values"):
+        obs_vals = observations.values
     else:
-        counts = np.bincount(ranks.astype(int).ravel(), minlength=n_members + 1)
+        obs_vals = observations
 
-    if isinstance(ensemble, (xr.DataArray, xr.Dataset)):
-        counts_xr = xr.DataArray(
-            counts,
-            coords={"rank": np.arange(len(counts))},
-            dims=["rank"],
-            name="rank_counts",
-        )
-        return _update_history(counts_xr, "Computed rank histogram")
+    if len(obs_vals.shape) == 1:
+        obs_vals = obs_vals[:, np.newaxis]
 
+    ranks = np.sum(ens_vals < obs_vals, axis=1)
+
+    if hasattr(ranks, "compute"):
+        ranks = ranks.compute()
+
+    n_members = ensemble.shape[1]
+    counts = np.bincount(ranks.astype(int), minlength=n_members + 1)
     return counts
+
+
+def compute_contingency_table(
+    obs: Any, mod: Any, threshold: float, dim: Any = None
+) -> Dict[str, Any]:
+    """
+    Computes contingency table components (hits, misses, fa, cn) from raw data.
+
+    Args:
+        obs: Observations.
+        mod: Model values.
+        threshold: Threshold for event detection.
+        dim: Dimension(s) to aggregate over.
+
+    Returns:
+        Dictionary with 'hits', 'misses', 'fa', 'cn'.
+    """
+    obs_event = obs >= threshold
+    mod_event = mod >= threshold
+
+    hits = _sum(obs_event & mod_event, dim)
+    misses = _sum(obs_event & ~mod_event, dim)
+    fa = _sum(~obs_event & mod_event, dim)
+    cn = _sum(~obs_event & ~mod_event, dim)
+
+    res = {"hits": hits, "misses": misses, "fa": fa, "cn": cn}
+
+    for k in res:
+        _update_history(res[k], f"Computed {k} at threshold {threshold}")
+
+    return res
+
+
+def compute_categorical_metrics(
+    hits: Any, misses: Any, fa: Any, cn: Any
+) -> Dict[str, Any]:
+    """
+    Computes a set of categorical metrics from contingency table components.
+    """
+    pod = compute_pod(hits, misses)
+    far = compute_far(hits, fa)
+    sr = compute_success_ratio(hits, fa)
+    csi = compute_csi(hits, misses, fa)
+    fbias = compute_frequency_bias(hits, misses, fa)
+
+    return {
+        "pod": pod,
+        "far": far,
+        "success_ratio": sr,
+        "csi": csi,
+        "frequency_bias": fbias,
+    }
 
 
 def compute_rev(
