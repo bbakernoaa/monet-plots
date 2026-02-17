@@ -23,6 +23,6 @@ def sample_data():
 
 def test_scorecard_plot(clear_figures, sample_data):
     """Test ScorecardPlot."""
-    plot = ScorecardPlot()
-    plot.plot(data=sample_data, x_col="x", y_col="y", val_col="val")
+    plot = ScorecardPlot(data=sample_data, x_col="x", y_col="y", val_col="val")
+    plot.plot()
     assert plot.ax is not None

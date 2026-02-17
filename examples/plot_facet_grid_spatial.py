@@ -21,11 +21,12 @@ when models diverge in their spatial predictions.
     the maps in different rows and columns.
 """
 
+import cartopy.crs as ccrs
 import numpy as np
 import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
-from monet_plots.plots.facet_grid import SpatialFacetGridPlot
+from monet_plots.plots.facet_grid import FacetGridPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 
 # 1. Create some dummy spatial data
@@ -51,17 +52,53 @@ data.loc[{"model": "model_B", "time": "2023-01-02"}] -= 5
 ds = data.to_dataset()
 
 
-# 2. Use SpatialFacetGridPlot
-# We want 'time' as rows and 'model' as columns
-grid = SpatialFacetGridPlot(ds, row="time", col="model", height=4, aspect=1.2)
+# 2. Define a plotting function for a single spatial plot
+# This function will be mapped to each facet.
+# It needs to accept a DataFrame (or similar) and the FacetGrid will pass the subsetted data.
+def plot_spatial_imshow(*args, **kwargs):
+    # The data passed to this function by map_dataframe will be a DataFrame
+    # We need to convert it back to an xarray DataArray for SpatialImshowPlot
+    # Assuming 'lat' and 'lon' are present in the DataFrame
 
-# 3. Map SpatialImshowPlot to each facet using map_monet
-grid.map_monet(
-    SpatialImshowPlot,
-    cmap="viridis",
-    coastlines=True,
-    add_colorbar=True,
-    label="Temperature (C)",
+    # Seaborn passes the data as the first argument OR as a keyword argument 'data'
+    data = kwargs.pop("data", args[0] if args else None)
+
+    # Reconstruct DataArray from DataFrame for plotting
+    # This step might need adjustment based on your actual data structure
+    # and how map_dataframe passes it. For simplicity, we'll assume
+    # the DataFrame has 'lat', 'lon', and the variable 'temperature'.
+
+    # Get the variable name from the original dataset
+    var_name = "temperature"
+
+    # Create a temporary DataArray for plotting
+    # Ensure 'lat' and 'lon' are correctly identified as coordinates
+    temp_da = data.set_index(["lat", "lon"]).to_xarray()[var_name]
+
+    # Create and plot using SpatialImshowPlot
+    # We pass ax=plt.gca() to ensure it draws on the current facet's axes
+    plotter = SpatialImshowPlot(temp_da, gridobj=None, ax=plt.gca(), **kwargs)
+    plotter.plot()
+    # The figure and axes are managed by FacetGrid, so we don't call plotter.show() or plotter.save() here.
+    # We just ensure the plot is drawn on the current active axes, which FacetGrid handles.
+
+
+# 3. Create the FacetGridPlot
+# We want 'time' as rows and 'model' as columns
+# We must pass subplot_kws to ensure Cartopy GeoAxes are created for each facet
+grid = FacetGridPlot(
+    ds,
+    row="time",
+    col="model",
+    height=4,
+    aspect=1.2,
+    subplot_kws={"projection": ccrs.PlateCarree()},
+)
+
+# 4. Map the spatial plotting function to the grid
+# Pass the variable name to plot_spatial_imshow
+grid.map_dataframe(
+    plot_spatial_imshow, "temperature", cmap="viridis", add_colorbar=True
 )
 
 # 4. Final adjustments

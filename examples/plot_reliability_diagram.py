@@ -47,12 +47,14 @@ df = pd.DataFrame(
 )
 
 # 2. Initialize and create the plot
-plot = ReliabilityDiagramPlot(figsize=(8, 8))
-plot.plot(
+plot = ReliabilityDiagramPlot(
     df,
     forecasts_col="forecast_prob",
     observations_col="observed_event",
     n_bins=10,
+    figsize=(8, 8),
+)
+plot.plot(
     markersize=8,
     color="blue",
     label="Forecast System",

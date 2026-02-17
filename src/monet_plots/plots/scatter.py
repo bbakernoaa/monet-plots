@@ -85,6 +85,7 @@ class ScatterPlot(BasePlot):
             self.ax = self.fig.add_subplot(1, 1, 1)
 
         self.data = normalize_data(data if data is not None else df)
+        self.df = self.data  # For backward compatibility
         self.x = x
         self.y = [y] if isinstance(y, str) else (y if y is not None else [])
         self.c = c
@@ -231,3 +232,16 @@ class ScatterPlot(BasePlot):
             self.data.attrs["history"] = f"Generated ScatterPlot; {history}"
 
         return self.ax
+
+    def hvplot(self, **kwargs):
+        """Generate an interactive scatter plot using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+
+        plot_kwargs = {"x": self.x, "y": self.y}
+        if self.c:
+            plot_kwargs["c"] = self.c
+        if self.title:
+            plot_kwargs["title"] = self.title
+
+        plot_kwargs.update(kwargs)
+        return self.df.hvplot.scatter(**plot_kwargs)

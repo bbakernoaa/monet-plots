@@ -49,3 +49,15 @@ class Meteogram(BasePlot):
                 plt.setp(ax.get_xticklabels(), visible=False)
 
         self.ax = self.fig.get_axes()
+
+    def hvplot(self, **kwargs: t.Any):
+        """Generate an interactive meteogram using hvPlot."""
+        import hvplot.pandas  # noqa: F401
+        import holoviews as hv
+
+        plots = []
+        for var in self.variables:
+            p = self.df.hvplot(y=var, kind="line", title=f"Meteogram: {var}")
+            plots.append(p)
+
+        return hv.Layout(plots).cols(1)
