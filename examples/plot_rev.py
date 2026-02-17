@@ -41,8 +41,8 @@ df = pd.DataFrame(data)
 contingency_cols = ["hits", "misses", "fa", "cn"]
 
 # 2. Initialize and create the plot
-plot = RelativeEconomicValuePlot(df, counts_cols=contingency_cols, figsize=(10, 7))
-plot.plot(color="blue", linewidth=2)
+plot = RelativeEconomicValuePlot(figsize=(10, 7))
+plot.plot(df, counts_cols=contingency_cols, color="blue", linewidth=2)
 
 # 3. Add titles and labels
 plot.ax.set_title("Relative Economic Value of a Forecast System")

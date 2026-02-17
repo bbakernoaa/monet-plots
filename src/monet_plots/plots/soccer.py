@@ -5,12 +5,11 @@ from __future__ import annotations
 
 import matplotlib.patches as patches
 import numpy as np
-import pandas as pd
 import xarray as xr
+from typing import Any, Optional, Dict, TYPE_CHECKING
+
 from .base import BasePlot
 from ..plot_utils import normalize_data
-from ..verification_metrics import compute_fb, compute_fe, compute_nmb, compute_nme
-from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -53,18 +52,41 @@ class SoccerPlot(BasePlot):
         """
         Initialize Soccer Plot.
 
-        Args:
-            data: Input data (DataFrame, DataArray, Dataset).
-            obs_col: Column name for observations. Required if bias/error not provided.
-            mod_col: Column name for model values. Required if bias/error not provided.
-            bias_col: Column name for pre-calculated bias.
-            error_col: Column name for pre-calculated error.
-            label_col: Column name for labeling points.
-            metric: Type of metric to calculate if obs/mod provided ('fractional' or 'normalized').
-            goal: Dictionary with 'bias' and 'error' thresholds for the goal zone.
-            criteria: Dictionary with 'bias' and 'error' thresholds for the criteria zone.
-            **kwargs: Arguments passed to BasePlot.
+        Parameters
+        ----------
+        data : Any
+            Input data. Can be a pandas DataFrame, xarray DataArray,
+            xarray Dataset, or numpy ndarray.
+        obs_col : str, optional
+            Column name for observations. Required if bias/error not provided.
+        mod_col : str, optional
+            Column name for model values. Required if bias/error not provided.
+        bias_col : str, optional
+            Column name for pre-calculated bias.
+        error_col : str, optional
+            Column name for pre-calculated error.
+        label_col : str, optional
+            Column name for labeling points.
+        metric : str, optional
+            Type of metric to calculate if obs/mod provided ('fractional' or 'normalized'),
+            by default "fractional".
+        goal : Dict[str, float], optional
+            Dictionary with 'bias' and 'error' thresholds for the goal zone,
+            by default {"bias": 30.0, "error": 50.0}.
+        criteria : Dict[str, float], optional
+            Dictionary with 'bias' and 'error' thresholds for the criteria zone,
+            by default {"bias": 60.0, "error": 75.0}.
+        fig : matplotlib.figure.Figure, optional
+            An existing Figure object.
+        ax : matplotlib.axes.Axes, optional
+            An existing Axes object.
+        **kwargs : Any
+            Arguments passed to BasePlot.
         """
+        super().__init__(fig=fig, ax=ax, **kwargs)
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(1, 1, 1)
+
         self.data = normalize_data(data)
         self.bias_col = bias_col
         self.error_col = error_col
@@ -72,8 +94,6 @@ class SoccerPlot(BasePlot):
         self.metric = metric
         self.goal = goal
         self.criteria = criteria
-
-        super().__init__(fig=fig, ax=ax, **kwargs)
 
         # Track provenance for Xarray
         if isinstance(self.data, (xr.DataArray, xr.Dataset)):
@@ -90,46 +110,87 @@ class SoccerPlot(BasePlot):
             self.bias_data = self.data[bias_col]
             self.error_data = self.data[error_col]
 
-    def _calculate_metrics(self, obs_col: str, mod_col: str):
-        """Calculate MFB/MFE or NMB/NME preserving granularity."""
+    def _calculate_metrics(self, obs_col: str, mod_col: str) -> None:
+        """Calculate MFB/MFE or NMB/NME using vectorized operations.
+
+        Parameters
+        ----------
+        obs_col : str
+            Column/variable name for observations.
+        mod_col : str
+            Column/variable name for model values.
+        """
         obs = self.data[obs_col]
         mod = self.data[mod_col]
 
-        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
-            # Use dim=[] to maintain per-sample granularity (no aggregation)
-            dim_arg = []
-        else:
-            dim_arg = ()
-
         if self.metric == "fractional":
-            self.bias_data = compute_fb(obs, mod, dim=dim_arg)
-            self.error_data = compute_fe(obs, mod, dim=dim_arg)
+            # Mean Fractional Bias and Error
+            denom = (obs + mod).astype(float)
+            num_bias = 200.0 * (mod - obs)
+            num_error = 200.0 * np.abs(mod - obs)
+
+            if isinstance(denom, xr.DataArray):
+                self.bias_data = (num_bias / denom).where(denom != 0, np.nan)
+                self.error_data = (num_error / denom).where(denom != 0, np.nan)
+            else:
+                self.bias_data = np.divide(
+                    num_bias, denom, out=np.full(denom.shape, np.nan), where=denom != 0
+                )
+                self.error_data = np.divide(
+                    num_error, denom, out=np.full(denom.shape, np.nan), where=denom != 0
+                )
+
             self.xlabel = "Mean Fractional Bias (%)"
             self.ylabel = "Mean Fractional Error (%)"
-            from ..verification_metrics import _update_history
-
-            _update_history(self.bias_data, "Calculated fractional soccer metrics")
-            _update_history(self.error_data, "Calculated fractional soccer metrics")
 
         elif self.metric == "normalized":
-            self.bias_data = compute_nmb(obs, mod, dim=dim_arg)
-            self.error_data = compute_nme(obs, mod, dim=dim_arg)
-            self.xlabel = "Normalized Mean Bias (%)"
-            from ..verification_metrics import _update_history
+            # Normalized Mean Bias and Error
+            obs_float = obs.astype(float)
+            num_bias = 100.0 * (mod - obs)
+            num_error = 100.0 * np.abs(mod - obs)
 
-            _update_history(self.bias_data, "Calculated normalized soccer metrics")
-            _update_history(self.error_data, "Calculated normalized soccer metrics")
+            if isinstance(obs_float, xr.DataArray):
+                self.bias_data = (num_bias / obs_float).where(obs_float != 0, np.nan)
+                self.error_data = (num_error / obs_float).where(obs_float != 0, np.nan)
+            else:
+                self.bias_data = np.divide(
+                    num_bias,
+                    obs_float,
+                    out=np.full(obs_float.shape, np.nan),
+                    where=obs_float != 0,
+                )
+                self.error_data = np.divide(
+                    num_error,
+                    obs_float,
+                    out=np.full(obs_float.shape, np.nan),
+                    where=obs_float != 0,
+                )
+
+            self.xlabel = "Normalized Mean Bias (%)"
             self.ylabel = "Normalized Mean Error (%)"
         else:
             raise ValueError("metric must be 'fractional' or 'normalized'")
 
-        # Ensure consistent output types for DataFrame inputs
-        if isinstance(self.data, pd.DataFrame):
-            self.bias_data = pd.Series(self.bias_data, index=self.data.index)
-            self.error_data = pd.Series(self.error_data, index=self.data.index)
+        # Update history if Xarray
+        if isinstance(self.bias_data, xr.DataArray):
+            history = self.bias_data.attrs.get("history", "")
+            self.bias_data.attrs["history"] = (
+                f"Calculated {self.metric} soccer metrics; {history}"
+            )
 
-    def plot(self, **kwargs):
-        """Generate the soccer plot."""
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
+        """Generate the soccer plot.
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Keyword arguments passed to `ax.scatter`.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object with the soccer plot.
+        """
         # Draw zones
         if self.criteria:
             rect_crit = patches.Rectangle(
@@ -174,44 +235,29 @@ class SoccerPlot(BasePlot):
 
         # Labels
         if self.label_col is not None:
-            labels = (
-                self.data[self.label_col].values
-                if isinstance(self.data, (xr.DataArray, xr.Dataset))
-                else self.data[self.label_col]
-            )
-            bias_vals = (
-                self.bias_data.values
-                if hasattr(self.bias_data, "values")
-                else self.bias_data
-            )
-            error_vals = (
-                self.error_data.values
-                if hasattr(self.error_data, "values")
-                else self.error_data
-            )
+            labels = self.data[self.label_col]
+            if hasattr(labels, "values"):
+                labels = labels.values
+
             for i, txt in enumerate(labels):
+                # Ensure we have scalar values for annotation
+                b_val = bias.iloc[i] if hasattr(bias, "iloc") else bias[i]
+                e_val = error.iloc[i] if hasattr(error, "iloc") else error[i]
                 self.ax.annotate(
-                    txt,
-                    (bias_vals[i], error_vals[i]),
+                    str(txt),
+                    (b_val, e_val),
                     xytext=(5, 5),
                     textcoords="offset points",
                 )
 
-        # Setup axes - use compute() for dask objects to get limits
-        bias_max = np.abs(self.bias_data).max()
-        error_max = self.error_data.max()
-        if hasattr(bias_max, "compute"):
-            import dask
-
-            bias_max, error_max = dask.compute(bias_max, error_max)
-
+        # Setup axes
         limit = 0
         if self.criteria:
             limit = max(limit, self.criteria["bias"] * 1.1)
             limit_y = self.criteria["error"] * 1.1
         else:
-            limit = max(limit, float(bias_max) * 1.1)
-            limit_y = float(error_max) * 1.1
+            limit = max(limit, float(np.abs(bias).max()) * 1.1)
+            limit_y = float(error.max()) * 1.1
 
         self.ax.set_xlim(-limit, limit)
         self.ax.set_ylim(0, limit_y)
@@ -227,60 +273,3 @@ class SoccerPlot(BasePlot):
             self.data.attrs["history"] = f"Generated SoccerPlot; {history}"
 
         return self.ax
-
-    def hvplot(self, **kwargs):
-        """Generate an interactive soccer plot using hvPlot."""
-        import hvplot.pandas  # noqa: F401
-        import holoviews as hv
-
-        df_soccer = pd.DataFrame(
-            {"bias": self.bias_data, "error": self.error_data}
-        ).reset_index(drop=True)
-        if self.label_col is not None:
-            labels = (
-                self.data[self.label_col].values
-                if isinstance(self.data, (xr.DataArray, xr.Dataset))
-                else self.data[self.label_col]
-            )
-            df_soccer["label"] = labels
-
-        plot_kwargs = {
-            "x": "bias",
-            "y": "error",
-            "kind": "scatter",
-            "xlabel": getattr(self, "xlabel", "Bias (%)"),
-            "ylabel": getattr(self, "ylabel", "Error (%)"),
-            "title": "Soccer Plot",
-        }
-        if "label" in df_soccer.columns:
-            plot_kwargs["hover_cols"] = ["label"]
-
-        plot_kwargs.update(kwargs)
-
-        p = df_soccer.hvplot(**plot_kwargs)
-
-        # Add zones
-        zones = []
-        if self.criteria:
-            zones.append(
-                hv.Rectangles(
-                    [
-                        (
-                            -self.criteria["bias"],
-                            0,
-                            self.criteria["bias"],
-                            self.criteria["error"],
-                        )
-                    ]
-                ).opts(alpha=0.2, color="lightgrey", title="Criteria")
-            )
-        if self.goal:
-            zones.append(
-                hv.Rectangles(
-                    [(-self.goal["bias"], 0, self.goal["bias"], self.goal["error"])]
-                ).opts(alpha=0.2, color="grey", title="Goal")
-            )
-
-        if zones:
-            return hv.Overlay(zones) * p
-        return p

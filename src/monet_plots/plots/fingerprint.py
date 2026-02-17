@@ -86,21 +86,3 @@ class FingerprintPlot(BasePlot):
         self.ax.set_title(f"Fingerprint: {self.val_col}")
 
         return self.ax
-
-    def hvplot(self, cmap: str = "viridis", **kwargs):
-        """Generate an interactive fingerprint heatmap using hvPlot."""
-        import hvplot.pandas  # noqa: F401
-
-        plot_kwargs = {
-            "x": "x_val",
-            "y": "y_val",
-            "C": self.val_col,
-            "kind": "heatmap",
-            "cmap": cmap,
-            "xlabel": self.x_scale.capitalize(),
-            "ylabel": self.y_scale.capitalize(),
-            "title": f"Fingerprint: {self.val_col}",
-        }
-        plot_kwargs.update(kwargs)
-
-        return self.df.hvplot(**plot_kwargs)

@@ -21,6 +21,6 @@ def sample_data():
 
 def test_roc_curve_plot(clear_figures, sample_data):
     """Test ROCCurvePlot."""
-    plot = ROCCurvePlot(data=sample_data, x_col="pofd", y_col="pod")
-    plot.plot()
+    plot = ROCCurvePlot()
+    plot.plot(data=sample_data, x_col="pofd", y_col="pod")
     assert plot.ax is not None

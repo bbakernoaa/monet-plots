@@ -4,7 +4,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -54,6 +53,7 @@ class TimeSeriesPlot(BasePlot):
         super().__init__(*args, **kwargs)
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1)
+
         self.df = normalize_data(df)
         self.x = x
         self.y = y
@@ -217,26 +217,6 @@ class TimeSeriesPlot(BasePlot):
         self.fig.tight_layout()
         return self.ax
 
-    def hvplot(self, **kwargs):
-        """Generate an interactive timeseries plot using hvPlot."""
-        import hvplot.pandas  # noqa: F401
-        import xarray as xr
-
-        plot_kwargs = {"x": self.x, "y": self.y}
-        if self.title:
-            plot_kwargs["title"] = self.title
-        if self.ylabel:
-            plot_kwargs["ylabel"] = self.ylabel
-
-        plot_kwargs.update(kwargs)
-
-        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
-            import hvplot.xarray  # noqa: F401
-
-            return self.df.hvplot.line(**plot_kwargs)
-        else:
-            return self.df.hvplot.line(**plot_kwargs)
-
 
 class TimeSeriesStatsPlot(BasePlot):
     """
@@ -281,23 +261,8 @@ class TimeSeriesStatsPlot(BasePlot):
         super().__init__(fig=fig, ax=ax, **kwargs)
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1)
+
         self.df = normalize_data(df)
-        if isinstance(self.df, pd.DataFrame):
-            if not isinstance(self.df.index, pd.DatetimeIndex):
-                # Attempt to set 'time' or 'datetime' column as index if not already
-                if "datetime" in self.df.columns:
-                    self.df = self.df.set_index("datetime")
-                elif "time" in self.df.columns:
-                    self.df = self.df.set_index("time")
-                else:
-                    # Try to convert index if it's not already datetime
-                    try:
-                        self.df.index = pd.to_datetime(self.df.index)
-                    except Exception:
-                        raise ValueError(
-                            "Input DataFrame must have a DatetimeIndex "
-                            "or 'time'/'datetime' column."
-                        )
         self.col1 = col1
         self.col2 = [col2] if isinstance(col2, str) else col2
 
@@ -365,8 +330,6 @@ class TimeSeriesStatsPlot(BasePlot):
         from .. import verification_metrics
 
         stat_lower = stat.lower()
-        if stat_lower == "corr":
-            stat_lower = "correlation"
         metric_func = getattr(verification_metrics, f"compute_{stat_lower}", None)
         if metric_func is None:
             raise ValueError(f"Statistic '{stat}' is not supported.")
@@ -399,80 +362,76 @@ class TimeSeriesStatsPlot(BasePlot):
 
         return self.ax
 
-    def _plot_dataframe(self, metric_func, freq, stat_name, plot_kwargs):
-        """Plot using pandas resampling."""
-        all_stats = []
+    def _plot_xarray(
+        self, metric_func: Any, freq: str, stat_name: str, plot_kwargs: dict
+    ) -> None:
+        """
+        Perform vectorized xarray/dask resampling and plotting.
+
+        Parameters
+        ----------
+        metric_func : Any
+            The metric function from verification_metrics to apply.
+        freq : str
+            The resampling frequency (e.g., 'D', 'H').
+        stat_name : str
+            The name of the statistic being calculated.
+        plot_kwargs : dict
+            Keyword arguments for the plot call.
+
+        Examples
+        --------
+        >>> plot._plot_xarray(compute_bias, 'D', 'bias', {'color': 'red'})
+        """
         for model_col in self.col2:
 
-            def stat_wrapper(group):
-                if group.empty:
-                    return np.nan
-                return metric_func(group[self.col1], group[model_col])
+            def resample_func(ds):
+                # Dim is None means reduce over all dimensions in the group
+                # which is correct for a time series plot of a bulk statistic.
+                return metric_func(ds[self.col1], ds[model_col])
 
-            resampled = self.df.resample(freq).apply(stat_wrapper)
-            resampled.name = model_col
-            all_stats.append(resampled)
+            # Resample and calculate using .map() to maintain laziness
+            resampled = self.df.resample({self.x: freq})
+            stat_series = resampled.map(resample_func)
 
-        df_stats = pd.concat(all_stats, axis=1)
-        df_stats.plot(ax=self.ax, **plot_kwargs)
+            # Extract label if present or use col name
+            label = model_col
+            stat_series.plot(ax=self.ax, label=label, **plot_kwargs)
 
-    def _plot_xarray(self, metric_func, freq, stat_name, plot_kwargs):
-        """Plot using xarray resampling."""
-        import xarray as xr
+    def _plot_dataframe(
+        self, metric_func: Any, freq: str, stat_name: str, plot_kwargs: dict
+    ) -> None:
+        """
+        Perform resampling and plotting for pandas DataFrames.
 
-        all_stats = []
+        Parameters
+        ----------
+        metric_func : Any
+            The metric function from verification_metrics to apply.
+        freq : str
+            The resampling frequency (e.g., 'D', 'H').
+        stat_name : str
+            The name of the statistic being calculated.
+        plot_kwargs : dict
+            Keyword arguments for the plot call.
+
+        Examples
+        --------
+        >>> plot._plot_dataframe(compute_bias, 'D', 'bias', {'marker': 'x'})
+        """
+        df = self.df.copy()
+        if self.x != "index" and self.x in df.columns:
+            df = df.set_index(self.x)
+
+        if not isinstance(df.index, pd.DatetimeIndex):
+            df.index = pd.to_datetime(df.index)
+
         for model_col in self.col2:
             # Resample and apply metric
-            # Note: xarray resample.map or apply might be needed
-            resampled = (
-                self.df.resample({self.x: freq})
-                .map(lambda ds: metric_func(ds[self.col1], ds[model_col]))
-                .rename(model_col)
-            )
-            all_stats.append(resampled)
+            # Note: Pandas resample.apply is less efficient but necessary here
+            # for arbitrary metric functions on DataFrames.
+            def pandas_metric(group):
+                return metric_func(group[self.col1].values, group[model_col].values)
 
-        ds_stats = xr.merge(all_stats)
-        for model_col in self.col2:
-            ds_stats[model_col].plot(ax=self.ax, label=model_col, **plot_kwargs)
-
-    def hvplot(self, stat: str = "bias", freq: str = "D", **kwargs):
-        """Generate an interactive timeseries plot of the chosen statistic."""
-        from .. import verification_metrics
-
-        stat_lower = stat.lower()
-        if stat_lower == "corr":
-            stat_lower = "correlation"
-        metric_func = getattr(verification_metrics, f"compute_{stat_lower}", None)
-        if metric_func is None:
-            raise ValueError(f"Statistic '{stat}' is not supported.")
-
-        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
-            # Simplified xarray hvplot
-            all_stats = []
-            for model_col in self.col2:
-                resampled = (
-                    self.df.resample({self.x: freq})
-                    .map(lambda ds: metric_func(ds[self.col1], ds[model_col]))
-                    .rename(model_col)
-                )
-                all_stats.append(resampled)
-            data_to_plot = xr.merge(all_stats)
-        else:
-            # Pandas hvplot
-            all_stats = []
-            for model_col in self.col2:
-
-                def stat_wrapper(group):
-                    if group.empty:
-                        return np.nan
-                    return metric_func(group[self.col1], group[model_col])
-
-                resampled = self.df.resample(freq).apply(stat_wrapper)
-                resampled.name = model_col
-                all_stats.append(resampled)
-            data_to_plot = pd.concat(all_stats, axis=1)
-
-        plot_kwargs = {"title": f"{stat.upper()} Over Time", "ylabel": stat.upper()}
-        plot_kwargs.update(kwargs)
-
-        return data_to_plot.hvplot.line(**plot_kwargs)
+            stat_series = df.resample(freq).apply(pandas_metric)
+            stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)

@@ -46,10 +46,8 @@ forecasts = (
 df = pd.DataFrame({"observations": observations, "forecasts": forecasts})
 
 # 2. Initialize and create the plot
-plot = ConditionalBiasPlot(
-    df, obs_col="observations", fcst_col="forecasts", n_bins=15, figsize=(10, 6)
-)
-plot.plot()
+plot = ConditionalBiasPlot(figsize=(10, 6))
+plot.plot(df, obs_col="observations", fcst_col="forecasts", n_bins=15)
 
 # 3. Add titles and labels
 plot.ax.set_title("Conditional Bias Plot (Forecast vs. Observation)")

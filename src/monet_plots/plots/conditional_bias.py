@@ -22,45 +22,44 @@ class ConditionalBiasPlot(BasePlot):
     - Outliers skewing mean bias.
     """
 
-    def __init__(
+    def __init__(self, fig=None, ax=None, **kwargs):
+        super().__init__(fig=fig, ax=ax, **kwargs)
+
+    def plot(
         self,
         data: Any,
         obs_col: str,
         fcst_col: str,
         n_bins: int = 10,
         label_col: Optional[str] = None,
-        fig=None,
-        ax=None,
         **kwargs,
     ):
-        super().__init__(fig=fig, ax=ax, **kwargs)
-        self.data = to_dataframe(data)
-        self.obs_col = obs_col
-        self.fcst_col = fcst_col
-        self.n_bins = n_bins
-        self.label_col = label_col
-        validate_dataframe(self.data, required_columns=[self.obs_col, self.fcst_col])
-
-    def plot(self, **kwargs):
         """
         Main plotting method.
 
         Args:
+            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Paired obs/fcst data.
+            obs_col (str): Observation column.
+            fcst_col (str): Forecast column.
+            n_bins (int): Number of bins for observed values.
+            label_col (str): Grouping column.
             **kwargs: Matplotlib kwargs.
         """
-        n_bins = kwargs.pop("n_bins", self.n_bins)
-        df_plot = self.data.copy()
-        df_plot["bias"] = df_plot[self.fcst_col] - df_plot[self.obs_col]
+        df = to_dataframe(data)
+        validate_dataframe(df, required_columns=[obs_col, fcst_col])
 
-        if self.label_col:
-            for name, group in df_plot.groupby(self.label_col):
+        df_plot = df.copy()
+        df_plot["bias"] = df_plot[fcst_col] - df_plot[obs_col]
+
+        if label_col:
+            for name, group in df_plot.groupby(label_col):
                 self._plot_binned_bias(
-                    group, self.obs_col, "bias", n_bins, label=str(name), **kwargs
+                    group, obs_col, "bias", n_bins, label=str(name), **kwargs
                 )
             self.ax.legend(loc="best")
         else:
             self._plot_binned_bias(
-                df_plot, self.obs_col, "bias", n_bins, label="Model", **kwargs
+                df_plot, obs_col, "bias", n_bins, label="Model", **kwargs
             )
 
         self.ax.axhline(
@@ -98,56 +97,7 @@ class ConditionalBiasPlot(BasePlot):
                 **kwargs,
             )
 
-    def hvplot(self, **kwargs):
-        """Generate an interactive conditional bias plot using hvPlot."""
-        import hvplot.pandas  # noqa: F401
-        import holoviews as hv
 
-        df_plot = self.data.copy()
-        df_plot["bias"] = df_plot[self.fcst_col] - df_plot[self.obs_col]
-
-        all_binned = []
-        if self.label_col:
-            for name, group in df_plot.groupby(self.label_col):
-                bins = pd.cut(group[self.obs_col], bins=self.n_bins, duplicates="drop")
-                binned = (
-                    group.groupby(bins, observed=False)["bias"]
-                    .agg(["mean", "std", "count"])
-                    .reset_index()
-                )
-                binned["bin_center"] = binned[self.obs_col].apply(
-                    lambda interval: interval.mid
-                )
-                binned = binned[binned["count"] >= 5]
-                binned[self.label_col] = str(name)
-                all_binned.append(binned)
-            final_df = pd.concat(all_binned)
-        else:
-            bins = pd.cut(df_plot[self.obs_col], bins=self.n_bins, duplicates="drop")
-            final_df = (
-                df_plot.groupby(bins, observed=False)["bias"]
-                .agg(["mean", "std", "count"])
-                .reset_index()
-            )
-            final_df["bin_center"] = final_df[self.obs_col].apply(
-                lambda interval: interval.mid
-            )
-            final_df = final_df[final_df["count"] >= 5]
-
-        plot_kwargs = {
-            "x": "bin_center",
-            "y": "mean",
-            "kind": "scatter",
-            "xlabel": "Observed Value",
-            "ylabel": "Mean Bias (Forecast - Observation)",
-            "title": "Conditional Bias",
-        }
-        if self.label_col:
-            plot_kwargs["by"] = self.label_col
-
-        plot_kwargs.update(kwargs)
-
-        p = final_df.hvplot(**plot_kwargs)
-        zero_line = hv.HLine(0).opts(color="black", alpha=0.5, line_dash="dashed")
-
-        return p * zero_line
+# TDD Anchors:
+# 1. test_zero_bias_line: Verify line exists at y=0.
+# 2. test_binning_consistency: Ensure bins cover full range of obs.

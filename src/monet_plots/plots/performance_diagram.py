@@ -1,8 +1,7 @@
 import numpy as np
-import pandas as pd
 from typing import Optional, Any, List
 from .base import BasePlot
-from ..plot_utils import to_dataframe
+from ..plot_utils import validate_dataframe, to_dataframe
 from ..verification_metrics import compute_pod, compute_success_ratio
 
 
@@ -26,49 +25,47 @@ class PerformanceDiagramPlot(BasePlot):
     - Missing required columns.
     """
 
-    def __init__(
+    def __init__(self, fig=None, ax=None, **kwargs):
+        super().__init__(fig=fig, ax=ax, **kwargs)
+
+    def plot(
         self,
         data: Any,
         x_col: str = "success_ratio",
         y_col: str = "pod",
         counts_cols: Optional[List[str]] = None,
-        obs_col: Optional[str] = None,
-        mod_col: Optional[str] = None,
-        thresholds: Optional[List[float]] = None,
         label_col: Optional[str] = None,
-        fig=None,
-        ax=None,
         **kwargs,
     ):
-        super().__init__(fig=fig, ax=ax, **kwargs)
-        self.data = data
-        self.x_col = x_col
-        self.y_col = y_col
-        self.counts_cols = counts_cols
-        self.obs_col = obs_col
-        self.mod_col = mod_col
-        self.thresholds = thresholds
-        self.label_col = label_col
-
-    def plot(self, **kwargs):
         """
         Main plotting method.
 
         Args:
+            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Input data.
+            x_col (str): Column name for Success Ratio (1-FAR).
+            y_col (str): Column name for POD.
+            counts_cols (list, optional): List of columns [hits, misses, fa, cn]
+                                        to calculate metrics if x_col/y_col not present.
+            label_col (str, optional): Column to use for legend labels.
             **kwargs: Matplotlib kwargs.
         """
+        df = to_dataframe(data)
+        # TDD Anchor: Test validation raises error on missing cols
+        self._validate_inputs(df, x_col, y_col, counts_cols)
+
         # Data Preparation
-        df_plot = self._prepare_data()
+        df_plot = self._prepare_data(df, x_col, y_col, counts_cols)
 
         # Plot Background (Isolines)
         self._draw_background()
 
         # Plot Data
-        if self.label_col:
-            for name, group in df_plot.groupby(self.label_col):
+        # TDD Anchor: Verify scatter points match input data coordinates
+        if label_col:
+            for name, group in df_plot.groupby(label_col):
                 self.ax.plot(
-                    group[self.x_col],
-                    group[self.y_col],
+                    group[x_col],
+                    group[y_col],
                     marker="o",
                     label=name,
                     linestyle="none",
@@ -77,11 +74,7 @@ class PerformanceDiagramPlot(BasePlot):
             self.ax.legend(loc="best")
         else:
             self.ax.plot(
-                df_plot[self.x_col],
-                df_plot[self.y_col],
-                marker="o",
-                linestyle="none",
-                **kwargs,
+                df_plot[x_col], df_plot[y_col], marker="o", linestyle="none", **kwargs
             )
 
         # Formatting
@@ -91,47 +84,23 @@ class PerformanceDiagramPlot(BasePlot):
         self.ax.set_ylabel("Probability of Detection (POD)")
         self.ax.set_aspect("equal")
 
-    def _prepare_data(self):
+    def _validate_inputs(self, data, x, y, counts):
+        """Validates input dataframe structure."""
+        if counts:
+            validate_dataframe(data, required_columns=counts)
+        else:
+            validate_dataframe(data, required_columns=[x, y])
+
+    def _prepare_data(self, data, x, y, counts):
         """
-        Prepares data for plotting, calculating metrics from raw data or counts if necessary.
+        Calculates metrics if counts provided, otherwise returns subset.
+        TDD Anchor: Test calculation logic: SR = hits/(hits+fa), POD = hits/(hits+miss).
         """
-        from ..verification_metrics import (
-            compute_categorical_metrics,
-            compute_contingency_table,
-        )
-
-        if self.obs_col and self.mod_col and self.thresholds:
-            # Plotting from raw data at various thresholds
-            obs = self.data[self.obs_col]
-            mod = self.data[self.mod_col]
-
-            rows = []
-            for t in self.thresholds:
-                ct = compute_contingency_table(obs, mod, t)
-                # If dask-backed, compute now for plotting
-                if hasattr(ct["hits"], "compute"):
-                    import dask
-
-                    ct = dask.compute(ct)[0]
-
-                metrics = compute_categorical_metrics(**ct)
-                metrics["threshold"] = t
-                rows.append(metrics)
-
-            df_plot = pd.DataFrame(rows)
-            # Threshold as label if label_col not provided
-            if self.label_col is None:
-                self.label_col = "threshold"
-            return df_plot
-
-        # Ensure we have a DataFrame for simpler plotting logic if not already
-        df = to_dataframe(self.data)
-
-        if self.counts_cols:
-            hits_col, misses_col, fa_col, cn_col = self.counts_cols
-            df[self.x_col] = compute_success_ratio(df[hits_col], df[fa_col])
-            df[self.y_col] = compute_pod(df[hits_col], df[misses_col])
-
+        df = data.copy()
+        if counts:
+            hits_col, misses_col, fa_col, cn_col = counts
+            df[x] = compute_success_ratio(df[hits_col], df[fa_col])
+            df[y] = compute_pod(df[hits_col], df[misses_col])
         return df
 
     def _draw_background(self):
@@ -178,41 +147,11 @@ class PerformanceDiagramPlot(BasePlot):
         # Perfect forecast line
         self.ax.plot([0.01, 0.99], [0.01, 0.99], "k-", linewidth=1.5, alpha=0.8)
 
-    def hvplot(self, **kwargs):
-        """Generate an interactive performance diagram using hvPlot."""
-        import holoviews as hv
-        import hvplot.pandas  # noqa: F401
-
-        df_plot = self._prepare_data()
-
-        plot_kwargs = {
-            "x": self.x_col,
-            "y": self.y_col,
-            "kind": "scatter",
-            "xlabel": "Success Ratio (1-FAR)",
-            "ylabel": "Probability of Detection (POD)",
-            "xlim": (0, 1),
-            "ylim": (0, 1),
-        }
-        if self.label_col:
-            plot_kwargs["by"] = self.label_col
-
-        plot_kwargs.update(kwargs)
-
-        # Background isolines (simplified for HoloViews)
-        xx, yy = np.meshgrid(np.linspace(0.01, 0.99, 100), np.linspace(0.01, 0.99, 100))
-        csi = (xx * yy) / (xx + yy - xx * yy)
-        # bias = yy / xx
-
-        csi_contours = hv.operation.contours(
-            hv.Image(csi, bounds=(0, 0, 1, 1)),
-            levels=np.arange(0.1, 0.95, 0.1).tolist(),
-        ).opts(alpha=0.3, cmap=["gray"], line_dash="dashed")
-        perfect_line = hv.Curve([(0, 0), (1, 1)]).opts(color="black", alpha=0.5)
-
-        return (csi_contours * perfect_line * df_plot.hvplot(**plot_kwargs)).opts(
-            title="Performance Diagram"
-        )
+        # TDD Anchor: Test that contours are within 0-1 range.
 
 
+# TDD Anchors (Unit Tests):
+# 1. test_metric_calculation_from_counts: Provide hits/misses/fa, verify SR/POD output.
+# 2. test_perfect_score_location: Ensure perfect forecast plots at (1,1).
+# 3. test_missing_columns_error: Assert ValueError if cols missing.
 # 4. test_background_drawing: Mock plt.contour, verify calls with correct grids.

@@ -23,7 +23,10 @@ class ScorecardPlot(BasePlot):
     - Infinite values (clip or mask).
     """
 
-    def __init__(
+    def __init__(self, fig=None, ax=None, **kwargs):
+        super().__init__(fig=fig, ax=ax, **kwargs)
+
+    def plot(
         self,
         data: Any,
         x_col: str,
@@ -32,37 +35,30 @@ class ScorecardPlot(BasePlot):
         sig_col: Optional[str] = None,
         cmap: str = "RdYlGn",
         center: float = 0.0,
-        fig=None,
-        ax=None,
         **kwargs,
     ):
-        super().__init__(fig=fig, ax=ax, **kwargs)
-        self.data = to_dataframe(data)
-        self.x_col = x_col
-        self.y_col = y_col
-        self.val_col = val_col
-        self.sig_col = sig_col
-        self.cmap = cmap
-        self.center = center
-        validate_dataframe(
-            self.data, required_columns=[self.x_col, self.y_col, self.val_col]
-        )
-
-    def plot(self, **kwargs):
         """
         Main plotting method.
 
         Args:
+            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Long-format dataframe.
+            x_col (str): Column for x-axis (Columns).
+            y_col (str): Column for y-axis (Rows).
+            val_col (str): Column for cell values (color).
+            sig_col (str, optional): Column for significance (marker).
+            cmap (str): Colormap.
+            center (float): Center value for colormap divergence.
             **kwargs: Seaborn heatmap kwargs.
         """
+        df = to_dataframe(data)
+        validate_dataframe(df, required_columns=[x_col, y_col, val_col])
+
         # Pivot Data
-        pivot_data = self.data.pivot(
-            index=self.y_col, columns=self.x_col, values=self.val_col
-        )
+        pivot_data = df.pivot(index=y_col, columns=x_col, values=val_col)
+
+        # TDD Anchor: Test pivot structure
 
         # Plot Heatmap
-        cmap = kwargs.pop("cmap", self.cmap)
-        center = kwargs.pop("center", self.center)
         sns.heatmap(
             pivot_data,
             ax=self.ax,
@@ -75,14 +71,12 @@ class ScorecardPlot(BasePlot):
         )
 
         # Add Significance Markers
-        if self.sig_col:
-            pivot_sig = self.data.pivot(
-                index=self.y_col, columns=self.x_col, values=self.sig_col
-            )
+        if sig_col:
+            pivot_sig = df.pivot(index=y_col, columns=x_col, values=sig_col)
             self._overlay_significance(pivot_data, pivot_sig)
 
-        self.ax.set_xlabel(self.x_col.title())
-        self.ax.set_ylabel(self.y_col.title())
+        self.ax.set_xlabel(x_col.title())
+        self.ax.set_ylabel(y_col.title())
         self.ax.tick_params(axis="x", rotation=45)
         self.ax.set_title("Performance Scorecard")
 
@@ -110,19 +104,7 @@ class ScorecardPlot(BasePlot):
                         zorder=5,
                     )
 
-    def hvplot(self, **kwargs):
-        """Generate an interactive scorecard plot using hvPlot."""
-        import hvplot.pandas  # noqa: F401
 
-        plot_kwargs = {
-            "x": self.x_col,
-            "y": self.y_col,
-            "C": self.val_col,
-            "kind": "heatmap",
-            "cmap": self.cmap,
-            "title": "Performance Scorecard",
-            "hover_cols": [self.sig_col] if self.sig_col else [],
-        }
-        plot_kwargs.update(kwargs)
-
-        return self.data.hvplot(**plot_kwargs)
+# TDD Anchors:
+# 1. test_pivot_logic: Verify long-to-wide conversion.
+# 2. test_significance_overlay: Verify markers are placed only on significant cells.

@@ -92,21 +92,3 @@ class Windrose(BasePlot):
             )
 
         self.ax.legend()
-
-    def hvplot(self, **kwargs: t.Any):
-        """Generate an interactive windrose-like plot using hvPlot."""
-        import hvplot.pandas  # noqa: F401
-
-        df = pd.DataFrame({"ws": self.ws, "wd": self.wd})
-
-        # Simplified interactive windrose: scatter on polar plot
-        # Note: hvPlot doesn't have a native polar bar plot yet.
-        plot_kwargs = {
-            "x": "wd",
-            "y": "ws",
-            "kind": "scatter",
-            "title": "Interactive Windrose (Simplified)",
-        }
-        plot_kwargs.update(kwargs)
-
-        return df.hvplot(**plot_kwargs)

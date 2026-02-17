@@ -21,6 +21,6 @@ def sample_data():
 
 def test_rank_histogram_plot(clear_figures, sample_data):
     """Test RankHistogramPlot."""
-    plot = RankHistogramPlot(data=sample_data, rank_col="rank")
-    plot.plot()
+    plot = RankHistogramPlot()
+    plot.plot(data=sample_data, rank_col="rank")
     assert plot.ax is not None

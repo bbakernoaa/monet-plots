@@ -13,7 +13,6 @@ from .polar import BivariatePolarPlot
 from .profile import ProfilePlot, StickPlot, VerticalBoxPlot, VerticalSlice
 from .rank_histogram import RankHistogramPlot
 from .reliability_diagram import ReliabilityDiagramPlot
-from .grouped_distribution import GroupedDistributionPlot
 from .rev import RelativeEconomicValuePlot
 from .ridgeline import RidgelinePlot
 from .roc_curve import ROCCurvePlot
@@ -57,7 +56,6 @@ __all__ = [
     "RankHistogramPlot",
     "BrierScoreDecompositionPlot",
     "ScorecardPlot",
-    "GroupedDistributionPlot",
     "RelativeEconomicValuePlot",
     "ConditionalBiasPlot",
     "SpreadSkillPlot",

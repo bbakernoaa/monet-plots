@@ -96,6 +96,7 @@ def test_diurnal_error_plot_lazy():
 def test_diurnal_error_hvplot():
     """Test hvplot (Track B) availability."""
     pytest.importorskip("hvplot")
+    pytest.importorskip("datashader")
     dates = pd.date_range("2023-01-01", periods=48, freq="h")
     df = pd.DataFrame(
         {"time": dates, "obs": np.random.rand(48), "mod": np.random.rand(48)}

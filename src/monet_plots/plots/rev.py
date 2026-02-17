@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from typing import Optional, List, Any
 from ..verification_metrics import compute_rev
 from .base import BasePlot
@@ -23,56 +22,44 @@ class RelativeEconomicValuePlot(BasePlot):
     - No events observed (metrics undefined).
     """
 
-    def __init__(
+    def __init__(self, fig=None, ax=None, **kwargs):
+        super().__init__(fig=fig, ax=ax, **kwargs)
+
+    def plot(
         self,
         data: Any,
         counts_cols: List[str] = ["hits", "misses", "fa", "cn"],
         climatology: Optional[float] = None,
         label_col: Optional[str] = None,
         cost_loss_ratios: Optional[np.ndarray] = None,
-        fig=None,
-        ax=None,
         **kwargs,
     ):
-        super().__init__(fig=fig, ax=ax, **kwargs)
-        self.data = to_dataframe(data)
-        self.counts_cols = counts_cols
-        self.climatology = climatology
-        self.label_col = label_col
-        self.cost_loss_ratios = cost_loss_ratios
-
-    def plot(self, **kwargs):
         """
         Main plotting method.
 
         Args:
+            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Input data with contingency table counts.
+            counts_cols (List[str]): Contingency table columns [hits, misses, fa, cn].
+            climatology (Optional[float]): Sample climatology (base rate). Computed if None.
+            label_col (Optional[str]): Grouping column for multiple curves.
+            cost_loss_ratios (Optional[np.ndarray]): Array of C/L ratios. Default linspace(0.001,0.999,100).
             **kwargs: Matplotlib kwargs.
         """
-        counts_cols = kwargs.pop("counts_cols", self.counts_cols)
-        climatology = kwargs.pop("climatology", self.climatology)
-        cost_loss_ratios = kwargs.pop("cost_loss_ratios", self.cost_loss_ratios)
-
-        validate_dataframe(self.data, required_columns=counts_cols)
+        df = to_dataframe(data)
+        validate_dataframe(df, required_columns=counts_cols)
 
         if climatology is None:
-            total_events = (
-                self.data[self.counts_cols[0]].sum()
-                + self.data[self.counts_cols[1]].sum()
-            )
-            total = (
-                total_events
-                + self.data[self.counts_cols[2]].sum()
-                + self.data[self.counts_cols[3]].sum()
-            )
+            total_events = df[counts_cols[0]].sum() + df[counts_cols[1]].sum()
+            total = total_events + df[counts_cols[2]].sum() + df[counts_cols[3]].sum()
             climatology = total_events / total if total > 0 else 0.5
-        else:
-            climatology = self.climatology
 
-        if self.cost_loss_ratios is None:
+        if cost_loss_ratios is None:
             cost_loss_ratios = np.linspace(0.001, 0.999, 100)
 
-        if self.label_col:
-            for name, group in self.data.groupby(self.label_col):
+        # TDD Anchor: Test REV calculation logic
+
+        if label_col:
+            for name, group in df.groupby(label_col):
                 rev_values = self._calculate_rev(
                     group, counts_cols, cost_loss_ratios, climatology
                 )
@@ -80,7 +67,7 @@ class RelativeEconomicValuePlot(BasePlot):
             self.ax.legend(loc="best")
         else:
             rev_values = self._calculate_rev(
-                self.data, counts_cols, cost_loss_ratios, climatology
+                df, counts_cols, cost_loss_ratios, climatology
             )
             self.ax.plot(cost_loss_ratios, rev_values, label="Model", **kwargs)
 
@@ -102,64 +89,7 @@ class RelativeEconomicValuePlot(BasePlot):
         cn = df[cols[3]].sum()
         return compute_rev(hits, misses, fa, cn, ratios, clim)
 
-    def hvplot(self, **kwargs):
-        """Generate an interactive Relative Economic Value plot using hvPlot."""
-        import hvplot.pandas  # noqa: F401
-        import holoviews as hv
 
-        if self.climatology is None:
-            total_events = (
-                self.data[self.counts_cols[0]].sum()
-                + self.data[self.counts_cols[1]].sum()
-            )
-            total = (
-                total_events
-                + self.data[self.counts_cols[2]].sum()
-                + self.data[self.counts_cols[3]].sum()
-            )
-            climatology = total_events / total if total > 0 else 0.5
-        else:
-            climatology = self.climatology
-
-        if self.cost_loss_ratios is None:
-            cost_loss_ratios = np.linspace(0.001, 0.999, 100)
-        else:
-            cost_loss_ratios = self.cost_loss_ratios
-
-        all_revs = []
-        if self.label_col:
-            for name, group in self.data.groupby(self.label_col):
-                rev_values = self._calculate_rev(
-                    group, self.counts_cols, cost_loss_ratios, climatology
-                )
-                temp_df = pd.DataFrame(
-                    {"Cost/Loss Ratio": cost_loss_ratios, "REV": rev_values}
-                )
-                temp_df[self.label_col] = str(name)
-                all_revs.append(temp_df)
-            df_plot = pd.concat(all_revs)
-        else:
-            rev_values = self._calculate_rev(
-                self.data, self.counts_cols, cost_loss_ratios, climatology
-            )
-            df_plot = pd.DataFrame(
-                {"Cost/Loss Ratio": cost_loss_ratios, "REV": rev_values}
-            )
-
-        plot_kwargs = {
-            "x": "Cost/Loss Ratio",
-            "y": "REV",
-            "kind": "line",
-            "title": "Relative Economic Value (REV)",
-            "ylim": (-0.2, 1.05),
-        }
-        if self.label_col:
-            plot_kwargs["by"] = self.label_col
-
-        plot_kwargs.update(kwargs)
-
-        p = df_plot.hvplot(**plot_kwargs)
-        clim_line = hv.HLine(0).opts(color="black", alpha=0.5, line_dash="dashed")
-        perfect_line = hv.HLine(1).opts(color="gray", alpha=0.5, line_dash="dotted")
-
-        return p * clim_line * perfect_line
+# TDD Anchors:
+# 1. test_rev_max_value: REV should never exceed 1.
+# 2. test_rev_at_climatology: REV should be 0 if forecast equals climatology strategy.

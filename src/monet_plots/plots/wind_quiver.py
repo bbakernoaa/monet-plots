@@ -13,7 +13,7 @@ class WindQuiverPlot(SpatialPlot):
     This plot shows wind speed and direction using arrows.
     """
 
-    def __init__(self, ws: Any, wdir: Any, gridobj, *args, fig=None, ax=None, **kwargs):
+    def __init__(self, ws: Any, wdir: Any, gridobj, *args, **kwargs):
         """
         Initialize the plot with data and map projection.
 
@@ -23,7 +23,7 @@ class WindQuiverPlot(SpatialPlot):
             gridobj (object): Object with LAT and LON variables.
             **kwargs: Keyword arguments passed to SpatialPlot for projection and features.
         """
-        super().__init__(fig=fig, ax=ax, **kwargs)
+        super().__init__(*args, **kwargs)
         self.ws = np.asarray(ws)
         self.wdir = np.asarray(wdir)
         self.gridobj = gridobj
@@ -45,41 +45,3 @@ class WindQuiverPlot(SpatialPlot):
             **quiver_kwargs,
         )
         return quiv
-
-    def hvplot(self, **kwargs):
-        """Generate an interactive wind quiver plot using hvPlot."""
-        import hvplot.pandas  # noqa: F401
-        import pandas as pd
-
-        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
-        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
-        u, v = tools.wsdir2uv(self.ws, self.wdir)
-
-        # Flatten and create DataFrame for hvplot
-        skip = kwargs.get("skip", 15)
-        df = pd.DataFrame(
-            {
-                "lon": lon[::skip, ::skip].flatten(),
-                "lat": lat[::skip, ::skip].flatten(),
-                "u": u[::skip, ::skip].flatten(),
-                "v": v[::skip, ::skip].flatten(),
-                "ws": self.ws[::skip, ::skip].flatten(),
-            }
-        ).dropna()
-
-        # Calculate angle and magnitude for hvplot vectorfield
-        # angle is radians counter-clockwise from East
-        df["angle"] = np.arctan2(df["v"], df["u"])
-
-        plot_kwargs = {
-            "x": "lon",
-            "y": "lat",
-            "angle": "angle",
-            "mag": "ws",
-            "geo": True,
-            "kind": "vectorfield",
-            "title": "Wind Quiver",
-        }
-        plot_kwargs.update(kwargs)
-
-        return df.hvplot(**plot_kwargs)

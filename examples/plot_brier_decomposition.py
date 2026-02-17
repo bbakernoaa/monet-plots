@@ -36,15 +36,13 @@ data = pd.DataFrame(
     }
 )
 
-plot = BrierScoreDecompositionPlot(
+plot = BrierScoreDecompositionPlot(figsize=(10, 7))
+plot.plot(
     data,
     reliability_col="reliability",
     resolution_col="resolution",
     uncertainty_col="uncertainty",
     label_col="model",
-    figsize=(10, 7),
-)
-plot.plot(
     title="Brier Score Decomposition Comparison",
 )
 

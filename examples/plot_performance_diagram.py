@@ -36,8 +36,11 @@ data = {
 df = pd.DataFrame(data)
 
 # 2. Initialize and create the plot
-plot = PerformanceDiagramPlot(df, x_col="success_ratio", y_col="pod", figsize=(8, 8))
+plot = PerformanceDiagramPlot(figsize=(8, 8))
 plot.plot(
+    df,
+    x_col="success_ratio",
+    y_col="pod",
     markersize=8,
     color="blue",
     label="Forecast System",

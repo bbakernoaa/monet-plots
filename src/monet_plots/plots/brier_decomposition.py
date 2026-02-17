@@ -15,7 +15,10 @@ class BrierScoreDecompositionPlot(BasePlot):
     BS = Reliability - Resolution + Uncertainty
     """
 
-    def __init__(
+    def __init__(self, fig=None, ax=None, **kwargs):
+        super().__init__(fig=fig, ax=ax, **kwargs)
+
+    def plot(
         self,
         data: Any,
         reliability_col: str = "reliability",
@@ -25,47 +28,41 @@ class BrierScoreDecompositionPlot(BasePlot):
         observations_col: Optional[str] = None,
         n_bins: int = 10,
         label_col: Optional[str] = None,
-        fig=None,
-        ax=None,
         **kwargs,
     ):
-        super().__init__(fig=fig, ax=ax, **kwargs)
-        self.data = to_dataframe(data)
-        self.reliability_col = reliability_col
-        self.resolution_col = resolution_col
-        self.uncertainty_col = uncertainty_col
-        self.forecasts_col = forecasts_col
-        self.observations_col = observations_col
-        self.n_bins = n_bins
-        self.label_col = label_col
+        """
+        Main plotting method.
 
-        if not (self.forecasts_col and self.observations_col):
-            required_cols = [
-                self.reliability_col,
-                self.resolution_col,
-                self.uncertainty_col,
-            ]
-            validate_dataframe(self.data, required_columns=required_cols)
-
-    def _prepare_plot_data(self):
-        """Helper to compute components if raw data provided or use existing ones."""
-        if self.forecasts_col and self.observations_col:
+        Args:
+            data: Input data.
+            reliability_col/resolution_col/uncertainty_col (str):
+                Pre-computed component columns.
+            forecasts_col/observations_col (str, optional):
+                Raw forecast probabilities and binary observations.
+            n_bins (int): Bins for decomposition if raw data.
+            label_col (str, optional): Grouping column.
+            **kwargs: Matplotlib kwargs.
+        """
+        title = kwargs.pop("title", "Brier Score Decomposition")
+        df = to_dataframe(data)
+        # Compute components if raw data provided
+        if forecasts_col and observations_col:
             components_list = []
-            if self.label_col:
-                for name, group in self.data.groupby(self.label_col):
+            if label_col:
+                for name, group in df.groupby(label_col):
                     comps = compute_brier_score_components(
-                        np.asarray(group[self.forecasts_col]),
-                        np.asarray(group[self.observations_col]),
-                        self.n_bins,
+                        np.asarray(group[forecasts_col]),
+                        np.asarray(group[observations_col]),
+                        n_bins,
                     )
                     row = pd.Series(comps)
                     row["model"] = str(name)
                     components_list.append(row)
             else:
                 comps = compute_brier_score_components(
-                    np.asarray(self.data[self.forecasts_col]),
-                    np.asarray(self.data[self.observations_col]),
-                    self.n_bins,
+                    np.asarray(df[forecasts_col]),
+                    np.asarray(df[observations_col]),
+                    n_bins,
                 )
                 row = pd.Series(comps)
                 row["model"] = "Model"
@@ -74,24 +71,14 @@ class BrierScoreDecompositionPlot(BasePlot):
             df_plot = pd.DataFrame(components_list)
             plot_label_col = "model"
         else:
-            df_plot = self.data
-            plot_label_col = self.label_col
-        return df_plot, plot_label_col
-
-    def plot(self, **kwargs):
-        """
-        Main plotting method.
-
-        Args:
-            **kwargs: Matplotlib kwargs.
-        """
-        title = kwargs.pop("title", "Brier Score Decomposition")
-        # Compute components if raw data provided
-        df_plot, plot_label_col = self._prepare_plot_data()
+            required_cols = [reliability_col, resolution_col, uncertainty_col]
+            validate_dataframe(df, required_columns=required_cols)
+            df_plot = df
+            plot_label_col = label_col
 
         # Prepare for plotting: make resolution negative for visualization
         df_plot = df_plot.copy()
-        df_plot["resolution_plot"] = -df_plot[self.resolution_col]
+        df_plot["resolution_plot"] = -df_plot[resolution_col]
 
         # Grouped bar plot
         if plot_label_col:
@@ -104,7 +91,7 @@ class BrierScoreDecompositionPlot(BasePlot):
 
         self.ax.bar(
             x - width,
-            df_plot[self.reliability_col],
+            df_plot[reliability_col],
             width,
             label="Reliability",
             color="red",
@@ -122,7 +109,7 @@ class BrierScoreDecompositionPlot(BasePlot):
         )
         self.ax.bar(
             x + width,
-            df_plot[self.uncertainty_col],
+            df_plot[uncertainty_col],
             width,
             label="Uncertainty",
             color="blue",
@@ -147,31 +134,3 @@ class BrierScoreDecompositionPlot(BasePlot):
         self.ax.set_ylabel("Brier Score Components")
         self.ax.set_title(title)
         self.ax.grid(True, alpha=0.3)
-
-    def hvplot(self, **kwargs):
-        """Generate an interactive Brier Score decomposition plot using hvPlot."""
-        import hvplot.pandas  # noqa: F401
-
-        df_plot, plot_label_col = self._prepare_plot_data()
-
-        df_plot_melted = df_plot.melt(
-            id_vars=[plot_label_col] if plot_label_col else [],
-            value_vars=[
-                self.reliability_col,
-                self.resolution_col,
-                self.uncertainty_col,
-            ],
-            var_name="component",
-            value_name="value",
-        )
-
-        plot_kwargs = {
-            "x": plot_label_col if plot_label_col else "index",
-            "y": "value",
-            "by": "component",
-            "kind": "bar",
-            "title": "Brier Score Decomposition",
-        }
-        plot_kwargs.update(kwargs)
-
-        return df_plot_melted.hvplot(**plot_kwargs)

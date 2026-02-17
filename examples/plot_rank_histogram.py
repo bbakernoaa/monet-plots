@@ -39,14 +39,8 @@ ranks_uniform = np.random.randint(0, n_ensemble_members + 1, n_forecasts)
 df_uniform = pd.DataFrame({"rank": ranks_uniform})
 
 # 2. Initialize and create the plot
-plot = RankHistogramPlot(
-    df_uniform,
-    rank_col="rank",
-    n_members=n_ensemble_members,
-    normalize=True,
-    figsize=(10, 6),
-)
-plot.plot()
+plot = RankHistogramPlot(figsize=(10, 6))
+plot.plot(df_uniform, rank_col="rank", n_members=n_ensemble_members, normalize=True)
 
 # 3. Add titles and labels
 plot.ax.set_title("Rank Histogram: Uniform Distribution (Reliable Ensemble)")

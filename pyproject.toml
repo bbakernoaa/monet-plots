@@ -8,7 +8,7 @@ version = "0.1.0"
 authors = [
   { name="NOAA/ARL" },
 ]
-description = "A plotting library for MONET"
+description = "A scientific plotting library for MONET and MONETIO"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -30,6 +30,8 @@ dependencies = [
     "hvplot",
     "holoviews",
     "geoviews",
+    "datashader",
+    "flox",
 ]
 
 [project.urls]
@@ -53,4 +55,3 @@ docs = [
 
 [tool.ruff]
 line-length = 88
-extend-exclude = ["*.ipynb"]

@@ -1,19 +1,19 @@
+# src/monet_plots/plots/facet_grid.py
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
-import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-import numpy as np
+import pandas as pd
 import seaborn as sns
 import xarray as xr
 
-from ..plot_utils import identify_coords, to_dataframe
+from ..plot_utils import to_dataframe
 from ..style import wiley_style
 from .base import BasePlot
 
 if TYPE_CHECKING:
-    import xarray as xr
+    import cartopy.crs as ccrs
 
 
 class FacetGridPlot(BasePlot):
@@ -33,7 +33,7 @@ class FacetGridPlot(BasePlot):
         aspect: float = 1,
         subplot_kws: dict[str, Any] | None = None,
         **kwargs: Any,
-    ):
+    ) -> None:
         """Initializes the facet grid.
 
         Args:
@@ -82,7 +82,7 @@ class FacetGridPlot(BasePlot):
         # For compatibility with tests, also store as 'g'
         self.g = self.grid
 
-    def map_dataframe(self, plot_func: Any, *args: Any, **kwargs: Any) -> None:
+    def map_dataframe(self, plot_func: Callable, *args: Any, **kwargs: Any) -> None:
         """Maps a plotting function to the facet grid.
 
         Args:
@@ -92,7 +92,7 @@ class FacetGridPlot(BasePlot):
         """
         self.grid.map_dataframe(plot_func, *args, **kwargs)
 
-    def set_titles(self, *args: Any, **kwargs: Any) -> None:
+    def set_titles(self, *args, **kwargs):
         """Sets the titles of the facet grid.
 
         Args:
@@ -101,7 +101,7 @@ class FacetGridPlot(BasePlot):
         """
         self.grid.set_titles(*args, **kwargs)
 
-    def save(self, filename: str, **kwargs: Any) -> None:
+    def save(self, filename, **kwargs):
         """Saves the plot to a file.
 
         Args:
@@ -110,7 +110,7 @@ class FacetGridPlot(BasePlot):
         """
         self.fig.savefig(filename, **kwargs)
 
-    def plot(self, plot_func: Any = None, *args: Any, **kwargs: Any) -> None:
+    def plot(self, plot_func=None, *args, **kwargs):
         """Plots the data using the FacetGrid.
 
         Args:
@@ -121,205 +121,195 @@ class FacetGridPlot(BasePlot):
         if plot_func is not None:
             self.grid.map(plot_func, *args, **kwargs)
 
-    def close(self) -> None:
+    def close(self):
         """Closes the plot."""
         plt.close(self.fig)
 
-    def hvplot(self, **kwargs: Any):
-        """Generate an interactive facet grid plot using hvPlot."""
-        import hvplot.pandas  # noqa: F401
 
-        plot_kwargs = {
-            "by": [f for f in [self.row, self.col] if f is not None],
-            "subplots": True,
-        }
-        if self.hue:
-            plot_kwargs["c"] = self.hue
-
-        plot_kwargs.update(kwargs)
-
-        return self.data.hvplot(**plot_kwargs)
-
-
-class SpatialFacetGridPlot(BasePlot):
-    """Creates a geospatial facet grid plot using xarray.
-
-    This class leverages xarray's FacetGrid to create multi-panel geospatial
-    plots with cartopy projections and features.
-    """
+class SpatialFacetGridPlot(FacetGridPlot):
+    """Geospatial version of FacetGridPlot."""
 
     def __init__(
         self,
         data: xr.DataArray | xr.Dataset,
-        col: str | None = None,
+        *,
         row: str | None = None,
+        col: str | None = None,
         col_wrap: int | None = None,
-        projection: ccrs.Projection = ccrs.PlateCarree(),
-        subplot_kws: dict[str, Any] | None = None,
-        plot_func: str = "imshow",
+        projection: ccrs.Projection | None = None,
+        height: float = 4,
+        aspect: float = 1.2,
         **kwargs: Any,
-    ):
-        """Initializes the spatial facet grid.
+    ) -> None:
+        """Initialize Spatial Facet Grid.
 
         Parameters
         ----------
-        data : xarray.DataArray or xarray.Dataset
-            The data to plot.
-        col : str, optional
-            Dimension to facet along columns.
+        data : xr.DataArray or xr.Dataset
+            Geospatial data to plot.
         row : str, optional
-            Dimension to facet along rows.
+            Dimension/variable to map to rows.
+        col : str, optional
+            Dimension/variable to map to columns.
         col_wrap : int, optional
-            Wrap the column facet at this number.
+            Wrap columns at this number.
         projection : ccrs.Projection, optional
-            Cartopy projection for the facets, by default ccrs.PlateCarree().
-        subplot_kws : dict, optional
-            Additional keyword arguments for subplot creation.
-        plot_func : str
-            Default plotting function to use.
+            Cartopy projection for the maps. Defaults to PlateCarree.
+        height : float
+            Height of each facet.
+        aspect : float
+            Aspect ratio of each facet.
         **kwargs : Any
-            Additional keyword arguments passed to xarray's FacetGrid.
+            Additional arguments for FacetGrid.
         """
-        import xarray as xr
+        self.original_data = data
+        import cartopy.crs as ccrs
 
-        plt.style.use(wiley_style)
+        self.projection = projection or ccrs.PlateCarree()
 
-        self.data = data
-        self.col = col
-        self.row = row
-        self.col_wrap = col_wrap
+        # Handle xr.Dataset by converting to DataArray if faceting by variable
+        self.is_dataset = isinstance(data, xr.Dataset)
+        if self.is_dataset:
+            if row == "variable" or col == "variable":
+                data = data.to_array(dim="variable", name="value")
 
-        current_subplot_kws = subplot_kws.copy() if subplot_kws else {}
-        current_subplot_kws.setdefault("projection", projection)
-
-        # If data is a Dataset and facet by variable is requested, convert to array
-        if isinstance(data, xr.Dataset) and (col == "variable" or row == "variable"):
-            self.data = data.to_array()
-        elif isinstance(data, xr.Dataset) and col is None and row is None:
-            self.col = "variable"
-            self.data = data.to_array()
-
-        # Store unconsumed kwargs for the plot method
-        # These might include map features like 'coastlines', 'states', etc.
-        self.plot_kwargs = kwargs
-        self.default_plot_func = plot_func
-
-        # Initialize the xarray FacetGrid object
-        from xarray.plot.facetgrid import FacetGrid
-
-        self.grid = FacetGrid(
-            self.data,
-            col=self.col,
-            row=self.row,
-            col_wrap=self.col_wrap,
-            subplot_kws=current_subplot_kws,
+        super().__init__(
+            data,
+            row=row,
+            col=col,
+            col_wrap=col_wrap,
+            height=height,
+            aspect=aspect,
+            subplot_kws={"projection": self.projection},
+            **kwargs,
         )
 
-        # Initialize BasePlot with the figure and first valid axes
-        super().__init__(fig=self.grid.fig, ax=self.grid.axs.flatten()[0])
-
         # Set default titles
-        if isinstance(data, xr.Dataset) and (
-            self.col == "variable" or self.row == "variable"
-        ):
-            self.grid.set_titles(template="{value}")
-            for ax in self.grid.axs.flatten():
-                vname = ax.get_title()
-                if vname in data:
-                    ax.set_title(data[vname].attrs.get("long_name", vname))
-        else:
-            self.grid.set_titles()
+        self._set_default_titles()
 
-    @property
-    def axs_flattened(self) -> np.ndarray:
-        """Return a flattened array of all axes in the grid."""
-        return self.grid.axs.flatten()
+    def _set_default_titles(self) -> None:
+        """Format facet titles with metadata and date-time."""
+        for ax in self.grid.axes.flatten():
+            if ax is None:
+                continue
+            title = ax.get_title()
 
-    def add_features(self, **kwargs: Any) -> None:
-        """Add cartopy features to all facets in the grid.
+            # Handle titles that might have multiple facets (e.g. "row = val | col = val")
+            parts = title.split(" | ")
+            new_parts = []
+
+            for part in parts:
+                if " = " in part:
+                    # Use split(" = ", 1) to handle values that might contain " = "
+                    dim_val = part.split(" = ", 1)
+                    if len(dim_val) == 2:
+                        dim, val = dim_val
+                        dim = dim.strip()
+                        val = val.strip()
+
+                        # Handle date-time formatting
+                        try:
+                            dt = pd.to_datetime(val)
+                            val = dt.strftime("%Y-%m-%d %H:%M")
+                        except (ValueError, TypeError):
+                            pass
+
+                        # Handle long_name for dimensions/variables
+                        if dim == "variable" and self.is_dataset:
+                            try:
+                                # self.original_data is the original Dataset
+                                var_obj = self.original_data[val]
+                                long_name = var_obj.attrs.get("long_name", val)
+                                units = var_obj.attrs.get("units", "")
+                                val = f"{long_name} ({units})" if units else long_name
+                                dim = ""
+                            except (KeyError, AttributeError):
+                                pass
+                        elif dim in self.original_data.coords:
+                            try:
+                                coord_obj = self.original_data.coords[dim]
+                                long_name = coord_obj.attrs.get("long_name", dim)
+                                dim = long_name
+                            except (KeyError, AttributeError):
+                                pass
+
+                        new_parts.append(f"{dim} {val}".strip())
+                    else:
+                        new_parts.append(part)
+                else:
+                    new_parts.append(part)
+
+            ax.set_title(" | ".join(new_parts))
+
+    def add_map_features(self, **kwargs: Any) -> None:
+        """Add cartopy features to all facets.
 
         Parameters
         ----------
         **kwargs : Any
-            Keyword arguments passed to SpatialPlot.add_features for each facet.
+            Keyword arguments passed to SpatialPlot.add_features.
+            Default is coastlines=True.
         """
         from .spatial import SpatialPlot
 
-        for ax in self.axs_flattened:
-            # We create a temporary SpatialPlot to use its add_features logic
-            # This ensures consistent feature handling across all facets.
-            SpatialPlot(ax=ax, **kwargs)
+        if "coastlines" not in kwargs:
+            kwargs["coastlines"] = True
 
-    def set_titles(self, template: str = "{coord} = {value}", **kwargs: Any) -> None:
-        """Set titles for each facet.
+        for ax in self.grid.axes.flatten():
+            if ax is None:
+                continue
+            # Use SpatialPlot's feature logic on each axis
+            SpatialPlot(ax=ax, projection=self.projection, **kwargs)
+
+    def map_monet(
+        self,
+        plotter_class: type,
+        *,
+        x: str = "lon",
+        y: str = "lat",
+        var_name: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Map a monet-plots spatial plotter to the grid.
 
         Parameters
         ----------
-        template : str
-            Title template.
+        plotter_class : type
+            A class from monet_plots.plots (e.g., SpatialImshowPlot).
+        x : str
+            Column name for longitude.
+        y : str
+            Column name for latitude.
+        var_name : str, optional
+            The variable name to plot. If None and faceting by variable,
+            uses 'value'.
         **kwargs : Any
-            Additional arguments for set_titles.
+            Arguments passed to the plotter and map features.
         """
-        self.grid.set_titles(template=template, **kwargs)
+        if var_name is None:
+            if "variable" in self.data.columns:
+                var_name = "value"
+            elif isinstance(self.raw_data, xr.DataArray):
+                var_name = self.raw_data.name
+            elif isinstance(self.raw_data, xr.Dataset):
+                # If not faceting by variable, we need a var_name
+                # For now just pick the first data var if not provided
+                var_name = list(self.raw_data.data_vars)[0]
 
-    def plot(self, plot_func: str | None = None, **kwargs: Any) -> Any:
-        """Plot the data on the facet grid using xarray plotting.
+        def _mapped_plot(*args, **kwargs_inner):
+            data_df = kwargs_inner.pop("data")
+            ax = plt.gca()
 
-        Parameters
-        ----------
-        plot_func : str, optional
-            Xarray plotting method to use ('imshow', 'contourf', 'pcolormesh', 'contour').
-            If None, uses the default_plot_func provided during initialization.
-        **kwargs : Any
-            Keyword arguments passed to the plotting method.
+            # Reconstruct DataArray from DataFrame
+            # We assume x and y are the coordinates
+            temp_da = data_df.set_index([y, x]).to_xarray()[var_name]
 
-        Returns
-        -------
-        FacetGrid
-            The xarray FacetGrid object.
-        """
-        if plot_func is None:
-            plot_func = self.default_plot_func
+            # Create plotter instance
+            plotter = plotter_class(temp_da, ax=ax, **kwargs_inner)
+            plotter.plot()
 
-        # Merge stored plot_kwargs with those passed to plot()
-        final_kwargs = self.plot_kwargs.copy()
-        final_kwargs.update(kwargs)
-
-        # We need to map the appropriate xarray plotting function
-        from xarray.plot import (
-            contour,
-            contourf,
-            imshow,
-            pcolormesh,
-            scatter,
-        )
-
-        mapping = {
-            "imshow": imshow,
-            "contourf": contourf,
-            "contour": contour,
-            "pcolormesh": pcolormesh,
-            "scatter": scatter,
-        }
-
-        func = mapping.get(plot_func, imshow)
-
-        if plot_func == "scatter":
-            # For scatter, we often want to use the DataArray/Dataset method directly
-            # to ensure coordinate names are handled correctly within FacetGrid.
-            def _scatter_func(d, x, y, **kwargs):
-                return d.plot.scatter(x=x, y=y, **kwargs)
-
-            func = _scatter_func
-
-        # Identify coordinates if not provided
-        lon_coord, lat_coord = identify_coords(self.data)
-        final_kwargs.setdefault("x", lon_coord)
-        final_kwargs.setdefault("y", lat_coord)
-        final_kwargs.setdefault("transform", ccrs.PlateCarree())
-
-        # Extract map features before calling map_dataarray
-        map_feature_keys = [
+        # Separate feature kwargs
+        feature_keys = [
             "coastlines",
             "states",
             "countries",
@@ -331,74 +321,40 @@ class SpatialFacetGridPlot(BasePlot):
             "gridlines",
             "extent",
             "resolution",
-            "natural_earth",
         ]
-        map_features = {
-            k: final_kwargs.pop(k) for k in map_feature_keys if k in final_kwargs
-        }
+        feature_kwargs = {k: kwargs.pop(k) for k in feature_keys if k in kwargs}
 
-        x = final_kwargs.pop("x")
-        y = final_kwargs.pop("y")
+        # Check for colorbar requirement before popping from kwargs
+        add_shared_cb = kwargs.pop("add_colorbar", False)
 
-        # Map the plotting function
-        # Using map_dataarray for DataArray facets and map for Dataset facets
-        if isinstance(self.data, xr.DataArray):
-            self.grid.map_dataarray(func, x, y, **final_kwargs)
-        else:
-            self.grid.map(func, x, y, **final_kwargs)
+        self.map_dataframe(_mapped_plot, **kwargs)
 
-        # Add map features to all facets
-        if map_features or "coastlines" not in map_features:
-            # Default to coastlines if not specified otherwise
-            if "coastlines" not in map_features:
-                map_features["coastlines"] = True
-            self.add_features(**map_features)
+        # Add features
+        self.add_map_features(**feature_kwargs)
 
-        return self.grid
+        # Add shared colorbar if requested
+        if add_shared_cb:
+            self._add_shared_colorbar(**kwargs)
 
-    def map_monet(self, cls: Any, **kwargs: Any) -> None:
-        """Map a MONET plotting class to the grid.
+    def _add_shared_colorbar(self, **kwargs: Any) -> None:
+        """Add a shared colorbar to the figure."""
+        # Find the last mappable object in the facets and the last valid axis
+        mappable = None
+        target_ax = None
+        for ax in reversed(self.grid.axes.flatten()):
+            if ax is None:
+                continue
+            if target_ax is None:
+                target_ax = ax
+            if ax.collections and mappable is None:
+                mappable = ax.collections[0]
+            if ax.images and mappable is None:
+                mappable = ax.images[0]
 
-        Parameters
-        ----------
-        cls : class
-            The MONET plotting class to map (e.g., SpatialImshowPlot).
-        **kwargs : Any
-            Keyword arguments passed to the class constructor and its plot method.
-        """
-
-        def _monet_map_func(data, x, y, **inner_kwargs):
-            # Get the current axes from the grid
-            ax = plt.gca()
-            # Create the MONET plot object
-            # Note: we pass ax and the data for this facet
-            plot_obj = cls(data, ax=ax, **kwargs)
-            # The constructor might already trigger plot(), but we ensure it's done
-            if not hasattr(plot_obj, "_plotted") or not plot_obj._plotted:
-                plot_obj.plot(**inner_kwargs)
-
-        # Identify coordinates if not provided
-        lon_coord, lat_coord = identify_coords(self.data)
-        x = kwargs.pop("x", lon_coord)
-        y = kwargs.pop("y", lat_coord)
-
-        # We use map_dataarray because MONET classes usually expect a single DataArray
-        # for the model variable.
-        self.grid.map_dataarray(_monet_map_func, x, y, **kwargs)
-
-    def hvplot(self, plot_func: str | None = None, **kwargs: Any) -> Any:
-        """Generate an interactive spatial facet grid plot using hvPlot."""
-        import hvplot.xarray  # noqa: F401
-
-        if plot_func is None:
-            plot_func = self.default_plot_func
-
-        plot_kwargs = {
-            "row": self.row,
-            "col": self.col,
-            "geo": True,
-            "kind": plot_func if plot_func != "imshow" else "image",
-        }
-        plot_kwargs.update(kwargs)
-
-        return self.data.hvplot(**plot_kwargs)
+        if mappable and target_ax:
+            # Add colorbar to the last valid axis
+            self.add_colorbar(
+                mappable,
+                ax=target_ax,
+                label=kwargs.get("label", ""),
+            )

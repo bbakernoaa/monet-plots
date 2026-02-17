@@ -97,21 +97,3 @@ class BivariatePolarPlot(BasePlot):
 
         self.ax.set_ylim(0, self.ws_max)
         return self.ax
-
-    def hvplot(self, **kwargs: Any):
-        """Generate an interactive bivariate polar plot using hvPlot."""
-        import hvplot.pandas  # noqa: F401
-
-        # Simplified interactive bivariate polar plot: scatter plot
-        # Note: hvPlot doesn't have a native binned polar heatmap yet.
-        plot_kwargs = {
-            "x": self.wd_col,
-            "y": self.ws_col,
-            "c": self.val_col,
-            "kind": "scatter",
-            "title": f"Bivariate Polar: {self.val_col}",
-            "ylim": (0, self.ws_max),
-        }
-        plot_kwargs.update(kwargs)
-
-        return self.df.hvplot(**plot_kwargs)
