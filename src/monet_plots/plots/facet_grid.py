@@ -9,7 +9,7 @@ import seaborn as sns
 import xarray as xr
 
 from ..plot_utils import to_dataframe
-from ..style import wiley_style
+from ..style import set_style
 from .base import BasePlot
 
 if TYPE_CHECKING:
@@ -32,6 +32,7 @@ class FacetGridPlot(BasePlot):
         height: float = 3,
         aspect: float = 1,
         subplot_kws: dict[str, Any] | None = None,
+        style: str | None = "wiley",
         **kwargs: Any,
     ) -> None:
         """Initializes the facet grid.
@@ -45,10 +46,12 @@ class FacetGridPlot(BasePlot):
             height (float, optional): Height of each facet in inches. Defaults to 3
             aspect (float, optional): Aspect ratio of each facet. Defaults to 1
             subplot_kws (dict, optional): Keyword arguments for subplots (e.g. projection).
+            style (str, optional): Style name to apply. Defaults to 'wiley'.
             **kwargs: Additional keyword arguments to pass to `FacetGrid`.
         """
-        # Apply Wiley style
-        plt.style.use(wiley_style)
+        # Apply style
+        if style:
+            set_style(style)
 
         # Store facet parameters
         self.row = row
@@ -77,7 +80,7 @@ class FacetGridPlot(BasePlot):
 
         # Initialize BasePlot with the figure and first axes from the grid
         axes = self.grid.axes.flatten()
-        super().__init__(fig=self.grid.fig, ax=axes[0])
+        super().__init__(fig=self.grid.fig, ax=axes[0], style=None)
 
         # For compatibility with tests, also store as 'g'
         self.g = self.grid
@@ -139,6 +142,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
         projection: ccrs.Projection | None = None,
         height: float = 4,
         aspect: float = 1.2,
+        style: str | None = "wiley",
         **kwargs: Any,
     ) -> None:
         """Initialize Spatial Facet Grid.
@@ -181,6 +185,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
             height=height,
             aspect=aspect,
             subplot_kws={"projection": self.projection},
+            style=style,
             **kwargs,
         )
 

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 
-from ..style import wiley_style
+from ..style import set_style
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -22,7 +22,7 @@ class BasePlot:
     and provides a common interface for saving and closing plots.
     """
 
-    def __init__(self, fig=None, ax=None, **kwargs):
+    def __init__(self, fig=None, ax=None, style: str | None = "wiley", **kwargs):
         """Initializes the plot with a consistent style.
 
         If `fig` and `ax` are not provided, a new figure and axes
@@ -31,9 +31,13 @@ class BasePlot:
         Args:
             fig (matplotlib.figure.Figure, optional): Figure to plot on.
             ax (matplotlib.axes.Axes, optional): Axes to plot on.
+            style (str, optional): Style name to apply (e.g., 'wiley', 'paper').
+                If None, no style is applied. Defaults to 'wiley'.
             **kwargs: Additional keyword arguments for `plt.subplots`.
         """
-        plt.style.use(wiley_style)
+        if style:
+            set_style(style)
+
         if ax is not None:
             self.ax = ax
             if fig is not None:

@@ -85,13 +85,16 @@ class SpatialPlot(BasePlot):
         current_subplot_kw["projection"] = projection
 
         self.resolution = kwargs.pop("resolution", "50m")
+        style = kwargs.pop("style", "wiley")
 
         # Ensure coastlines are enabled by default if not specified.
         if "coastlines" not in kwargs:
             kwargs["coastlines"] = True
 
         # Initialize the base plot, which creates the figure and axes.
-        super().__init__(fig=fig, ax=ax, figsize=figsize, subplot_kw=current_subplot_kw)
+        super().__init__(
+            fig=fig, ax=ax, figsize=figsize, style=style, subplot_kw=current_subplot_kw
+        )
 
         # If BasePlot didn't create an axes (e.g. because fig was provided),
         # create one now.

@@ -87,7 +87,6 @@ _paper_style = {
     "axes.grid": True,
     "grid.linestyle": ":",
     "grid.color": "lightgray",
-    "axes.spines": ["bottom", "left"],
     "axes.spines.right": False,
     "axes.spines.top": False,
 }
@@ -164,7 +163,19 @@ _styles = {
 }
 
 
-def set_style(context="default"):
+def get_available_styles() -> list[str]:
+    """
+    Returns a list of available style context names.
+
+    Returns
+    -------
+    list[str]
+        List of style names.
+    """
+    return list(_styles.keys())
+
+
+def set_style(context: str = "wiley"):
     """
     Set the plotting style based on a predefined context.
 
@@ -173,7 +184,7 @@ def set_style(context="default"):
     context : str, optional
         The name of the style context to apply.
         Available contexts: "wiley", "presentation", "paper", "web", "pivotal_weather", "default".
-        Defaults to "default" (Matplotlib's default style).
+        Defaults to "wiley".
 
     Raises
     ------
@@ -186,7 +197,20 @@ def set_style(context="default"):
             f"Available contexts are: {', '.join(_styles.keys())}"
         )
 
-    plt.style.use(_styles[context])
+    style_dict = _styles[context]
+
+    # Separate standard rcParams from custom ones
+    standard_rc = {k: v for k, v in style_dict.items() if k in plt.rcParams}
+    custom_rc = {k: v for k, v in style_dict.items() if k not in plt.rcParams}
+
+    if context == "default":
+        plt.style.use("default")
+    else:
+        plt.style.use(standard_rc)
+
+    # Manually update custom keys in plt.rcParams if needed,
+    # or just ensure they are available for MONET's spatial logic.
+    plt.rcParams.update(custom_rc)
 
 
 # Expose wiley_style for direct import if needed for backward compatibility
