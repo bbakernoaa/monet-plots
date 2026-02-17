@@ -21,6 +21,13 @@ def test_set_style():
     set_style("wiley")
     assert plt.rcParams["figure.figsize"] == [6.0, 4.0]
 
+    # Test pivotal_weather (has custom keys)
+    set_style("pivotal_weather")
+    from monet_plots.style import get_style_setting
+
+    assert get_style_setting("coastline.width") == 0.5
+    assert get_style_setting("font.size") == 12
+
 
 def test_base_plot_style_activation():
     # Default should be wiley

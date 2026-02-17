@@ -351,7 +351,7 @@ def compute_binned_bias(
         {
             "bias_mean": binned.mean(dim=dim),
             "bias_std": binned.std(dim=dim),
-            "count": binned.count(dim=dim),
+            "bias_count": binned.count(dim=dim),
         }
     )
 

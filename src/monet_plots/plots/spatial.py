@@ -10,6 +10,7 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import ArrayLike
 
+from ..style import get_style_setting
 from .base import BasePlot
 
 if TYPE_CHECKING:
@@ -133,18 +134,18 @@ class SpatialPlot(BasePlot):
 
         # Define default styles, falling back to sane defaults if not in rcParams.
         coastline_defaults = {
-            "linewidth": plt.rcParams.get("coastline.width", 0.5),
-            "edgecolor": plt.rcParams.get("coastline.color", "black"),
+            "linewidth": get_style_setting("coastline.width", 0.5),
+            "edgecolor": get_style_setting("coastline.color", "black"),
             "facecolor": "none",
         }
         states_defaults = {
-            "linewidth": plt.rcParams.get("states.width", 0.5),
-            "edgecolor": plt.rcParams.get("states.color", "black"),
+            "linewidth": get_style_setting("states.width", 0.5),
+            "edgecolor": get_style_setting("states.color", "black"),
             "facecolor": "none",
         }
         borders_defaults = {
-            "linewidth": plt.rcParams.get("borders.width", 0.5),
-            "edgecolor": plt.rcParams.get("borders.color", "black"),
+            "linewidth": get_style_setting("borders.width", 0.5),
+            "edgecolor": get_style_setting("borders.color", "black"),
             "facecolor": "none",
         }
 

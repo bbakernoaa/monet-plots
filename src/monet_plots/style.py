@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 import matplotlib.pyplot as plt
 
 # Colorblind-friendly palette (Okabe-Ito)
@@ -162,6 +166,8 @@ _styles = {
     "default": {},  # Matplotlib default style
 }
 
+_current_style_name = "wiley"
+
 
 def get_available_styles() -> list[str]:
     """
@@ -191,6 +197,8 @@ def set_style(context: str = "wiley"):
     ValueError
         If an unknown context name is provided.
     """
+    global _current_style_name
+
     if context not in _styles:
         raise ValueError(
             f"Unknown style context: '{context}'. "
@@ -201,16 +209,39 @@ def set_style(context: str = "wiley"):
 
     # Separate standard rcParams from custom ones
     standard_rc = {k: v for k, v in style_dict.items() if k in plt.rcParams}
-    custom_rc = {k: v for k, v in style_dict.items() if k not in plt.rcParams}
 
     if context == "default":
         plt.style.use("default")
     else:
         plt.style.use(standard_rc)
 
-    # Manually update custom keys in plt.rcParams if needed,
-    # or just ensure they are available for MONET's spatial logic.
-    plt.rcParams.update(custom_rc)
+    _current_style_name = context
+
+
+def get_style_setting(key: str, default: Any = None) -> Any:
+    """
+    Retrieves a style setting from the currently active style.
+    Looks in both standard rcParams and custom style settings.
+
+    Parameters
+    ----------
+    key : str
+        The name of the style setting.
+    default : Any, optional
+        The default value if the key is not found, by default None.
+
+    Returns
+    -------
+    Any
+        The style setting value.
+    """
+    # First check current style's dictionary (includes custom keys)
+    style_dict = _styles.get(_current_style_name, {})
+    if key in style_dict:
+        return style_dict[key]
+
+    # Fallback to general rcParams
+    return plt.rcParams.get(key, default)
 
 
 # Expose wiley_style for direct import if needed for backward compatibility

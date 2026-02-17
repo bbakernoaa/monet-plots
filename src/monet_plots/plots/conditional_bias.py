@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+import pandas as pd
 import xarray as xr
 
 from ..plot_utils import normalize_data
@@ -74,27 +75,33 @@ class ConditionalBiasPlot(BasePlot):
         if plot_data is None:
             raise ValueError("No data provided.")
 
-        if label_col:
-            # Handle grouping for multiple models/categories
-            for name, group in plot_data.groupby(label_col):
-                obs = group[obs_col]
-                mod = group[fcst_col]
-                self._plot_single(obs, mod, n_bins, label=str(name), **kwargs)
-        else:
-            # Single model plot
-            if isinstance(plot_data, xr.Dataset):
-                obs = plot_data[obs_col]
-                mod = plot_data[fcst_col]
-            elif isinstance(plot_data, xr.DataArray):
-                mod = plot_data
-                obs = kwargs.pop("obs", None)
-                if obs is None:
-                    raise ValueError("obs must be provided if data is a DataArray.")
+        try:
+            if label_col:
+                # Handle grouping for multiple models/categories
+                for name, group in plot_data.groupby(label_col):
+                    obs = group[obs_col]
+                    mod = group[fcst_col]
+                    self._plot_single(obs, mod, n_bins, label=str(name), **kwargs)
             else:
-                # Should have been normalized
-                raise TypeError(f"Unsupported data type: {type(plot_data)}")
+                # Single model plot
+                if isinstance(plot_data, xr.Dataset):
+                    obs = plot_data[obs_col]
+                    mod = plot_data[fcst_col]
+                elif isinstance(plot_data, xr.DataArray):
+                    mod = plot_data
+                    obs = kwargs.pop("obs", None)
+                    if obs is None:
+                        raise ValueError("obs must be provided if data is a DataArray.")
+                elif isinstance(plot_data, pd.DataFrame):
+                    obs = plot_data[obs_col]
+                    mod = plot_data[fcst_col]
+                else:
+                    # Should have been normalized
+                    raise TypeError(f"Unsupported data type: {type(plot_data)}")
 
-            self._plot_single(obs, mod, n_bins, label=label, **kwargs)
+                self._plot_single(obs, mod, n_bins, label=label, **kwargs)
+        except KeyError as e:
+            raise ValueError(f"Required column not found: {e}") from e
 
         self.ax.axhline(0, color="k", linestyle="--", linewidth=1.5, alpha=0.7)
         xlabel = (
@@ -112,15 +119,19 @@ class ConditionalBiasPlot(BasePlot):
         stats = compute_binned_bias(obs, mod, n_bins=n_bins)
         pdf = stats.compute().dropna(dim="bin_center")
 
-        self.ax.errorbar(
-            pdf.bin_center,
-            pdf.bias_mean,
-            yerr=pdf.bias_std,
-            fmt="o-",
-            capsize=5,
-            label=label,
-            **kwargs,
-        )
+        # Filter for count > 1 to avoid showing bins with only one sample (no std dev)
+        pdf = pdf.where(pdf.bias_count > 1, drop=True)
+
+        if pdf.bin_center.size > 0:
+            self.ax.errorbar(
+                pdf.bin_center,
+                pdf.bias_mean,
+                yerr=pdf.bias_std,
+                fmt="o-",
+                capsize=5,
+                label=label,
+                **kwargs,
+            )
 
     def hvplot(
         self,
@@ -178,6 +189,9 @@ class ConditionalBiasPlot(BasePlot):
             by = label_col
         else:
             if isinstance(plot_data, xr.Dataset):
+                obs = plot_data[obs_col]
+                mod = plot_data[fcst_col]
+            elif isinstance(plot_data, pd.DataFrame):
                 obs = plot_data[obs_col]
                 mod = plot_data[fcst_col]
             else:
