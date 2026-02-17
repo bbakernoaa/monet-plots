@@ -1,7 +1,12 @@
-import pandas as pd
-from typing import Optional, Any
+from __future__ import annotations
+
+from typing import Any, Optional
+
+import xarray as xr
+
+from ..plot_utils import normalize_data
+from ..verification_metrics import compute_binned_bias
 from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
 
 
 class ConditionalBiasPlot(BasePlot):
@@ -9,95 +14,195 @@ class ConditionalBiasPlot(BasePlot):
     Conditional Bias Plot.
 
     Visualizes the Bias (Forecast - Observation) as a function of the Observed Value.
-    Also known as a Conditional Quantile Plot or Bias-Variance decomposition plot in some contexts.
-
-    Functional Requirements:
-    1. Plot Bias (y-axis) vs Observed Value (x-axis).
-    2. Usually binned: x-axis bins of observed values, y-axis mean bias in that bin.
-    3. Include error bars (std dev or CI) for bias in each bin.
-    4. Draw zero-bias line.
-
-    Edge Cases:
-    - Empty bins (no observations in range).
-    - Outliers skewing mean bias.
+    Supports native Xarray/Dask objects and interactive visualization.
     """
 
-    def __init__(self, fig=None, ax=None, **kwargs):
+    def __init__(self, data: Optional[Any] = None, fig=None, ax=None, **kwargs):
+        """
+        Initializes the plot.
+
+        Parameters
+        ----------
+        data : Any, optional
+            The input data (Dataset, DataArray, DataFrame, or ndarray).
+        fig : matplotlib.figure.Figure, optional
+            Figure to plot on.
+        ax : matplotlib.axes.Axes, optional
+            Axes to plot on.
+        **kwargs : Any
+            Additional keyword arguments for the figure.
+        """
         super().__init__(fig=fig, ax=ax, **kwargs)
+        self.data = normalize_data(data) if data is not None else None
 
     def plot(
         self,
-        data: Any,
-        obs_col: str,
-        fcst_col: str,
+        data: Optional[Any] = None,
+        obs_col: Optional[str] = None,
+        fcst_col: Optional[str] = None,
         n_bins: int = 10,
+        label: str = "Model",
         label_col: Optional[str] = None,
         **kwargs,
     ):
         """
-        Main plotting method.
+        Generates the static Matplotlib plot.
 
-        Args:
-            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): Paired obs/fcst data.
-            obs_col (str): Observation column.
-            fcst_col (str): Forecast column.
-            n_bins (int): Number of bins for observed values.
-            label_col (str): Grouping column.
-            **kwargs: Matplotlib kwargs.
+        Parameters
+        ----------
+        data : Any, optional
+            Input data, overrides self.data if provided.
+        obs_col : str, optional
+            Name of the observation variable. Required for Dataset/DataFrame.
+        fcst_col : str, optional
+            Name of the forecast variable. Required for Dataset/DataFrame.
+        n_bins : int, optional
+            Number of bins for observed values, by default 10.
+        label : str, optional
+            Label for the model data, by default "Model".
+        label_col : str, optional
+            Column name to group by for plotting multiple lines.
+        **kwargs : Any
+            Additional Matplotlib plotting arguments passed to `errorbar`.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object containing the plot.
         """
-        df = to_dataframe(data)
-        validate_dataframe(df, required_columns=[obs_col, fcst_col])
-
-        df_plot = df.copy()
-        df_plot["bias"] = df_plot[fcst_col] - df_plot[obs_col]
+        plot_data = normalize_data(data) if data is not None else self.data
+        if plot_data is None:
+            raise ValueError("No data provided.")
 
         if label_col:
-            for name, group in df_plot.groupby(label_col):
-                self._plot_binned_bias(
-                    group, obs_col, "bias", n_bins, label=str(name), **kwargs
-                )
-            self.ax.legend(loc="best")
+            # Handle grouping for multiple models/categories
+            for name, group in plot_data.groupby(label_col):
+                obs = group[obs_col]
+                mod = group[fcst_col]
+                self._plot_single(obs, mod, n_bins, label=str(name), **kwargs)
         else:
-            self._plot_binned_bias(
-                df_plot, obs_col, "bias", n_bins, label="Model", **kwargs
-            )
+            # Single model plot
+            if isinstance(plot_data, xr.Dataset):
+                obs = plot_data[obs_col]
+                mod = plot_data[fcst_col]
+            elif isinstance(plot_data, xr.DataArray):
+                mod = plot_data
+                obs = kwargs.pop("obs", None)
+                if obs is None:
+                    raise ValueError("obs must be provided if data is a DataArray.")
+            else:
+                # Should have been normalized
+                raise TypeError(f"Unsupported data type: {type(plot_data)}")
 
-        self.ax.axhline(
-            0, color="k", linestyle="--", linewidth=2, alpha=0.8, label="No Bias"
+            self._plot_single(obs, mod, n_bins, label=label, **kwargs)
+
+        self.ax.axhline(0, color="k", linestyle="--", linewidth=1.5, alpha=0.7)
+        xlabel = (
+            plot_data[obs_col].attrs.get("long_name", obs_col)
+            if obs_col
+            else "Observed Value"
         )
-        self.ax.legend()
-        self.ax.set_xlabel("Observed Value")
+        self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel("Mean Bias (Forecast - Observation)")
-        self.ax.grid(True, alpha=0.3)
+        self.ax.legend()
+        return self.ax
 
-    def _plot_binned_bias(self, df, x_col, y_col, n_bins, label, **kwargs):
-        """
-        Helper to bin data and plot mean +/- std.
-        """
-        # Create bins
-        bins = pd.cut(df[x_col], bins=n_bins, duplicates="drop")
-        binned = (
-            df.groupby(bins, observed=False)[y_col]
-            .agg(["mean", "std", "count"])
-            .reset_index()
+    def _plot_single(self, obs, mod, n_bins, label, **kwargs):
+        """Helper to plot a single binned bias line."""
+        stats = compute_binned_bias(obs, mod, n_bins=n_bins)
+        pdf = stats.compute().dropna(dim="bin_center")
+
+        self.ax.errorbar(
+            pdf.bin_center,
+            pdf.bias_mean,
+            yerr=pdf.bias_std,
+            fmt="o-",
+            capsize=5,
+            label=label,
+            **kwargs,
         )
-        binned["bin_center"] = binned[x_col].apply(lambda interval: interval.mid)
 
-        # Filter bins with sufficient samples
-        binned = binned[binned["count"] >= 5]  # Arbitrary threshold
+    def hvplot(
+        self,
+        data: Optional[Any] = None,
+        obs_col: Optional[str] = None,
+        fcst_col: Optional[str] = None,
+        n_bins: int = 10,
+        label_col: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Generates an interactive plot using hvPlot.
 
-        if len(binned) > 0:
-            self.ax.errorbar(
-                binned["bin_center"],
-                binned["mean"],
-                yerr=binned["std"],
-                fmt="o-",
-                capsize=5,
-                label=label,
-                **kwargs,
-            )
+        Parameters
+        ----------
+        data : Any, optional
+            Input data, overrides self.data if provided.
+        obs_col : str, optional
+            Name of the observation variable.
+        fcst_col : str, optional
+            Name of the forecast variable.
+        n_bins : int, optional
+            Number of bins, by default 10.
+        label_col : str, optional
+            Column name to group by.
+        **kwargs : Any
+            Additional hvPlot arguments.
 
+        Returns
+        -------
+        holoviews.core.Element
+            The interactive plot.
+        """
+        import holoviews as hv
+        import hvplot.xarray  # noqa: F401
 
-# TDD Anchors:
-# 1. test_zero_bias_line: Verify line exists at y=0.
-# 2. test_binning_consistency: Ensure bins cover full range of obs.
+        plot_data = normalize_data(data) if data is not None else self.data
+        if plot_data is None:
+            raise ValueError("No data provided.")
+
+        if label_col:
+
+            def get_stats(group):
+                return compute_binned_bias(
+                    group[obs_col], group[fcst_col], n_bins=n_bins
+                ).compute()
+
+            # We compute per group for the visualization summary
+            stats_list = []
+            for name, group in plot_data.groupby(label_col):
+                s = get_stats(group)
+                s = s.assign_coords({label_col: name}).expand_dims(label_col)
+                stats_list.append(s)
+            pdf = xr.concat(stats_list, dim=label_col).dropna(dim="bin_center")
+            by = label_col
+        else:
+            if isinstance(plot_data, xr.Dataset):
+                obs = plot_data[obs_col]
+                mod = plot_data[fcst_col]
+            else:
+                mod = plot_data
+                obs = kwargs.pop("obs")
+            pdf = compute_binned_bias(obs, mod, n_bins=n_bins).compute()
+            pdf = pdf.dropna(dim="bin_center")
+            by = None
+
+        xlabel = (
+            plot_data[obs_col].attrs.get("long_name", obs_col)
+            if obs_col
+            else "Observed Value"
+        )
+
+        plot = pdf.hvplot.scatter(
+            x="bin_center",
+            y="bias_mean",
+            by=by,
+            xlabel=xlabel,
+            ylabel="Mean Bias",
+            **kwargs,
+        ) * pdf.hvplot.errorbars(x="bin_center", y="bias_mean", yerr1="bias_std", by=by)
+
+        # Add zero line
+        plot *= hv.HLine(0).opts(color="black", line_dash="dashed")
+
+        return plot

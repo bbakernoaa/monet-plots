@@ -280,6 +280,96 @@ def compute_bias(
     return np.mean(diff, axis=dim)
 
 
+def compute_binned_bias(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    n_bins: int = 10,
+    bin_range: Optional[tuple[float, float]] = None,
+    dim: Optional[Union[str, list[str]]] = None,
+) -> xr.Dataset:
+    """
+    Calculates mean bias binned by observed values.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    n_bins : int, optional
+        Number of bins for observed values, by default 10.
+    bin_range : tuple[float, float], optional
+        The (min, max) range for the bins. If not provided and data is lazy,
+        min/max will be computed from the data (triggering a compute).
+        Providing `bin_range` ensures full laziness for Dask-backed inputs.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the statistics.
+        If None, all dimensions are used.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset containing 'bias_mean', 'bias_std', and 'count' binned by obs.
+        The bins are represented by their centers in the 'bin_center' coordinate.
+    """
+    if not isinstance(obs, xr.DataArray):
+        obs = xr.DataArray(obs)
+    if not isinstance(mod, xr.DataArray):
+        mod = xr.DataArray(mod)
+
+    bias = mod - obs
+    bias.name = "bias"
+
+    # Determine bins. For dask-backed arrays, xarray requires explicit bin edges.
+    # We also explicitly compute them for eager arrays to ensure parity.
+    midpoints = None
+    if isinstance(n_bins, int):
+        if bin_range is not None:
+            obs_min, obs_max = bin_range
+        else:
+            if hasattr(obs.data, "chunks"):
+                import dask
+
+                # We must compute min/max to establish the bin edges for the Dask graph.
+                # Documented compute for lazy data when no bin_range is provided.
+                obs_min, obs_max = dask.compute(obs.min(), obs.max())
+            else:
+                obs_min, obs_max = obs.min(), obs.max()
+
+        bins = np.linspace(float(obs_min), float(obs_max), n_bins + 1)
+        midpoints = (bins[:-1] + bins[1:]) / 2
+    else:
+        bins = n_bins
+        if isinstance(bins, (np.ndarray, list)):
+            bins_arr = np.asarray(bins)
+            midpoints = (bins_arr[:-1] + bins_arr[1:]) / 2
+
+    # Use xarray's groupby_bins, which leverages flox if installed for lazy dask support.
+    binned = bias.groupby_bins(obs, bins=bins)
+
+    res = xr.Dataset(
+        {
+            "bias_mean": binned.mean(dim=dim),
+            "bias_std": binned.std(dim=dim),
+            "count": binned.count(dim=dim),
+        }
+    )
+
+    # Convert Interval index to bin centers for plotting.
+    bin_coords = [c for c in res.coords if "_bins" in str(c)]
+    if bin_coords:
+        bin_coord = bin_coords[0]
+        if midpoints is not None:
+            res = res.assign_coords({bin_coord: midpoints})
+        else:
+            # Fallback for complex bin specifications: metadata-only compute.
+            midpoints = [i.mid for i in res.coords[bin_coord].values]
+            res = res.assign_coords({bin_coord: midpoints})
+        res = res.rename({bin_coord: "bin_center"})
+
+    return _update_history(res, "Calculated binned bias")
+
+
 def compute_rmse(
     obs: Union[np.ndarray, xr.DataArray],
     mod: Union[np.ndarray, xr.DataArray],
