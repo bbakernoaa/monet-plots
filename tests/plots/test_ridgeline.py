@@ -81,3 +81,25 @@ def test_ridgeline_plot_empty_fails():
     with pytest.raises(ValueError, match="No valid data points found"):
         plot = RidgelinePlot(df, group_dim="group", x="value")
         plot.plot()
+
+
+def test_ridgeline_new_features():
+    """Test RidgelinePlot new features: bandwidth, alpha, quantiles, color_by_group."""
+    df = pd.DataFrame(
+        {
+            "group": np.repeat(["A", "B"], 50),
+            "value": np.random.randn(100),
+        }
+    )
+
+    # Test BW and Alpha
+    plot = RidgelinePlot(df, group_dim="group", x="value", bw_method=0.2, alpha=0.5)
+    ax = plot.plot()
+    assert isinstance(ax, plt.Axes)
+    plt.close(plot.fig)
+
+    # Test Quantiles and Color by Group
+    plot = RidgelinePlot(df, group_dim="group", x="value", quantiles=[0.5])
+    ax = plot.plot(color_by_group=True)
+    assert isinstance(ax, plt.Axes)
+    plt.close(plot.fig)

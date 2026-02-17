@@ -4,7 +4,6 @@ import typing as t
 
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
 
 from .base import BasePlot
 
@@ -23,7 +22,21 @@ class Windrose(BasePlot):
         **kwargs
             Keyword arguments passed to the parent class.
         """
+        if "subplot_kw" not in kwargs:
+            kwargs["subplot_kw"] = {"projection": "polar"}
+        elif "projection" not in kwargs["subplot_kw"]:
+            kwargs["subplot_kw"]["projection"] = "polar"
+
         super().__init__(**kwargs)
+
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(projection="polar")
+
+        from matplotlib.projections.polar import PolarAxes
+
+        if not isinstance(self.ax, PolarAxes):
+            raise ValueError("Windrose plot requires a polar axis.")
+
         self.wd = wd
         self.ws = ws
 
@@ -44,10 +57,6 @@ class Windrose(BasePlot):
         **kwargs
             Keyword arguments passed to `matplotlib.pyplot.bar`.
         """
-        if self.fig is None:
-            self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(projection="polar")
-
         if isinstance(bins, int):
             bins = np.linspace(0, 360, bins + 1)
         if isinstance(rose_bins, int):

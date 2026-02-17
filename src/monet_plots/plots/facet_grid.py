@@ -43,6 +43,7 @@ class FacetGridPlot(BasePlot):
             col_wrap (int, optional): Number of columns before wrapping. Defaults to None
             height (float, optional): Height of each facet in inches. Defaults to 3
             aspect (float, optional): Aspect ratio of each facet. Defaults to 1
+            subplot_kws (dict, optional): Keyword arguments for subplots (e.g. projection).
             **kwargs: Additional keyword arguments to pass to `FacetGrid`.
         """
         # Apply Wiley style
@@ -57,6 +58,7 @@ class FacetGridPlot(BasePlot):
         self.aspect = aspect
 
         # Convert data to pandas DataFrame and ensure coordinates are columns
+        self.raw_data = data
         self.data = to_dataframe(data).reset_index()
 
         # Create the FacetGrid (this creates its own figure)
@@ -68,6 +70,7 @@ class FacetGridPlot(BasePlot):
             col_wrap=self.col_wrap,
             height=self.height,
             aspect=self.aspect,
+            subplot_kws=subplot_kws,
             **kwargs,
         )
 

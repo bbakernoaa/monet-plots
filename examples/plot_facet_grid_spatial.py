@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
-from monet_plots.plots.facet_grid import FacetGridPlot
+from monet_plots.plots.facet_grid import SpatialFacetGridPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 
 # 1. Create some dummy spatial data
@@ -101,11 +101,10 @@ grid.map_dataframe(
     plot_spatial_imshow, "temperature", cmap="viridis", add_colorbar=True
 )
 
-# 5. Set titles and adjust layout
-grid.set_titles(col_template="{col_name}", row_template="{row_name}")
+# 4. Final adjustments
 plt.tight_layout()
 
-# 6. Save the figure
+# 5. Save the figure
 grid.save("facet_grid_spatial_plot.png", dpi=300)
 
 print("Generated 'facet_grid_spatial_plot.png'")

@@ -1,6 +1,8 @@
 # src/monet_plots/plots/soccer.py
 """Soccer plot for model evaluation."""
 
+from __future__ import annotations
+
 import matplotlib.patches as patches
 import numpy as np
 import pandas as pd
@@ -17,6 +19,15 @@ class SoccerPlot(BasePlot):
     This plot shows model performance by plotting bias (x-axis) against error (y-axis).
     It typically includes 'goal' and 'criteria' zones to visually assess if the
     model meets specific performance standards.
+
+    Attributes
+    ----------
+    data : Union[pd.DataFrame, xr.Dataset, xr.DataArray]
+        The input data for the plot.
+    bias_data : Union[pd.Series, xr.DataArray]
+        Calculated or provided bias values.
+    error_data : Union[pd.Series, xr.DataArray]
+        Calculated or provided error values.
     """
 
     def __init__(
@@ -31,7 +42,9 @@ class SoccerPlot(BasePlot):
         metric: str = "fractional",
         goal: Optional[Dict[str, float]] = {"bias": 30.0, "error": 50.0},
         criteria: Optional[Dict[str, float]] = {"bias": 60.0, "error": 75.0},
-        **kwargs,
+        fig: Optional[matplotlib.figure.Figure] = None,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
     ):
         """
         Initialize Soccer Plot.
@@ -56,6 +69,11 @@ class SoccerPlot(BasePlot):
         self.metric = metric
         self.goal = goal
         self.criteria = criteria
+
+        # Track provenance for Xarray
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
+            history = self.data.attrs.get("history", "")
+            self.data.attrs["history"] = f"Initialized SoccerPlot; {history}"
 
         if bias_col is None or error_col is None:
             if obs_col is None or mod_col is None:
@@ -83,6 +101,7 @@ class SoccerPlot(BasePlot):
             self.error_data = compute_fe(obs, mod, dim=dim_arg)
             self.xlabel = "Mean Fractional Bias (%)"
             self.ylabel = "Mean Fractional Error (%)"
+
         elif self.metric == "normalized":
             self.bias_data = compute_nmb(obs, mod, dim=dim_arg)
             self.error_data = compute_nme(obs, mod, dim=dim_arg)
@@ -127,10 +146,18 @@ class SoccerPlot(BasePlot):
             )
             self.ax.add_patch(rect_goal)
 
-        # Plot points
+        # Plot points - compute if lazy
+        bias = self.bias_data
+        error = self.error_data
+
+        if hasattr(bias, "compute"):
+            bias = bias.compute()
+        if hasattr(error, "compute"):
+            error = error.compute()
+
         scatter_kwargs = {"zorder": 5}
         scatter_kwargs.update(kwargs)
-        self.ax.scatter(self.bias_data, self.error_data, **scatter_kwargs)
+        self.ax.scatter(bias, error, **scatter_kwargs)
 
         # Labels
         if self.label_col is not None:
@@ -180,6 +207,11 @@ class SoccerPlot(BasePlot):
         self.ax.set_xlabel(getattr(self, "xlabel", "Bias (%)"))
         self.ax.set_ylabel(getattr(self, "ylabel", "Error (%)"))
         self.ax.grid(True, linestyle=":", alpha=0.6)
+
+        # Update history for provenance
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
+            history = self.data.attrs.get("history", "")
+            self.data.attrs["history"] = f"Generated SoccerPlot; {history}"
 
         return self.ax
 

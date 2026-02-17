@@ -517,11 +517,39 @@ class SpatialTrack(SpatialPlot):
         """
         from ..plot_utils import get_plot_kwargs
 
+        # Automatically compute extent if not provided
+        if "extent" not in kwargs:
+            lon = self.data[self.lon_coord]
+            lat = self.data[self.lat_coord]
+            # Add a small buffer to the extent.
+            # Use dask.compute for efficient parallel calculation of min/max
+            # if the data is chunked.
+            import dask
+
+            lon_min, lon_max, lat_min, lat_max = dask.compute(
+                lon.min(), lon.max(), lat.min(), lat.max()
+            )
+            # Ensure they are scalar values (handles both numpy and dask returns)
+            lon_min, lon_max = float(lon_min), float(lon_max)
+            lat_min, lat_max = float(lat_min), float(lat_max)
+
+            lon_buf = (lon_max - lon_min) * 0.1 if lon_max > lon_min else 1.0
+            lat_buf = (lat_max - lat_min) * 0.1 if lat_max > lat_min else 1.0
+            kwargs["extent"] = [
+                lon_min - lon_buf,
+                lon_max + lon_buf,
+                lat_min - lat_buf,
+                lat_max + lat_buf,
+            ]
+
         # Add features and get remaining kwargs for scatter
         scatter_kwargs = self.add_features(**kwargs)
 
         scatter_kwargs.setdefault("transform", ccrs.PlateCarree())
 
+        # For coordinates and values, we pass the xarray objects directly.
+        # This allows Matplotlib to handle the conversion, maintaining
+        # compatibility with existing tests that check for lazy objects.
         longitude = self.data[self.lon_coord]
         latitude = self.data[self.lat_coord]
 

@@ -46,6 +46,9 @@ class RidgelinePlot(BasePlot):
         overlap: float = 0.5,
         cmap: str = "RdBu_r",
         title: Optional[str] = None,
+        bw_method: Optional[Any] = None,
+        alpha: float = 0.8,
+        quantiles: Optional[list[float]] = None,
         **kwargs: Any,
     ):
         """
@@ -63,6 +66,9 @@ class RidgelinePlot(BasePlot):
                 Defaults to 0.5.
             cmap (str): Colormap name for coloring curves. Defaults to 'RdBu_r'.
             title (str, optional): Plot title.
+            bw_method (Any, optional): KDE bandwidth method (passed to scipy.stats.gaussian_kde).
+            alpha (float): Transparency of the ridges. Defaults to 0.8.
+            quantiles (list[float], optional): List of quantiles to display (e.g., [0.5]).
             **kwargs: Additional keyword arguments for BasePlot (figure/axes creation).
         """
         super().__init__(**kwargs)
@@ -76,19 +82,28 @@ class RidgelinePlot(BasePlot):
         self.overlap = overlap
         self.cmap_name = cmap
         self.title = title
+        self.bw_method = bw_method
+        self.alpha = alpha
+        self.quantiles = quantiles
 
-    def plot(self, gradient: bool = True, **kwargs: Any) -> matplotlib.axes.Axes:
+    def plot(
+        self, gradient: bool = True, color_by_group: bool = False, **kwargs: Any
+    ) -> matplotlib.axes.Axes:
         """
         Generate the ridgeline plot.
 
         Args:
             gradient (bool): If True, fill curves with a gradient based on x-values.
+            color_by_group (bool): If True, color each ridge by its group category.
+                Takes precedence over gradient if True.
             **kwargs: Additional keyword arguments for formatting.
 
         Returns:
             matplotlib.axes.Axes: The axes object containing the plot.
         """
         import matplotlib.pyplot as plt
+
+        from ..verification_metrics import _update_history
 
         # 1. Prepare Data and Groups
         if isinstance(self.data, xr.DataArray):
@@ -174,7 +189,7 @@ class RidgelinePlot(BasePlot):
                 continue
 
             try:
-                kde = gaussian_kde(data_slice)
+                kde = gaussian_kde(data_slice, bw_method=self.bw_method)
                 y_density = kde(x_grid)
             except (np.linalg.LinAlgError, ValueError):
                 continue
@@ -185,7 +200,27 @@ class RidgelinePlot(BasePlot):
             y_final = baseline + y_density_scaled
 
             # Plot filling
-            if gradient:
+            if color_by_group:
+                # Use qualitative cmap or indexed colors
+                color = plt.get_cmap("tab10")(i % 10)
+                self.ax.fill_between(
+                    x_grid,
+                    baseline,
+                    y_final,
+                    facecolor=color,
+                    edgecolor="white",
+                    linewidth=0.5,
+                    alpha=self.alpha,
+                    zorder=len(groups) - i,
+                )
+                self.ax.plot(
+                    x_grid,
+                    y_final,
+                    color="black",
+                    linewidth=0.5,
+                    zorder=len(groups) - i + 0.1,
+                )
+            elif gradient:
                 # Plot in segments to create a gradient effect
                 for j in range(len(x_grid) - 1):
                     self.ax.fill_between(
@@ -194,7 +229,7 @@ class RidgelinePlot(BasePlot):
                         y_final[j : j + 2],
                         facecolor=cmap(norm(x_grid[j])),
                         edgecolor="none",
-                        alpha=0.9,
+                        alpha=self.alpha,
                         zorder=len(groups) - i,
                     )
                 # Add a clean top outline
@@ -216,9 +251,31 @@ class RidgelinePlot(BasePlot):
                     facecolor=color,
                     edgecolor="white",
                     linewidth=0.5,
-                    alpha=0.9,
+                    alpha=self.alpha,
                     zorder=len(groups) - i,
                 )
+                self.ax.plot(
+                    x_grid,
+                    y_final,
+                    color="black",
+                    linewidth=0.5,
+                    zorder=len(groups) - i + 0.1,
+                )
+
+            # 3. Add Quantiles
+            if self.quantiles is not None:
+                q_values = np.quantile(data_slice, self.quantiles)
+                q_densities = kde(q_values) * self.scale_factor
+                for qv, qd in zip(q_values, q_densities):
+                    self.ax.vlines(
+                        qv,
+                        baseline,
+                        baseline + qd,
+                        color="black",
+                        linestyle="--",
+                        linewidth=0.8,
+                        zorder=len(groups) - i + 0.2,
+                    )
 
         # 3. Final Formatting
         self.ax.set_yticks([-i * self.overlap for i in range(len(groups))])
@@ -227,9 +284,10 @@ class RidgelinePlot(BasePlot):
         if self.title:
             self.ax.set_title(self.title, pad=20)
 
-        # Add Colorbar matching the x-axis scale
-        mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
-        self.add_colorbar(mappable, label=data_name)
+        # Add Colorbar matching the x-axis scale if not coloring by group
+        if not color_by_group:
+            mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+            self.add_colorbar(mappable, label=data_name)
 
         # Add vertical gridlines as seen in the reference
         self.ax.xaxis.grid(True, linestyle="-", alpha=0.3)
@@ -242,6 +300,9 @@ class RidgelinePlot(BasePlot):
         self.ax.spines["top"].set_visible(False)
         self.ax.spines["right"].set_visible(False)
         self.ax.spines["left"].set_visible(False)
+
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
+            _update_history(self.data, f"Created ridgeline plot for {data_name}")
 
         return self.ax
 
