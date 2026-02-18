@@ -115,6 +115,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 *.png
+!src/monet_plots/assets/*.png
 
 # Custom additions for this project
 docs/gallery/

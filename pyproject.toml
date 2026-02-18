@@ -53,5 +53,8 @@ docs = [
     "sphinx-gallery>=0.15.0",
 ]
 
+[tool.setuptools.package-data]
+"monet_plots.assets" = ["*.png"]
+
 [tool.ruff]
 line-length = 88
