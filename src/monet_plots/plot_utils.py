@@ -453,6 +453,25 @@ def _dynamic_fig_size(obj):
     return figsize
 
 
+def get_logo_path(name: str = "monet_logos.png") -> str:
+    """
+    Get the path to a bundled logo asset.
+
+    Parameters
+    ----------
+    name : str, optional
+        The name of the logo file, by default "monet_logos.png".
+
+    Returns
+    -------
+    str
+        The full path to the logo file.
+    """
+    import os
+
+    return os.path.join(os.path.dirname(__file__), "assets", name)
+
+
 def _set_outline_patch_alpha(ax, alpha=0):
     """Set the transparency of map outline patches for Cartopy GeoAxes.
 
