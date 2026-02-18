@@ -37,11 +37,7 @@ def to_dataframe(data: Any) -> pd.DataFrame:
     if isinstance(data, np.ndarray):
         if data.ndim == 1:
             return pd.DataFrame(data, columns=["col_0"])
-            return pd.DataFrame(data, columns=["col_0"])
         elif data.ndim == 2:
-            return pd.DataFrame(
-                data, columns=[f"col_{i}" for i in range(data.shape[1])]
-            )
             return pd.DataFrame(
                 data, columns=[f"col_{i}" for i in range(data.shape[1])]
             )
@@ -49,75 +45,6 @@ def to_dataframe(data: Any) -> pd.DataFrame:
             raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
 
     raise TypeError(f"Unsupported data type: {type(data).__name__}")
-
-
-def _validate_spatial_plot_params(kwargs):
-    """Validate parameters specific to SpatialPlot."""
-    if "discrete" in kwargs:
-        discrete = kwargs["discrete"]
-        if not isinstance(discrete, bool):
-            raise TypeError(
-                f"discrete parameter must be boolean, got {type(discrete).__name__}"
-            )
-
-    if "ncolors" in kwargs:
-        ncolors = kwargs["ncolors"]
-        if not isinstance(ncolors, int):
-            raise TypeError(
-                f"ncolors parameter must be integer, got {type(ncolors).__name__}"
-            )
-        if ncolors <= 0 or ncolors > 1000:
-            raise ValueError(
-                f"ncolors parameter must be between 1 and 1000, got {ncolors}"
-            )
-
-    _validate_plotargs(kwargs.get("plotargs"))
-
-
-def _validate_timeseries_plot_params(kwargs):
-    """Validate parameters specific to TimeSeriesPlot."""
-    if "x" in kwargs:
-        x = kwargs["x"]
-        if not isinstance(x, str):
-            raise TypeError(f"x parameter must be string, got {type(x).__name__}")
-
-    if "y" in kwargs:
-        y = kwargs["y"]
-        if not isinstance(y, str):
-            raise TypeError(f"y parameter must be string, got {type(y).__name__}")
-
-    _validate_plotargs(kwargs.get("plotargs"))
-    _validate_fillargs(kwargs.get("fillargs"))
-
-
-def _validate_plotargs(plotargs):
-    """Validate plotargs parameter."""
-    if plotargs is not None:
-        if not isinstance(plotargs, dict):
-            raise TypeError(
-                f"plotargs parameter must be dict, got {type(plotargs).__name__}"
-            )
-
-        if "cmap" in plotargs:
-            cmap = plotargs["cmap"]
-            if not isinstance(cmap, str):
-                raise TypeError(f"colormap must be string, got {type(cmap).__name__}")
-
-
-def _validate_fillargs(fillargs):
-    """Validate fillargs parameter."""
-    if fillargs is not None:
-        if not isinstance(fillargs, dict):
-            raise TypeError(
-                f"fillargs parameter must be dict, got {type(fillargs).__name__}"
-            )
-
-        if "alpha" in fillargs:
-            alpha = fillargs["alpha"]
-            if not isinstance(alpha, (int, float)):
-                raise TypeError(f"alpha must be numeric, got {type(alpha).__name__}")
-            if not 0 <= alpha <= 1:
-                raise ValueError(f"alpha must be between 0 and 1, got {alpha}")
 
 
 def _validate_spatial_plot_params(kwargs):
@@ -206,10 +133,6 @@ def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:
         _validate_spatial_plot_params(kwargs)
     elif plot_class == "TimeSeriesPlot" and method == "plot":
         _validate_timeseries_plot_params(kwargs)
-    if plot_class == "SpatialPlot" and method == "plot":
-        _validate_spatial_plot_params(kwargs)
-    elif plot_class == "TimeSeriesPlot" and method == "plot":
-        _validate_timeseries_plot_params(kwargs)
 
 
 def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None:
@@ -237,9 +160,6 @@ def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None
 
         for dim in required_dims:
             if dim not in data.dims:
-                raise ValueError(
-                    f"required dimension '{dim}' not found in data dimensions {data.dims}"
-                )
                 raise ValueError(
                     f"required dimension '{dim}' not found in data dimensions {data.dims}"
                 )
@@ -303,37 +223,6 @@ def _convert_numpy_to_dataframe(data):
         raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
 
 
-def _try_xarray_conversion(data):
-    """Try to convert data to xarray format."""
-    if xr is None:
-        return None
-
-    # Check if already xarray
-    if hasattr(xr, "DataArray") and isinstance(data, xr.DataArray):
-        return data
-    if hasattr(xr, "Dataset") and isinstance(data, xr.Dataset):
-        return data
-
-    # Try xarray-like conversion
-    if hasattr(data, "to_dataset") and hasattr(data, "to_dataframe"):
-        try:
-            return data.to_dataset()
-        except Exception:
-            return None
-
-    return None
-
-
-def _convert_numpy_to_dataframe(data):
-    """Convert numpy array to DataFrame."""
-    if data.ndim == 1:
-        return pd.DataFrame(data, columns=["col_0"])
-    elif data.ndim == 2:
-        return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
-    else:
-        raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
-
-
 def _normalize_data(data: Any) -> Any:
     """
     Normalize input data to a standardized format, preferring xarray objects when possible.
@@ -357,10 +246,6 @@ def _normalize_data(data: Any) -> Any:
     xarray_result = _try_xarray_conversion(data)
     if xarray_result is not None:
         return xarray_result
-    # Try xarray conversion first
-    xarray_result = _try_xarray_conversion(data)
-    if xarray_result is not None:
-        return xarray_result
 
     # Check if data is a pandas DataFrame
     if isinstance(data, pd.DataFrame):
@@ -368,7 +253,6 @@ def _normalize_data(data: Any) -> Any:
 
     # Check if data is numpy array
     if isinstance(data, np.ndarray):
-        return _convert_numpy_to_dataframe(data)
         return _convert_numpy_to_dataframe(data)
 
     # Fall back to existing to_dataframe logic for backward compatibility
@@ -451,6 +335,25 @@ def _dynamic_fig_size(obj):
 
     figsize = (10, 10 * scale)
     return figsize
+
+
+def get_logo_path(name: str = "monet_plots.png") -> str:
+    """
+    Get the path to a bundled logo asset.
+
+    Parameters
+    ----------
+    name : str, optional
+        The name of the logo file, by default "monet_plots.png".
+
+    Returns
+    -------
+    str
+        The full path to the logo file.
+    """
+    import os
+
+    return os.path.join(os.path.dirname(__file__), "assets", name)
 
 
 def _set_outline_patch_alpha(ax, alpha=0):
