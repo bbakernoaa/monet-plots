@@ -40,7 +40,24 @@ def test_add_logo_positions():
 def test_get_logo_path():
     path = get_logo_path()
     assert os.path.exists(path)
-    assert path.endswith("monet_logos.png")
+    assert path.endswith("monet_plots.png")
+
+
+def test_add_all_bundled_logos():
+    plot = BasePlot()
+    logos = [
+        "monet_main.png",
+        "monet_plots.png",
+        "monet_stats.png",
+        "monetio.png",
+        "monet_regrid.png",
+    ]
+    for logo_name in logos:
+        path = get_logo_path(logo_name)
+        assert os.path.exists(path)
+        ab = plot.add_logo(logo=path)
+        assert ab is not None
+    plt.close(plot.fig)
 
 
 @pytest.mark.skipif(

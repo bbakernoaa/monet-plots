@@ -453,14 +453,14 @@ def _dynamic_fig_size(obj):
     return figsize
 
 
-def get_logo_path(name: str = "monet_logos.png") -> str:
+def get_logo_path(name: str = "monet_plots.png") -> str:
     """
     Get the path to a bundled logo asset.
 
     Parameters
     ----------
     name : str, optional
-        The name of the logo file, by default "monet_logos.png".
+        The name of the logo file, by default "monet_plots.png".
 
     Returns
     -------
