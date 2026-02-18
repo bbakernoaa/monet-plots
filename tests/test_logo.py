@@ -5,12 +5,14 @@ from monet_plots.plots.base import BasePlot
 from monet_plots.plot_utils import get_logo_path
 import os
 
+
 def test_add_logo_default():
     plot = BasePlot()
     ab = plot.add_logo()
     assert ab is not None
     assert len(plot.ax.artists) == 1
     plt.close(plot.fig)
+
 
 def test_add_logo_numpy():
     plot = BasePlot()
@@ -19,6 +21,7 @@ def test_add_logo_numpy():
     assert ab is not None
     assert len(plot.ax.artists) == 1
     plt.close(plot.fig)
+
 
 def test_add_logo_positions():
     plot = BasePlot()
@@ -33,12 +36,17 @@ def test_add_logo_positions():
 
     plt.close(plot.fig)
 
+
 def test_get_logo_path():
     path = get_logo_path()
     assert os.path.exists(path)
     assert path.endswith("monet_logos.png")
 
-@pytest.mark.skipif(os.environ.get("GITHUB_ACTIONS") == "true", reason="May not have internet access in CI")
+
+@pytest.mark.skipif(
+    os.environ.get("GITHUB_ACTIONS") == "true",
+    reason="May not have internet access in CI",
+)
 def test_add_logo_url():
     # This might fail if no internet, so we should be careful
     plot = BasePlot()
