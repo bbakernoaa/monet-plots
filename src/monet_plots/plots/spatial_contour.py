@@ -164,13 +164,31 @@ class SpatialContourPlot(SpatialPlot):
             if ncolors is None and levels is not None:
                 if isinstance(levels, int):
                     ncolors = levels - 1
-                    # Delay min/max compute if possible
-                    dmin, dmax = self.modelvar.min(), self.modelvar.max()
+                    # Use a single compute call for efficiency (Aero Protocol)
+                    try:
+                        import dask
+
+                        dmin, dmax = dask.compute(
+                            self.modelvar.min(), self.modelvar.max()
+                        )
+                    except (ImportError, AttributeError):
+                        dmin, dmax = self.modelvar.min(), self.modelvar.max()
+
                     # Handle pandas DataFrame where .min() returns a Series
                     try:
                         fmin, fmax = float(dmin), float(dmax)
-                    except TypeError:
-                        fmin, fmax = float(dmin.min()), float(dmax.max())
+                    except (TypeError, ValueError):
+                        # dmin/dmax could be Series if modelvar was a DataFrame
+                        fmin = (
+                            float(dmin.min())
+                            if hasattr(dmin, "min")
+                            else float(np.min(dmin))
+                        )
+                        fmax = (
+                            float(dmax.max())
+                            if hasattr(dmax, "max")
+                            else float(np.max(dmax))
+                        )
                     levels_seq = np.linspace(fmin, fmax, levels)
                 else:
                     ncolors = len(levels) - 1
@@ -181,12 +199,27 @@ class SpatialContourPlot(SpatialPlot):
             if levels_seq is None:
                 # Fallback: calculate from data to ensure a discrete colorbar
                 # if requested but no levels were provided.
-                dmin, dmax = self.modelvar.min(), self.modelvar.max()
+                try:
+                    import dask
+
+                    dmin, dmax = dask.compute(self.modelvar.min(), self.modelvar.max())
+                except (ImportError, AttributeError):
+                    dmin, dmax = self.modelvar.min(), self.modelvar.max()
+
                 # Handle pandas DataFrame where .min() returns a Series
                 try:
                     fmin, fmax = float(dmin), float(dmax)
-                except TypeError:
-                    fmin, fmax = float(dmin.min()), float(dmax.max())
+                except (TypeError, ValueError):
+                    fmin = (
+                        float(dmin.min())
+                        if hasattr(dmin, "min")
+                        else float(np.min(dmin))
+                    )
+                    fmax = (
+                        float(dmax.max())
+                        if hasattr(dmax, "max")
+                        else float(np.max(dmax))
+                    )
                 n_lev = self.ncolors if self.ncolors is not None else 10
                 levels_seq = np.linspace(fmin, fmax, n_lev + 1)
                 ncolors = n_lev
