@@ -166,7 +166,12 @@ class SpatialContourPlot(SpatialPlot):
                     ncolors = levels - 1
                     # Delay min/max compute if possible
                     dmin, dmax = self.modelvar.min(), self.modelvar.max()
-                    levels_seq = np.linspace(float(dmin), float(dmax), levels)
+                    # Handle pandas DataFrame where .min() returns a Series
+                    try:
+                        fmin, fmax = float(dmin), float(dmax)
+                    except TypeError:
+                        fmin, fmax = float(dmin.min()), float(dmax.max())
+                    levels_seq = np.linspace(fmin, fmax, levels)
                 else:
                     ncolors = len(levels) - 1
                     levels_seq = levels
@@ -177,8 +182,13 @@ class SpatialContourPlot(SpatialPlot):
                 # Fallback: calculate from data to ensure a discrete colorbar
                 # if requested but no levels were provided.
                 dmin, dmax = self.modelvar.min(), self.modelvar.max()
+                # Handle pandas DataFrame where .min() returns a Series
+                try:
+                    fmin, fmax = float(dmin), float(dmax)
+                except TypeError:
+                    fmin, fmax = float(dmin.min()), float(dmax.max())
                 n_lev = self.ncolors if self.ncolors is not None else 10
-                levels_seq = np.linspace(float(dmin), float(dmax), n_lev + 1)
+                levels_seq = np.linspace(fmin, fmax, n_lev + 1)
                 ncolors = n_lev
 
             if levels_seq is not None:
