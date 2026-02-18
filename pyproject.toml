@@ -53,6 +53,9 @@ docs = [
     "sphinx-gallery>=0.15.0",
 ]
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.setuptools.package-data]
 "monet_plots.assets" = ["*.png"]
 
