@@ -10,12 +10,13 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import ArrayLike
 
+from ..plot_utils import _update_history
 from ..style import get_style_setting
 from .base import BasePlot
 
 if TYPE_CHECKING:
-    import matplotlib.axes
-    import matplotlib.figure
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
 
 # Type hint for array-like data
 DataHint = Union[ArrayLike, pd.Series, xr.DataArray]
@@ -38,8 +39,8 @@ class SpatialPlot(BasePlot):
         self,
         *,
         projection: ccrs.Projection = ccrs.PlateCarree(),
-        fig: matplotlib.figure.Figure | None = None,
-        ax: matplotlib.axes.Axes | None = None,
+        fig: Figure | None = None,
+        ax: Axes | None = None,
         figsize: tuple[float, float] | None = None,
         subplot_kw: dict[str, Any] | None = None,
         **kwargs: Any,
@@ -333,6 +334,63 @@ class SpatialPlot(BasePlot):
         gridline_kwargs = self._get_style(style, gridline_defaults)
         self.ax.gridlines(**gridline_kwargs)
 
+    def _get_extent_from_data(
+        self,
+        data: xr.DataArray | xr.Dataset,
+        lon_coord: str = "lon",
+        lat_coord: str = "lat",
+        buffer: float = 0.0,
+    ) -> list[float]:
+        """Calculate geographic extent from xarray data using Dask if available.
+
+        Parameters
+        ----------
+        data : xr.DataArray or xr.Dataset
+            The input data to calculate the extent from.
+        lon_coord : str, optional
+            Name of the longitude coordinate, by default "lon".
+        lat_coord : str, optional
+            Name of the latitude coordinate, by default "lat".
+        buffer : float, optional
+            Buffer to add to the extent as a fraction of the range,
+            by default 0.0.
+
+        Returns
+        -------
+        list[float]
+            The calculated extent as [lon_min, lon_max, lat_min, lat_max].
+        """
+        lon = data[lon_coord]
+        lat = data[lat_coord]
+
+        # Use dask.compute for efficient parallel calculation of min/max
+        # if the data is chunked.
+        try:
+            import dask
+
+            lon_min, lon_max, lat_min, lat_max = dask.compute(
+                lon.min(), lon.max(), lat.min(), lat.max()
+            )
+        except (ImportError, AttributeError):
+            lon_min, lon_max = lon.min(), lon.max()
+            lat_min, lat_max = lat.min(), lat.max()
+
+        # Ensure they are scalar values (handles both numpy and dask returns)
+        lon_min, lon_max = float(lon_min), float(lon_max)
+        lat_min, lat_max = float(lat_min), float(lat_max)
+
+        if buffer > 0:
+            lon_range = lon_max - lon_min
+            lat_range = lat_max - lat_min
+            lon_buf = lon_range * buffer if lon_range > 0 else 1.0
+            lat_buf = lat_range * buffer if lat_range > 0 else 1.0
+            lon_min -= lon_buf
+            lon_max += lon_buf
+            lat_min -= lat_buf
+            lat_max += lat_buf
+
+        return [lon_min, lon_max, lat_min, lat_max]
+
 
 class SpatialTrack(SpatialPlot):
     """Plot a trajectory from an xarray.DataArray on a map.
@@ -400,8 +458,7 @@ class SpatialTrack(SpatialPlot):
         self.data = data
         self.lon_coord = lon_coord
         self.lat_coord = lat_coord
-        history = self.data.attrs.get("history", "")
-        self.data.attrs["history"] = f"Plotted with monet-plots.SpatialTrack; {history}"
+        _update_history(self.data, "Plotted with monet-plots.SpatialTrack")
 
     def plot(self, **kwargs: Any) -> plt.Artist:
         """Plot the trajectory on the map.
@@ -429,28 +486,9 @@ class SpatialTrack(SpatialPlot):
 
         # Automatically compute extent if not provided
         if "extent" not in kwargs:
-            lon = self.data[self.lon_coord]
-            lat = self.data[self.lat_coord]
-            # Add a small buffer to the extent.
-            # Use dask.compute for efficient parallel calculation of min/max
-            # if the data is chunked.
-            import dask
-
-            lon_min, lon_max, lat_min, lat_max = dask.compute(
-                lon.min(), lon.max(), lat.min(), lat.max()
+            kwargs["extent"] = self._get_extent_from_data(
+                self.data, self.lon_coord, self.lat_coord, buffer=0.1
             )
-            # Ensure they are scalar values (handles both numpy and dask returns)
-            lon_min, lon_max = float(lon_min), float(lon_max)
-            lat_min, lat_max = float(lat_min), float(lat_max)
-
-            lon_buf = (lon_max - lon_min) * 0.1 if lon_max > lon_min else 1.0
-            lat_buf = (lat_max - lat_min) * 0.1 if lat_max > lat_min else 1.0
-            kwargs["extent"] = [
-                lon_min - lon_buf,
-                lon_max + lon_buf,
-                lat_min - lat_buf,
-                lat_max + lat_buf,
-            ]
 
         # Add features and get remaining kwargs for scatter
         scatter_kwargs = self.add_features(**kwargs)

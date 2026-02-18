@@ -192,6 +192,27 @@ def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None
         raise ValueError("DataFrame cannot be empty")
 
 
+def _update_history(obj: Any, msg: str) -> Any:
+    """Updates the history attribute of an xarray object.
+
+    Parameters
+    ----------
+    obj : Any
+        The object to update (typically xarray.DataArray or xarray.Dataset).
+    msg : str
+        The message to add to the history.
+
+    Returns
+    -------
+    Any
+        The object with the updated history.
+    """
+    if hasattr(obj, "attrs") and isinstance(obj.attrs, dict):
+        history = obj.attrs.get("history", "")
+        obj.attrs["history"] = f"{msg} (monet-plots); {history}"
+    return obj
+
+
 def _try_xarray_conversion(data):
     """Try to convert data to xarray format."""
     if xr is None:
