@@ -53,18 +53,17 @@ class ScatterPlot(BasePlot):
         df: Any = None,  # Backward compatibility alias
         **kwargs: Any,
     ) -> None:
-        """
-        Initialize the scatter plot.
+        """Initialize the scatter plot.
 
         Parameters
         ----------
         data : Any, optional
             Input data. Can be a pandas DataFrame, xarray DataArray,
-            xarray Dataset, or numpy ndarray.
+            xarray Dataset, or numpy ndarray, by default None.
         x : str, optional
-            Variable name for the x-axis.
+            Variable name for the x-axis, by default None.
         y : Union[str, List[str]], optional
-            Variable name(s) for the y-axis.
+            Variable name(s) for the y-axis, by default None.
         c : str, optional
             Variable name for colorizing the points, by default None.
         colorbar : bool, optional
@@ -72,11 +71,11 @@ class ScatterPlot(BasePlot):
         title : str, optional
             Title for the plot, by default None.
         fig : matplotlib.figure.Figure, optional
-            An existing Figure object.
+            An existing Figure object, by default None.
         ax : matplotlib.axes.Axes, optional
-            An existing Axes object.
+            An existing Axes object, by default None.
         df : Any, optional
-            Alias for `data` for backward compatibility.
+            Alias for `data` for backward compatibility, by default None.
         **kwargs : Any
             Additional keyword arguments passed to BasePlot.
         """
@@ -132,7 +131,7 @@ class ScatterPlot(BasePlot):
         line_kws: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ) -> matplotlib.axes.Axes:
-        """Generate the scatter plot.
+        """Generate a static publication-quality scatter plot (Track A).
 
         Parameters
         ----------
@@ -231,3 +230,38 @@ class ScatterPlot(BasePlot):
             self.data.attrs["history"] = f"Generated ScatterPlot; {history}"
 
         return self.ax
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """Generate an interactive scatter plot using hvPlot (Track B).
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Keyword arguments passed to `hvplot.scatter`.
+            Common options include `cmap`, `title`, and `alpha`.
+            `rasterize=True` is used by default for high performance.
+
+        Returns
+        -------
+        holoviews.core.layout.Layout
+            The interactive hvPlot object.
+        """
+        import pandas as pd
+
+        if isinstance(self.data, pd.DataFrame):
+            import hvplot.pandas  # noqa: F401
+        else:
+            import hvplot.xarray  # noqa: F401
+
+        # Track B defaults
+        plot_kwargs = {
+            "x": self.x,
+            "y": self.y[0] if len(self.y) == 1 else self.y,
+            "rasterize": True,
+        }
+        if self.c:
+            plot_kwargs["c"] = self.c
+
+        plot_kwargs.update(kwargs)
+
+        return self.data.hvplot.scatter(**plot_kwargs)

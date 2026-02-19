@@ -3,6 +3,7 @@ import xarray as xr
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 from monet_plots.plots.spatial_contour import SpatialContourPlot
 from monet_plots.plots.spatial import SpatialTrack
+from monet_plots.plots.spatial_bias_scatter import SpatialBiasScatterPlot
 
 
 def create_mock_data(lazy=False):
@@ -64,6 +65,31 @@ def test_track_laziness():
     assert "Plotted with monet-plots.SpatialTrack" in plot.data.attrs["history"]
 
 
+def test_spatial_bias_scatter_laziness():
+    """Verify SpatialBiasScatterPlot handles lazy data without eager compute during init."""
+    lon = np.linspace(-120, -70, 100)
+    lat = np.linspace(25, 50, 100)
+    obs = np.random.rand(100)
+    mod = np.random.rand(100)
+
+    ds = xr.Dataset(
+        {
+            "obs": (["sample"], obs),
+            "mod": (["sample"], mod),
+            "lat": (["sample"], lat),
+            "lon": (["sample"], lon),
+        }
+    ).chunk({"sample": 50})
+
+    # Initialize plot
+    plot = SpatialBiasScatterPlot(ds, "obs", "mod")
+
+    # Verify data is still lazy
+    assert hasattr(plot.data.obs.data, "chunks")
+    # Verify history was updated
+    assert "Initialized monet-plots.SpatialBiasScatterPlot" in plot.data.attrs["history"]
+
+
 def test_imshow_plot_parity():
     """Verify SpatialImshowPlot produces an axes when plotted with both eager and lazy data."""
     import matplotlib.pyplot as plt
@@ -103,6 +129,42 @@ def test_contour_plot_parity():
     # Lazy plot
     plot_lazy = SpatialContourPlot(lazy_da, None)
     ax_lazy = plot_lazy.plot(levels=5)
+    assert_lazy = ax_lazy is not None
+    assert assert_lazy
+
+    plt.close("all")
+
+
+def test_spatial_bias_scatter_plot_parity():
+    """Verify SpatialBiasScatterPlot produces an axes when plotted with both eager and lazy data."""
+    import matplotlib.pyplot as plt
+
+    plt.switch_backend("Agg")
+
+    lon = np.linspace(-120, -70, 10)
+    lat = np.linspace(25, 50, 10)
+    obs = np.random.rand(10)
+    mod = np.random.rand(10)
+
+    ds = xr.Dataset(
+        {
+            "obs": (["sample"], obs),
+            "mod": (["sample"], mod),
+            "lat": (["sample"], lat),
+            "lon": (["sample"], lon),
+        }
+    )
+
+    lazy_ds = ds.chunk({"sample": 5})
+
+    # Eager plot
+    plot_eager = SpatialBiasScatterPlot(ds, "obs", "mod")
+    ax_eager = plot_eager.plot()
+    assert ax_eager is not None
+
+    # Lazy plot
+    plot_lazy = SpatialBiasScatterPlot(lazy_ds, "obs", "mod")
+    ax_lazy = plot_lazy.plot()
     assert ax_lazy is not None
 
     plt.close("all")
