@@ -87,7 +87,9 @@ def test_spatial_bias_scatter_laziness():
     # Verify data is still lazy
     assert hasattr(plot.data.obs.data, "chunks")
     # Verify history was updated
-    assert "Initialized monet-plots.SpatialBiasScatterPlot" in plot.data.attrs["history"]
+    assert (
+        "Initialized monet-plots.SpatialBiasScatterPlot" in plot.data.attrs["history"]
+    )
 
 
 def test_imshow_plot_parity():

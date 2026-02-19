@@ -98,7 +98,9 @@ class SpatialBiasScatterPlot(SpatialPlot):
 
             # Efficient percentile calculation
             try:
-                top_val = diff.assign_coords({"abs_diff": np.abs(diff)}).abs_diff.quantile(0.95)
+                top_val = diff.assign_coords(
+                    {"abs_diff": np.abs(diff)}
+                ).abs_diff.quantile(0.95)
                 if hasattr(top_val, "compute"):
                     top = float(top_val.compute())
                 else:
@@ -109,15 +111,27 @@ class SpatialBiasScatterPlot(SpatialPlot):
             top = np.around(top)
 
             # Identify coordinates
-            lat_name = next((c for c in ["latitude", "lat"] if c in self.data.coords or c in self.data.dims), "lat")
-            lon_name = next((c for c in ["longitude", "lon"] if c in self.data.coords or c in self.data.dims), "lon")
+            lat_name = next(
+                (
+                    c
+                    for c in ["latitude", "lat"]
+                    if c in self.data.coords or c in self.data.dims
+                ),
+                "lat",
+            )
+            lon_name = next(
+                (
+                    c
+                    for c in ["longitude", "lon"]
+                    if c in self.data.coords or c in self.data.dims
+                ),
+                "lon",
+            )
 
             # Compute only what's necessary for plotting
-            plot_ds = xr.Dataset({
-                "diff": diff,
-                "lat": self.data[lat_name],
-                "lon": self.data[lon_name]
-            })
+            plot_ds = xr.Dataset(
+                {"diff": diff, "lat": self.data[lat_name], "lon": self.data[lon_name]}
+            )
 
             # Drop NaNs before compute to minimize transfer
             if plot_ds.dims:
@@ -189,16 +203,36 @@ class SpatialBiasScatterPlot(SpatialPlot):
 
         if isinstance(self.data, pd.DataFrame):
             import hvplot.pandas  # noqa: F401
-            lat_name = next((c for c in ["latitude", "lat"] if c in self.data.columns), "lat")
-            lon_name = next((c for c in ["longitude", "lon"] if c in self.data.columns), "lon")
+
+            lat_name = next(
+                (c for c in ["latitude", "lat"] if c in self.data.columns), "lat"
+            )
+            lon_name = next(
+                (c for c in ["longitude", "lon"] if c in self.data.columns), "lon"
+            )
 
             ds_plot = self.data.copy()
             ds_plot["bias"] = ds_plot[self.col2] - ds_plot[self.col1]
             plot_target = ds_plot
         else:
             import hvplot.xarray  # noqa: F401
-            lat_name = next((c for c in ["latitude", "lat"] if c in self.data.coords or c in self.data.dims), "lat")
-            lon_name = next((c for c in ["longitude", "lon"] if c in self.data.coords or c in self.data.dims), "lon")
+
+            lat_name = next(
+                (
+                    c
+                    for c in ["latitude", "lat"]
+                    if c in self.data.coords or c in self.data.dims
+                ),
+                "lat",
+            )
+            lon_name = next(
+                (
+                    c
+                    for c in ["longitude", "lon"]
+                    if c in self.data.coords or c in self.data.dims
+                ),
+                "lon",
+            )
 
             ds_plot = self.data.copy()
             ds_plot["bias"] = ds_plot[self.col2] - ds_plot[self.col1]
