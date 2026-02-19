@@ -4,10 +4,11 @@ from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-from scipy.stats import scoreatpercentile as score
+import numpy as np
+import xarray as xr
 
 from ..colorbars import get_discrete_scale
-from ..plot_utils import get_plot_kwargs, to_dataframe
+from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
 from .spatial import SpatialPlot
 
 if TYPE_CHECKING:
@@ -17,41 +18,52 @@ if TYPE_CHECKING:
 class SpatialBiasScatterPlot(SpatialPlot):
     """Create a spatial scatter plot showing bias between model and observations.
 
-    The scatter points are colored by the difference (CMAQ - Obs) and sized
-    by the absolute magnitude of this difference, making larger biases more visible.
+    The scatter points are colored by the difference (model - observations) and
+    sized by the absolute magnitude of this difference, making larger biases
+    more visible. This class supports both Track A (publication) and
+    Track B (interactive) visualization.
     """
 
     def __init__(
         self,
-        df: Any,
+        data: Any,
         col1: str,
         col2: str,
-        vmin: float = None,
-        vmax: float = None,
+        vmin: float | None = None,
+        vmax: float | None = None,
         ncolors: int = 15,
         fact: float = 1.5,
         cmap: str = "RdBu_r",
-        **kwargs,
-    ):
-        """
-        Initialize the plot with data and map projection.
+        **kwargs: Any,
+    ) -> None:
+        """Initialize the plot with data and map projection.
 
-        Args:
-            df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray): DataFrame with 'latitude', 'longitude', and data columns.
-            col1 (str): Name of the first column (e.g., observations).
-            col2 (str): Name of the second column (e.g., model). Bias is calculated as col2 - col1.
-            vmin (float, optional): Minimum for colorscale.
-            vmax (float, optional): Maximum for colorscale.
-            ncolors (int): Number of discrete colors.
-            fact (float): Scaling factor for point sizes.
-            cmap (str or Colormap): Colormap for bias values.
-            **kwargs: Additional keyword arguments for map creation, passed to
-                      :class:`monet_plots.plots.spatial.SpatialPlot`. These
-                      include `projection`, `figsize`, `ax`, and cartopy
-                      features like `states`, `coastlines`, etc.
+        Parameters
+        ----------
+        data : Any
+            Input data. Preferred format is xarray.Dataset or xarray.DataArray
+            with 'latitude' and 'longitude' (or 'lat' and 'lon') coordinates.
+        col1 : str
+            Name of the first variable (e.g., observations).
+        col2 : str
+            Name of the second variable (e.g., model). Bias is calculated
+            as col2 - col1.
+        vmin : float, optional
+            Minimum for colorscale, by default None.
+        vmax : float, optional
+            Maximum for colorscale, by default None.
+        ncolors : int, optional
+            Number of discrete colors, by default 15.
+        fact : float, optional
+            Scaling factor for point sizes, by default 1.5.
+        cmap : str, optional
+            Colormap for bias values, by default "RdBu_r".
+        **kwargs : Any
+            Additional keyword arguments for map creation, passed to
+            :class:`monet_plots.plots.spatial.SpatialPlot`.
         """
         super().__init__(**kwargs)
-        self.df = to_dataframe(df)
+        self.data = normalize_data(data)
         self.col1 = col1
         self.col2 = col2
         self.vmin = vmin
@@ -60,26 +72,88 @@ class SpatialBiasScatterPlot(SpatialPlot):
         self.fact = fact
         self.cmap = cmap
 
-    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
-        """Generate the spatial bias scatter plot."""
-        from numpy import around
+        _update_history(self.data, "Initialized monet-plots.SpatialBiasScatterPlot")
 
+    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
+        """Generate a static publication-quality spatial bias scatter plot (Track A).
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Keyword arguments passed to `matplotlib.pyplot.scatter`.
+            Map features (e.g., `coastlines=True`) can also be passed here.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The matplotlib axes object containing the plot.
+        """
         # Separate feature kwargs from scatter kwargs
         scatter_kwargs = self.add_features(**kwargs)
 
-        # Ensure we are working with a clean copy with no NaNs in relevant columns
-        new = (
-            self.df[["latitude", "longitude", self.col1, self.col2]]
-            .dropna()
-            .copy(deep=True)
-        )
+        # Handle different data types for bias calculation
+        if isinstance(self.data, (xr.Dataset, xr.DataArray)):
+            # Vectorized calculation using Xarray/Dask
+            diff = self.data[self.col2] - self.data[self.col1]
 
-        diff = new[self.col2] - new[self.col1]
-        top = around(score(diff.abs(), per=95))
+            # Efficient percentile calculation
+            try:
+                top_val = diff.assign_coords(
+                    {"abs_diff": np.abs(diff)}
+                ).abs_diff.quantile(0.95)
+                if hasattr(top_val, "compute"):
+                    top = float(top_val.compute())
+                else:
+                    top = float(top_val)
+            except (ImportError, AttributeError, ValueError):
+                top = float(np.nanquantile(np.abs(diff.values), 0.95))
 
-        # Use new scaling tools
+            top = np.around(top)
+
+            # Identify coordinates
+            lat_name = next(
+                (
+                    c
+                    for c in ["latitude", "lat"]
+                    if c in self.data.coords or c in self.data.dims
+                ),
+                "lat",
+            )
+            lon_name = next(
+                (
+                    c
+                    for c in ["longitude", "lon"]
+                    if c in self.data.coords or c in self.data.dims
+                ),
+                "lon",
+            )
+
+            # Compute only what's necessary for plotting
+            plot_ds = xr.Dataset(
+                {"diff": diff, "lat": self.data[lat_name], "lon": self.data[lon_name]}
+            )
+
+            # Drop NaNs before compute to minimize transfer
+            if plot_ds.dims:
+                plot_ds = plot_ds.dropna(dim=list(plot_ds.dims)[0])
+
+            concrete = plot_ds.compute()
+            diff_vals = concrete["diff"].values
+            lat_vals = concrete["lat"].values
+            lon_vals = concrete["lon"].values
+        else:
+            # Fallback for Pandas
+            df = self.data.dropna(subset=[self.col1, self.col2])
+            diff_vals = (df[self.col2] - df[self.col1]).values
+            lat_name = next((c for c in ["latitude", "lat"] if c in df.columns), "lat")
+            lon_name = next((c for c in ["longitude", "lon"] if c in df.columns), "lon")
+            lat_vals = df[lat_name].values
+            lon_vals = df[lon_name].values
+            top = np.around(np.nanquantile(np.abs(diff_vals), 0.95))
+
+        # Use scaling tools
         cmap, norm = get_discrete_scale(
-            diff, cmap=self.cmap, n_levels=self.ncolors, vmin=-top, vmax=top
+            diff_vals, cmap=self.cmap, n_levels=self.ncolors, vmin=-top, vmax=top
         )
 
         # Create colorbar
@@ -87,8 +161,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
         cbar = self.add_colorbar(mappable, format="%1.2g")
         cbar.ax.tick_params(labelsize=10)
 
-        colors = diff
-        ss = diff.abs() / top * 100.0
+        ss = np.abs(diff_vals) / top * 100.0 * self.fact
         ss[ss > 300] = 300.0
 
         # Prepare scatter kwargs
@@ -96,7 +169,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
             cmap=cmap,
             norm=norm,
             s=ss,
-            c=colors,
+            c=diff_vals,
             transform=ccrs.PlateCarree(),
             edgecolors="k",
             linewidths=0.25,
@@ -105,8 +178,77 @@ class SpatialBiasScatterPlot(SpatialPlot):
         )
 
         self.ax.scatter(
-            new.longitude.values,
-            new.latitude.values,
+            lon_vals,
+            lat_vals,
             **final_scatter_kwargs,
         )
         return self.ax
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """Generate an interactive spatial bias scatter plot using hvPlot (Track B).
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Keyword arguments passed to `hvplot.points`.
+            Common options include `cmap`, `title`, and `alpha`.
+            `rasterize=True` is used by default for high performance.
+
+        Returns
+        -------
+        holoviews.core.layout.Layout
+            The interactive hvPlot object.
+        """
+        import pandas as pd
+
+        if isinstance(self.data, pd.DataFrame):
+            import hvplot.pandas  # noqa: F401
+
+            lat_name = next(
+                (c for c in ["latitude", "lat"] if c in self.data.columns), "lat"
+            )
+            lon_name = next(
+                (c for c in ["longitude", "lon"] if c in self.data.columns), "lon"
+            )
+
+            ds_plot = self.data.copy()
+            ds_plot["bias"] = ds_plot[self.col2] - ds_plot[self.col1]
+            plot_target = ds_plot
+        else:
+            import hvplot.xarray  # noqa: F401
+
+            lat_name = next(
+                (
+                    c
+                    for c in ["latitude", "lat"]
+                    if c in self.data.coords or c in self.data.dims
+                ),
+                "lat",
+            )
+            lon_name = next(
+                (
+                    c
+                    for c in ["longitude", "lon"]
+                    if c in self.data.coords or c in self.data.dims
+                ),
+                "lon",
+            )
+
+            ds_plot = self.data.copy()
+            ds_plot["bias"] = ds_plot[self.col2] - ds_plot[self.col1]
+            _update_history(ds_plot, "Calculated bias for hvplot")
+            plot_target = ds_plot
+
+        # Track B defaults
+        plot_kwargs = {
+            "x": lon_name,
+            "y": lat_name,
+            "c": "bias",
+            "geo": True,
+            "rasterize": True,
+            "cmap": self.cmap,
+        }
+
+        plot_kwargs.update(kwargs)
+
+        return plot_target.hvplot.points(**plot_kwargs)
