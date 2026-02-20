@@ -111,13 +111,13 @@ class ScorecardPlot(BasePlot):
             self.ax.set_title(title)
 
         # Plot Heatmap
+        kwargs.setdefault("linewidths", 0.5)
+        kwargs.setdefault("linecolor", "lightgray")
         sns.heatmap(
             pivot_data,
             ax=self.ax,
             cmap=cmap,
             center=center,
-            linewidths=0.5,
-            linecolor="lightgray",
             **kwargs,
         )
 
