@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
-import numpy as np
 import xarray as xr
 
 from ..colorbars import colorbar_index
