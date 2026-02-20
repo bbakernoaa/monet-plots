@@ -35,6 +35,9 @@ class ScorecardPlot(BasePlot):
         sig_col: Optional[str] = None,
         cmap: str = "RdYlGn",
         center: float = 0.0,
+        annot_cols: Optional[list[str]] = None,
+        cbar_labels: Optional[tuple[str, str]] = None,
+        key_text: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -48,27 +51,82 @@ class ScorecardPlot(BasePlot):
             sig_col (str, optional): Column for significance (marker).
             cmap (str): Colormap.
             center (float): Center value for colormap divergence.
+            annot_cols (list[str], optional): Columns to combine for cell annotations (e.g., ['mod', 'obs']).
+            cbar_labels (tuple[str, str], optional): Labels for the left and right ends of the colorbar.
+            key_text (str, optional): Text to display in a legend box at the top right.
             **kwargs: Seaborn heatmap kwargs.
         """
-        df = to_dataframe(data)
+        df = to_dataframe(data).copy()
         validate_dataframe(df, required_columns=[x_col, y_col, val_col])
+
+        # Extract title before passing kwargs to heatmap
+        title = kwargs.pop("title", "Performance Scorecard")
 
         # Pivot Data
         pivot_data = df.pivot(index=y_col, columns=x_col, values=val_col)
 
-        # TDD Anchor: Test pivot structure
+        # Handle annotations
+        if annot_cols:
+            validate_dataframe(df, required_columns=annot_cols)
+            # Create a combined annotation column
+            df["_combined_annot"] = df[annot_cols[0]].map(
+                lambda x: f"{x:.1f}" if pd.notna(x) else ""
+            )
+            for col in annot_cols[1:]:
+                df["_combined_annot"] += " | " + df[col].map(
+                    lambda x: f"{x:.1f}" if pd.notna(x) else ""
+                )
+            annot_data = df.pivot(index=y_col, columns=x_col, values="_combined_annot")
+            kwargs["annot"] = annot_data
+            kwargs["fmt"] = ""
+        else:
+            kwargs.setdefault("annot", True)
+            kwargs.setdefault("fmt", ".2f")
+
+        # Layout adjustments for WeatherMesh look
+        cbar_ax = None
+        is_weathermesh_layout = bool(cbar_labels or key_text)
+
+        if is_weathermesh_layout:
+            self.ax.set_title(title, pad=60)
+
+            if cbar_labels:
+                # Create a small axes for the colorbar at the top left
+                cbar_ax = self.fig.add_axes([0.15, 0.85, 0.3, 0.02])
+                kwargs["cbar_ax"] = cbar_ax
+                kwargs["cbar_kws"] = kwargs.get("cbar_kws", {})
+                kwargs["cbar_kws"]["orientation"] = "horizontal"
+
+            if key_text:
+                # Add a box at the top right
+                self.fig.text(
+                    0.85,
+                    0.86,
+                    key_text,
+                    ha="right",
+                    va="center",
+                    bbox=dict(boxstyle="square", facecolor="white", edgecolor="black"),
+                )
+        else:
+            self.ax.set_title(title)
 
         # Plot Heatmap
+        kwargs.setdefault("linewidths", 0.5)
+        kwargs.setdefault("linecolor", "lightgray")
         sns.heatmap(
             pivot_data,
             ax=self.ax,
             cmap=cmap,
             center=center,
-            annot=True,
-            fmt=".2f",
-            cbar_kws={"label": "Relative Performance"},
             **kwargs,
         )
+
+        # Post-process colorbar labels
+        if cbar_ax and cbar_labels:
+            cbar_ax.set_xticks([])
+            cbar_ax.set_yticks([])
+            self.fig.text(0.15, 0.83, cbar_labels[0], ha="left", va="top", fontsize=9)
+            self.fig.text(0.45, 0.83, cbar_labels[1], ha="right", va="top", fontsize=9)
 
         # Add Significance Markers
         if sig_col:
@@ -76,9 +134,15 @@ class ScorecardPlot(BasePlot):
             self._overlay_significance(pivot_data, pivot_sig)
 
         self.ax.set_xlabel(x_col.title())
-        self.ax.set_ylabel(y_col.title())
-        self.ax.tick_params(axis="x", rotation=45)
-        self.ax.set_title("Performance Scorecard")
+        if is_weathermesh_layout:
+            self.ax.set_ylabel("")
+            self.ax.tick_params(axis="x", rotation=0)
+        else:
+            self.ax.set_ylabel(y_col.title())
+            self.ax.tick_params(axis="x", rotation=45)
+
+        # Invert Y axis to have cities A-Z from top to bottom if desired,
+        # but pivot might have already sorted them.
 
     def _overlay_significance(self, data_grid, sig_grid):
         """
