@@ -22,6 +22,57 @@ class SpatialImshowPlot(SpatialPlot):
     and Track B (interactive exploration).
     """
 
+    def __new__(
+        cls,
+        modelvar: Any,
+        gridobj: Any | None = None,
+        plotargs: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Redirect to SpatialFacetGridPlot if faceting is requested.
+
+        This enables a unified interface for both single-panel and multi-panel
+        spatial plots.
+
+        Parameters
+        ----------
+        modelvar : Any
+            The input data to plot.
+        gridobj : Any, optional
+            Object with LAT and LON variables, by default None.
+        plotargs : dict, optional
+            Arguments for imshow, by default None.
+        **kwargs : Any
+            Additional keyword arguments. If `col` or `row` are provided,
+            redirects to SpatialFacetGridPlot.
+
+        Returns
+        -------
+        Any
+            An instance of SpatialImshowPlot or SpatialFacetGridPlot.
+        """
+        from .facet_grid import SpatialFacetGridPlot
+
+        ax = kwargs.get("ax")
+        row = kwargs.get("row")
+        col = kwargs.get("col")
+
+        # Redirect to FacetGrid if col/row provided and no existing axes
+        if ax is None and (row is not None or col is not None):
+            return SpatialFacetGridPlot(modelvar, **kwargs)
+
+        # Also redirect if input is a Dataset with multiple variables
+        if (
+            ax is None
+            and isinstance(modelvar, xr.Dataset)
+            and len(modelvar.data_vars) > 1
+        ):
+            # Default to faceting by variable if not specified
+            kwargs.setdefault("col", "variable")
+            return SpatialFacetGridPlot(modelvar, **kwargs)
+
+        return super().__new__(cls)
+
     def __init__(
         self,
         modelvar: Any,
@@ -62,9 +113,17 @@ class SpatialImshowPlot(SpatialPlot):
         self.ncolors = ncolors
         self.discrete = discrete
 
-        # These are used by _get_extent_from_data
-        self.lon_coord = kwargs.get("lon_coord", "lon")
-        self.lat_coord = kwargs.get("lat_coord", "lat")
+        # Aero Protocol: Centralized coordinate identification
+        try:
+            self.lon_coord, self.lat_coord = self._identify_coords(self.modelvar)
+        except ValueError:
+            self.lon_coord = kwargs.get("lon_coord", "lon")
+            self.lat_coord = kwargs.get("lat_coord", "lat")
+
+        # Ensure coordinates are monotonic for correct plotting
+        self.modelvar = self._ensure_monotonic(
+            self.modelvar, self.lon_coord, self.lat_coord
+        )
 
         _update_history(self.modelvar, "Initialized monet-plots.SpatialImshowPlot")
 
@@ -119,8 +178,10 @@ class SpatialImshowPlot(SpatialPlot):
         # Extract extent for imshow [left, right, bottom, top]
         extent = imshow_kwargs.pop("extent", None)
 
-        # Delay computation as much as possible, but imshow needs a NumPy array
-        model_values = np.asarray(self.modelvar)
+        # Delay computation as much as possible
+        # For imshow, we still need concrete values for Track A.
+        # But we use xarray's values which handle Dask if properly initialized.
+        model_values = self.modelvar.values
 
         # Handle colormap and normalization
         final_kwargs = get_plot_kwargs(**imshow_kwargs)

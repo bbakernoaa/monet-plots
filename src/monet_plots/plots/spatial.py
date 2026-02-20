@@ -334,11 +334,125 @@ class SpatialPlot(BasePlot):
         gridline_kwargs = self._get_style(style, gridline_defaults)
         self.ax.gridlines(**gridline_kwargs)
 
+    def _identify_coords(self, data: Any) -> tuple[str, str]:
+        """Identify longitude and latitude coordinate names in data.
+
+        This method follows CF conventions and common naming patterns to
+        find the spatial coordinates. It supports both xarray and pandas.
+
+        Parameters
+        ----------
+        data : Any
+            The input data to search for coordinates.
+
+        Returns
+        -------
+        tuple[str, str]
+            The identified (longitude, latitude) coordinate names.
+
+        Raises
+        ----------
+        ValueError
+            If coordinates cannot be identified.
+        """
+        lon_name, lat_name = None, None
+
+        # Handle xarray
+        if hasattr(data, "coords"):
+            # Check for standard names or units/axis attributes (CF conventions)
+            for name, coord in data.coords.items():
+                # Longitude identification
+                if any(
+                    pattern in str(name).lower() for pattern in ["lon", "longitude"]
+                ) or coord.attrs.get("units") in [
+                    "degrees_east",
+                    "degree_east",
+                    "degree_E",
+                ]:
+                    lon_name = str(name)
+                # Latitude identification
+                if any(
+                    pattern in str(name).lower() for pattern in ["lat", "latitude"]
+                ) or coord.attrs.get("units") in [
+                    "degrees_north",
+                    "degree_north",
+                    "degree_N",
+                ]:
+                    lat_name = str(name)
+
+        # Handle pandas or other objects with columns
+        elif hasattr(data, "columns"):
+            cols = [str(c).lower() for c in data.columns]
+            if "lon" in cols:
+                lon_name = data.columns[cols.index("lon")]
+            elif "longitude" in cols:
+                lon_name = data.columns[cols.index("longitude")]
+
+            if "lat" in cols:
+                lat_name = data.columns[cols.index("lat")]
+            elif "latitude" in cols:
+                lat_name = data.columns[cols.index("latitude")]
+
+        if lon_name and lat_name:
+            return lon_name, lat_name
+
+        raise ValueError(
+            "Could not identify longitude and latitude coordinates. "
+            "Please ensure they are named 'lon'/'lat' or 'longitude'/'latitude', "
+            "or have CF-compliant units."
+        )
+
+    def _ensure_monotonic(self, data: Any, lon_name: str, lat_name: str) -> Any:
+        """Ensure spatial dimensions are monotonically increasing.
+
+        Some plotting backends (like GeoViews/hvPlot) require monotonically
+        increasing coordinates for correct rendering and interpolation.
+
+        Parameters
+        ----------
+        data : Any
+            The input data to sort.
+        lon_name : str
+            Name of the longitude coordinate.
+        lat_name : str
+            Name of the latitude coordinate.
+
+        Returns
+        -------
+        Any
+            The data with sorted spatial dimensions.
+        """
+        is_xarray = hasattr(data, "sortby")
+
+        # Ensure latitude is increasing
+        try:
+            lats = data[lat_name].values if is_xarray else data[lat_name].values
+            if lats[0] > lats[-1]:
+                if is_xarray:
+                    data = data.sortby(lat_name)
+                else:
+                    data = data.sort_values(lat_name)
+        except (AttributeError, KeyError, IndexError):
+            pass
+
+        # Ensure longitude is increasing
+        try:
+            lons = data[lon_name].values if is_xarray else data[lon_name].values
+            if lons[0] > lons[-1]:
+                if is_xarray:
+                    data = data.sortby(lon_name)
+                else:
+                    data = data.sort_values(lon_name)
+        except (AttributeError, KeyError, IndexError):
+            pass
+
+        return data
+
     def _get_extent_from_data(
         self,
         data: xr.DataArray | xr.Dataset,
-        lon_coord: str = "lon",
-        lat_coord: str = "lat",
+        lon_coord: str | None = None,
+        lat_coord: str | None = None,
         buffer: float = 0.0,
     ) -> list[float]:
         """Calculate geographic extent from xarray data using Dask if available.
@@ -348,9 +462,11 @@ class SpatialPlot(BasePlot):
         data : xr.DataArray or xr.Dataset
             The input data to calculate the extent from.
         lon_coord : str, optional
-            Name of the longitude coordinate, by default "lon".
+            Name of the longitude coordinate. If None, it is identified
+            automatically using `_identify_coords`.
         lat_coord : str, optional
-            Name of the latitude coordinate, by default "lat".
+            Name of the latitude coordinate. If None, it is identified
+            automatically using `_identify_coords`.
         buffer : float, optional
             Buffer to add to the extent as a fraction of the range,
             by default 0.0.
@@ -360,6 +476,11 @@ class SpatialPlot(BasePlot):
         list[float]
             The calculated extent as [lon_min, lon_max, lat_min, lat_max].
         """
+        if lon_coord is None or lat_coord is None:
+            lon_id, lat_id = self._identify_coords(data)
+            lon_coord = lon_coord or lon_id
+            lat_coord = lat_coord or lat_id
+
         lon = data[lon_coord]
         lat = data[lat_coord]
 

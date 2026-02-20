@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable
 
+import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -61,26 +62,52 @@ class FacetGridPlot(BasePlot):
         self.height = height
         self.aspect = aspect
 
-        # Convert data to pandas DataFrame and ensure coordinates are columns
+        # Aero Protocol: Preserve lazy Xarray objects
         self.raw_data = data
-        self.data = to_dataframe(data).reset_index()
+        self.is_xarray = isinstance(data, (xr.DataArray, xr.Dataset))
 
-        # Create the FacetGrid (this creates its own figure)
-        self.grid = sns.FacetGrid(
-            self.data,
-            row=self.row,
-            col=self.col,
-            hue=self.hue,
-            col_wrap=self.col_wrap,
-            height=self.height,
-            aspect=self.aspect,
-            subplot_kws=subplot_kws,
-            **kwargs,
-        )
+        if self.is_xarray:
+            self.data = data  # Keep as Xarray
+            # For Xarray, we can use xarray.plot.FacetGrid
+            # We delay creation to SpatialFacetGridPlot if possible,
+            # or initialize it here if we have enough info.
+            self.grid = None
+            if col or row:
+                try:
+                    from xarray.plot.facetgrid import FacetGrid as xrFacetGrid
 
-        # Initialize BasePlot with the figure and first axes from the grid
-        axes = self.grid.axes.flatten()
-        super().__init__(fig=self.grid.fig, ax=axes[0], style=None)
+                    self.grid = xrFacetGrid(
+                        data,
+                        col=col,
+                        row=row,
+                        col_wrap=col_wrap,
+                        subplot_kws=subplot_kws,
+                    )
+                    # Initialize default titles for Xarray
+                    self.grid.set_titles()
+                except (ImportError, TypeError, AttributeError):
+                    pass
+        else:
+            self.data = to_dataframe(data).reset_index()
+            # Create the Seaborn FacetGrid
+            self.grid = sns.FacetGrid(
+                self.data,
+                row=self.row,
+                col=self.col,
+                hue=self.hue,
+                col_wrap=self.col_wrap,
+                height=self.height,
+                aspect=self.aspect,
+                subplot_kws=subplot_kws,
+                **kwargs,
+            )
+
+        # Unified BasePlot initialization
+        axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
+        if axes is not None:
+            super().__init__(fig=self.grid.fig, ax=axes.flatten()[0], style=style)
+        else:
+            super().__init__(style=style)
 
         # For compatibility with tests, also store as 'g'
         self.g = self.grid
@@ -134,7 +161,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
 
     def __init__(
         self,
-        data: xr.DataArray | xr.Dataset,
+        data: Any,
         *,
         row: str | None = None,
         col: str | None = None,
@@ -149,8 +176,8 @@ class SpatialFacetGridPlot(FacetGridPlot):
 
         Parameters
         ----------
-        data : xr.DataArray or xr.Dataset
-            Geospatial data to plot.
+        data : Any
+            Geospatial data to plot. Preferred format is xr.DataArray or xr.Dataset.
         row : str, optional
             Dimension/variable to map to rows.
         col : str, optional
@@ -177,6 +204,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
             if row == "variable" or col == "variable":
                 data = data.to_array(dim="variable", name="value")
 
+        # Call FacetGridPlot init which handles the two-track branching
         super().__init__(
             data,
             row=row,
@@ -189,12 +217,17 @@ class SpatialFacetGridPlot(FacetGridPlot):
             **kwargs,
         )
 
-        # Set default titles
-        self._set_default_titles()
+        # Set default titles if grid is already created (Pandas track)
+        if self.grid:
+            self._set_default_titles()
 
     def _set_default_titles(self) -> None:
         """Format facet titles with metadata and date-time."""
-        for ax in self.grid.axes.flatten():
+        axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
+        if axes is None:
+            return
+
+        for ax in axes.flatten():
             if ax is None:
                 continue
             title = ax.get_title()
@@ -260,7 +293,11 @@ class SpatialFacetGridPlot(FacetGridPlot):
         if "coastlines" not in kwargs:
             kwargs["coastlines"] = True
 
-        for ax in self.grid.axes.flatten():
+        axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
+        if axes is None:
+            return
+
+        for ax in axes.flatten():
             if ax is None:
                 continue
             # Use SpatialPlot's feature logic on each axis
@@ -270,8 +307,8 @@ class SpatialFacetGridPlot(FacetGridPlot):
         self,
         plotter_class: type,
         *,
-        x: str = "lon",
-        y: str = "lat",
+        x: str | None = None,
+        y: str | None = None,
         var_name: str | None = None,
         **kwargs: Any,
     ) -> None:
@@ -281,38 +318,15 @@ class SpatialFacetGridPlot(FacetGridPlot):
         ----------
         plotter_class : type
             A class from monet_plots.plots (e.g., SpatialImshowPlot).
-        x : str
+        x : str, optional
             Column name for longitude.
-        y : str
+        y : str, optional
             Column name for latitude.
         var_name : str, optional
-            The variable name to plot. If None and faceting by variable,
-            uses 'value'.
+            The variable name to plot.
         **kwargs : Any
             Arguments passed to the plotter and map features.
         """
-        if var_name is None:
-            if "variable" in self.data.columns:
-                var_name = "value"
-            elif isinstance(self.raw_data, xr.DataArray):
-                var_name = self.raw_data.name
-            elif isinstance(self.raw_data, xr.Dataset):
-                # If not faceting by variable, we need a var_name
-                # For now just pick the first data var if not provided
-                var_name = list(self.raw_data.data_vars)[0]
-
-        def _mapped_plot(*args, **kwargs_inner):
-            data_df = kwargs_inner.pop("data")
-            ax = plt.gca()
-
-            # Reconstruct DataArray from DataFrame
-            # We assume x and y are the coordinates
-            temp_da = data_df.set_index([y, x]).to_xarray()[var_name]
-
-            # Create plotter instance
-            plotter = plotter_class(temp_da, ax=ax, **kwargs_inner)
-            plotter.plot()
-
         # Separate feature kwargs
         feature_keys = [
             "coastlines",
@@ -328,25 +342,112 @@ class SpatialFacetGridPlot(FacetGridPlot):
             "resolution",
         ]
         feature_kwargs = {k: kwargs.pop(k) for k in feature_keys if k in kwargs}
-
-        # Check for colorbar requirement before popping from kwargs
         add_shared_cb = kwargs.pop("add_colorbar", False)
 
-        self.map_dataframe(_mapped_plot, **kwargs)
+        if self.is_xarray:
+            # Track A: Xarray-native faceting (Lazy by Default)
+            from .spatial import SpatialPlot
 
-        # Add features
-        self.add_map_features(**feature_kwargs)
+            # Identify coordinates if not provided
+            if x is None or y is None:
+                sp = SpatialPlot(style=None)
+                x_id, y_id = sp._identify_coords(self.data)
+                x = x or x_id
+                y = y or y_id
 
-        # Add shared colorbar if requested
-        if add_shared_cb:
-            self._add_shared_colorbar(**kwargs)
+            # Use Xarray's native plotting which handles faceting
+            plot_type = "imshow"
+            if "Contour" in plotter_class.__name__:
+                plot_type = "contourf"
+
+            # Prepare plotting arguments
+            plot_kwargs = kwargs.copy()
+            plot_kwargs.setdefault("transform", ccrs.PlateCarree())
+            if add_shared_cb:
+                plot_kwargs.setdefault("add_colorbar", True)
+                plot_kwargs.setdefault("cbar_kwargs", {"orientation": "horizontal"})
+
+            # Select data variable if it's a Dataset
+            plot_data = self.data
+            if isinstance(plot_data, xr.Dataset):
+                if var_name:
+                    plot_data = plot_data[var_name]
+                else:
+                    # Pick the first data variable that is not a facet dimension
+                    for v in plot_data.data_vars:
+                        if v not in [self.col, self.row]:
+                            plot_data = plot_data[v]
+                            break
+
+            # Trigger Xarray's facet grid
+            # If we already have a grid, we can use it
+            if self.grid is not None and hasattr(self.grid, "map_dataarray"):
+                # xr.plot.FacetGrid has map_dataarray
+                # We need to find the appropriate plotting function
+                if plot_type == "imshow":
+                    import xarray.plot as xplt
+
+                    self.grid.map_dataarray(xplt.imshow, x, y, **plot_kwargs)
+                else:
+                    import xarray.plot as xplt
+
+                    self.grid.map_dataarray(xplt.contourf, x, y, **plot_kwargs)
+            else:
+                xr_plot_func = getattr(plot_data.plot, plot_type)
+                self.grid = xr_plot_func(
+                    x=x,
+                    y=y,
+                    col=self.col,
+                    row=self.row,
+                    col_wrap=self.col_wrap,
+                    subplot_kws={"projection": self.projection},
+                    **plot_kwargs,
+                )
+
+            # Update BasePlot attributes
+            self.fig = self.grid.fig
+            axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
+            self.ax = axes.flatten()[0]
+            self.g = self.grid
+
+            # Add features to all facets
+            self.add_map_features(**feature_kwargs)
+            self._set_default_titles()
+
+        else:
+            # Track B: Seaborn-based faceting (Eager/Pandas)
+            x = x or "lon"
+            y = y or "lat"
+            if var_name is None:
+                if "variable" in self.data.columns:
+                    var_name = "value"
+                elif isinstance(self.raw_data, xr.DataArray):
+                    var_name = self.raw_data.name
+                elif isinstance(self.raw_data, xr.Dataset):
+                    var_name = list(self.raw_data.data_vars)[0]
+
+            def _mapped_plot(*args, **kwargs_inner):
+                data_df = kwargs_inner.pop("data")
+                ax = plt.gca()
+                temp_da = data_df.set_index([y, x]).to_xarray()[var_name]
+                plotter = plotter_class(temp_da, ax=ax, **kwargs_inner)
+                plotter.plot()
+
+            self.map_dataframe(_mapped_plot, **kwargs)
+            self.add_map_features(**feature_kwargs)
+            if add_shared_cb:
+                self._add_shared_colorbar(**kwargs)
 
     def _add_shared_colorbar(self, **kwargs: Any) -> None:
         """Add a shared colorbar to the figure."""
         # Find the last mappable object in the facets and the last valid axis
         mappable = None
         target_ax = None
-        for ax in reversed(self.grid.axes.flatten()):
+        axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
+        if axes is None:
+            return
+
+        for ax in reversed(axes.flatten()):
             if ax is None:
                 continue
             if target_ax is None:
