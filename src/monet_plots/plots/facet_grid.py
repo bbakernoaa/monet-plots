@@ -217,10 +217,14 @@ class SpatialFacetGridPlot(FacetGridPlot):
         self.projection = projection or ccrs.PlateCarree()
 
         # Handle xr.Dataset by converting to DataArray if faceting by variable
+        # or if there is only one data variable.
         self.is_dataset = isinstance(data, xr.Dataset)
         if self.is_dataset:
             if row == "variable" or col == "variable":
                 data = data.to_array(dim="variable", name="value")
+            elif len(data.data_vars) == 1:
+                # Auto-select the only variable to ensure map_dataarray works
+                data = data[list(data.data_vars)[0]]
 
         # Aligns with Xarray's default size for maps
         size = size or kwargs.pop("height", 4)
@@ -402,17 +406,25 @@ class SpatialFacetGridPlot(FacetGridPlot):
 
             # Trigger Xarray's facet grid
             # If we already have a grid, we can use it
-            if self.grid is not None and hasattr(self.grid, "map_dataarray"):
-                # xr.plot.FacetGrid has map_dataarray
-                # We need to find the appropriate plotting function
-                if plot_type == "imshow":
-                    import xarray.plot as xplt
+            if self.grid is not None:
+                import xarray.plot as xplt
 
-                    self.grid.map_dataarray(xplt.imshow, x, y, **plot_kwargs)
+                func = xplt.imshow if plot_type == "imshow" else xplt.contourf
+
+                # Check if the grid's data is a Dataset.
+                # If so, map_dataarray might fail in some xarray versions.
+                # We use map with a selection wrapper instead.
+                grid_data = getattr(self.grid, "data", None)
+                if isinstance(grid_data, xr.Dataset):
+                    # var_name was selected above from self.data or passed in
+                    def _mapped_xr_plot(ds_subset, x_coord, y_coord, **inner_kwargs):
+                        func(ds_subset[var_name], x=x_coord, y=y_coord, **inner_kwargs)
+
+                    self.grid.map(_mapped_xr_plot, x, y, **plot_kwargs)
+                elif hasattr(self.grid, "map_dataarray"):
+                    self.grid.map_dataarray(func, x, y, **plot_kwargs)
                 else:
-                    import xarray.plot as xplt
-
-                    self.grid.map_dataarray(xplt.contourf, x, y, **plot_kwargs)
+                    self.grid.map(func, x, y, **plot_kwargs)
             else:
                 xr_plot_func = getattr(plot_data.plot, plot_type)
                 self.grid = xr_plot_func(
