@@ -9,7 +9,13 @@ import xarray as xr
 from typing import Any, Optional, Dict, TYPE_CHECKING
 
 from .base import BasePlot
-from ..plot_utils import normalize_data
+from ..plot_utils import _update_history, normalize_data
+from ..verification_metrics import (
+    compute_mfb,
+    compute_mfe,
+    compute_nmb,
+    compute_nme,
+)
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -124,59 +130,24 @@ class SoccerPlot(BasePlot):
         mod = self.data[mod_col]
 
         if self.metric == "fractional":
-            # Mean Fractional Bias and Error
-            denom = (obs + mod).astype(float)
-            num_bias = 200.0 * (mod - obs)
-            num_error = 200.0 * np.abs(mod - obs)
-
-            if isinstance(denom, xr.DataArray):
-                self.bias_data = (num_bias / denom).where(denom != 0, np.nan)
-                self.error_data = (num_error / denom).where(denom != 0, np.nan)
-            else:
-                self.bias_data = np.divide(
-                    num_bias, denom, out=np.full(denom.shape, np.nan), where=denom != 0
-                )
-                self.error_data = np.divide(
-                    num_error, denom, out=np.full(denom.shape, np.nan), where=denom != 0
-                )
-
+            # For scatter plots, we want element-wise metrics (dim=[])
+            self.bias_data = compute_mfb(obs, mod, dim=[])
+            self.error_data = compute_mfe(obs, mod, dim=[])
             self.xlabel = "Mean Fractional Bias (%)"
             self.ylabel = "Mean Fractional Error (%)"
-
         elif self.metric == "normalized":
-            # Normalized Mean Bias and Error
-            obs_float = obs.astype(float)
-            num_bias = 100.0 * (mod - obs)
-            num_error = 100.0 * np.abs(mod - obs)
-
-            if isinstance(obs_float, xr.DataArray):
-                self.bias_data = (num_bias / obs_float).where(obs_float != 0, np.nan)
-                self.error_data = (num_error / obs_float).where(obs_float != 0, np.nan)
-            else:
-                self.bias_data = np.divide(
-                    num_bias,
-                    obs_float,
-                    out=np.full(obs_float.shape, np.nan),
-                    where=obs_float != 0,
-                )
-                self.error_data = np.divide(
-                    num_error,
-                    obs_float,
-                    out=np.full(obs_float.shape, np.nan),
-                    where=obs_float != 0,
-                )
-
+            # Element-wise normalized bias/error (dim=[])
+            self.bias_data = compute_nmb(obs, mod, dim=[])
+            self.error_data = compute_nme(obs, mod, dim=[])
             self.xlabel = "Normalized Mean Bias (%)"
             self.ylabel = "Normalized Mean Error (%)"
         else:
             raise ValueError("metric must be 'fractional' or 'normalized'")
 
-        # Update history if Xarray
+        # Track provenance (Aero Protocol)
         if isinstance(self.bias_data, xr.DataArray):
-            history = self.bias_data.attrs.get("history", "")
-            self.bias_data.attrs["history"] = (
-                f"Calculated {self.metric} soccer metrics; {history}"
-            )
+            _update_history(self.bias_data, f"Calculated {self.metric} soccer metrics")
+            _update_history(self.error_data, f"Calculated {self.metric} soccer metrics")
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate the soccer plot.
@@ -220,14 +191,14 @@ class SoccerPlot(BasePlot):
             )
             self.ax.add_patch(rect_goal)
 
-        # Plot points - compute if lazy
+        # Plot points - compute simultaneously if lazy (Aero Protocol)
         bias = self.bias_data
         error = self.error_data
 
-        if hasattr(bias, "compute"):
-            bias = bias.compute()
-        if hasattr(error, "compute"):
-            error = error.compute()
+        if hasattr(bias, "compute") or hasattr(error, "compute"):
+            import dask
+
+            bias, error = dask.compute(bias, error)
 
         scatter_kwargs = {"zorder": 5}
         scatter_kwargs.update(kwargs)
@@ -269,7 +240,49 @@ class SoccerPlot(BasePlot):
 
         # Update history for provenance
         if isinstance(self.data, (xr.DataArray, xr.Dataset)):
-            history = self.data.attrs.get("history", "")
-            self.data.attrs["history"] = f"Generated SoccerPlot; {history}"
+            _update_history(self.data, "Generated SoccerPlot")
 
         return self.ax
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """Generate an interactive soccer plot using hvPlot (Track B).
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Keyword arguments passed to `hvplot.scatter`.
+
+        Returns
+        -------
+        holoviews.core.Element
+            The interactive soccer plot.
+        """
+        import hvplot.pandas  # noqa: F401
+        import hvplot.xarray  # noqa: F401
+
+        # Combine into a single Dataset or DataFrame for plotting
+        if isinstance(self.bias_data, xr.DataArray):
+            ds = xr.Dataset({"bias": self.bias_data, "error": self.error_data})
+            if self.label_col is not None:
+                ds[self.label_col] = self.data[self.label_col]
+            plot_obj = ds
+        else:
+            import pandas as pd
+
+            plot_obj = pd.DataFrame({"bias": self.bias_data, "error": self.error_data})
+            if self.label_col is not None:
+                plot_obj[self.label_col] = self.data[self.label_col]
+
+        plot_kwargs = {
+            "x": "bias",
+            "y": "error",
+            "xlabel": getattr(self, "xlabel", "Bias (%)"),
+            "ylabel": getattr(self, "ylabel", "Error (%)"),
+            "title": "Soccer Plot",
+        }
+        if self.label_col:
+            plot_kwargs["hover_cols"] = [self.label_col]
+
+        plot_kwargs.update(kwargs)
+
+        return plot_obj.hvplot.scatter(**plot_kwargs)
