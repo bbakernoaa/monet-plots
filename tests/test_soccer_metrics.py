@@ -10,6 +10,7 @@ try:
 except ImportError:
     da = None
 
+
 def test_soccer_metrics_eager():
     """Test soccer metrics with NumPy (Eager)."""
     obs = np.array([10, 20, 30])
@@ -37,6 +38,7 @@ def test_soccer_metrics_eager():
     nme = verification_metrics.compute_nme(obs, mod)
     np.testing.assert_allclose(nme, expected_nme)
 
+
 @pytest.mark.skipif(da is None, reason="dask not installed")
 def test_soccer_metrics_lazy():
     """Test soccer metrics with Dask/Xarray (Lazy)."""
@@ -60,6 +62,7 @@ def test_soccer_metrics_lazy():
     expected_fb_element = 200.0 * (mod_data - obs_data) / (mod_data + obs_data)
     np.testing.assert_allclose(fb_element.compute(), expected_fb_element)
 
+
 def test_soccer_hvplot():
     """Test SoccerPlot.hvplot() returns a valid object."""
     df = pd.DataFrame({"obs": [1, 2], "mod": [1.1, 1.9], "label": ["A", "B"]})
@@ -68,7 +71,9 @@ def test_soccer_hvplot():
     assert hv_obj is not None
     # Verify it's a holoviews object
     import holoviews as hv
+
     assert isinstance(hv_obj, hv.core.dimension.Dimensioned)
+
 
 @pytest.mark.skipif(da is None, reason="dask not installed")
 def test_soccer_hvplot_lazy():
@@ -81,11 +86,12 @@ def test_soccer_hvplot_lazy():
             "obs": (["x"], obs_data),
             "mod": (["x"], mod_data),
         },
-        coords={"x": [0, 1, 2]}
+        coords={"x": [0, 1, 2]},
     ).chunk({"x": 2})
 
     plot = SoccerPlot(ds, obs_col="obs", mod_col="mod")
     hv_obj = plot.hvplot()
     assert hv_obj is not None
     import holoviews as hv
+
     assert isinstance(hv_obj, hv.core.dimension.Dimensioned)
