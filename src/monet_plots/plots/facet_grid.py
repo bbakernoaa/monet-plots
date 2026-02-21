@@ -30,7 +30,7 @@ class FacetGridPlot(BasePlot):
         col: str | None = None,
         hue: str | None = None,
         col_wrap: int | None = None,
-        height: float = 3,
+        size: float | None = None,
         aspect: float = 1,
         subplot_kws: dict[str, Any] | None = None,
         style: str | None = "wiley",
@@ -38,29 +38,44 @@ class FacetGridPlot(BasePlot):
     ) -> None:
         """Initializes the facet grid.
 
-        Args:
-            data: The data to plot.
-            row (str, optional): Variable to map to row facets. Defaults to None
-            col (str, optional): Variable to map to column facets. Defaults to None
-            hue (str, optional): Variable to map to color mapping. Defaults to None
-            col_wrap (int, optional): Number of columns before wrapping. Defaults to None
-            height (float, optional): Height of each facet in inches. Defaults to 3
-            aspect (float, optional): Aspect ratio of each facet. Defaults to 1
-            subplot_kws (dict, optional): Keyword arguments for subplots (e.g. projection).
-            style (str, optional): Style name to apply. Defaults to 'wiley'.
-            **kwargs: Additional keyword arguments to pass to `FacetGrid`.
+        Parameters
+        ----------
+        data : Any
+            The data to plot.
+        row : str, optional
+            Variable to map to row facets, by default None.
+        col : str, optional
+            Variable to map to column facets, by default None.
+        hue : str, optional
+            Variable to map to color mapping, by default None.
+        col_wrap : int, optional
+            Number of columns before wrapping, by default None.
+        size : float, optional
+            Height (in inches) of each facet, by default 3.
+            Aligns with Xarray convention.
+        aspect : float, optional
+            Aspect ratio of each facet, by default 1.
+        subplot_kws : dict, optional
+            Keyword arguments for subplots (e.g. projection).
+        style : str, optional
+            Style name to apply, by default "wiley".
+        **kwargs : Any
+            Additional keyword arguments to pass to `FacetGrid`.
+            `height` is supported as an alias for `size` (Seaborn convention).
         """
         # Apply style
         if style:
             set_style(style)
+
+        # Handle size/height alignment (Xarray vs Seaborn)
+        self.size = size or kwargs.pop("height", 3)
+        self.aspect = aspect
 
         # Store facet parameters
         self.row = row
         self.col = col
         self.hue = hue
         self.col_wrap = col_wrap
-        self.height = height
-        self.aspect = aspect
 
         # Aero Protocol: Preserve lazy Xarray objects
         self.raw_data = data
@@ -96,7 +111,7 @@ class FacetGridPlot(BasePlot):
                 col=self.col,
                 hue=self.hue,
                 col_wrap=self.col_wrap,
-                height=self.height,
+                height=self.size,
                 aspect=self.aspect,
                 subplot_kws=subplot_kws,
                 **kwargs,
@@ -167,7 +182,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
         col: str | None = None,
         col_wrap: int | None = None,
         projection: ccrs.Projection | None = None,
-        height: float = 4,
+        size: float | None = None,
         aspect: float = 1.2,
         style: str | None = "wiley",
         **kwargs: Any,
@@ -186,10 +201,13 @@ class SpatialFacetGridPlot(FacetGridPlot):
             Wrap columns at this number.
         projection : ccrs.Projection, optional
             Cartopy projection for the maps. Defaults to PlateCarree.
-        height : float
-            Height of each facet.
-        aspect : float
-            Aspect ratio of each facet.
+        size : float, optional
+            Height (in inches) of each facet, by default 4.
+            Aligns with Xarray convention.
+        aspect : float, optional
+            Aspect ratio of each facet, by default 1.2.
+        style : str, optional
+            Style name to apply, by default "wiley".
         **kwargs : Any
             Additional arguments for FacetGrid.
         """
@@ -204,13 +222,16 @@ class SpatialFacetGridPlot(FacetGridPlot):
             if row == "variable" or col == "variable":
                 data = data.to_array(dim="variable", name="value")
 
+        # Aligns with Xarray's default size for maps
+        size = size or kwargs.pop("height", 4)
+
         # Call FacetGridPlot init which handles the two-track branching
         super().__init__(
             data,
             row=row,
             col=col,
             col_wrap=col_wrap,
-            height=height,
+            size=size,
             aspect=aspect,
             subplot_kws={"projection": self.projection},
             style=style,

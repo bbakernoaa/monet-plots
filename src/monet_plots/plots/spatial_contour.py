@@ -34,7 +34,7 @@ class SpatialContourPlot(SpatialPlot):
         """Redirect to SpatialFacetGridPlot if faceting is requested.
 
         This enables a unified interface for both single-panel and multi-panel
-        spatial plots.
+        spatial plots, following Xarray's plotting conventions.
 
         Parameters
         ----------
@@ -45,8 +45,8 @@ class SpatialContourPlot(SpatialPlot):
         date : Any, optional
             Date/time for the plot title, by default None.
         **kwargs : Any
-            Additional keyword arguments. If `col` or `row` are provided,
-            redirects to SpatialFacetGridPlot.
+            Additional keyword arguments. If faceting arguments (e.g., `col`,
+            `row`, or `col_wrap`) are provided, redirects to `SpatialFacetGridPlot`.
 
         Returns
         -------
@@ -56,11 +56,13 @@ class SpatialContourPlot(SpatialPlot):
         from .facet_grid import SpatialFacetGridPlot
 
         ax = kwargs.get("ax")
-        row = kwargs.get("row")
-        col = kwargs.get("col")
 
-        # Redirect to FacetGrid if col/row provided and no existing axes
-        if ax is None and (row is not None or col is not None):
+        # Aligns with Xarray's trigger for faceting
+        facet_kwargs = ["col", "row", "col_wrap"]
+        is_faceting = any(kwargs.get(k) is not None for k in facet_kwargs)
+
+        # Redirect to FacetGrid if faceting requested and no existing axes
+        if ax is None and is_faceting:
             return SpatialFacetGridPlot(modelvar, **kwargs)
 
         # Also redirect if input is a Dataset with multiple variables
@@ -78,11 +80,16 @@ class SpatialContourPlot(SpatialPlot):
     def __init__(
         self,
         modelvar: Any,
-        gridobj: Any,
+        gridobj: Any | None = None,
         date: datetime | None = None,
         discrete: bool = True,
         ncolors: int | None = None,
         dtype: str = "int",
+        col: str | None = None,
+        row: str | None = None,
+        col_wrap: int | None = None,
+        size: float | None = None,
+        aspect: float | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the spatial contour plot.
@@ -91,8 +98,8 @@ class SpatialContourPlot(SpatialPlot):
         ----------
         modelvar : Any
             The input data to contour. Preferred format is an xarray DataArray.
-        gridobj : Any
-            Object with LAT and LON variables to determine extent.
+        gridobj : Any, optional
+            Object with LAT and LON variables to determine extent, by default None.
         date : datetime, optional
             Date/time for the plot title, by default None.
         discrete : bool, optional
@@ -101,6 +108,16 @@ class SpatialContourPlot(SpatialPlot):
             Number of discrete colors for the colorbar, by default None.
         dtype : str, optional
             Data type for colorbar tick labels, by default "int".
+        col : str, optional
+            Dimension name to facet by columns. Aligns with Xarray.
+        row : str, optional
+            Dimension name to facet by rows. Aligns with Xarray.
+        col_wrap : int, optional
+            Number of columns before wrapping. Aligns with Xarray.
+        size : float, optional
+            Height (in inches) of each facet. Aligns with Xarray.
+        aspect : float, optional
+            Aspect ratio of each facet. Aligns with Xarray.
         **kwargs : Any
             Keyword arguments passed to :class:`SpatialPlot` for map features
             and projection.

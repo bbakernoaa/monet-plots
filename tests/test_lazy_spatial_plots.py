@@ -176,6 +176,34 @@ def test_spatial_imshow_auto_facet():
     plt.close("all")
 
 
+def test_spatial_imshow_col_wrap():
+    """Verify col_wrap works and triggers redirection."""
+    import matplotlib.pyplot as plt
+
+    plt.switch_backend("Agg")
+
+    lon = np.linspace(-120, -70, 10)
+    lat = np.linspace(25, 50, 10)
+    time = np.arange(4)
+    da = xr.DataArray(
+        np.random.rand(4, 10, 10),
+        coords={"time": time, "lon": lon, "lat": lat},
+        dims=("time", "lat", "lon"),
+        name="test_var",
+    )
+
+    # Trigger with col_wrap
+    plot = SpatialImshowPlot(da, col="time", col_wrap=2)
+
+    from monet_plots.plots.facet_grid import SpatialFacetGridPlot
+
+    assert isinstance(plot, SpatialFacetGridPlot)
+    assert plot.col == "time"
+    assert plot.col_wrap == 2
+
+    plt.close("all")
+
+
 def test_contour_plot_parity():
     """Verify SpatialContourPlot produces an axes when plotted with both eager and lazy data."""
     import matplotlib.pyplot as plt

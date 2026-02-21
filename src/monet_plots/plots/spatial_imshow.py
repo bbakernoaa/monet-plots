@@ -31,7 +31,7 @@ class SpatialImshowPlot(SpatialPlot):
         """Redirect to SpatialFacetGridPlot if faceting is requested.
 
         This enables a unified interface for both single-panel and multi-panel
-        spatial plots.
+        spatial plots, following Xarray's plotting conventions.
 
         Parameters
         ----------
@@ -42,8 +42,8 @@ class SpatialImshowPlot(SpatialPlot):
         plotargs : dict, optional
             Arguments for imshow, by default None.
         **kwargs : Any
-            Additional keyword arguments. If `col` or `row` are provided,
-            redirects to SpatialFacetGridPlot.
+            Additional keyword arguments. If faceting arguments (e.g., `col`,
+            `row`, or `col_wrap`) are provided, redirects to `SpatialFacetGridPlot`.
 
         Returns
         -------
@@ -53,11 +53,13 @@ class SpatialImshowPlot(SpatialPlot):
         from .facet_grid import SpatialFacetGridPlot
 
         ax = kwargs.get("ax")
-        row = kwargs.get("row")
-        col = kwargs.get("col")
 
-        # Redirect to FacetGrid if col/row provided and no existing axes
-        if ax is None and (row is not None or col is not None):
+        # Aligns with Xarray's trigger for faceting
+        facet_kwargs = ["col", "row", "col_wrap"]
+        is_faceting = any(kwargs.get(k) is not None for k in facet_kwargs)
+
+        # Redirect to FacetGrid if faceting requested and no existing axes
+        if ax is None and is_faceting:
             return SpatialFacetGridPlot(modelvar, **kwargs)
 
         # Also redirect if input is a Dataset with multiple variables
@@ -79,6 +81,11 @@ class SpatialImshowPlot(SpatialPlot):
         plotargs: dict[str, Any] | None = None,
         ncolors: int = 15,
         discrete: bool = False,
+        col: str | None = None,
+        row: str | None = None,
+        col_wrap: int | None = None,
+        size: float | None = None,
+        aspect: float | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the spatial imshow plot.
@@ -95,6 +102,16 @@ class SpatialImshowPlot(SpatialPlot):
             Number of discrete colors for the discrete colorbar, by default 15.
         discrete : bool, optional
             If True, use a discrete colorbar, by default False.
+        col : str, optional
+            Dimension name to facet by columns. Aligns with Xarray.
+        row : str, optional
+            Dimension name to facet by rows. Aligns with Xarray.
+        col_wrap : int, optional
+            Number of columns before wrapping. Aligns with Xarray.
+        size : float, optional
+            Height (in inches) of each facet. Aligns with Xarray.
+        aspect : float, optional
+            Aspect ratio of each facet. Aligns with Xarray.
         **kwargs : Any
             Keyword arguments passed to :class:`SpatialPlot` for map features
             and projection.
