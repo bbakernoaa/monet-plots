@@ -24,14 +24,72 @@ class SpatialContourPlot(SpatialPlot):
     static plots) and Track B (interactive exploration).
     """
 
+    def __new__(
+        cls,
+        modelvar: Any,
+        gridobj: Any | None = None,
+        date: Any | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Redirect to SpatialFacetGridPlot if faceting is requested.
+
+        This enables a unified interface for both single-panel and multi-panel
+        spatial plots, following Xarray's plotting conventions.
+
+        Parameters
+        ----------
+        modelvar : Any
+            The input data to contour.
+        gridobj : Any, optional
+            Object with LAT and LON variables, by default None.
+        date : Any, optional
+            Date/time for the plot title, by default None.
+        **kwargs : Any
+            Additional keyword arguments. If faceting arguments (e.g., `col`,
+            `row`, or `col_wrap`) are provided, redirects to `SpatialFacetGridPlot`.
+
+        Returns
+        -------
+        Any
+            An instance of SpatialContourPlot or SpatialFacetGridPlot.
+        """
+        from .facet_grid import SpatialFacetGridPlot
+
+        ax = kwargs.get("ax")
+
+        # Aligns with Xarray's trigger for faceting
+        facet_kwargs = ["col", "row", "col_wrap"]
+        is_faceting = any(kwargs.get(k) is not None for k in facet_kwargs)
+
+        # Redirect to FacetGrid if faceting requested and no existing axes
+        if ax is None and is_faceting:
+            return SpatialFacetGridPlot(modelvar, **kwargs)
+
+        # Also redirect if input is a Dataset with multiple variables
+        if (
+            ax is None
+            and isinstance(modelvar, xr.Dataset)
+            and len(modelvar.data_vars) > 1
+        ):
+            # Default to faceting by variable if not specified
+            kwargs.setdefault("col", "variable")
+            return SpatialFacetGridPlot(modelvar, **kwargs)
+
+        return super().__new__(cls)
+
     def __init__(
         self,
         modelvar: Any,
-        gridobj: Any,
+        gridobj: Any | None = None,
         date: datetime | None = None,
         discrete: bool = True,
         ncolors: int | None = None,
         dtype: str = "int",
+        col: str | None = None,
+        row: str | None = None,
+        col_wrap: int | None = None,
+        size: float | None = None,
+        aspect: float | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the spatial contour plot.
@@ -40,8 +98,8 @@ class SpatialContourPlot(SpatialPlot):
         ----------
         modelvar : Any
             The input data to contour. Preferred format is an xarray DataArray.
-        gridobj : Any
-            Object with LAT and LON variables to determine extent.
+        gridobj : Any, optional
+            Object with LAT and LON variables to determine extent, by default None.
         date : datetime, optional
             Date/time for the plot title, by default None.
         discrete : bool, optional
@@ -50,6 +108,16 @@ class SpatialContourPlot(SpatialPlot):
             Number of discrete colors for the colorbar, by default None.
         dtype : str, optional
             Data type for colorbar tick labels, by default "int".
+        col : str, optional
+            Dimension name to facet by columns. Aligns with Xarray.
+        row : str, optional
+            Dimension name to facet by rows. Aligns with Xarray.
+        col_wrap : int, optional
+            Number of columns before wrapping. Aligns with Xarray.
+        size : float, optional
+            Height (in inches) of each facet. Aligns with Xarray.
+        aspect : float, optional
+            Aspect ratio of each facet. Aligns with Xarray.
         **kwargs : Any
             Keyword arguments passed to :class:`SpatialPlot` for map features
             and projection.
@@ -68,9 +136,17 @@ class SpatialContourPlot(SpatialPlot):
         self.ncolors = ncolors
         self.dtype = dtype
 
-        # These are used by _get_extent_from_data
-        self.lon_coord = kwargs.get("lon_coord", "lon")
-        self.lat_coord = kwargs.get("lat_coord", "lat")
+        # Aero Protocol: Centralized coordinate identification
+        try:
+            self.lon_coord, self.lat_coord = self._identify_coords(self.modelvar)
+        except ValueError:
+            self.lon_coord = kwargs.get("lon_coord", "lon")
+            self.lat_coord = kwargs.get("lat_coord", "lat")
+
+        # Ensure coordinates are monotonic for correct plotting
+        self.modelvar = self._ensure_monotonic(
+            self.modelvar, self.lon_coord, self.lat_coord
+        )
 
         _update_history(self.modelvar, "Initialized monet-plots.SpatialContourPlot")
 

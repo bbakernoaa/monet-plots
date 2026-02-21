@@ -114,6 +114,96 @@ def test_imshow_plot_parity():
     plt.close("all")
 
 
+def test_spatial_facet_grid_laziness():
+    """Verify SpatialFacetGridPlot handles lazy data without eager compute."""
+    import matplotlib.pyplot as plt
+    from monet_plots.plots.facet_grid import SpatialFacetGridPlot
+
+    plt.switch_backend("Agg")
+
+    # Create 3D data (time, lat, lon)
+    lon = np.linspace(-120, -70, 10)
+    lat = np.linspace(25, 50, 10)
+    time = np.arange(3)
+    data = np.random.rand(3, 10, 10)
+
+    da = xr.DataArray(
+        data,
+        coords={"time": time, "lon": lon, "lat": lat},
+        dims=("time", "lat", "lon"),
+        name="test_var",
+    ).chunk({"time": 1, "lat": 5, "lon": 5})
+
+    # Initialize facet grid
+    fg = SpatialFacetGridPlot(da, col="time")
+
+    # Verify data is still lazy
+    assert hasattr(fg.data.data, "chunks")
+
+    # Map a plotter (this should still be lazy in terms of the full array)
+    fg.map_monet(SpatialImshowPlot)
+
+    # Verify we have 3 axes
+    assert len(fg.grid.axes.flatten()) >= 3
+
+    plt.close("all")
+
+
+def test_spatial_imshow_auto_facet():
+    """Verify SpatialImshowPlot automatically redirects to FacetGrid for multiple facets."""
+    import matplotlib.pyplot as plt
+
+    plt.switch_backend("Agg")
+
+    lon = np.linspace(-120, -70, 10)
+    lat = np.linspace(25, 50, 10)
+    time = np.arange(2)
+    da = xr.DataArray(
+        np.random.rand(2, 10, 10),
+        coords={"time": time, "lon": lon, "lat": lat},
+        dims=("time", "lat", "lon"),
+        name="test_var",
+    ).chunk({"time": 1})
+
+    # This should return a SpatialFacetGridPlot instance due to __new__
+    plot = SpatialImshowPlot(da, col="time")
+
+    from monet_plots.plots.facet_grid import SpatialFacetGridPlot
+
+    assert isinstance(plot, SpatialFacetGridPlot)
+    assert plot.col == "time"
+
+    plt.close("all")
+
+
+def test_spatial_imshow_col_wrap():
+    """Verify col_wrap works and triggers redirection."""
+    import matplotlib.pyplot as plt
+
+    plt.switch_backend("Agg")
+
+    lon = np.linspace(-120, -70, 10)
+    lat = np.linspace(25, 50, 10)
+    time = np.arange(4)
+    da = xr.DataArray(
+        np.random.rand(4, 10, 10),
+        coords={"time": time, "lon": lon, "lat": lat},
+        dims=("time", "lat", "lon"),
+        name="test_var",
+    )
+
+    # Trigger with col_wrap
+    plot = SpatialImshowPlot(da, col="time", col_wrap=2)
+
+    from monet_plots.plots.facet_grid import SpatialFacetGridPlot
+
+    assert isinstance(plot, SpatialFacetGridPlot)
+    assert plot.col == "time"
+    assert plot.col_wrap == 2
+
+    plt.close("all")
+
+
 def test_contour_plot_parity():
     """Verify SpatialContourPlot produces an axes when plotted with both eager and lazy data."""
     import matplotlib.pyplot as plt
