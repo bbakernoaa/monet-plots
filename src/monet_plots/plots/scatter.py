@@ -254,7 +254,6 @@ class ScatterPlot(BasePlot):
                 "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
             )
 
-
         # Track B defaults
         plot_kwargs = {
             "x": self.x,
