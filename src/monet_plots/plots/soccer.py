@@ -93,7 +93,7 @@ class SoccerPlot(BasePlot):
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1)
 
-        self.data = normalize_data(data)
+        self.data = normalize_data(data, prefer_xarray=False)
         self.bias_col = bias_col
         self.error_col = error_col
         self.label_col = label_col

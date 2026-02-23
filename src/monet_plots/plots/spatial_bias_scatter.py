@@ -115,7 +115,9 @@ class SpatialBiasScatterPlot(SpatialPlot):
                 (
                     c
                     for c in ["latitude", "lat"]
-                    if c in self.data.coords or c in self.data.dims
+                    if c in self.data.coords
+                    or c in self.data.data_vars
+                    or c in self.data.dims
                 ),
                 "lat",
             )
@@ -123,7 +125,9 @@ class SpatialBiasScatterPlot(SpatialPlot):
                 (
                     c
                     for c in ["longitude", "lon"]
-                    if c in self.data.coords or c in self.data.dims
+                    if c in self.data.coords
+                    or c in self.data.data_vars
+                    or c in self.data.dims
                 ),
                 "lon",
             )

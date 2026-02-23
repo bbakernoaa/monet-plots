@@ -54,7 +54,7 @@ class TimeSeriesPlot(BasePlot):
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1)
 
-        self.df = normalize_data(df)
+        self.df = normalize_data(df, prefer_xarray=False)
         self.x = x
         self.y = y
         self.plotargs = plotargs
@@ -295,7 +295,9 @@ class TimeSeriesStatsPlot(BasePlot):
             for candidate in ["time", "datetime", "date"]:
                 if candidate in self.df.coords or candidate in self.df.dims:
                     return candidate
-            return self.df.dims[0]
+            if self.df.dims:
+                return str(self.df.dims[0])
+            raise ValueError("Could not identify time dimension in xarray object.")
 
         # Pandas
         if isinstance(self.df.index, pd.DatetimeIndex):
