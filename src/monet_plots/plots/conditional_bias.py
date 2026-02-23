@@ -165,8 +165,13 @@ class ConditionalBiasPlot(BasePlot):
         holoviews.core.Element
             The interactive plot.
         """
-        import holoviews as hv
-        import hvplot.xarray  # noqa: F401
+        try:
+            import holoviews as hv
+            import hvplot.xarray  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "hvplot and holoviews are required for interactive plotting. Install them with 'pip install hvplot holoviews'."
+            )
 
         plot_data = normalize_data(data) if data is not None else self.data
         if plot_data is None:

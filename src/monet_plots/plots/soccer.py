@@ -257,8 +257,13 @@ class SoccerPlot(BasePlot):
         holoviews.core.Element
             The interactive soccer plot.
         """
-        import hvplot.pandas  # noqa: F401
-        import hvplot.xarray  # noqa: F401
+        try:
+            import hvplot.pandas  # noqa: F401
+            import hvplot.xarray  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
+            )
 
         # Combine into a single Dataset or DataFrame for plotting
         if isinstance(self.bias_data, xr.DataArray):

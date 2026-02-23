@@ -203,11 +203,17 @@ class SpatialBiasScatterPlot(SpatialPlot):
         holoviews.core.layout.Layout
             The interactive hvPlot object.
         """
+        try:
+            import hvplot.pandas  # noqa: F401
+            import hvplot.xarray  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
+            )
+
         import pandas as pd
 
         if isinstance(self.data, pd.DataFrame):
-            import hvplot.pandas  # noqa: F401
-
             lat_name = next(
                 (c for c in ["latitude", "lat"] if c in self.data.columns), "lat"
             )
@@ -219,8 +225,6 @@ class SpatialBiasScatterPlot(SpatialPlot):
             ds_plot["bias"] = ds_plot[self.col2] - ds_plot[self.col1]
             plot_target = ds_plot
         else:
-            import hvplot.xarray  # noqa: F401
-
             lat_name = next(
                 (
                     c

@@ -246,12 +246,14 @@ class ScatterPlot(BasePlot):
         holoviews.core.layout.Layout
             The interactive hvPlot object.
         """
-        import pandas as pd
-
-        if isinstance(self.data, pd.DataFrame):
+        try:
             import hvplot.pandas  # noqa: F401
-        else:
             import hvplot.xarray  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
+            )
+
 
         # Track B defaults
         plot_kwargs = {

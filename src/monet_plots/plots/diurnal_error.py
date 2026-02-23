@@ -315,7 +315,12 @@ class DiurnalErrorPlot(BasePlot):
         >>> # Assuming 'plot' is a DiurnalErrorPlot instance
         >>> interactive_plot = plot.hvplot()
         """
-        import hvplot.xarray  # noqa: F401
+        try:
+            import hvplot.xarray  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
+            )
 
         if self.aggregated is None:
             raise ValueError("Aggregated data not found. Call _calculate_metric first.")
