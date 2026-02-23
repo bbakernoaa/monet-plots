@@ -24,9 +24,10 @@ underconfident, or well-calibrated.
     how much data supports each point.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.reliability_diagram import ReliabilityDiagramPlot
 
 # 1. Prepare sample data

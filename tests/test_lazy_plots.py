@@ -8,6 +8,7 @@ except ImportError:
     da = None
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+
 from monet_plots.plots.scatter import ScatterPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 

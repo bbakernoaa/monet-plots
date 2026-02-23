@@ -22,9 +22,10 @@ theory and meteorological verification.
     0.5 indicates no skill. The higher the AUC, the better the model's potential skill.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.roc_curve import ROCCurvePlot
 
 # 1. Prepare sample data

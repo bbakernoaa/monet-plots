@@ -3,15 +3,20 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
-import xarray as xr
 import pandas as pd
 import seaborn as sns
-from typing import Any
+import xarray as xr
 
+from ..plot_utils import _update_history, normalize_data
 from .base import BasePlot
-from ..plot_utils import normalize_data
-from ..verification_metrics import _update_history
+
+if TYPE_CHECKING:
+    import holoviews as hv
+    import matplotlib.axes
+    import matplotlib.figure
 
 
 class DiurnalErrorPlot(BasePlot):
@@ -22,6 +27,25 @@ class DiurnalErrorPlot(BasePlot):
 
     This class supports native Xarray and Dask objects for lazy evaluation
     and provenance tracking.
+
+    Attributes
+    ----------
+    data : Union[xr.Dataset, xr.DataArray, pd.DataFrame]
+        The input data for the plot.
+    obs_col : str
+        Column/variable name for observations.
+    mod_col : str
+        Column/variable name for model values.
+    time_col : str
+        Dimension/column name for timestamp.
+    second_dim : str
+        The second dimension for the heatmap.
+    metric : str
+        The metric to plot ('bias' or 'error').
+    aggregated : xr.DataArray
+        The calculated aggregated data for the heatmap.
+    second_label : str
+        The label for the second dimension on the y-axis.
 
     Examples
     --------
@@ -47,8 +71,8 @@ class DiurnalErrorPlot(BasePlot):
         time_col: str = "time",
         second_dim: str = "month",
         metric: str = "bias",
-        fig: Any | None = None,
-        ax: Any | None = None,
+        fig: matplotlib.figure.Figure | None = None,
+        ax: matplotlib.axes.Axes | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -70,9 +94,9 @@ class DiurnalErrorPlot(BasePlot):
             or a coordinate name), by default "month".
         metric : str, optional
             The metric to plot ('bias' or 'error'), by default "bias".
-        fig : Any, optional
+        fig : matplotlib.figure.Figure, optional
             Existing figure object, by default None.
-        ax : Any, optional
+        ax : matplotlib.axes.Axes, optional
             Existing axes object, by default None.
         **kwargs : Any
             Additional arguments passed to BasePlot.
@@ -86,6 +110,8 @@ class DiurnalErrorPlot(BasePlot):
         self.time_col = time_col
         self.second_dim = second_dim
         self.metric = metric
+        self.aggregated: xr.DataArray | None = None
+        self.second_label: str = ""
 
         # Prepare the calculation
         self._calculate_metric()
@@ -96,7 +122,7 @@ class DiurnalErrorPlot(BasePlot):
         This method identifies the appropriate backend (Xarray/Dask or Pandas),
         calculates the specified metric (bias or absolute error), and aggregates
         it into a 2D grid indexed by 'second_val' and 'hour'. It maintains
-        lazy evaluation for Dask-backed objects.
+        lazy evaluation for Dask-backed objects and uses vectorized grouping.
 
         Raises
         ------
@@ -106,7 +132,7 @@ class DiurnalErrorPlot(BasePlot):
         # Convert to Dataset if it's a DataArray to handle multiple columns easily
         ds = self.data
         if isinstance(ds, xr.DataArray):
-            ds = ds.to_dataset() if hasattr(ds, "to_dataset") else ds
+            ds = ds.to_dataset()
 
         if isinstance(ds, xr.Dataset):
             # Calculate individual error/bias lazily
@@ -143,24 +169,23 @@ class DiurnalErrorPlot(BasePlot):
                         f"second_dim '{self.second_dim}' not found in data"
                     )
 
-            # Group by and mean (Lazy if Dask)
+            # Aero Protocol: Vectorized multi-dimensional grouping.
+            # This is significantly faster than the previous loop and maintains
+            # lazy evaluation for Dask-backed objects.
             try:
-                # To remain lazy with Dask, we avoid operations that require knowing
-                # the result shape eagerly (like drop=True in where).
-                hours = np.arange(24)
-                results = []
-                for h in hours:
-                    # Masking instead of dropping to keep it lazy
-                    h_val = val.where(val.hour == h)
-                    h_agg = h_val.groupby("second_val").mean(dim=self.time_col)
-                    h_agg = h_agg.expand_dims(hour=[h])
-                    results.append(h_agg)
+                self.aggregated = val.groupby(["second_val", "hour"]).mean(
+                    dim=self.time_col, keep_attrs=True
+                )
 
-                self.aggregated = xr.concat(results, dim="hour")
-                self.aggregated = self.aggregated.transpose("second_val", "hour")
-
+                # Ensure consistent order (second_val, hour)
+                if (
+                    "second_val" in self.aggregated.dims
+                    and "hour" in self.aggregated.dims
+                ):
+                    self.aggregated = self.aggregated.transpose("second_val", "hour")
             except Exception:
                 # Fallback to eager if something goes wrong with complex Xarray ops
+                # though modern xarray (with flox) should handle this lazily.
                 df = val.to_dataframe(name=val.name).reset_index()
                 pivot = df.pivot_table(
                     index="second_val", columns="hour", values=val.name, aggfunc="mean"
@@ -199,9 +224,15 @@ class DiurnalErrorPlot(BasePlot):
             if self.metric == "bias":
                 df["val"] = df[self.mod_col] - df[self.obs_col]
                 metric_name = "bias"
+                msg = "Calculated diurnal bias"
             elif self.metric == "error":
                 df["val"] = np.abs(df[self.mod_col] - df[self.obs_col])
                 metric_name = "error"
+                msg = "Calculated diurnal absolute error"
+            else:
+                df["val"] = df[self.mod_col]
+                metric_name = "value"
+                msg = "Calculated diurnal values"
 
             pivot = df.pivot_table(
                 index="second_val", columns="hour", values="val", aggfunc="mean"
@@ -215,8 +246,9 @@ class DiurnalErrorPlot(BasePlot):
                 dims=["second_val", "hour"],
                 name=metric_name,
             )
+            self.aggregated = _update_history(self.aggregated, msg)
 
-    def plot(self, cmap: str = "RdBu_r", **kwargs: Any) -> Any:
+    def plot(self, cmap: str = "RdBu_r", **kwargs: Any) -> matplotlib.axes.Axes:
         """
         Generate the diurnal error heatmap (Track A: Static).
 
@@ -237,9 +269,12 @@ class DiurnalErrorPlot(BasePlot):
         >>> # Assuming 'plot' is a DiurnalErrorPlot instance
         >>> ax = plot.plot(cmap="viridis")
         """
+        if self.aggregated is None:
+            raise ValueError("Aggregated data not found. Call _calculate_metric first.")
+
         # Compute the aggregated data for plotting
         data_to_plot = self.aggregated
-        if hasattr(data_to_plot.data, "dask"):
+        if hasattr(data_to_plot.data, "chunks"):
             data_to_plot = data_to_plot.compute()
 
         # Convert to DataFrame for Seaborn
@@ -259,7 +294,7 @@ class DiurnalErrorPlot(BasePlot):
 
         return self.ax
 
-    def hvplot(self, cmap: str = "RdBu_r", **kwargs: Any) -> Any:
+    def hvplot(self, cmap: str = "RdBu_r", **kwargs: Any) -> hv.Element:
         """
         Generate the diurnal error heatmap (Track B: Interactive).
 
@@ -280,7 +315,15 @@ class DiurnalErrorPlot(BasePlot):
         >>> # Assuming 'plot' is a DiurnalErrorPlot instance
         >>> interactive_plot = plot.hvplot()
         """
-        import hvplot.xarray  # noqa: F401
+        try:
+            import hvplot.xarray  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
+            )
+
+        if self.aggregated is None:
+            raise ValueError("Aggregated data not found. Call _calculate_metric first.")
 
         # Track B: Interactive
         return self.aggregated.hvplot.heatmap(

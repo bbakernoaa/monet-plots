@@ -27,10 +27,6 @@ dependencies = [
     "statsmodels",
     "dask",
     "monet-stats @ git+https://github.com/bbakernoaa/monet-stats.git",
-    "hvplot",
-    "holoviews",
-    "geoviews",
-    "datashader",
     "flox",
 ]
 
@@ -39,6 +35,12 @@ dependencies = [
 "Bug Tracker" = "https://github.com/noaa-oar-arl/monet-plots/issues"
 
 [project.optional-dependencies]
+interactive = [
+    "hvplot",
+    "holoviews",
+    "geoviews",
+    "datashader",
+]
 test = [
     "pytest",
     "pytest-xdist",

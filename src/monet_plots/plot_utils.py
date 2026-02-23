@@ -1,7 +1,6 @@
 import warnings
 from typing import Any, Optional
 
-
 import numpy as np
 import pandas as pd
 
@@ -192,49 +191,69 @@ def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None
         raise ValueError("DataFrame cannot be empty")
 
 
-def _try_xarray_conversion(data):
-    """Try to convert data to xarray format."""
+def _update_history(obj: Any, msg: str) -> Any:
+    """Updates the history attribute of an xarray object.
+
+    Parameters
+    ----------
+    obj : Any
+        The object to update (typically xarray.DataArray or xarray.Dataset).
+    msg : str
+        The message to add to the history.
+
+    Returns
+    -------
+    Any
+        The object with the updated history.
+    """
+    if xr is not None and isinstance(obj, (xr.DataArray, xr.Dataset)):
+        history = obj.attrs.get("history", "")
+        new_history = f"{msg} (monet-plots); {history}".strip("; ")
+        obj.attrs["history"] = new_history
+    return obj
+
+
+def _try_xarray_conversion(data: Any) -> Any:
+    """Internal helper to convert data to xarray if possible."""
     if xr is None:
         return None
-
-    # Check if already xarray
-    if hasattr(xr, "DataArray") and isinstance(data, xr.DataArray):
+    if isinstance(data, (xr.DataArray, xr.Dataset)):
         return data
-    if hasattr(xr, "Dataset") and isinstance(data, xr.Dataset):
-        return data
-
-    # Try xarray-like conversion
-    if hasattr(data, "to_dataset") and hasattr(data, "to_dataframe"):
+    # Check for common xarray-compatible objects
+    if hasattr(data, "to_xarray"):
         try:
-            return data.to_dataset()
-        except Exception:
+            return data.to_xarray()
+        except (AttributeError, TypeError, ValueError):
             return None
-
     return None
 
 
-def _convert_numpy_to_dataframe(data):
-    """Convert numpy array to DataFrame."""
+def _convert_numpy_to_dataframe(data: np.ndarray) -> pd.DataFrame:
+    """Internal helper to convert numpy array to pandas DataFrame."""
     if data.ndim == 1:
         return pd.DataFrame(data, columns=["col_0"])
     elif data.ndim == 2:
         return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
     else:
-        raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
+        raise ValueError(
+            f"numpy array with {data.ndim} dimensions not supported for automatic DataFrame conversion"
+        )
 
 
-def _normalize_data(data: Any) -> Any:
+def _normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
     """
-    Normalize input data to a standardized format, preferring xarray objects when possible.
+    Normalize input data to a standardized format.
 
     This function intelligently handles different input types:
-    - xarray DataArray/Dataset: returned as-is (preferred format)
+    - xarray DataArray/Dataset: returned as-is
     - pandas DataFrame: returned as-is
     - numpy array: converted to DataFrame
-    - Other types: converted to DataFrame if possible
+    - Other types: converted to xarray if prefer_xarray=True, else DataFrame
 
     Args:
         data: Input data of various types
+        prefer_xarray: If True, attempts to convert non-pandas objects to xarray.
+                      If False, returns pandas objects as-is and converts others to DataFrame.
 
     Returns:
         Either an xarray DataArray, xarray Dataset, or pandas DataFrame
@@ -242,14 +261,18 @@ def _normalize_data(data: Any) -> Any:
     Raises:
         TypeError: If the input data type is not supported
     """
-    # Try xarray conversion first
-    xarray_result = _try_xarray_conversion(data)
-    if xarray_result is not None:
-        return xarray_result
+    # Check if data is already a desired format
+    if xr is not None and isinstance(data, (xr.DataArray, xr.Dataset)):
+        return data
 
-    # Check if data is a pandas DataFrame
     if isinstance(data, pd.DataFrame):
         return data
+
+    # If xarray is preferred and available, try it
+    if prefer_xarray and xr is not None:
+        xarray_result = _try_xarray_conversion(data)
+        if xarray_result is not None:
+            return xarray_result
 
     # Check if data is numpy array
     if isinstance(data, np.ndarray):
@@ -259,19 +282,19 @@ def _normalize_data(data: Any) -> Any:
     return to_dataframe(data)
 
 
-def normalize_data(data: Any) -> Any:
+def normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
     """
-    Public API for normalizing data, preferring xarray objects when possible.
-
-    This is the same as _normalize_data but exposed as a public API.
+    Public API for normalizing data.
 
     Args:
         data: Input data of various types
+        prefer_xarray: If True, attempts to convert non-pandas/non-xarray objects to xarray.
+                      If False, returns pandas objects as-is and converts others to DataFrame.
 
     Returns:
         Either an xarray DataArray, xarray Dataset, or pandas DataFrame
     """
-    return _normalize_data(data)
+    return _normalize_data(data, prefer_xarray=prefer_xarray)
 
 
 def get_plot_kwargs(cmap: Any = None, norm: Any = None, **kwargs: Any) -> dict:

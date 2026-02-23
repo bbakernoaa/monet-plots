@@ -155,6 +155,31 @@ _pivotal_weather_style = {
     "cbar.fraction": 0.02,
 }
 
+_weathermesh_style = {
+    "font.family": "sans-serif",
+    "font.sans-serif": [
+        "Inter",
+        "Roboto",
+        "Arial",
+        "Helvetica",
+        "sans-serif",
+    ],
+    "font.size": 11,
+    "axes.labelsize": 11,
+    "axes.titlesize": 16,
+    "axes.grid": False,
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "axes.spines.left": False,
+    "axes.spines.bottom": False,
+    "xtick.bottom": False,
+    "ytick.left": False,
+    "figure.figsize": (10, 8),
+    "figure.dpi": 150,
+    "savefig.dpi": 300,
+    "savefig.bbox": "tight",
+}
+
 
 # Dictionary to map context names to style dictionaries
 _styles = {
@@ -163,6 +188,7 @@ _styles = {
     "paper": _paper_style,
     "web": _web_style,
     "pivotal_weather": _pivotal_weather_style,
+    "weathermesh": _weathermesh_style,
     "default": {},  # Matplotlib default style
 }
 

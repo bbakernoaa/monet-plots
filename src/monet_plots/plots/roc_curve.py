@@ -1,7 +1,8 @@
-from typing import Optional, Any
-from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
+from typing import Any, Optional
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_auc
+from .base import BasePlot
 
 
 class ROCCurvePlot(BasePlot):

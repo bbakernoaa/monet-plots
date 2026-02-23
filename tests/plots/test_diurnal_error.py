@@ -1,10 +1,11 @@
 # tests/plots/test_diurnal_error.py
-import pandas as pd
-import numpy as np
-import xarray as xr
 import dask.array as da
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import pytest
+import xarray as xr
+
 from monet_plots.plots.diurnal_error import DiurnalErrorPlot
 
 

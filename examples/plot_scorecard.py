@@ -23,10 +23,12 @@ for identifying which meteorological variables or forecast horizons are most pro
     indicate a drop in performance at a specific lead time.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.scorecard import ScorecardPlot
+from monet_plots.style import set_style
 
 # 1. Prepare sample data in long format
 np.random.seed(42)  # for reproducibility
@@ -70,4 +72,51 @@ plot.ax.set_xlabel("Forecast Lead Time")
 plot.ax.set_ylabel("Meteorological Variable")
 
 plt.tight_layout()
+
+# ---------------------------------------------------------
+# 4. WeatherMesh-style Scorecard
+# ---------------------------------------------------------
+
+# Prepare data for WeatherMesh-style scorecard (e.g. comparing model vs observation across cities)
+cities = [
+    "Atlanta, GA",
+    "Boston, MA",
+    "Chicago, IL",
+    "Houston, TX",
+    "Miami, FL",
+    "New York, NY",
+]
+data_wm = []
+for city in cities:
+    for lt in [1, 3, 5, 7, 10, 14]:
+        mod = np.random.uniform(1, 10)
+        obs = np.random.uniform(1, 10)
+        diff = mod - obs
+        data_wm.append(
+            {"City": city, "Lead Time": lt, "Model": mod, "Obs": obs, "Diff": diff}
+        )
+
+df_wm = pd.DataFrame(data_wm)
+
+# Apply weathermesh style
+set_style("weathermesh")
+
+# Initialize and create the WeatherMesh-style plot
+plot_wm = ScorecardPlot()
+plot_wm.plot(
+    df_wm,
+    x_col="Lead Time",
+    y_col="City",
+    val_col="Diff",
+    annot_cols=["Model", "Obs"],
+    cbar_labels=("Model Better", "Baseline Better"),
+    key_text="Model RMSE | Baseline RMSE",
+    title="Forecast Performance in Global Cities",
+    cmap="RdBu_r",
+    center=0,
+)
+
+# Move Lead Time label to bottom center
+plot_wm.ax.set_xlabel("Forecast Lead Time (Days)")
+
 plt.show()

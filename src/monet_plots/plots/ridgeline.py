@@ -75,7 +75,7 @@ class RidgelinePlot(BasePlot):
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1)
 
-        self.data = normalize_data(data)
+        self.data = normalize_data(data, prefer_xarray=False)
         self.group_dim = group_dim
         self.x = x
         self.x_range = x_range
