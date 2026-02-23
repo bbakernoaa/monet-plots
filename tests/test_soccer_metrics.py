@@ -10,6 +10,12 @@ try:
 except ImportError:
     da = None
 
+try:
+    import hvplot  # noqa: F401
+    import holoviews as hv
+except ImportError:
+    hv = None
+
 
 def test_soccer_metrics_eager():
     """Test soccer metrics with NumPy (Eager)."""
@@ -63,6 +69,7 @@ def test_soccer_metrics_lazy():
     np.testing.assert_allclose(fb_element.compute(), expected_fb_element)
 
 
+@pytest.mark.skipif(hv is None, reason="hvplot or holoviews not installed")
 def test_soccer_hvplot():
     """Test SoccerPlot.hvplot() returns a valid object."""
     df = pd.DataFrame({"obs": [1, 2], "mod": [1.1, 1.9], "label": ["A", "B"]})
@@ -70,12 +77,11 @@ def test_soccer_hvplot():
     hv_obj = plot.hvplot()
     assert hv_obj is not None
     # Verify it's a holoviews object
-    import holoviews as hv
-
     assert isinstance(hv_obj, hv.core.dimension.Dimensioned)
 
 
 @pytest.mark.skipif(da is None, reason="dask not installed")
+@pytest.mark.skipif(hv is None, reason="hvplot or holoviews not installed")
 def test_soccer_hvplot_lazy():
     """Test SoccerPlot.hvplot() with lazy xarray."""
     obs_data = np.array([10, 20, 30])
@@ -92,6 +98,5 @@ def test_soccer_hvplot_lazy():
     plot = SoccerPlot(ds, obs_col="obs", mod_col="mod")
     hv_obj = plot.hvplot()
     assert hv_obj is not None
-    import holoviews as hv
 
     assert isinstance(hv_obj, hv.core.dimension.Dimensioned)
