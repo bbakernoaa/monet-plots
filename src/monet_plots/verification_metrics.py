@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Dict, Optional, Tuple, Union
 
 import monet_stats
@@ -370,6 +372,112 @@ def compute_binned_bias(
         res = res.rename({bin_coord: "bin_center"})
 
     return _update_history(res, "Calculated binned bias")
+
+
+def compute_binned_quantiles(
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    quantiles: list[float] = [0.25, 0.5, 0.75],
+    n_bins: int = 10,
+    bin_range: tuple[float, float] | None = None,
+    dim: str | list[str] | None = None,
+) -> xr.Dataset:
+    """
+    Calculates quantiles of modeled values binned by observed values.
+
+    Parameters
+    ----------
+    obs : np.ndarray | xr.DataArray
+        Observed values.
+    mod : np.ndarray | xr.DataArray
+        Model values.
+    quantiles : list[float], optional
+        List of quantiles to calculate (0 to 1), by default [0.25, 0.5, 0.75].
+    n_bins : int, optional
+        Number of bins for observed values, by default 10.
+    bin_range : tuple[float, float] | None, optional
+        The (min, max) range for the bins. If not provided and data is lazy,
+        min/max will be computed from the data (triggering a compute).
+        Providing `bin_range` ensures full laziness for Dask-backed inputs.
+    dim : str | list[str] | None, optional
+        The dimension(s) over which to calculate the statistics.
+        If None, all dimensions are used.
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset containing binned quantiles. The quantiles are represented
+        as a dimension, and bins are represented by their centers in the
+        'bin_center' coordinate.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import xarray as xr
+    >>> obs = np.linspace(0, 10, 100)
+    >>> mod = obs + np.random.normal(0, 1, 100)
+    >>> ds = compute_binned_quantiles(obs, mod, bins=5)
+    """
+    if not isinstance(obs, xr.DataArray):
+        obs = xr.DataArray(obs)
+    if not isinstance(mod, xr.DataArray):
+        mod = xr.DataArray(mod)
+
+    # Determine bins.
+    midpoints = None
+    if isinstance(n_bins, int):
+        if bin_range is not None:
+            obs_min, obs_max = bin_range
+        else:
+            if hasattr(obs.data, "chunks"):
+                import dask
+
+                obs_min, obs_max = dask.compute(obs.min(), obs.max())
+            else:
+                obs_min, obs_max = obs.min(), obs.max()
+
+        bins = np.linspace(float(obs_min), float(obs_max), n_bins + 1)
+        midpoints = (bins[:-1] + bins[1:]) / 2
+    else:
+        bins = n_bins
+        if isinstance(bins, (np.ndarray, list)):
+            bins_arr = np.asarray(bins)
+            midpoints = (bins_arr[:-1] + bins_arr[1:]) / 2
+
+    # Use xarray's groupby_bins for eager data, or where().quantile() for lazy data
+    if hasattr(mod.data, "chunks") or hasattr(obs.data, "chunks"):
+        # For Dask, flox + groupby + quantile is problematic.
+        # We use a manual binning approach with where() to stay lazy.
+        qs = []
+        for i in range(len(bins) - 1):
+            left, right = bins[i], bins[i + 1]
+            mask = (obs > left) & (obs <= right)
+            q = mod.where(mask).quantile(quantiles, dim=dim)
+            qs.append(q)
+
+        res = xr.concat(qs, dim="bin_center")
+        res = res.assign_coords({"bin_center": midpoints})
+    else:
+        # Eager path remains same (uses flox/groupby_bins if available)
+        binned = mod.groupby_bins(obs, bins=bins)
+        res = binned.quantile(quantiles, dim=dim)
+
+        # Convert Interval index to bin centers
+        bin_coords = [c for c in res.coords if "_bins" in str(c)]
+        if bin_coords:
+            bin_coord = bin_coords[0]
+            if midpoints is not None:
+                res = res.assign_coords({bin_coord: midpoints})
+            else:
+                midpoints = [i.mid for i in res.coords[bin_coord].values]
+                res = res.assign_coords({bin_coord: midpoints})
+            res = res.rename({bin_coord: "bin_center"})
+
+    # Convert to Dataset if it returned a DataArray (it usually does for quantile)
+    if isinstance(res, xr.DataArray):
+        res = res.to_dataset(name="mod_quantile")
+
+    return _update_history(res, "Calculated binned quantiles")
 
 
 def compute_rmse(
