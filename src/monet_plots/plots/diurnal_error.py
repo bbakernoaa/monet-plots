@@ -18,6 +18,10 @@ if TYPE_CHECKING:
     import matplotlib.axes
     import matplotlib.figure
 
+from .base import BasePlot
+from ..plot_utils import normalize_data
+from ..verification_metrics import _update_history
+
 
 class DiurnalErrorPlot(BasePlot):
     """Diurnal error heat map.

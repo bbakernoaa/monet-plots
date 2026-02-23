@@ -213,37 +213,6 @@ def _update_history(obj: Any, msg: str) -> Any:
     return obj
 
 
-def _try_xarray_conversion(data):
-    """Try to convert data to xarray format."""
-    if xr is None:
-        return None
-
-    # Check if already xarray
-    if hasattr(xr, "DataArray") and isinstance(data, xr.DataArray):
-        return data
-    if hasattr(xr, "Dataset") and isinstance(data, xr.Dataset):
-        return data
-
-    # Try xarray-like conversion
-    if hasattr(data, "to_dataset") and hasattr(data, "to_dataframe"):
-        try:
-            return data.to_dataset()
-        except Exception:
-            return None
-
-    return None
-
-
-def _convert_numpy_to_dataframe(data):
-    """Convert numpy array to DataFrame."""
-    if data.ndim == 1:
-        return pd.DataFrame(data, columns=["col_0"])
-    elif data.ndim == 2:
-        return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
-    else:
-        raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
-
-
 def _normalize_data(data: Any) -> Any:
     """
     Normalize input data to a standardized format, preferring xarray objects when possible.

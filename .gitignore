@@ -121,3 +121,6 @@ dmypy.json
 docs/gallery/
 *.pickle
 *.zip
+
+.conda
+.venv/
