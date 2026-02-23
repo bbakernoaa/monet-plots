@@ -245,3 +245,26 @@ def test_lazy_crps():
     # Check pixel value
     np.testing.assert_allclose(crps_lazy.compute()[0, 0], expected_pixel)
     assert "Calculated CRPS" in crps_lazy.attrs["history"]
+
+
+def test_lazy_binned_quantiles():
+    """Test binned quantiles with lazy xarray/dask inputs."""
+    obs_data = np.linspace(0, 10, 100)
+    mod_data = obs_data + np.random.normal(0, 1, 100)
+
+    obs_lazy = xr.DataArray(obs_data, dims=["x"]).chunk({"x": 20})
+    mod_lazy = xr.DataArray(mod_data, dims=["x"]).chunk({"x": 20})
+
+    # Eager
+    res_eager = verification_metrics.compute_binned_quantiles(
+        obs_data, mod_data, n_bins=5
+    )
+
+    # Lazy
+    res_lazy = verification_metrics.compute_binned_quantiles(
+        obs_lazy, mod_lazy, n_bins=5
+    )
+
+    assert res_lazy.mod_quantile.chunks is not None
+    xr.testing.assert_allclose(res_eager, res_lazy.compute())
+    assert "Calculated binned quantiles" in res_lazy.attrs["history"]
