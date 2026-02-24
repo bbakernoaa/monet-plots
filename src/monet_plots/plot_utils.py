@@ -28,6 +28,9 @@ def to_dataframe(data: Any) -> pd.DataFrame:
     if isinstance(data, pd.DataFrame):
         return data
 
+    if isinstance(data, pd.Index):
+        return data.to_frame(index=False, name=data.name or "time")
+
     # Using hasattr to avoid direct dependency on xarray for users who don't have it
     # installed.
     if hasattr(data, "to_dataframe"):  # Works for both xarray DataArray and Dataset
