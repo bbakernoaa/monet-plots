@@ -51,9 +51,15 @@ def test_kde_plot_bivariate(sample_data):
 def test_kde_plot_hvplot(sample_data):
     """Test hvplot method (Track B)."""
     pytest.importorskip("hvplot")
+    # Univariate
     plot = KDEPlot(data=sample_data, x="x")
     hv_obj = plot.hvplot()
     assert hv_obj is not None
+
+    # Bivariate
+    plot_biv = KDEPlot(data=sample_data, x="x", y="y")
+    hv_obj_biv = plot_biv.hvplot()
+    assert hv_obj_biv is not None
 
 
 def test_kde_plot_missing_x(sample_data):

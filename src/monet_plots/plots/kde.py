@@ -133,7 +133,7 @@ class KDEPlot(BasePlot):
         Parameters
         ----------
         **kwargs : Any
-            Keyword arguments passed to `hvplot.kde`.
+            Keyword arguments passed to `hvplot.kde` or `hvplot.bivariate`.
             `rasterize=True` is recommended for high performance on large datasets.
 
         Returns
@@ -149,13 +149,13 @@ class KDEPlot(BasePlot):
                 "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
             )
 
-        # Track B defaults
-        plot_kwargs = {
-            "x": self.x,
-        }
         if self.y:
-            plot_kwargs["y"] = self.y
+            # Bivariate KDE
+            plot_kwargs = {"x": self.x, "y": self.y}
+            plot_kwargs.update(kwargs)
+            return self.data.hvplot.bivariate(**plot_kwargs)
 
+        # Univariate KDE - hvPlot uses 'y' for the variable to distribute
+        plot_kwargs = {"y": self.x}
         plot_kwargs.update(kwargs)
-
         return self.data.hvplot.kde(**plot_kwargs)
