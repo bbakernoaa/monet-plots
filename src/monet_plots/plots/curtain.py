@@ -1,12 +1,16 @@
 # src/monet_plots/plots/curtain.py
 """Vertical curtain plot for cross-sectional data."""
 
-from typing import Any, Optional
+from __future__ import annotations
 
-import xarray as xr
+from typing import TYPE_CHECKING, Any, Optional
 
-from ..plot_utils import get_plot_kwargs
+from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
 from .base import BasePlot
+
+if TYPE_CHECKING:
+    import matplotlib.axes
+    import matplotlib.figure
 
 
 class CurtainPlot(BasePlot):
@@ -14,69 +18,109 @@ class CurtainPlot(BasePlot):
 
     This plot shows a 2D variable (e.g., concentration) as a function of
     one horizontal dimension (time or distance) and one vertical dimension
-    (altitude or pressure).
+    (altitude or pressure). It supports lazy evaluation for large
+    Xarray/Dask datasets by delaying computation until the plot call.
+
+    Attributes
+    ----------
+    data : xr.DataArray
+        The 2D input data for the plot.
+    x : str
+        Name of the x-axis dimension/coordinate (e.g., 'time').
+    y : str
+        Name of the y-axis dimension/coordinate (e.g., 'level').
     """
 
     def __init__(
         self,
-        data: Any,
+        data: Any = None,
         *,
         x: Optional[str] = None,
         y: Optional[str] = None,
-        **kwargs,
-    ):
-        """
-        Initialize Curtain Plot.
+        fig: Optional[matplotlib.figure.Figure] = None,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        df: Any = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize Curtain Plot.
 
-        Args:
-            data: Input data. Should be a 2D xarray.DataArray or similar.
-            x: Name of the x-axis dimension/coordinate (e.g., 'time').
-            y: Name of the y-axis dimension/coordinate (e.g., 'level').
-            **kwargs: Arguments passed to BasePlot.
+        Parameters
+        ----------
+        data : Any, optional
+            Input data. Should be a 2D xarray.DataArray or similar, by default None.
+        x : str, optional
+            Name of the x-axis dimension/coordinate (e.g., 'time'), by default None.
+        y : str, optional
+            Name of the y-axis dimension/coordinate (e.g., 'level'), by default None.
+        fig : matplotlib.figure.Figure, optional
+            An existing Figure object, by default None.
+        ax : matplotlib.axes.Axes, optional
+            An existing Axes object, by default None.
+        df : Any, optional
+            Alias for `data` for backward compatibility, by default None.
+        **kwargs : Any
+            Additional keyword arguments passed to BasePlot.
         """
-        super().__init__(**kwargs)
-        self.data = data
+        super().__init__(fig=fig, ax=ax, **kwargs)
+        self.data = normalize_data(data if data is not None else df)
         self.x = x
         self.y = y
 
-    def plot(self, kind: str = "pcolormesh", colorbar: bool = True, **kwargs):
-        """
-        Generate the curtain plot.
+        _update_history(self.data, "Initialized CurtainPlot")
 
-        Args:
-            kind: Type of plot ('pcolormesh' or 'contourf').
-            colorbar: Whether to add a colorbar.
-            **kwargs: Additional arguments for the plotting function.
+    def plot(
+        self, kind: str = "pcolormesh", colorbar: bool = True, **kwargs: Any
+    ) -> matplotlib.axes.Axes:
+        """Generate a static publication-quality curtain plot (Track A).
+
+        Parameters
+        ----------
+        kind : str, optional
+            Type of plot ('pcolormesh' or 'contourf'), by default "pcolormesh".
+        colorbar : bool, optional
+            Whether to add a colorbar, by default True.
+        **kwargs : Any
+            Additional keyword arguments passed to the plotting function.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object with the curtain plot.
+
+        Raises
+        ------
+        ValueError
+            If the data is not 2D or if `kind` is invalid.
         """
         plot_kwargs = get_plot_kwargs(**kwargs)
 
-        # Ensure we have a DataArray
-        if not isinstance(self.data, xr.DataArray):
-            # Try to convert or at least verify it's xarray-like
-            if hasattr(self.data, "to_array"):
-                da = self.data.to_array()
-            else:
-                raise TypeError(
-                    "CurtainPlot requires xarray-like data with 2 dimensions."
-                )
+        # Performance: Compute required variables once to avoid double work
+        if hasattr(self.data, "compute"):
+            concrete_data = self.data.compute()
         else:
-            da = self.data
+            concrete_data = self.data
 
-        if da.ndim != 2:
-            raise ValueError(f"CurtainPlot requires 2D data, got {da.ndim}D.")
+        if concrete_data.ndim != 2:
+            raise ValueError(f"CurtainPlot requires 2D data, got {concrete_data.ndim}D.")
 
         # Determine x and y if not provided
         if self.x is None:
-            self.x = da.dims[1]
+            self.x = concrete_data.dims[1]
         if self.y is None:
-            self.y = da.dims[0]
+            self.y = concrete_data.dims[0]
 
         if kind == "pcolormesh":
             mappable = self.ax.pcolormesh(
-                da[self.x], da[self.y], da, shading="auto", **plot_kwargs
+                concrete_data[self.x],
+                concrete_data[self.y],
+                concrete_data,
+                shading="auto",
+                **plot_kwargs,
             )
         elif kind == "contourf":
-            mappable = self.ax.contourf(da[self.x], da[self.y], da, **plot_kwargs)
+            mappable = self.ax.contourf(
+                concrete_data[self.x], concrete_data[self.y], concrete_data, **plot_kwargs
+            )
         else:
             raise ValueError("kind must be 'pcolormesh' or 'contourf'")
 
@@ -86,4 +130,31 @@ class CurtainPlot(BasePlot):
         self.ax.set_xlabel(self.x)
         self.ax.set_ylabel(self.y)
 
+        _update_history(self.data, f"Generated CurtainPlot (kind={kind})")
         return self.ax
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """Generate an interactive curtain plot using hvPlot (Track B).
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Keyword arguments passed to `hvplot()`.
+            `rasterize=True` is recommended for high performance on large datasets.
+
+        Returns
+        -------
+        holoviews.core.Element
+            The interactive hvPlot object.
+        """
+        try:
+            import hvplot.xarray  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
+            )
+
+        plot_kwargs = {"x": self.x, "y": self.y}
+        plot_kwargs.update(kwargs)
+
+        return self.data.hvplot(**plot_kwargs)
