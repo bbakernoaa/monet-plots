@@ -101,7 +101,9 @@ class CurtainPlot(BasePlot):
             concrete_data = self.data
 
         if concrete_data.ndim != 2:
-            raise ValueError(f"CurtainPlot requires 2D data, got {concrete_data.ndim}D.")
+            raise ValueError(
+                f"CurtainPlot requires 2D data, got {concrete_data.ndim}D."
+            )
 
         # Determine x and y if not provided
         if self.x is None:
@@ -119,7 +121,10 @@ class CurtainPlot(BasePlot):
             )
         elif kind == "contourf":
             mappable = self.ax.contourf(
-                concrete_data[self.x], concrete_data[self.y], concrete_data, **plot_kwargs
+                concrete_data[self.x],
+                concrete_data[self.y],
+                concrete_data,
+                **plot_kwargs,
             )
         else:
             raise ValueError("kind must be 'pcolormesh' or 'contourf'")

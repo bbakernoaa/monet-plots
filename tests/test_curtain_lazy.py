@@ -58,6 +58,7 @@ def test_curtain_plot_hvplot(sample_curtain_data):
 
     # Check that it returns a holoviews object (hvPlot returns hv.Element subclasses)
     import holoviews as hv
+
     assert isinstance(hv_plot, hv.core.Element)
 
 
