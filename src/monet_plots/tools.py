@@ -54,3 +54,86 @@ def uv2wsdir(u, v):
     ws = np.sqrt(u**2 + v**2)
     wdir = 180 + (180 / np.pi) * np.arctan2(u, v)
     return ws, wdir
+
+
+def calc_24hr_ave(df, col=None):
+    """Calculates 24-hour averages for regulatory analysis.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Data containing 'siteid' and 'time_local' columns.
+    col : str
+        Column name to average.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Averaged data merged back to original sites and daily times.
+    """
+    df = df.copy()
+    if "time_local" not in df.columns:
+        if isinstance(df.index, pd.DatetimeIndex):
+            df["time_local"] = df.index
+        else:
+            raise ValueError("Data must contain 'time_local' column or DatetimeIndex")
+
+    df.index = df.time_local
+    # select sites with nobs >=18, 75% completeness
+    df_24hr_ave = (
+        (
+            df.groupby("siteid")[col].resample("D").sum(min_count=18, numeric_only=True)
+            / df.groupby("siteid")[col].resample("D").count()
+        )
+        .reset_index()
+        .dropna()
+    )
+    df_24hr_ave = df_24hr_ave.rename(columns={col: f"{col}_reg"})
+    df = df.reset_index(drop=True)
+    return df.merge(df_24hr_ave, on=["siteid", "time_local"])
+
+
+def calc_8hr_rolling_max(df, col=None, window=8):
+    """Calculates 8-hour rolling average daily maximum.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Data containing 'siteid' and 'time_local' columns.
+    col : str
+        Column name to calculate.
+    window : int
+        Rolling window size in hours, by default 8.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Rolling max data merged back to original sites and daily times.
+    """
+    df = df.copy()
+    if "time_local" not in df.columns:
+        if isinstance(df.index, pd.DatetimeIndex):
+            df["time_local"] = df.index
+        else:
+            raise ValueError("Data must contain 'time_local' column or DatetimeIndex")
+
+    df.index = df.time_local
+    df_rolling = (
+        df.groupby("siteid")[col]
+        .rolling(window, min_periods=6, center=True, win_type="boxcar")
+        .mean(numeric_only=True)
+        .reset_index()
+        .dropna()
+    )
+    # select sites with nobs >=18, 75% completeness
+    df_rolling.index = df_rolling.time_local
+    df_rolling_max = (
+        df_rolling.groupby("siteid")
+        .resample("D")
+        .max(min_count=18, numeric_only=True)
+        .reset_index()
+        .dropna()
+    )
+    df_rolling_max = df_rolling_max.rename(columns={col: f"{col}_reg"})
+    df = df.reset_index(drop=True)
+    return df.merge(df_rolling_max, on=["siteid", "time_local"])

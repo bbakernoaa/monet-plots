@@ -63,12 +63,24 @@ class TimeSeriesPlot(BasePlot):
         self.ylabel = ylabel
         self.label = label
 
-    def plot(self, **kwargs: Any) -> plt.Axes:
+    def plot(
+        self,
+        y2: Optional[str] = None,
+        y2_label: Optional[str] = None,
+        y2_kwargs: dict = {},
+        **kwargs: Any,
+    ) -> plt.Axes:
         """
         Generate the timeseries plot.
 
         Parameters
         ----------
+        y2 : str, optional
+            Variable name for the secondary y-axis.
+        y2_label : str, optional
+            Label for the secondary y-axis.
+        y2_kwargs : dict, optional
+            Keyword arguments for the secondary y-axis plot.
         **kwargs : Any
             Overrides for plot settings (x, y, title, ylabel, label, etc.).
 
@@ -80,7 +92,7 @@ class TimeSeriesPlot(BasePlot):
         Examples
         --------
         >>> plot = TimeSeriesPlot(df, x='time', y='obs')
-        >>> ax = plot.plot(title='Observation Over Time')
+        >>> ax = plot.plot(title='Observation Over Time', y2='altitude')
         """
         # Update attributes from kwargs if provided
         for attr in ["x", "y", "title", "ylabel", "label"]:
@@ -91,9 +103,48 @@ class TimeSeriesPlot(BasePlot):
 
         # Handle xarray objects differently from pandas DataFrames
         if isinstance(self.df, (xr.DataArray, xr.Dataset)):
-            return self._plot_xarray(**kwargs)
+            ax = self._plot_xarray(**kwargs)
         else:
-            return self._plot_dataframe(**kwargs)
+            ax = self._plot_dataframe(**kwargs)
+
+        if y2:
+            ax2 = ax.twinx()
+            if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+                # Simplified xarray plot for secondary axis
+                # Assume 1D or take mean
+                dims_to_reduce = [d for d in self.df[y2].dims if d != self.x]
+                y2_data = (
+                    self.df[y2].mean(dim=dims_to_reduce)
+                    if dims_to_reduce
+                    else self.df[y2]
+                )
+                y2_data.plot(ax=ax2, **y2_kwargs)
+            else:
+                # Pandas
+                m = self.df.groupby(self.x).mean(numeric_only=True)
+                m[y2].plot(ax=ax2, **y2_kwargs)
+
+            if y2_label:
+                ax2.set_ylabel(y2_label)
+
+            # Merge legends
+            lines, labels = ax.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax.legend(lines + lines2, labels + labels2)
+
+        return ax
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """Generate an interactive timeseries plot using hvPlot (Track B)."""
+        try:
+            import hvplot.pandas  # noqa: F401
+            import hvplot.xarray  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
+            )
+
+        return self.df.hvplot(x=self.x, y=self.y, **kwargs)
 
     def _plot_dataframe(self, **kwargs: Any) -> plt.Axes:
         """

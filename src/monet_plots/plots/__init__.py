@@ -10,7 +10,13 @@ from .fingerprint import FingerprintPlot
 from .kde import KDEPlot
 from .performance_diagram import PerformanceDiagramPlot
 from .polar import BivariatePolarPlot
-from .profile import ProfilePlot, StickPlot, VerticalBoxPlot, VerticalSlice
+from .profile import (
+    ProfilePlot,
+    StickPlot,
+    VerticalBoxPlot,
+    VerticalProfilePlot,
+    VerticalSlice,
+)
 from .rank_histogram import RankHistogramPlot
 from .reliability_diagram import ReliabilityDiagramPlot
 from .rev import RelativeEconomicValuePlot
@@ -20,6 +26,7 @@ from .scatter import ScatterPlot
 from .scorecard import ScorecardPlot
 from .soccer import SoccerPlot
 from .spatial import SpatialPlot, SpatialTrack
+from .spatial_overlay import SpatialOverlayPlot
 from .spatial_bias_scatter import SpatialBiasScatterPlot
 from .spatial_contour import SpatialContourPlot
 from .spatial_imshow import SpatialImshowPlot
@@ -48,6 +55,7 @@ __all__ = [
     "VerticalSlice",
     "StickPlot",
     "VerticalBoxPlot",
+    "VerticalProfilePlot",
     "TrajectoryPlot",
     "RidgelinePlot",
     "PerformanceDiagramPlot",
@@ -61,6 +69,7 @@ __all__ = [
     "SpreadSkillPlot",
     "SoccerPlot",
     "CurtainPlot",
+    "SpatialOverlayPlot",
     "DiurnalErrorPlot",
     "FingerprintPlot",
     "BivariatePolarPlot",
