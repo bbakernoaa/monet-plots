@@ -2,11 +2,10 @@
 """Vertical curtain plot for cross-sectional data."""
 
 from __future__ import annotations
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 import xarray as xr
-import numpy as np
 
 from ..plot_utils import get_plot_kwargs, _update_history, normalize_data
 from .base import BasePlot

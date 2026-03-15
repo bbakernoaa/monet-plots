@@ -1,6 +1,4 @@
 import numpy as np
-import pytest
-import xarray as xr
 import pandas as pd
 import matplotlib.pyplot as plt
 from monet_plots.plots.timeseries import TimeSeriesPlot
