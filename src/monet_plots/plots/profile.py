@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import typing as t
+from typing import Any, Union
 
 import numpy as np
-from matplotlib import pyplot as plt
 import xarray as xr
+from matplotlib import pyplot as plt
 
 from .. import tools, verification_metrics
 from ..plot_utils import _update_history, normalize_data
@@ -131,7 +132,6 @@ class VerticalProfilePlot(BasePlot):
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1)
 
-        all_cols = [self.obs_col, self.alt_col] + self.mod_cols
         # For Xarray, we might have dimensions to reduce.
         # If it's aircraft/sonde data, it's often 1D already.
         # But we'll handle the grouping generally.

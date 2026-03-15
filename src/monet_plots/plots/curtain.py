@@ -155,7 +155,7 @@ class CurtainPlot(BasePlot):
             cb_kwargs = cbar_kwargs or {}
             if two_subplot:
                 # Shared colorbar for both subplots
-                cb = self.fig.colorbar(
+                self.fig.colorbar(
                     mappable,
                     ax=[ax1, ax2],
                     orientation=cb_kwargs.pop("orientation", "horizontal"),
@@ -164,7 +164,7 @@ class CurtainPlot(BasePlot):
                     **cb_kwargs,
                 )
             else:
-                cb = self.add_colorbar(mappable, ax=ax1, **cb_kwargs)
+                self.add_colorbar(mappable, ax=ax1, **cb_kwargs)
 
         if two_subplot:
             ax1.set_title("Model with Obs Overlay")
