@@ -26,7 +26,7 @@ dependencies = [
     "numpy",
     "statsmodels",
     "dask",
-    "monet-stats @ git+https://github.com/bbakernoaa/monet-stats.git",
+    "monet-stats @ git+https://github.com/bbakernoaa/monet-stats@dev",
     "flox",
 ]
 
