@@ -24,7 +24,7 @@ def test_compute_radar_metrics(sample_data):
     ds = compute_radar_metrics(obs, mod)
 
     assert isinstance(ds, xr.Dataset)
-    for var in ["R", "NMB", "NME", "RMSE", "MAE"]:
+    for var in ["R", "IOA", "KGE", "CCC", "NMB", "NME", "RMSE", "MAE"]:
         assert var in ds.data_vars
         assert 0 <= ds[var].values <= 1
 

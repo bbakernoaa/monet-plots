@@ -52,7 +52,7 @@ class RadarPlot(BasePlot):
         mod_cols : str or list of str, optional
             Column/variable names for model predictions.
         metrics : list of str, optional
-            List of metrics to calculate. Defaults to ['R', 'NMB', 'NME', 'RMSE', 'MAE'].
+            List of metrics to calculate. Defaults to ['R', 'IOA', 'KGE', 'CCC', 'NMB', 'NME', 'RMSE', 'MAE'].
         metrics_data : xr.Dataset, optional
             Pre-calculated normalized metrics. Should have metrics as variables
             and models as a dimension (e.g., 'model').
@@ -157,10 +157,12 @@ class RadarPlot(BasePlot):
             }
             line_kwargs.update(kwargs)
 
-            self.ax.plot(angles, values, **line_kwargs)
-            self.ax.fill(angles, values, alpha=0.1)
+            # Capture the color to use it for fill to ensure consistency
+            (line,) = self.ax.plot(angles, values, **line_kwargs)
+            color = line.get_color()
+            self.ax.fill(angles, values, color=color, alpha=0.1)
 
-        self.ax.legend(loc="upper right", bbox_to_anchor=(0.1, 0.1))
+        self.ax.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
 
         return self.ax
 
@@ -194,18 +196,13 @@ class RadarPlot(BasePlot):
         # Melt the dataset to have a 'metric' dimension
         ds_melted = self.metrics_data.to_array(dim="metric", name="value")
 
-        # Add angles for polar plot
-        num_vars = len(variables)
-        angles = np.linspace(0, 360, num_vars, endpoint=False)
-        angle_da = xr.DataArray(angles, coords={"metric": variables}, dims=["metric"])
-        ds_melted = ds_melted.assign_coords(angle=angle_da)
+        # Close the loop for hvplot by appending the first metric at the end
+        first_metric = variables[0]
+        ds_first = ds_melted.sel(metric=first_metric)
+        ds_melted_closed = xr.concat([ds_melted, ds_first], dim="metric")
 
-        # Close the loop for each model
-        # This is a bit tricky with hvplot/xarray natively without manual manipulation
-        # For simplicity, we'll return a polar scatter/line plot
-
-        return ds_melted.hvplot.line(
-            x="angle",
+        return ds_melted_closed.hvplot.line(
+            x="metric",
             y="value",
             by="model",
             polar=True,

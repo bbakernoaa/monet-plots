@@ -644,6 +644,90 @@ def compute_corr(
     return res
 
 
+def compute_ioa(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Index of Agreement (IOA) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the statistic.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated IOA (0 to 1).
+    """
+    res = monet_stats.IOA(obs, mod, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, f"Calculated IOA along {dim}")
+    return res
+
+
+def compute_kge(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Kling-Gupta Efficiency (KGE) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the statistic.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated KGE (-inf to 1).
+    """
+    res = monet_stats.KGE(obs, mod, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, f"Calculated KGE along {dim}")
+    return res
+
+
+def compute_ccc(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+) -> Union[float, np.ndarray, xr.DataArray]:
+    """
+    Calculates Concordance Correlation Coefficient (CCC) using monet-stats.
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the statistic.
+
+    Returns
+    -------
+    Union[float, np.ndarray, xr.DataArray]
+        The calculated CCC (-1 to 1).
+    """
+    res = monet_stats.CCC(obs, mod, axis=dim)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(res, f"Calculated CCC along {dim}")
+    return res
+
+
 def compute_auc(
     x: Union[np.ndarray, xr.DataArray],
     y: Union[np.ndarray, xr.DataArray],
@@ -1144,6 +1228,9 @@ def compute_radar_metrics(
     Metrics are normalized to a 0-1 scale where 1 is "perfect" and 0 is "poor".
     The following metrics are supported by default:
     - correlation (R): 1 is 1, 0 is 0.
+    - IOA (Index of Agreement): already 0-1.
+    - KGE (Kling-Gupta Efficiency): clipped to [0, 1].
+    - CCC (Concordance Correlation Coefficient): clipped to [0, 1].
     - NMB: 1 - abs(NMB)/100, clipped to [0, 1].
     - NME: 1 - NME/100, clipped to [0, 1].
     - RMSE: 1 - RMSE/max(obs), clipped to [0, 1].
@@ -1158,7 +1245,7 @@ def compute_radar_metrics(
     dim : str or list of str, optional
         The dimension(s) over which to calculate the statistics.
     metrics : list of str, optional
-        List of metrics to calculate. Defaults to ['R', 'NMB', 'NME', 'RMSE', 'MAE'].
+        List of metrics to calculate. Defaults to ['R', 'IOA', 'KGE', 'CCC', 'NMB', 'NME', 'RMSE', 'MAE'].
 
     Returns
     -------
@@ -1166,13 +1253,25 @@ def compute_radar_metrics(
         Dataset containing the normalized metrics.
     """
     if metrics is None:
-        metrics = ["R", "NMB", "NME", "RMSE", "MAE"]
+        metrics = ["R", "IOA", "KGE", "CCC", "NMB", "NME", "RMSE", "MAE"]
 
     results = {}
 
     if "R" in metrics:
         r = compute_corr(obs, mod, dim=dim)
         results["R"] = r
+
+    if "IOA" in metrics:
+        ioa = compute_ioa(obs, mod, dim=dim)
+        results["IOA"] = ioa
+
+    if "KGE" in metrics:
+        kge = compute_kge(obs, mod, dim=dim)
+        results["KGE"] = kge
+
+    if "CCC" in metrics:
+        ccc = compute_ccc(obs, mod, dim=dim)
+        results["CCC"] = ccc
 
     if "NMB" in metrics:
         nmb = compute_nmb(obs, mod, dim=dim)
