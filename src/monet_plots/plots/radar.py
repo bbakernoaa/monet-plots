@@ -5,8 +5,7 @@ from __future__ import annotations
 
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
-from typing import Any, Optional, Union, List, Dict, TYPE_CHECKING
+from typing import Any, Optional, Union, List, TYPE_CHECKING
 
 from .base import BasePlot
 from ..plot_utils import _update_history, normalize_data
@@ -140,7 +139,9 @@ class RadarPlot(BasePlot):
         # Draw ylabels
         self.ax.set_rlabel_position(0)
         self.ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
-        self.ax.set_yticklabels(["0.2", "0.4", "0.6", "0.8", "1.0"], color="grey", size=7)
+        self.ax.set_yticklabels(
+            ["0.2", "0.4", "0.6", "0.8", "1.0"], color="grey", size=7
+        )
         self.ax.set_ylim(0, 1)
 
         # Plot each model
@@ -149,7 +150,11 @@ class RadarPlot(BasePlot):
             values = [float(model_ds[var].values) for var in variables]
             values += values[:1]
 
-            line_kwargs = {"linewidth": 2, "linestyle": "solid", "label": str(model_name)}
+            line_kwargs = {
+                "linewidth": 2,
+                "linestyle": "solid",
+                "label": str(model_name),
+            }
             line_kwargs.update(kwargs)
 
             self.ax.plot(angles, values, **line_kwargs)
@@ -178,7 +183,6 @@ class RadarPlot(BasePlot):
         """
         try:
             import hvplot.xarray  # noqa: F401
-            import holoviews as hv
         except ImportError:
             raise ImportError(
                 "hvplot and holoviews are required for interactive plotting."
@@ -201,8 +205,11 @@ class RadarPlot(BasePlot):
         # For simplicity, we'll return a polar scatter/line plot
 
         return ds_melted.hvplot.line(
-            x="angle", y="value", by="model",
-            polar=True, ylim=(0, 1),
+            x="angle",
+            y="value",
+            by="model",
+            polar=True,
+            ylim=(0, 1),
             hover_cols=["metric"],
-            **kwargs
+            **kwargs,
         )
