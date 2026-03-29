@@ -268,6 +268,9 @@ if __name__ == "__main__":
         loc="upper right",
     )
 
-    fig.tight_layout()
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        fig.tight_layout()
 
     plt.show()

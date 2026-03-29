@@ -111,7 +111,11 @@ class ConditionalBiasPlot(BasePlot):
         )
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel("Mean Bias (Forecast - Observation)")
-        self.ax.legend()
+
+        handles, labels = self.ax.get_legend_handles_labels()
+        if handles:
+            self.ax.legend()
+
         return self.ax
 
     def _plot_single(self, obs, mod, n_bins, label, **kwargs):

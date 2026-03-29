@@ -144,7 +144,7 @@ def test_spatial_facet_grid_laziness():
     fg.map_monet(SpatialImshowPlot)
 
     # Verify we have 3 axes
-    assert len(fg.grid.axes.flatten()) >= 3
+    assert len(fg.grid.axs.flatten()) >= 3
 
     plt.close("all")
 
