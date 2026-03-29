@@ -1130,3 +1130,75 @@ def compute_crps(
         return _update_history(res_xr, "Calculated CRPS")
 
     return res_val
+
+
+def compute_radar_metrics(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    dim: Optional[Union[str, list[str]]] = None,
+    metrics: Optional[list[str]] = None,
+) -> xr.Dataset:
+    """
+    Calculates normalized metrics for radar (spider) charts.
+
+    Metrics are normalized to a 0-1 scale where 1 is "perfect" and 0 is "poor".
+    The following metrics are supported by default:
+    - correlation (R): 1 is 1, 0 is 0.
+    - NMB: 1 - abs(NMB)/100, clipped to [0, 1].
+    - NME: 1 - NME/100, clipped to [0, 1].
+    - RMSE: 1 - RMSE/max(obs), clipped to [0, 1].
+    - MAE: 1 - MAE/max(obs), clipped to [0, 1].
+
+    Parameters
+    ----------
+    obs : Union[np.ndarray, xr.DataArray]
+        Observed values.
+    mod : Union[np.ndarray, xr.DataArray]
+        Model values.
+    dim : str or list of str, optional
+        The dimension(s) over which to calculate the statistics.
+    metrics : list of str, optional
+        List of metrics to calculate. Defaults to ['R', 'NMB', 'NME', 'RMSE', 'MAE'].
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset containing the normalized metrics.
+    """
+    if metrics is None:
+        metrics = ["R", "NMB", "NME", "RMSE", "MAE"]
+
+    results = {}
+
+    if "R" in metrics:
+        r = compute_corr(obs, mod, dim=dim)
+        results["R"] = r
+
+    if "NMB" in metrics:
+        nmb = compute_nmb(obs, mod, dim=dim)
+        results["NMB"] = 1.0 - (np.abs(nmb) / 100.0)
+
+    if "NME" in metrics:
+        nme = compute_nme(obs, mod, dim=dim)
+        results["NME"] = 1.0 - (nme / 100.0)
+
+    if "RMSE" in metrics:
+        rmse = compute_rmse(obs, mod, dim=dim)
+        obs_max = obs.max(dim=dim) if isinstance(obs, xr.DataArray) else np.max(obs)
+        results["RMSE"] = 1.0 - (rmse / obs_max)
+
+    if "MAE" in metrics:
+        mae = compute_mae(obs, mod, dim=dim)
+        obs_max = obs.max(dim=dim) if isinstance(obs, xr.DataArray) else np.max(obs)
+        results["MAE"] = 1.0 - (mae / obs_max)
+
+    # Convert to xarray Dataset and clip to [0, 1]
+    if any(isinstance(v, (xr.DataArray, xr.Dataset)) for v in results.values()):
+        ds = xr.Dataset(results)
+        # Ensure it's a DataArray if we want to clip easily, or use ds.map
+        ds = ds.map(lambda x: x.clip(0, 1))
+    else:
+        # Numpy fallback
+        ds = xr.Dataset({k: ([], np.clip(v, 0, 1)) for k, v in results.items()})
+
+    return _update_history(ds, f"Calculated radar metrics along {dim}")
