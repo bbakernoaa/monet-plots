@@ -269,6 +269,7 @@ if __name__ == "__main__":
     )
 
     import warnings
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         fig.tight_layout()

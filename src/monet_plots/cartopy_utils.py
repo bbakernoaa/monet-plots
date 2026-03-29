@@ -299,6 +299,7 @@ def plot_quick_imshow(
 
     # Finalize
     import warnings
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         fig.tight_layout()
@@ -409,6 +410,7 @@ def plot_quick_map(
 
     # Finalize
     import warnings
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         fig.tight_layout()
@@ -518,6 +520,7 @@ def plot_quick_contourf(
 
     # Finalize
     import warnings
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         fig.tight_layout()
@@ -732,6 +735,7 @@ def plot_points_map(
 
     # Finalize
     import warnings
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         fig.tight_layout()
@@ -834,6 +838,7 @@ def plot_lines_map(
 
     # Finalize
     import warnings
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         fig.tight_layout()

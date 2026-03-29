@@ -55,7 +55,7 @@ class TrajectoryPlot(BasePlot):
             self.fig = plt.figure(figsize=kwargs.get("figsize", (12, 6)))
 
         # Ensure constrained_layout to help with alignment
-        self.fig.set_layout_engine('constrained')
+        self.fig.set_layout_engine("constrained")
 
         gs = self.fig.add_gridspec(2, 1, height_ratios=[3, 1])
 

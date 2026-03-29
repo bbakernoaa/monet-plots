@@ -149,6 +149,7 @@ class TimeSeriesPlot(BasePlot):
         self.ax.legend()
         self.ax.set_title(self.title)
         import warnings
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             self.fig.tight_layout()
@@ -218,6 +219,7 @@ class TimeSeriesPlot(BasePlot):
         self.ax.legend()
         self.ax.set_title(self.title)
         import warnings
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             self.fig.tight_layout()
@@ -360,6 +362,7 @@ class TimeSeriesStatsPlot(BasePlot):
         self.ax.set_xlabel(self.x.capitalize())
         self.ax.legend()
         import warnings
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             self.fig.tight_layout()

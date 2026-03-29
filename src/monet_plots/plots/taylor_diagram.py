@@ -83,6 +83,7 @@ class TaylorDiagramPlot(BasePlot):
             loc="upper right",
         )
         import warnings
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             self.fig.tight_layout()
