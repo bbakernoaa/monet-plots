@@ -180,6 +180,11 @@ class SpatialImshowPlot(SpatialPlot):
                     self.modelvar, self.lon_coord, self.lat_coord
                 )
 
+        # Capture extent before add_features pops it
+        extent = kwargs.get("extent")
+        if extent is None and "extent" in kwargs:
+            extent = kwargs["extent"]
+
         # Draw map features and get remaining kwargs for imshow
         imshow_kwargs = self.add_features(**kwargs)
 
@@ -191,8 +196,8 @@ class SpatialImshowPlot(SpatialPlot):
         imshow_kwargs.setdefault("origin", "lower")
         imshow_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        # Extract extent for imshow [left, right, bottom, top]
-        extent = imshow_kwargs.pop("extent", None)
+        # If plotargs provided a different extent, use it
+        extent = imshow_kwargs.pop("extent", extent)
 
         # Delay computation as much as possible
         # For imshow, we still need concrete values for Track A.
