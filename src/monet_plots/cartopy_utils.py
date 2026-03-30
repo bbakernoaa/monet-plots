@@ -298,7 +298,11 @@ def plot_quick_imshow(
     _add_colorbar(fig, ax, mesh, colorbar, cbar_label, cbar_inset)
 
     # Finalize
-    fig.tight_layout()
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        fig.tight_layout()
     _export_figure(fig, export_path, export_formats, dpi)
 
     return fig, ax
@@ -405,7 +409,11 @@ def plot_quick_map(
     _add_colorbar(fig, ax, mesh, colorbar, cbar_label, cbar_inset)
 
     # Finalize
-    fig.tight_layout()
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        fig.tight_layout()
     _export_figure(fig, export_path, export_formats, dpi)
 
     return fig, ax
@@ -511,7 +519,11 @@ def plot_quick_contourf(
     _add_colorbar(fig, ax, mesh, colorbar, cbar_label, cbar_inset)
 
     # Finalize
-    fig.tight_layout()
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        fig.tight_layout()
     _export_figure(fig, export_path, export_formats, dpi)
 
     return fig, ax
@@ -722,7 +734,11 @@ def plot_points_map(
         ax.set_title(title, fontsize=14, fontweight="bold")
 
     # Finalize
-    fig.tight_layout()
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        fig.tight_layout()
     _export_figure(fig, export_path, export_formats, dpi)
 
     return fig, ax
@@ -821,7 +837,11 @@ def plot_lines_map(
         ax.set_title(title, fontsize=14, fontweight="bold")
 
     # Finalize
-    fig.tight_layout()
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        fig.tight_layout()
     _export_figure(fig, export_path, export_formats, dpi)
 
     return fig, ax

@@ -148,7 +148,11 @@ class TimeSeriesPlot(BasePlot):
         self.ax.set_xlabel(self.x)
         self.ax.legend()
         self.ax.set_title(self.title)
-        self.fig.tight_layout()
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            self.fig.tight_layout()
         return self.ax
 
     def _plot_xarray(self, **kwargs: Any) -> plt.Axes:
@@ -214,7 +218,11 @@ class TimeSeriesPlot(BasePlot):
         self.ax.set_xlabel(self.x)
         self.ax.legend()
         self.ax.set_title(self.title)
-        self.fig.tight_layout()
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            self.fig.tight_layout()
         return self.ax
 
 
@@ -353,7 +361,11 @@ class TimeSeriesStatsPlot(BasePlot):
         self.ax.set_ylabel(stat.upper())
         self.ax.set_xlabel(self.x.capitalize())
         self.ax.legend()
-        self.fig.tight_layout()
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            self.fig.tight_layout()
 
         # Update history for provenance
         if isinstance(self.df, (xr.DataArray, xr.Dataset)):

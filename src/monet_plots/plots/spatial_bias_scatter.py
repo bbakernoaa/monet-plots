@@ -165,8 +165,10 @@ class SpatialBiasScatterPlot(SpatialPlot):
         cbar = self.add_colorbar(mappable, format="%1.2g")
         cbar.ax.tick_params(labelsize=10)
 
-        ss = np.abs(diff_vals) / top * 100.0 * self.fact
-        ss[ss > 300] = 300.0
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ss = np.abs(diff_vals) / top * 100.0 * self.fact
+            ss[np.isnan(ss)] = 0.0
+            ss[ss > 300] = 300.0
 
         # Prepare scatter kwargs
         final_scatter_kwargs = get_plot_kwargs(
