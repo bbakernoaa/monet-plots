@@ -1001,7 +1001,9 @@ def compute_rank_histogram(
             if is_dask(ranks_flat):
                 import dask.array as da
 
-                counts, _ = da.histogram(ranks_flat, bins=np.arange(n_members + 2) - 0.5)
+                counts, _ = da.histogram(
+                    ranks_flat, bins=np.arange(n_members + 2) - 0.5
+                )
             else:
                 # For cubed or others, compute and use bincount
                 ranks_eager = compute(ranks_flat)
@@ -1039,7 +1041,9 @@ def compute_rank_histogram(
             counts, _ = da.histogram(ranks.ravel(), bins=np.arange(n_members + 2) - 0.5)
         else:
             ranks_eager = compute(ranks)
-            counts = np.bincount(ranks_eager.astype(int).ravel(), minlength=n_members + 1)
+            counts = np.bincount(
+                ranks_eager.astype(int).ravel(), minlength=n_members + 1
+            )
     else:
         counts = np.bincount(ranks.astype(int).ravel(), minlength=n_members + 1)
 

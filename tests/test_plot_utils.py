@@ -81,6 +81,7 @@ def test_is_lazy():
     # Dask data
     try:
         import dask.array as da
+
         d_arr = da.from_array(np.array([1, 2, 3]), chunks=2)
         assert plot_utils.is_dask(d_arr)
         assert plot_utils.is_lazy(d_arr)
@@ -107,6 +108,7 @@ def test_compute():
     # Dask data
     try:
         import dask.array as da
+
         d_arr1 = da.from_array(np.array([1, 2, 3]), chunks=2)
         d_arr2 = da.from_array(np.array([4, 5, 6]), chunks=2)
 

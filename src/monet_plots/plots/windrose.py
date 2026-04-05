@@ -122,7 +122,9 @@ class Windrose(BasePlot):
             if is_dask(self.wd) or is_dask(self.ws):
                 import dask.array as da
 
-                h, _, _ = da.histogram2d(wd_data, ws_data, bins=[dir_edges, speed_edges])
+                h, _, _ = da.histogram2d(
+                    wd_data, ws_data, bins=[dir_edges, speed_edges]
+                )
                 h = compute(h)
             else:
                 # Fallback for Cubed or other lazy backends that lack histogram2d.

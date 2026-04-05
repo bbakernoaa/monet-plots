@@ -444,7 +444,8 @@ def compute(*objs: Any) -> Any:
         # Note: we also fall back to dask if any xarray object is present,
         # as dask.compute is the standard way to compute multiple xarray objects.
         if any(
-            is_dask(obj) or (xr is not None and isinstance(obj, (xr.DataArray, xr.Dataset)))
+            is_dask(obj)
+            or (xr is not None and isinstance(obj, (xr.DataArray, xr.Dataset)))
             for obj in valid_objs
         ):
             res = dask.compute(*objs)

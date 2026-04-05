@@ -241,9 +241,7 @@ class SpatialContourPlot(SpatialPlot):
                 if isinstance(levels, int):
                     ncolors = levels - 1
                     # Use a single compute call for efficiency (Aero Protocol)
-                    dmin, dmax = compute(
-                        self.modelvar.min(), self.modelvar.max()
-                    )
+                    dmin, dmax = compute(self.modelvar.min(), self.modelvar.max())
 
                     # Handle pandas DataFrame where .min() returns a Series
                     try:
