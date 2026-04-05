@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ..plot_utils import _update_history, compute, is_lazy, normalize_data
+from ..plot_utils import _update_history, compute, is_dask, is_lazy, normalize_data
 from .base import BasePlot
 
 if t.TYPE_CHECKING:
