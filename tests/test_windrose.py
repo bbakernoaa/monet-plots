@@ -3,6 +3,7 @@ import pytest
 import xarray as xr
 from monet_plots.plots.windrose import Windrose
 
+
 def test_windrose_numpy():
     """Test Windrose with numpy arrays."""
     wd = np.random.uniform(0, 360, 100)
@@ -18,9 +19,10 @@ def test_windrose_numpy():
     assert len(ax.patches) == 32
     wr.close()
 
+
 def test_windrose_lazy():
     """Test Windrose with lazy dask-backed xarray objects."""
-    dask = pytest.importorskip("dask")
+    pytest.importorskip("dask")
 
     wd_arr = np.random.uniform(0, 360, 100)
     ws_arr = np.random.uniform(0, 20, 100)
@@ -40,9 +42,10 @@ def test_windrose_lazy():
 
     wr.close()
 
+
 def test_windrose_consistency():
     """Verify that eager and lazy paths yield the same underlying histogram."""
-    dask = pytest.importorskip("dask")
+    pytest.importorskip("dask")
 
     # Use fixed data for consistency check
     wd_arr = np.linspace(0, 360, 100, endpoint=False)
@@ -64,9 +67,10 @@ def test_windrose_consistency():
 
     np.testing.assert_allclose(eager_heights, lazy_heights)
 
+
 def test_windrose_hvplot():
     """Test the hvplot method (Track B)."""
-    hvplot = pytest.importorskip("hvplot")
+    pytest.importorskip("hvplot")
 
     wd = np.random.uniform(0, 360, 100)
     ws = np.random.uniform(0, 20, 100)
