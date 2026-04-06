@@ -3,6 +3,8 @@ import numpy as np
 import xarray as xr
 from typing import Tuple, Union, Dict, Any, Optional
 
+from .plot_utils import compute, is_cubed, is_dask, is_lazy
+
 
 def _update_history(obj: Any, msg: str) -> Any:
     """Updates the history attribute of an xarray object.
@@ -328,14 +330,9 @@ def compute_binned_bias(
         if bin_range is not None:
             obs_min, obs_max = bin_range
         else:
-            if hasattr(obs.data, "chunks"):
-                import dask
-
-                # We must compute min/max to establish the bin edges for the Dask graph.
-                # Documented compute for lazy data when no bin_range is provided.
-                obs_min, obs_max = dask.compute(obs.min(), obs.max())
-            else:
-                obs_min, obs_max = obs.min(), obs.max()
+            # We must compute min/max to establish the bin edges for the Dask graph.
+            # Documented compute for lazy data when no bin_range is provided.
+            obs_min, obs_max = compute(obs.min(), obs.max())
 
         bins = np.linspace(float(obs_min), float(obs_max), n_bins + 1)
         midpoints = (bins[:-1] + bins[1:]) / 2
@@ -830,22 +827,33 @@ def compute_reliability_curve(
     bins = np.linspace(0, 1, n_bins + 1)
     bin_centers = (bins[:-1] + bins[1:]) / 2
 
-    # Handle Dask for "Lazy by Default"
-    is_dask = hasattr(forecasts, "chunks") or (
-        isinstance(forecasts, xr.DataArray) and forecasts.chunks is not None
-    )
-
-    if is_dask:
-        import dask.array as da
-
+    # Handle lazy backends (Dask/Cubed) for "Lazy by Default"
+    if is_lazy(forecasts):
         f_data = forecasts.data if isinstance(forecasts, xr.DataArray) else forecasts
         o_data = (
             observations.data
             if isinstance(observations, xr.DataArray)
             else observations
         )
-        bin_counts, _ = da.histogram(f_data, bins=bins)
-        obs_sum, _ = da.histogram(f_data, bins=bins, weights=o_data)
+
+        if is_dask(forecasts):
+            import dask.array as da
+
+            bin_counts, _ = da.histogram(f_data, bins=bins)
+            obs_sum, _ = da.histogram(f_data, bins=bins, weights=o_data)
+        elif is_cubed(forecasts):
+            # Cubed does not yet have a direct histogram equivalent.
+            # We must compute the data to use numpy's histogram.
+            # While not ideal for memory, it ensures correctness until
+            # Cubed implements histogram.
+            f_eager, o_eager = compute(f_data, o_data)
+            bin_counts, _ = np.histogram(f_eager, bins=bins)
+            obs_sum, _ = np.histogram(f_eager, bins=bins, weights=o_eager)
+        else:
+            # Fallback for other potential lazy backends
+            f_eager, o_eager = compute(f_data, o_data)
+            bin_counts, _ = np.histogram(f_eager, bins=bins)
+            obs_sum, _ = np.histogram(f_eager, bins=bins, weights=o_eager)
     else:
         bin_counts, _ = np.histogram(forecasts, bins=bins)
         obs_sum, _ = np.histogram(forecasts, bins=bins, weights=observations)
@@ -915,11 +923,10 @@ def compute_brier_score_components(
         forecasts, observations, n_bins
     )
 
-    # Filter out empty bins. Need to compute mask if it's Dask to allow indexing.
+    # Filter out empty bins. Need to compute mask if it's lazy to allow indexing.
     # obs_freq is small (n_bins), so this is safe and necessary for Xarray.
-    is_lazy = hasattr(obs_freq, "chunks") and obs_freq.chunks is not None
-    if is_lazy:
-        mask = (~np.isnan(obs_freq)).compute()
+    if is_lazy(obs_freq):
+        mask = compute(~np.isnan(obs_freq))
     else:
         mask = ~np.isnan(obs_freq)
 
@@ -987,13 +994,20 @@ def compute_rank_histogram(
         ranks = (ensemble < observations).sum(dim=member_dim)
         n_members = ensemble.sizes[member_dim]
 
-        # Flatten ranks for histogram (preserving dask if present)
+        # Flatten ranks for histogram (preserving lazy data if present)
         ranks_flat = ranks.data.ravel()
 
-        if hasattr(ranks_flat, "chunks"):
-            import dask.array as da
+        if is_lazy(ranks_flat):
+            if is_dask(ranks_flat):
+                import dask.array as da
 
-            counts, _ = da.histogram(ranks_flat, bins=np.arange(n_members + 2) - 0.5)
+                counts, _ = da.histogram(
+                    ranks_flat, bins=np.arange(n_members + 2) - 0.5
+                )
+            else:
+                # For cubed or others, compute and use bincount
+                ranks_eager = compute(ranks_flat)
+                counts = np.bincount(ranks_eager.astype(int), minlength=n_members + 1)
         else:
             counts = np.bincount(ranks_flat.astype(int), minlength=n_members + 1)
 
@@ -1005,8 +1019,8 @@ def compute_rank_histogram(
         )
         return _update_history(counts_xr, "Computed rank histogram (dimension-aware)")
 
-    # Fallback for numpy or mixed (including plain dask arrays)
-    is_dask = hasattr(ensemble, "chunks") or hasattr(observations, "chunks")
+    # Fallback for numpy or mixed (including plain lazy arrays)
+    is_lazy_data = is_lazy(ensemble) or is_lazy(observations)
 
     # Assume member is the last dimension for fallback
     # Or if 2D/1D pair, assume (n_samples, n_members) for backward compatibility
@@ -1020,10 +1034,16 @@ def compute_rank_histogram(
         ranks = (ensemble < obs_expanded).sum(axis=-1)
         n_members = ensemble.shape[-1]
 
-    if is_dask:
-        import dask.array as da
+    if is_lazy_data:
+        if is_dask(ensemble) or is_dask(observations):
+            import dask.array as da
 
-        counts, _ = da.histogram(ranks.ravel(), bins=np.arange(n_members + 2) - 0.5)
+            counts, _ = da.histogram(ranks.ravel(), bins=np.arange(n_members + 2) - 0.5)
+        else:
+            ranks_eager = compute(ranks)
+            counts = np.bincount(
+                ranks_eager.astype(int).ravel(), minlength=n_members + 1
+            )
     else:
         counts = np.bincount(ranks.astype(int).ravel(), minlength=n_members + 1)
 

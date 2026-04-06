@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 import xarray as xr
 
-from ..plot_utils import _update_history, normalize_data
+from ..plot_utils import _update_history, compute, is_lazy, normalize_data
 from .base import BasePlot
 
 if TYPE_CHECKING:
@@ -274,8 +274,8 @@ class DiurnalErrorPlot(BasePlot):
 
         # Compute the aggregated data for plotting
         data_to_plot = self.aggregated
-        if hasattr(data_to_plot.data, "chunks"):
-            data_to_plot = data_to_plot.compute()
+        if is_lazy(data_to_plot):
+            data_to_plot = compute(data_to_plot)
 
         # Convert to DataFrame for Seaborn
         plot_df = data_to_plot.to_pandas()

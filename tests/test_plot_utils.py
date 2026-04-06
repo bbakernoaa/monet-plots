@@ -69,3 +69,67 @@ def test_set_outline_patch_alpha():
     ax = MagicMock()
     plot_utils._set_outline_patch_alpha(ax, 0)
     ax.axes.outline_patch.set_alpha.assert_called_with(0)
+
+
+def test_is_lazy():
+    """Test the is_lazy, is_dask, and is_cubed functions."""
+    # Eager data
+    assert not plot_utils.is_lazy(np.array([1, 2, 3]))
+    assert not plot_utils.is_lazy(pd.Series([1, 2, 3]))
+    assert not plot_utils.is_lazy(None)
+
+    # Dask data
+    try:
+        import dask.array as da
+
+        d_arr = da.from_array(np.array([1, 2, 3]), chunks=2)
+        assert plot_utils.is_dask(d_arr)
+        assert plot_utils.is_lazy(d_arr)
+
+        # Xarray wrapped dask
+        da_xr = xr.DataArray(d_arr)
+        assert plot_utils.is_dask(da_xr)
+        assert plot_utils.is_lazy(da_xr)
+    except ImportError:
+        pytest.skip("dask not installed")
+
+
+def test_compute():
+    """Test the compute function."""
+    # Eager data
+    arr = np.array([1, 2, 3])
+    assert plot_utils.compute(arr) is arr
+
+    # Multiple eager
+    a, b = plot_utils.compute(1, 2)
+    assert a == 1
+    assert b == 2
+
+    # Dask data
+    try:
+        import dask.array as da
+
+        d_arr1 = da.from_array(np.array([1, 2, 3]), chunks=2)
+        d_arr2 = da.from_array(np.array([4, 5, 6]), chunks=2)
+
+        # Single compute
+        res = plot_utils.compute(d_arr1)
+        assert isinstance(res, np.ndarray)
+        np.testing.assert_array_equal(res, [1, 2, 3])
+
+        # Multiple compute
+        res1, res2 = plot_utils.compute(d_arr1, d_arr2)
+        assert isinstance(res1, np.ndarray)
+        assert isinstance(res2, np.ndarray)
+        np.testing.assert_array_equal(res1, [1, 2, 3])
+        np.testing.assert_array_equal(res2, [4, 5, 6])
+
+        # Mixed xarray/dask
+        xr_arr = xr.DataArray(d_arr1, name="test")
+        res_xr = plot_utils.compute(xr_arr)
+        assert isinstance(res_xr, xr.DataArray)
+        assert not res_xr.chunks
+        np.testing.assert_array_equal(res_xr.values, [1, 2, 3])
+
+    except ImportError:
+        pytest.skip("dask not installed")

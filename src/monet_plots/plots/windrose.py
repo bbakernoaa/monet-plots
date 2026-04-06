@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ..plot_utils import _update_history, normalize_data
+from ..plot_utils import _update_history, compute, is_dask, is_lazy, normalize_data
 from .base import BasePlot
 
 if t.TYPE_CHECKING:
@@ -105,12 +105,7 @@ class Windrose(BasePlot):
         # Handle speed bins
         if isinstance(rose_bins, int):
             # We need min/max. For lazy data, this triggers a compute if not provided.
-            if hasattr(self.ws, "chunks"):
-                import dask
-
-                ws_min, ws_max = dask.compute(self.ws.min(), self.ws.max())
-            else:
-                ws_min, ws_max = self.ws.min(), self.ws.max()
+            ws_min, ws_max = compute(self.ws.min(), self.ws.max())
 
             # Handle cases where min/max might be a pandas Series or xarray object
             ws_min = float(np.min(np.asarray(ws_min)))
@@ -120,13 +115,24 @@ class Windrose(BasePlot):
             speed_edges = rose_bins
 
         # Vectorized binning using histogram2d to support Dask
-        if hasattr(self.wd, "chunks") or hasattr(self.ws, "chunks"):
-            import dask.array as da
-
+        if is_lazy(self.wd) or is_lazy(self.ws):
             wd_data = (self.wd.data if hasattr(self.wd, "data") else self.wd).ravel()
             ws_data = (self.ws.data if hasattr(self.ws, "data") else self.ws).ravel()
-            h, _, _ = da.histogram2d(wd_data, ws_data, bins=[dir_edges, speed_edges])
-            h = h.compute()
+
+            if is_dask(self.wd) or is_dask(self.ws):
+                import dask.array as da
+
+                h, _, _ = da.histogram2d(
+                    wd_data, ws_data, bins=[dir_edges, speed_edges]
+                )
+                h = compute(h)
+            else:
+                # Fallback for Cubed or other lazy backends that lack histogram2d.
+                # Compute and use numpy.histogram2d.
+                wd_eager, ws_eager = compute(wd_data, ws_data)
+                h, _, _ = np.histogram2d(
+                    wd_eager, ws_eager, bins=[dir_edges, speed_edges]
+                )
         else:
             wd_data = np.asarray(self.wd).ravel()
             ws_data = np.asarray(self.ws).ravel()

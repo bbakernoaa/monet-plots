@@ -9,7 +9,7 @@ import xarray as xr
 from typing import Any, Optional, Dict, TYPE_CHECKING
 
 from .base import BasePlot
-from ..plot_utils import _update_history, normalize_data
+from ..plot_utils import _update_history, normalize_data, compute, is_lazy
 from ..verification_metrics import (
     compute_mfb,
     compute_mfe,
@@ -195,10 +195,8 @@ class SoccerPlot(BasePlot):
         bias = self.bias_data
         error = self.error_data
 
-        if hasattr(bias, "compute") or hasattr(error, "compute"):
-            import dask
-
-            bias, error = dask.compute(bias, error)
+        if is_lazy(bias) or is_lazy(error):
+            bias, error = compute(bias, error)
 
         scatter_kwargs = {"zorder": 5}
         scatter_kwargs.update(kwargs)

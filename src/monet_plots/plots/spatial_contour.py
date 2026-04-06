@@ -8,7 +8,7 @@ import numpy as np
 import xarray as xr
 
 from ..colorbars import colorbar_index
-from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
+from ..plot_utils import _update_history, compute, get_plot_kwargs, normalize_data
 from .spatial import SpatialPlot
 
 if TYPE_CHECKING:
@@ -241,14 +241,7 @@ class SpatialContourPlot(SpatialPlot):
                 if isinstance(levels, int):
                     ncolors = levels - 1
                     # Use a single compute call for efficiency (Aero Protocol)
-                    try:
-                        import dask
-
-                        dmin, dmax = dask.compute(
-                            self.modelvar.min(), self.modelvar.max()
-                        )
-                    except (ImportError, AttributeError):
-                        dmin, dmax = self.modelvar.min(), self.modelvar.max()
+                    dmin, dmax = compute(self.modelvar.min(), self.modelvar.max())
 
                     # Handle pandas DataFrame where .min() returns a Series
                     try:
@@ -275,12 +268,7 @@ class SpatialContourPlot(SpatialPlot):
             if levels_seq is None:
                 # Fallback: calculate from data to ensure a discrete colorbar
                 # if requested but no levels were provided.
-                try:
-                    import dask
-
-                    dmin, dmax = dask.compute(self.modelvar.min(), self.modelvar.max())
-                except (ImportError, AttributeError):
-                    dmin, dmax = self.modelvar.min(), self.modelvar.max()
+                dmin, dmax = compute(self.modelvar.min(), self.modelvar.max())
 
                 # Handle pandas DataFrame where .min() returns a Series
                 try:

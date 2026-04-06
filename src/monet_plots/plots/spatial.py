@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import ArrayLike
 
-from ..plot_utils import _update_history
+from ..plot_utils import _update_history, compute
 from ..style import get_style_setting
 from .base import BasePlot
 
@@ -484,17 +484,11 @@ class SpatialPlot(BasePlot):
         lon = data[lon_coord]
         lat = data[lat_coord]
 
-        # Use dask.compute for efficient parallel calculation of min/max
-        # if the data is chunked.
-        try:
-            import dask
-
-            lon_min, lon_max, lat_min, lat_max = dask.compute(
-                lon.min(), lon.max(), lat.min(), lat.max()
-            )
-        except (ImportError, AttributeError):
-            lon_min, lon_max = lon.min(), lon.max()
-            lat_min, lat_max = lat.min(), lat.max()
+        # Use compute utility for efficient parallel calculation of min/max
+        # if the data is lazy (dask or cubed).
+        lon_min, lon_max, lat_min, lat_max = compute(
+            lon.min(), lon.max(), lat.min(), lat.max()
+        )
 
         # Ensure they are scalar values (handles both numpy and dask returns)
         lon_min, lon_max = float(lon_min), float(lon_max)

@@ -298,6 +298,172 @@ def normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
     return _normalize_data(data, prefer_xarray=prefer_xarray)
 
 
+def is_dask(obj: Any) -> bool:
+    """Check if an object is a dask-backed array or xarray.
+
+    Parameters
+    ----------
+    obj : Any
+        The object to check.
+
+    Returns
+    -------
+    bool
+        True if the object is dask-backed, False otherwise.
+    """
+    if obj is None:
+        return False
+
+    try:
+        import dask.array as da
+
+        if isinstance(obj, da.Array):
+            return True
+        if hasattr(obj, "data") and isinstance(obj.data, da.Array):
+            return True
+        if hasattr(obj, "__dask_graph__") or (
+            hasattr(obj, "data") and hasattr(obj.data, "__dask_graph__")
+        ):
+            return True
+    except ImportError:
+        pass
+    return False
+
+
+def is_cubed(obj: Any) -> bool:
+    """Check if an object is a cubed-backed array or xarray.
+
+    Parameters
+    ----------
+    obj : Any
+        The object to check.
+
+    Returns
+    -------
+    bool
+        True if the object is cubed-backed, False otherwise.
+    """
+    if obj is None:
+        return False
+
+    try:
+        import cubed
+
+        if isinstance(obj, cubed.Array):
+            return True
+        if hasattr(obj, "data") and isinstance(obj.data, cubed.Array):
+            return True
+    except ImportError:
+        pass
+    return False
+
+
+def is_lazy(obj: Any) -> bool:
+    """
+    Check if an object is a lazy array (Dask or Cubed).
+
+    Parameters
+    ----------
+    obj : Any
+        The object to check.
+
+    Returns
+    -------
+    bool
+        True if the object is lazy, False otherwise.
+    """
+    if obj is None:
+        return False
+
+    # Check for .chunks attribute (standard for xarray/dask/cubed lazy objects)
+    if hasattr(obj, "chunks") and obj.chunks is not None:
+        return True
+
+    # Check underlying data for xarray objects
+    if (
+        hasattr(obj, "data")
+        and hasattr(obj.data, "chunks")
+        and obj.data.chunks is not None
+    ):
+        return True
+
+    return is_dask(obj) or is_cubed(obj)
+
+
+def compute(*objs: Any) -> Any:
+    """
+    Compute multiple lazy objects (xarray, dask, or cubed) simultaneously.
+
+    This utility provides a centralized way to trigger computation of lazy
+    objects, automatically detecting the appropriate backend (xarray, dask,
+    or cubed).
+
+    Parameters
+    ----------
+    *objs : Any
+        One or more lazy objects to compute.
+
+    Returns
+    -------
+    Any
+        The computed (eager) objects. If a single object was passed,
+        a single object is returned. If multiple objects were passed,
+        a tuple of objects is returned.
+    """
+    if not objs:
+        return ()
+
+    # Filter out None values for backend detection
+    valid_objs = [obj for obj in objs if obj is not None]
+    if not valid_objs:
+        return objs if len(objs) > 1 else objs[0]
+
+    # Check for Cubed
+    try:
+        import cubed
+
+        # Check if any object is a cubed array or wraps one
+        if any(
+            is_lazy(obj)
+            and (
+                isinstance(obj, cubed.Array)
+                or (hasattr(obj, "data") and isinstance(obj.data, cubed.Array))
+            )
+            for obj in valid_objs
+        ):
+            res = cubed.compute(*objs)
+            return res if len(objs) > 1 else res[0]
+    except ImportError:
+        pass
+
+    # Check for Dask
+    try:
+        import dask
+
+        # Standard check for dask-backed objects.
+        # Note: we also fall back to dask if any xarray object is present,
+        # as dask.compute is the standard way to compute multiple xarray objects.
+        if any(
+            is_dask(obj)
+            or (xr is not None and isinstance(obj, (xr.DataArray, xr.Dataset)))
+            for obj in valid_objs
+        ):
+            res = dask.compute(*objs)
+            return res if len(objs) > 1 else res[0]
+    except ImportError:
+        pass
+
+    # Generic fallback: individual compute
+    results = []
+    for obj in objs:
+        if obj is not None and hasattr(obj, "compute"):
+            results.append(obj.compute())
+        else:
+            results.append(obj)
+
+    return tuple(results) if len(results) > 1 else results[0]
+
+
 def get_plot_kwargs(cmap: Any = None, norm: Any = None, **kwargs: Any) -> dict:
     """
     Helper to prepare keyword arguments for plotting functions.
