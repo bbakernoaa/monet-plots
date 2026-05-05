@@ -24,7 +24,8 @@ class RadarPlot(BasePlot):
 
     def __init__(
         self,
-        data: Any,
+        data: Optional[Any] = None,
+        metrics_data: Optional[xr.Dataset] = None,
         obs_col: str = "obs",
         mod_cols: Optional[List[str]] = None,
         metrics: Optional[List[str]] = None,
@@ -64,26 +65,33 @@ class RadarPlot(BasePlot):
 
         super().__init__(fig=fig, ax=ax, subplot_kw=subplot_kw, **kwargs)
 
-        data_xr = normalize_data(data, prefer_xarray=True)
-        if isinstance(data_xr, xr.DataArray):
-            data_xr = data_xr.to_dataset()
+        if metrics_data is not None:
+            self.metrics_data = metrics_data
+        else:
+            if data is None:
+                raise ValueError("Either 'data' or 'metrics_data' must be provided.")
 
-        if mod_cols is None:
-            mod_cols = [v for v in data_xr.data_vars if v != obs_col]
+            data_xr = normalize_data(data, prefer_xarray=True)
+            if isinstance(data_xr, xr.DataArray):
+                data_xr = data_xr.to_dataset()
 
-        if metrics is None:
-            metrics = ["R", "NMB", "NME", "RMSE", "MAE"]
+            if mod_cols is None:
+                mod_cols = [v for v in data_xr.data_vars if v != obs_col]
 
-        obs = data_xr[obs_col]
+            if metrics is None:
+                metrics = ["R", "NMB", "NME", "RMSE", "MAE"]
 
-        model_results = []
-        for mod_col in mod_cols:
-            mod = data_xr[mod_col]
-            ds = compute_radar_metrics(obs, mod, metrics=metrics)
-            ds = ds.assign_coords(model=mod_col)
-            model_results.append(ds)
+            obs = data_xr[obs_col]
 
-        self.metrics_data = xr.concat(model_results, dim="model")
+            model_results = []
+            for mod_col in mod_cols:
+                mod = data_xr[mod_col]
+                ds = compute_radar_metrics(obs, mod, metrics=metrics)
+                ds = ds.assign_coords(model=mod_col)
+                model_results.append(ds)
+
+            self.metrics_data = xr.concat(model_results, dim="model")
+
         _update_history(self.metrics_data, "Calculated metrics for RadarPlot")
 
     def plot(self, **kwargs: Any) -> plt.Axes:

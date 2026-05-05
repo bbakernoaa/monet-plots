@@ -570,15 +570,23 @@ class SpatialTrack(SpatialPlot):
             Keyword arguments passed to :class:`SpatialPlot`.
         """
         if not isinstance(data, xr.DataArray):
-            raise TypeError("SpatialTrack requires an xarray.DataArray.")
+            raise TypeError("Input 'data' must be an xarray.DataArray.")
 
         self.data = data
-        self.lon_coord, self.lat_coord = self._identify_coords(data)
+        id_lon, id_lat = self._identify_coords(data)
 
-        if lon_coord:
-            self.lon_coord = lon_coord
-        if lat_coord:
-            self.lat_coord = lat_coord
+        self.lon_coord = lon_coord if lon_coord is not None else id_lon
+        self.lat_coord = lat_coord if lat_coord is not None else id_lat
+
+        # Validate that coordinates exist in data
+        if self.lon_coord not in data.coords and self.lon_coord not in data.dims:
+            raise ValueError(
+                f"Longitude coordinate '{self.lon_coord}' not found in DataArray."
+            )
+        if self.lat_coord not in data.coords and self.lat_coord not in data.dims:
+            raise ValueError(
+                f"Latitude coordinate '{self.lat_coord}' not found in DataArray."
+            )
 
         # Automatically determine extent if not provided
         if "extent" not in kwargs:
@@ -588,11 +596,12 @@ class SpatialTrack(SpatialPlot):
 
         super().__init__(**kwargs)
 
-        # Trigger plot automatically if axes exist
-        if self.ax is not None:
+        # Trigger plot automatically if no axes was provided and we have data
+        # This matches the behavior of other SpatialPlot subclasses
+        if kwargs.get("ax") is None and data is not None:
             self.plot()
 
-    def plot(self, **kwargs: Any) -> plt.Axes:
+    def plot(self, **kwargs: Any) -> Any:
         """Draw the trajectory on the map (Track A).
 
         Parameters
@@ -602,13 +611,13 @@ class SpatialTrack(SpatialPlot):
 
         Returns
         -------
-        plt.Axes
-            The matplotlib axes containing the plot.
+        matplotlib.collections.PathCollection
+            The scatter plot artist.
 
         Examples
         --------
         >>> track_plot = SpatialTrack(data=da)
-        >>> ax = track_plot.plot(cmap='plasma')
+        >>> sc = track_plot.plot(cmap='plasma')
         """
         # Ensure transform is plate carree for lon/lat data
         kwargs.setdefault("transform", ccrs.PlateCarree())
@@ -637,7 +646,7 @@ class SpatialTrack(SpatialPlot):
         # Update history for provenance
         _update_history(self.data, "Plotted with monet-plots.SpatialTrack")
 
-        return self.ax
+        return sc
 
     def hvplot(self, **kwargs: Any) -> Any:
         """Generate an interactive trajectory plot using hvPlot (Track B).

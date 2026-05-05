@@ -26,8 +26,8 @@ def test_trajectory_axes_count():
     plot = TrajectoryPlot(lon, lat, data, time, ts_data)
     plot.plot()
 
-    # Map axes + Timeseries axes = 2
-    assert len(plot.fig.axes) == 2
+    # Map axes + Colorbar axes + Timeseries axes = 3
+    assert len(plot.fig.axes) == 3
 
 
 def test_spatial_track_auto_extent():
