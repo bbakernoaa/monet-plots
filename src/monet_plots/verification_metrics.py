@@ -1190,7 +1190,9 @@ def compute_radar_metrics(
             result[m] = np.clip(1 - min(val / obs_std, 1), 0, 1)
         elif m == "MAE":
             val = float(compute_mae(obs_c, mod_c))
-            obs_mean = float(np.mean(np.abs(obs_c))) if np.mean(np.abs(obs_c)) > 0 else 1.0
+            obs_mean = (
+                float(np.mean(np.abs(obs_c))) if np.mean(np.abs(obs_c)) > 0 else 1.0
+            )
             result[m] = np.clip(1 - min(val / obs_mean, 1), 0, 1)
         else:
             result[m] = 0.0
