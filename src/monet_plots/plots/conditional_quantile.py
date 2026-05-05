@@ -99,8 +99,8 @@ class ConditionalQuantilePlot(BasePlot):
                 bin_midpoints,
                 quantile_vals[0.25],
                 quantile_vals[0.75],
-                color="blue",
-                alpha=0.1,
+                color="#0072B2",
+                alpha=0.2,
             )
 
         self.ax.set_xlabel(f"Observed: {self.obs_col}")

@@ -329,7 +329,9 @@ class SpatialPlot(BasePlot):
         gridline_defaults = {
             "draw_labels": True,
             "linestyle": "--",
+            "linewidth": 0.5,
             "color": "gray",
+            "alpha": 0.6,
         }
         gridline_kwargs = self._get_style(style, gridline_defaults)
         self.ax.gridlines(**gridline_kwargs)

@@ -274,8 +274,8 @@ def compute_bias(
     >>> compute_bias(obs, mod)
     0.1
     """
-    # monet_stats.MB calculates (obs - mod), so we swap mod/obs
-    res = monet_stats.MB(mod, obs, axis=dim)
+    # monet_stats.MB(a, b) computes mean(b - a); pass (obs, mod) to get mean(mod - obs)
+    res = monet_stats.MB(obs, mod, axis=dim)
     if isinstance(res, (xr.DataArray, xr.Dataset)):
         return _update_history(res, f"Calculated Mean Bias along {dim}")
     return res

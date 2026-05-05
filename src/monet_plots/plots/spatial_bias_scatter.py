@@ -160,10 +160,12 @@ class SpatialBiasScatterPlot(SpatialPlot):
             diff_vals, cmap=self.cmap, n_levels=self.ncolors, vmin=-top, vmax=top
         )
 
-        # Create colorbar
+        # Create colorbar with units label
         mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
-        cbar = self.add_colorbar(mappable, format="%1.2g")
-        cbar.ax.tick_params(labelsize=10)
+        _units = getattr(self.data, "attrs", {}).get("units", "")
+        _cbar_label = f"Bias ({_units})" if _units else "Bias"
+        cbar = self.add_colorbar(mappable, label=_cbar_label)
+        cbar.ax.tick_params(labelsize=9)
 
         ss = np.abs(diff_vals) / top * 100.0 * self.fact
         ss[ss > 300] = 300.0

@@ -315,8 +315,23 @@ class SpatialContourPlot(SpatialPlot):
         if self.date:
             titstring = self.date.strftime("%B %d %Y %H")
             self.ax.set_title(titstring)
+        else:
+            # Fall back to variable long_name or name for the title
+            _title = getattr(self.modelvar, "attrs", {}).get("long_name") or getattr(
+                self.modelvar, "name", None
+            )
+            if _title and not self.ax.get_title():
+                self.ax.set_title(_title)
 
-        self.fig.tight_layout()
+        # Label the colorbar with units if available and not already labelled
+        _units = getattr(self.modelvar, "attrs", {}).get("units", "")
+        if _units:
+            for child in self.fig.get_children():
+                if hasattr(child, "ax") and hasattr(child, "set_label"):
+                    if not child.ax.get_ylabel() and not child.ax.get_xlabel():
+                        child.set_label(_units)
+                        break
+
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:

@@ -94,8 +94,8 @@ class BrierScoreDecompositionPlot(BasePlot):
             df_plot[reliability_col],
             width,
             label="Reliability",
-            color="red",
-            alpha=0.8,
+            color="#D55E00",
+            alpha=0.85,
             **kwargs,
         )
         self.ax.bar(
@@ -103,8 +103,8 @@ class BrierScoreDecompositionPlot(BasePlot):
             df_plot["resolution_plot"],
             width,
             label="Resolution (-)",
-            color="green",
-            alpha=0.8,
+            color="#0072B2",
+            alpha=0.85,
             **kwargs,
         )
         self.ax.bar(
@@ -112,8 +112,8 @@ class BrierScoreDecompositionPlot(BasePlot):
             df_plot[uncertainty_col],
             width,
             label="Uncertainty",
-            color="blue",
-            alpha=0.8,
+            color="#009E73",
+            alpha=0.85,
             **kwargs,
         )
 

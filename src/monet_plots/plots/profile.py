@@ -156,5 +156,5 @@ class VerticalBoxPlot(BasePlot):
         ]
 
         return self.ax.boxplot(
-            output_list, vert=False, positions=position_list_mid, **kwargs
+            output_list, orientation="horizontal", positions=position_list_mid, **kwargs
         )

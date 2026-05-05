@@ -169,8 +169,8 @@ class SoccerPlot(BasePlot):
                 2 * self.criteria["bias"],
                 self.criteria["error"],
                 linewidth=1,
-                edgecolor="lightgrey",
-                facecolor="lightgrey",
+                edgecolor="#888888",
+                facecolor="#cccccc",
                 alpha=0.3,
                 label="Criteria",
                 zorder=0,
@@ -183,9 +183,9 @@ class SoccerPlot(BasePlot):
                 2 * self.goal["bias"],
                 self.goal["error"],
                 linewidth=1,
-                edgecolor="grey",
-                facecolor="grey",
-                alpha=0.3,
+                edgecolor="#0072B2",
+                facecolor="#56B4E9",
+                alpha=0.25,
                 label="Goal",
                 zorder=1,
             )
@@ -233,7 +233,7 @@ class SoccerPlot(BasePlot):
         self.ax.set_xlim(-limit, limit)
         self.ax.set_ylim(0, limit_y)
 
-        self.ax.axvline(0, color="k", linestyle="--", alpha=0.5)
+        self.ax.axvline(0, color="k", linestyle="--", alpha=0.7)
         self.ax.set_xlabel(getattr(self, "xlabel", "Bias (%)"))
         self.ax.set_ylabel(getattr(self, "ylabel", "Error (%)"))
         self.ax.grid(True, linestyle=":", alpha=0.6)
