@@ -152,7 +152,8 @@ class TimeSeriesPlot(BasePlot):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
-            self.fig.tight_layout()
+            if self.fig.get_layout_engine() is None:
+                self.fig.tight_layout()
         return self.ax
 
     def _plot_xarray(self, **kwargs: Any) -> plt.Axes:
@@ -222,7 +223,8 @@ class TimeSeriesPlot(BasePlot):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
-            self.fig.tight_layout()
+            if self.fig.get_layout_engine() is None:
+                self.fig.tight_layout()
         return self.ax
 
 
@@ -365,7 +367,8 @@ class TimeSeriesStatsPlot(BasePlot):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
-            self.fig.tight_layout()
+            if self.fig.get_layout_engine() is None:
+                self.fig.tight_layout()
 
         # Update history for provenance
         if isinstance(self.df, (xr.DataArray, xr.Dataset)):

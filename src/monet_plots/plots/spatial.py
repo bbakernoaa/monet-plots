@@ -499,11 +499,6 @@ class SpatialPlot(BasePlot):
         # For proper bounding box around pixel centers (especially for imshow)
         # we try to pad by half the grid resolution.
         try:
-<<<<<<< develop
-            # We use absolute differences between adjacent elements and median
-            # to be robust against irregular grids.
-=======
->>>>>>> develop
             lon_diff = abs(lon.diff(dim=lon.dims[0]).median().item())
             lat_diff = abs(lat.diff(dim=lat.dims[0]).median().item())
             lon_pad = lon_diff / 2.0
@@ -527,11 +522,7 @@ class SpatialPlot(BasePlot):
             lat_min -= lat_buf
             lat_max += lat_buf
 
-<<<<<<< develop
         # Clip longitude to [-180, 180] and latitude to [-90, 90] to avoid cartopy wrapping issues
-=======
-        # Clip to valid ranges to avoid cartopy wrapping issues
->>>>>>> develop
         lon_min = max(-180.0, lon_min)
         lon_max = min(180.0, lon_max)
         lat_min = max(-90.0, lat_min)
@@ -553,104 +544,135 @@ class SpatialTrack(SpatialPlot):
     ----------
     data : xr.DataArray
         The trajectory data being plotted.
-    lon_coord : str
-        The name of the longitude coordinate in the DataArray.
-    lat_coord : str
-        The name of the latitude coordinate in the DataArray.
     """
 
     def __init__(
         self,
         data: xr.DataArray,
-        *,
-        lon_coord: str = "lon",
-        lat_coord: str = "lat",
+        lon_coord: str | None = None,
+        lat_coord: str | None = None,
         **kwargs: Any,
-    ):
+    ) -> None:
         """Initialize the SpatialTrack plot.
-
-        This constructor validates the input data and sets up the map canvas
-        by initializing the parent `SpatialPlot` and adding map features.
 
         Parameters
         ----------
         data : xr.DataArray
-            The input trajectory data. Must be an xarray DataArray with
-            coordinates for longitude and latitude.
+            The trajectory data to plot. Must contain longitude and latitude
+            coordinates.
         lon_coord : str, optional
-            Name of the longitude coordinate in the DataArray, by default 'lon'.
+            Name of the longitude coordinate. If None, it is identified
+            automatically.
         lat_coord : str, optional
-            Name of the latitude coordinate in the DataArray, by default 'lat'.
+            Name of the latitude coordinate. If None, it is identified
+            automatically.
         **kwargs : Any
-            Keyword arguments passed to :class:`SpatialPlot`. These control
-            the map projection, figure size, and cartopy features. For example:
-            `projection=ccrs.LambertConformal()`, `figsize=(10, 8)`,
-            `states=True`, `extent=[-125, -70, 25, 50]`.
+            Keyword arguments passed to :class:`SpatialPlot`.
         """
         if not isinstance(data, xr.DataArray):
             raise TypeError("Input 'data' must be an xarray.DataArray.")
-        if lon_coord not in data.coords:
+
+        self.data = data
+        id_lon, id_lat = self._identify_coords(data)
+
+        self.lon_coord = lon_coord if lon_coord is not None else id_lon
+        self.lat_coord = lat_coord if lat_coord is not None else id_lat
+
+        # Validate that coordinates exist in data
+        if self.lon_coord not in data.coords and self.lon_coord not in data.dims:
             raise ValueError(
-                f"Longitude coordinate '{lon_coord}' not found in DataArray."
+                f"Longitude coordinate '{self.lon_coord}' not found in DataArray."
             )
-        if lat_coord not in data.coords:
+        if self.lat_coord not in data.coords and self.lat_coord not in data.dims:
             raise ValueError(
-                f"Latitude coordinate '{lat_coord}' not found in DataArray."
+                f"Latitude coordinate '{self.lat_coord}' not found in DataArray."
             )
 
-        # Initialize the parent SpatialPlot, which creates the map canvas
-        # and draws features from the keyword arguments.
+        # Automatically determine extent if not provided
+        if "extent" not in kwargs:
+            kwargs["extent"] = self._get_extent_from_data(
+                data, self.lon_coord, self.lat_coord, buffer=0.1
+            )
+
         super().__init__(**kwargs)
 
-        # Set data and update history for provenance
-        self.data = data
-        self.lon_coord = lon_coord
-        self.lat_coord = lat_coord
-        _update_history(self.data, "Plotted with monet-plots.SpatialTrack")
+        # Trigger plot automatically if no axes was provided and we have data
+        # This matches the behavior of other SpatialPlot subclasses
+        if kwargs.get("ax") is None and data is not None:
+            self.plot()
 
-    def plot(self, **kwargs: Any) -> plt.Artist:
-        """Plot the trajectory on the map.
-
-        The track is rendered as a scatter plot, where each point is colored
-        according to the `data` values.
+    def plot(self, **kwargs: Any) -> Any:
+        """Draw the trajectory on the map (Track A).
 
         Parameters
         ----------
         **kwargs : Any
-            Keyword arguments passed to `matplotlib.pyplot.scatter`.
-            Common options include `cmap`, `s` (size), and `alpha`.
-            A `transform` keyword (e.g., `transform=ccrs.PlateCarree()`)
-            is highly recommended for geospatial accuracy.
-            The `cmap` argument can be a string, a Colormap object, or a
-            (colormap, norm) tuple from the scaling tools in `colorbars.py`.
-            Map features (e.g., `coastlines=True`) can also be passed here.
+            Keyword arguments passed to `ax.scatter`.
 
         Returns
         -------
-        plt.Artist
-            The scatter plot artist created by `ax.scatter`.
+        matplotlib.collections.PathCollection
+            The scatter plot artist.
+
+        Examples
+        --------
+        >>> track_plot = SpatialTrack(data=da)
+        >>> sc = track_plot.plot(cmap='plasma')
         """
-        from ..plot_utils import get_plot_kwargs
+        # Ensure transform is plate carree for lon/lat data
+        kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        # Automatically compute extent if not provided
-        if "extent" not in kwargs:
-            kwargs["extent"] = self._get_extent_from_data(
-                self.data, self.lon_coord, self.lat_coord, buffer=0.1
-            )
+        # Extract coordinates and data
+        lon = self.data[self.lon_coord]
+        lat = self.data[self.lat_coord]
 
-        # Add features and get remaining kwargs for scatter
-        scatter_kwargs = self.add_features(**kwargs)
+        # Broadcast coordinates to match data shape and flatten
+        # This handles cases where lon/lat might be scalar or 1D coords
+        lon_arr, lat_arr, val_arr = xr.broadcast(lon, lat, self.data)
 
-        scatter_kwargs.setdefault("transform", ccrs.PlateCarree())
+        # Flatten and compute to ensure compatible shapes for scatter
+        # We use compute() here as scatter is an eager plotting operation
+        lon_vals, lat_vals, val_vals = compute(
+            lon_arr.data.ravel(), lat_arr.data.ravel(), val_arr.data.ravel()
+        )
 
-        # For coordinates and values, we pass the xarray objects directly.
-        # This allows Matplotlib to handle the conversion, maintaining
-        # compatibility with existing tests that check for lazy objects.
-        longitude = self.data[self.lon_coord]
-        latitude = self.data[self.lat_coord]
+        # Plot with scatter
+        sc = self.ax.scatter(lon_vals, lat_vals, c=val_vals, **kwargs)
 
-        # Use get_plot_kwargs to handle (cmap, norm) tuples
-        final_kwargs = get_plot_kwargs(c=self.data, **scatter_kwargs)
+        # Add a colorbar if there are values to map
+        if val_vals.dtype.kind in "iuf":
+            plt.colorbar(sc, ax=self.ax, orientation="vertical", shrink=0.7)
 
-        sc = self.ax.scatter(longitude, latitude, **final_kwargs)
+        # Update history for provenance
+        _update_history(self.data, "Plotted with monet-plots.SpatialTrack")
+
         return sc
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """Generate an interactive trajectory plot using hvPlot (Track B).
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Keyword arguments passed to `data.hvplot.scatter`.
+
+        Returns
+        -------
+        hv.Scatter
+            The interactive HoloViews object.
+
+        Examples
+        --------
+        >>> track_plot = SpatialTrack(data=da)
+        >>> hv_obj = track_plot.hvplot()
+        """
+        import hvplot.xarray  # noqa: F401
+
+        # Standard Track B settings
+        kwargs.setdefault("geo", True)
+        kwargs.setdefault("c", self.data.name)
+        kwargs.setdefault("x", self.lon_coord)
+        kwargs.setdefault("y", self.lat_coord)
+        kwargs.setdefault("kind", "scatter")
+
+        return self.data.hvplot(**kwargs)

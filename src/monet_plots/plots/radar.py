@@ -1,200 +1,136 @@
-# src/monet_plots/plots/radar.py
-"""Radar (spider) chart for model evaluation."""
+from typing import Any, List, Optional
 
-from __future__ import annotations
-
-<<<<<<< develop
-import numpy as np
-import xarray as xr
-from typing import Any, Optional, Union, List, TYPE_CHECKING
-
-from .base import BasePlot
-from ..plot_utils import _update_history, normalize_data
-from ..verification_metrics import compute_radar_metrics
-=======
-from typing import TYPE_CHECKING, Any, List, Optional, Union
-
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
 from ..plot_utils import _update_history, normalize_data
 from ..verification_metrics import compute_radar_metrics
 from .base import BasePlot
->>>>>>> develop
-
-if TYPE_CHECKING:
-    import matplotlib.axes
-    import matplotlib.figure
 
 
 class RadarPlot(BasePlot):
-    """Radar (spider) chart for model evaluation.
+    """
+    Radar (Spider) Chart for multi-model performance evaluation.
 
-    Visualizes multiple normalized performance metrics across one or more models.
-    Metrics are typically normalized to a 0-1 scale.
+    Normalizes various performance metrics (Correlation, NMB, NME, RMSE, MAE)
+    to a 0-1 scale where 1 is perfect performance.
 
     Attributes
     ----------
     metrics_data : xr.Dataset
-        Dataset containing the normalized metrics for each model.
+        The normalized metrics for each model.
     """
 
     def __init__(
         self,
-        data: Any = None,
-        *,
-        obs_col: Optional[str] = None,
-        mod_cols: Optional[Union[str, List[str]]] = None,
-        metrics: Optional[List[str]] = None,
+        data: Optional[Any] = None,
         metrics_data: Optional[xr.Dataset] = None,
-<<<<<<< develop
-        fig: Optional[matplotlib.figure.Figure] = None,
-        ax: Optional[matplotlib.axes.Axes] = None,
+        obs_col: str = "obs",
+        mod_cols: Optional[List[str]] = None,
+        metrics: Optional[List[str]] = None,
+        fig: Optional[plt.Figure] = None,
+        ax: Optional[plt.Axes] = None,
         **kwargs: Any,
     ):
         """
-        Initialize Radar Plot.
-=======
-        fig: Optional["matplotlib.figure.Figure"] = None,
-        ax: Optional["matplotlib.axes.Axes"] = None,
-        **kwargs: Any,
-    ):
-        """Initialize Radar Plot.
->>>>>>> develop
+        Initialize the RadarPlot.
 
         Parameters
         ----------
-        data : Any, optional
-            Input data containing observations and model predictions.
-        obs_col : str, optional
-            Column/variable name for observations.
-        mod_cols : str or list of str, optional
-            Column/variable names for model predictions.
-        metrics : list of str, optional
-<<<<<<< develop
-            List of metrics to calculate. Defaults to ['R', 'IOA', 'KGE', 'CCC', 'NMB', 'NME', 'RMSE', 'MAE'].
-=======
-            List of metrics to calculate. Defaults to
-            ['R', 'IOA', 'KGE', 'CCC', 'NMB', 'NME', 'RMSE', 'MAE'].
->>>>>>> develop
-        metrics_data : xr.Dataset, optional
-            Pre-calculated normalized metrics. Should have metrics as variables
-            and models as a dimension (e.g., 'model').
-        fig : matplotlib.figure.Figure, optional
-            An existing Figure object.
-        ax : matplotlib.axes.Axes, optional
-            An existing polar Axes object.
+        data : Any
+            Input data (DataFrame, Dataset, or DataArray).
+        obs_col : str, default "obs"
+            Name of the observation column/variable.
+        mod_cols : List[str], optional
+            Names of the model columns/variables to evaluate.
+            If None, all variables except obs_col are used.
+        metrics : List[str], optional
+            List of metrics to compute. Defaults to ['R', 'NMB', 'NME', 'RMSE', 'MAE'].
+        fig : plt.Figure, optional
+            Matplotlib figure.
+        ax : plt.Axes, optional
+            Matplotlib axes.
         **kwargs : Any
-            Arguments passed to BasePlot. 'subplot_kw={"projection": "polar"}'
-            is added automatically if ax is None.
-        """
-        if ax is None and "subplot_kw" not in kwargs:
-            kwargs["subplot_kw"] = {"projection": "polar"}
+            Passed to BasePlot.
 
-        super().__init__(fig=fig, ax=ax, **kwargs)
+        Examples
+        --------
+        >>> ds = xr.Dataset({"obs": (["index"], [1, 2]), "mod": (["index"], [1.1, 1.9])})
+        >>> plot = RadarPlot(ds, obs_col="obs")
+        """
+        # Ensure polar projection for radar charts
+        subplot_kw = kwargs.pop("subplot_kw", {})
+        subplot_kw.setdefault("projection", "polar")
+
+        super().__init__(fig=fig, ax=ax, subplot_kw=subplot_kw, **kwargs)
 
         if metrics_data is not None:
             self.metrics_data = metrics_data
-        elif data is not None and obs_col is not None and mod_cols is not None:
-            self._calculate_all_metrics(data, obs_col, mod_cols, metrics)
         else:
-            raise ValueError(
-                "Must provide either metrics_data or data with obs_col and mod_cols"
-            )
+            if data is None:
+                raise ValueError("Either 'data' or 'metrics_data' must be provided.")
 
-        # Ensure we have a 'model' dimension if it's a single model without one
-        if "model" not in self.metrics_data.dims:
-            self.metrics_data = self.metrics_data.expand_dims("model")
+            data_xr = normalize_data(data, prefer_xarray=True)
+            if isinstance(data_xr, xr.DataArray):
+                data_xr = data_xr.to_dataset()
 
-    def _calculate_all_metrics(
-        self,
-        data: Any,
-        obs_col: str,
-        mod_cols: Union[str, List[str]],
-        metrics: Optional[List[str]],
-    ) -> None:
-        """Calculate normalized metrics for one or more models."""
-        if isinstance(mod_cols, str):
-            mod_cols = [mod_cols]
+            if mod_cols is None:
+                mod_cols = [v for v in data_xr.data_vars if v != obs_col]
 
-        data_xr = normalize_data(data, prefer_xarray=True)
-        obs = data_xr[obs_col]
+            if metrics is None:
+                metrics = ["R", "NMB", "NME", "RMSE", "MAE"]
 
-        model_results = []
-        for mod_col in mod_cols:
-            mod = data_xr[mod_col]
-<<<<<<< develop
-            # Use all non-specified dimensions for reduction by default
-            # In most cases for radar plots, we want a single value per model/metric
-=======
->>>>>>> develop
-            ds = compute_radar_metrics(obs, mod, metrics=metrics)
-            ds = ds.assign_coords(model=mod_col)
-            model_results.append(ds)
+            obs = data_xr[obs_col]
 
-        self.metrics_data = xr.concat(model_results, dim="model")
+            model_results = []
+            for mod_col in mod_cols:
+                mod = data_xr[mod_col]
+                ds = compute_radar_metrics(obs, mod, metrics=metrics)
+                ds = ds.assign_coords(model=mod_col)
+                model_results.append(ds)
+
+            self.metrics_data = xr.concat(model_results, dim="model")
+
         _update_history(self.metrics_data, "Calculated metrics for RadarPlot")
 
-<<<<<<< develop
-    def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
-=======
-    def plot(self, **kwargs: Any) -> "matplotlib.axes.Axes":
->>>>>>> develop
-        """Generate the radar chart.
+    def plot(self, **kwargs: Any) -> plt.Axes:
+        """
+        Generate the radar chart (Track A).
 
         Parameters
         ----------
         **kwargs : Any
-            Keyword arguments passed to `ax.plot` and `ax.fill`.
+            Passed to ax.plot.
 
         Returns
         -------
-        matplotlib.axes.Axes
-            The polar axes object with the radar chart.
+        plt.Axes
+            The Matplotlib axes.
+
+        Examples
+        --------
+        >>> ax = plot.plot(color='blue')
         """
-<<<<<<< develop
-        # Variables to plot
-        variables = list(self.metrics_data.data_vars)
-        num_vars = len(variables)
+        metrics = list(self.metrics_data.data_vars)
+        num_vars = len(metrics)
 
-        # Compute angle for each axis
+        # Compute angles for each metric
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+        angles += angles[:1]  # Close the loop
 
-        # The plot is circular, so we need to "complete the loop"
-        # and append the start value to the end.
-        angles += angles[:1]
+        self.ax.set_theta_offset(np.pi / 2)
+        self.ax.set_theta_direction(-1)
 
-        # Draw one axe per variable + add labels
+        # Draw labels
         self.ax.set_xticks(angles[:-1])
-        self.ax.set_xticklabels(variables)
+        self.ax.set_xticklabels(metrics)
 
-        # Draw ylabels
-=======
-        variables = list(self.metrics_data.data_vars)
-        num_vars = len(variables)
-
-        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-        angles += angles[:1]
-
-        self.ax.set_xticks(angles[:-1])
-        self.ax.set_xticklabels(variables)
-
->>>>>>> develop
-        self.ax.set_rlabel_position(0)
-        self.ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
-        self.ax.set_yticklabels(
-            ["0.2", "0.4", "0.6", "0.8", "1.0"], color="grey", size=7
-        )
-        self.ax.set_ylim(0, 1)
-
-<<<<<<< develop
         # Plot each model
-=======
->>>>>>> develop
         for model_name in self.metrics_data.model.values:
-            model_ds = self.metrics_data.sel(model=model_name)
-            values = [float(model_ds[var].values) for var in variables]
-            values += values[:1]
+            # Vectorized extraction of values for this model
+            values = self.metrics_data.sel(model=model_name).to_array().values.tolist()
+            values += values[:1]  # Close the loop
 
             line_kwargs = {
                 "linewidth": 2,
@@ -203,69 +139,38 @@ class RadarPlot(BasePlot):
             }
             line_kwargs.update(kwargs)
 
-<<<<<<< develop
-            # Capture the color to use it for fill to ensure consistency
-=======
->>>>>>> develop
             (line,) = self.ax.plot(angles, values, **line_kwargs)
             color = line.get_color()
             self.ax.fill(angles, values, color=color, alpha=0.1)
 
-        self.ax.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
+        self.ax.set_ylim(0, 1)
+        self.ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
 
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:
-<<<<<<< develop
-        """Generate an interactive radar chart using hvPlot (Track B).
-
-        Note: hvPlot/HoloViews doesn't have a native "radar" plot type that
-        works exactly like Matplotlib's polar projection for this purpose,
-        but we can represent it as a polar line plot.
-=======
-        """Generate an interactive radar chart using hvPlot.
->>>>>>> develop
+        """
+        Generate an interactive radar chart (Track B).
 
         Parameters
         ----------
         **kwargs : Any
-            Keyword arguments passed to plotting function.
+            Passed to hvplot.
 
         Returns
         -------
-        holoviews.core.Element
-            The interactive radar chart.
+        Any
+            The HoloViews object.
+
+        Examples
+        --------
+        >>> hv_obj = plot.hvplot()
         """
-        try:
-            import hvplot.xarray  # noqa: F401
-        except ImportError:
-            raise ImportError(
-                "hvplot and holoviews are required for interactive plotting."
-            )
+        import hvplot.xarray  # noqa: F401
 
-<<<<<<< develop
-        # Prepare data for hvplot
-        variables = list(self.metrics_data.data_vars)
-
-        # Melt the dataset to have a 'metric' dimension
-        ds_melted = self.metrics_data.to_array(dim="metric", name="value")
-
-        # Close the loop for hvplot by appending the first metric at the end
-=======
-        variables = list(self.metrics_data.data_vars)
-        ds_melted = self.metrics_data.to_array(dim="metric", name="value")
-
->>>>>>> develop
-        first_metric = variables[0]
-        ds_first = ds_melted.sel(metric=first_metric)
-        ds_melted_closed = xr.concat([ds_melted, ds_first], dim="metric")
-
-        return ds_melted_closed.hvplot.line(
-            x="metric",
-            y="value",
-            by="model",
-            polar=True,
-            ylim=(0, 1),
-            hover_cols=["metric"],
-            **kwargs,
+        # Track B: Use a polar line plot if supported, otherwise line
+        # hvPlot doesn't have a direct 'radar' but we can use polar projection in some cases
+        # For now, keeping it as a multi-line plot for clear multi-model comparison
+        return self.metrics_data.to_array(dim="metric").hvplot.line(
+            x="metric", by="model", **kwargs
         )

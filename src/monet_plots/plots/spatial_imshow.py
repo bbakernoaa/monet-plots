@@ -182,11 +182,8 @@ class SpatialImshowPlot(SpatialPlot):
 
         # Capture extent before add_features pops it
         extent = kwargs.get("extent")
-<<<<<<< develop
         if extent is None and "extent" in kwargs:
             extent = kwargs["extent"]
-=======
->>>>>>> develop
 
         # Draw map features and get remaining kwargs for imshow
         imshow_kwargs = self.add_features(**kwargs)
