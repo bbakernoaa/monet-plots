@@ -1,12 +1,14 @@
 # src/monet_plots/plots/conditional_quantile.py
 """Conditional quantile plot for model evaluation."""
 
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
-from .base import BasePlot
-from ..plot_utils import to_dataframe
 from typing import Any, List, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from ..plot_utils import to_dataframe
+from .base import BasePlot
 
 
 class ConditionalQuantilePlot(BasePlot):
@@ -99,8 +101,8 @@ class ConditionalQuantilePlot(BasePlot):
                 bin_midpoints,
                 quantile_vals[0.25],
                 quantile_vals[0.75],
-                color="blue",
-                alpha=0.1,
+                color="#0072B2",
+                alpha=0.2,
             )
 
         self.ax.set_xlabel(f"Observed: {self.obs_col}")

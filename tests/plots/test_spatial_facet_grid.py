@@ -1,10 +1,11 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-import matplotlib.pyplot as plt
+from cartopy.mpl.geoaxes import GeoAxes
+
 from monet_plots.plots.facet_grid import SpatialFacetGridPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
-from cartopy.mpl.geoaxes import GeoAxes
 
 
 def test_spatial_facet_grid_init():
@@ -22,8 +23,14 @@ def test_spatial_facet_grid_init():
     )
 
     grid = SpatialFacetGridPlot(data, col="time")
+<<<<<<< develop
     assert len(grid.grid.axs.flatten()) == 2
     assert isinstance(grid.grid.axs.flatten()[0], GeoAxes)
+=======
+    axes = grid.grid.axs if hasattr(grid.grid, "axs") else grid.grid.axes
+    assert len(axes.flatten()) == 2
+    assert isinstance(axes.flatten()[0], GeoAxes)
+>>>>>>> develop
     plt.close()
 
 
@@ -40,7 +47,12 @@ def test_spatial_facet_grid_dataset_variable():
     ds["temp"].attrs["long_name"] = "Temperature"
 
     grid = SpatialFacetGridPlot(ds, col="variable")
+<<<<<<< develop
     titles = [ax.get_title() for ax in grid.grid.axs.flatten()]
+=======
+    _axes = grid.grid.axs if hasattr(grid.grid, "axs") else grid.grid.axes
+    titles = [ax.get_title() for ax in _axes.flatten()]
+>>>>>>> develop
     assert "Temperature" in titles[0]
     assert "pres" in titles[1]
     plt.close()
@@ -64,6 +76,11 @@ def test_spatial_facet_grid_map_monet():
     grid.map_monet(SpatialImshowPlot, coastlines=True)
 
     # Check that each axis has images (from imshow)
+<<<<<<< develop
     for ax in grid.grid.axs.flatten():
+=======
+    _axes = grid.grid.axs if hasattr(grid.grid, "axs") else grid.grid.axes
+    for ax in _axes.flatten():
+>>>>>>> develop
         assert len(ax.images) > 0
     plt.close()

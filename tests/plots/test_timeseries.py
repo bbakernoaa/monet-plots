@@ -1,7 +1,8 @@
-import pytest
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
+
 from monet_plots.plots.timeseries import TimeSeriesPlot
 
 

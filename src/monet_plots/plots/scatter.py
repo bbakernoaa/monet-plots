@@ -203,8 +203,9 @@ class ScatterPlot(BasePlot):
             x_reg, y_reg = self._get_regression_line(x_plot, y_plot)
 
             final_l_kwargs = {
-                "color": "red",
+                "color": "#333333",
                 "linestyle": "--",
+                "linewidth": 1.5,
                 "label": "Fit" if (self.c is None and len(self.y) == 1) else None,
             }
             final_l_kwargs.update(l_kws)

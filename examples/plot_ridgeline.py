@@ -19,9 +19,10 @@ easier to read than multiple overlapping histograms or KDE plots.
     of the distributions as you move from one group to another.
 """
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 from monet_plots.plots.ridgeline import RidgelinePlot
 
 # 1. Prepare sample data

@@ -44,7 +44,7 @@ class RidgelinePlot(BasePlot):
         x_range: Optional[Tuple[float, float]] = None,
         scale_factor: float = 1.0,
         overlap: float = 0.5,
-        cmap: str = "RdBu_r",
+        cmap: str = "viridis",
         title: Optional[str] = None,
         bw_method: Optional[Any] = None,
         alpha: float = 0.8,
@@ -64,7 +64,7 @@ class RidgelinePlot(BasePlot):
             scale_factor (float): Height scaling of the curves. Defaults to 1.0.
             overlap (float): Vertical spacing between curves. Higher values mean more overlap.
                 Defaults to 0.5.
-            cmap (str): Colormap name for coloring curves. Defaults to 'RdBu_r'.
+            cmap (str): Colormap name for coloring curves. Defaults to 'viridis'.
             title (str, optional): Plot title.
             bw_method (Any, optional): KDE bandwidth method (passed to scipy.stats.gaussian_kde).
             alpha (float): Transparency of the ridges. Defaults to 0.8.

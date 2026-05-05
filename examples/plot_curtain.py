@@ -20,9 +20,10 @@ passes over a station.
     features (like an inversion layer) upward or downward over time.
 """
 
-import xarray as xr
 import numpy as np
 import pandas as pd
+import xarray as xr
+
 from monet_plots.plots.curtain import CurtainPlot
 
 # Create dummy 2D data

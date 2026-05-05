@@ -1,12 +1,13 @@
-import pytest
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 from matplotlib.quiver import Quiver
+
 from monet_plots.plots.profile import (
     ProfilePlot,
-    VerticalSlice,
     StickPlot,
     VerticalBoxPlot,
+    VerticalSlice,
 )
 
 

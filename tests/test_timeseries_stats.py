@@ -1,8 +1,9 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.timeseries import TimeSeriesStatsPlot
 
 

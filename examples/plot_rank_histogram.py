@@ -23,9 +23,10 @@ essential for diagnosing issues with ensemble spread and bias.
 *   **Asymmetry (Sloping):** Indicates a systematic bias in the ensemble mean.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.rank_histogram import RankHistogramPlot
 
 # 1. Prepare sample data for a uniform rank distribution

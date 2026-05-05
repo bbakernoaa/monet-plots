@@ -20,8 +20,9 @@ during morning rush hour or on specific days of the year.
     highlight specific times and days with unusually high or low values.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from monet_plots.plots.fingerprint import FingerprintPlot
 
 # Create dummy data showing a diurnal/seasonal pattern

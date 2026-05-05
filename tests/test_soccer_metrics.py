@@ -1,7 +1,8 @@
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
-import pandas as pd
+
 from monet_plots import verification_metrics
 from monet_plots.plots.soccer import SoccerPlot
 
@@ -11,8 +12,8 @@ except ImportError:
     da = None
 
 try:
-    import hvplot  # noqa: F401
     import holoviews as hv
+    import hvplot  # noqa: F401
 except ImportError:
     hv = None
 

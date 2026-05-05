@@ -20,10 +20,11 @@ systematic bias along a coastline.
     suggest localized systematic errors in the model.
 """
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 from monet_plots.plots.spatial_bias_scatter import SpatialBiasScatterPlot
 
 # 1. Prepare sample data (CONUS region)

@@ -78,7 +78,8 @@ class UpperAir(SpatialPlot):
             else:
                 # Fallback if data has no range
                 levels = np.arange(hgt_min - 50, hgt_min + 51, 10)
-            contour_kwargs = {"levels": levels, "cmap": "viridis"}
+            # RdYlBu_r is the standard meteorological colormap for heights
+            contour_kwargs = {"levels": levels, "cmap": "RdYlBu_r"}
         if barb_kwargs is None:
             barb_kwargs = {}
 

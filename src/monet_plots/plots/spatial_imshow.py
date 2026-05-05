@@ -182,8 +182,11 @@ class SpatialImshowPlot(SpatialPlot):
 
         # Capture extent before add_features pops it
         extent = kwargs.get("extent")
+<<<<<<< develop
         if extent is None and "extent" in kwargs:
             extent = kwargs["extent"]
+=======
+>>>>>>> develop
 
         # Draw map features and get remaining kwargs for imshow
         imshow_kwargs = self.add_features(**kwargs)
@@ -209,6 +212,15 @@ class SpatialImshowPlot(SpatialPlot):
 
         img = self.ax.imshow(model_values, extent=extent, **final_kwargs)
 
+        # Build colorbar label from variable attributes
+        _long_name = getattr(self.modelvar, "attrs", {}).get("long_name", "")
+        _units = getattr(self.modelvar, "attrs", {}).get("units", "")
+        _cbar_label = (
+            f"{_long_name} ({_units})"
+            if _long_name and _units
+            else _long_name or _units or None
+        )
+
         # Handle colorbar
         if self.discrete:
             vmin, vmax = img.get_clim()
@@ -220,7 +232,15 @@ class SpatialImshowPlot(SpatialPlot):
                 ax=self.ax,
             )
         else:
-            self.add_colorbar(img)
+            self.add_colorbar(img, label=_cbar_label)
+
+        # Set title from variable name/long_name if not already set
+        if not self.ax.get_title():
+            _title = getattr(self.modelvar, "attrs", {}).get("long_name") or getattr(
+                self.modelvar, "name", None
+            )
+            if _title:
+                self.ax.set_title(_title)
 
         return self.ax
 

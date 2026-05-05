@@ -1,7 +1,6 @@
 import warnings
 from typing import Any, Optional
 
-
 import numpy as np
 import pandas as pd
 
@@ -299,6 +298,7 @@ def normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
 
 
 def is_dask(obj: Any) -> bool:
+<<<<<<< develop
     """Check if an object is a dask-backed array or xarray.
 
     Parameters
@@ -314,6 +314,11 @@ def is_dask(obj: Any) -> bool:
     if obj is None:
         return False
 
+=======
+    """Check if an object is a dask-backed array or xarray."""
+    if obj is None:
+        return False
+>>>>>>> develop
     try:
         import dask.array as da
 
@@ -331,6 +336,7 @@ def is_dask(obj: Any) -> bool:
 
 
 def is_cubed(obj: Any) -> bool:
+<<<<<<< develop
     """Check if an object is a cubed-backed array or xarray.
 
     Parameters
@@ -346,6 +352,11 @@ def is_cubed(obj: Any) -> bool:
     if obj is None:
         return False
 
+=======
+    """Check if an object is a cubed-backed array or xarray."""
+    if obj is None:
+        return False
+>>>>>>> develop
     try:
         import cubed
 
@@ -359,6 +370,7 @@ def is_cubed(obj: Any) -> bool:
 
 
 def is_lazy(obj: Any) -> bool:
+<<<<<<< develop
     """
     Check if an object is a lazy array (Dask or Cubed).
 
@@ -380,17 +392,28 @@ def is_lazy(obj: Any) -> bool:
         return True
 
     # Check underlying data for xarray objects
+=======
+    """Check if an object is a lazy array (Dask or Cubed)."""
+    if obj is None:
+        return False
+    if hasattr(obj, "chunks") and obj.chunks is not None:
+        return True
+>>>>>>> develop
     if (
         hasattr(obj, "data")
         and hasattr(obj.data, "chunks")
         and obj.data.chunks is not None
     ):
         return True
+<<<<<<< develop
 
+=======
+>>>>>>> develop
     return is_dask(obj) or is_cubed(obj)
 
 
 def compute(*objs: Any) -> Any:
+<<<<<<< develop
     """
     Compute multiple lazy objects (xarray, dask, or cubed) simultaneously.
 
@@ -414,6 +437,12 @@ def compute(*objs: Any) -> Any:
         return ()
 
     # Filter out None values for backend detection
+=======
+    """Compute multiple lazy objects (xarray, dask, or cubed) simultaneously."""
+    if not objs:
+        return ()
+
+>>>>>>> develop
     valid_objs = [obj for obj in objs if obj is not None]
     if not valid_objs:
         return objs if len(objs) > 1 else objs[0]
@@ -422,7 +451,10 @@ def compute(*objs: Any) -> Any:
     try:
         import cubed
 
+<<<<<<< develop
         # Check if any object is a cubed array or wraps one
+=======
+>>>>>>> develop
         if any(
             is_lazy(obj)
             and (
@@ -440,9 +472,12 @@ def compute(*objs: Any) -> Any:
     try:
         import dask
 
+<<<<<<< develop
         # Standard check for dask-backed objects.
         # Note: we also fall back to dask if any xarray object is present,
         # as dask.compute is the standard way to compute multiple xarray objects.
+=======
+>>>>>>> develop
         if any(
             is_dask(obj)
             or (xr is not None and isinstance(obj, (xr.DataArray, xr.Dataset)))
@@ -453,14 +488,21 @@ def compute(*objs: Any) -> Any:
     except ImportError:
         pass
 
+<<<<<<< develop
     # Generic fallback: individual compute
+=======
+    # Generic fallback
+>>>>>>> develop
     results = []
     for obj in objs:
         if obj is not None and hasattr(obj, "compute"):
             results.append(obj.compute())
         else:
             results.append(obj)
+<<<<<<< develop
 
+=======
+>>>>>>> develop
     return tuple(results) if len(results) > 1 else results[0]
 
 

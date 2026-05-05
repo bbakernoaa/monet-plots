@@ -20,9 +20,10 @@ across different sites, months, variables, or experiment groups. It enables
     facets to identify inconsistencies or regional/temporal differences.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.facet_grid import FacetGridPlot
 
 # 1. Prepare sample data

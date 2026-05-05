@@ -1,8 +1,10 @@
+from typing import Any, List, Optional
+
 import numpy as np
-from typing import Optional, Any, List
-from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_pod, compute_success_ratio
+from .base import BasePlot
 
 
 class PerformanceDiagramPlot(BasePlot):
@@ -126,11 +128,11 @@ class PerformanceDiagramPlot(BasePlot):
             yy,
             csi,
             levels=np.arange(0.1, 0.95, 0.1),
-            colors="lightgray",
+            colors="#888888",
             linestyles="--",
-            alpha=0.6,
+            alpha=0.7,
         )
-        self.ax.clabel(cs_csi, inline=True, fontsize=8, fmt="%.1f")
+        self.ax.clabel(cs_csi, inline=True, fontsize=9, fmt="%.1f")
 
         # Bias contours (dotted, darkgray)
         cs_bias = self.ax.contour(
@@ -138,11 +140,11 @@ class PerformanceDiagramPlot(BasePlot):
             yy,
             bias,
             levels=[0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0],
-            colors="darkgray",
+            colors="#555555",
             linestyles=":",
-            alpha=0.6,
+            alpha=0.7,
         )
-        self.ax.clabel(cs_bias, inline=True, fontsize=8, fmt="%.1f")
+        self.ax.clabel(cs_bias, inline=True, fontsize=9, fmt="%.1f")
 
         # Perfect forecast line
         self.ax.plot([0.01, 0.99], [0.01, 0.99], "k-", linewidth=1.5, alpha=0.8)

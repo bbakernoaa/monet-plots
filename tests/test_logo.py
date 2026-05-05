@@ -1,9 +1,11 @@
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from monet_plots.plots.base import BasePlot
+
 from monet_plots.plot_utils import get_logo_path
-import os
+from monet_plots.plots.base import BasePlot
 
 
 def test_add_logo_default():

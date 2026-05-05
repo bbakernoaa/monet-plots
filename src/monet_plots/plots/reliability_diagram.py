@@ -1,9 +1,11 @@
+from typing import Any, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Optional, Any
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_reliability_curve
 from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
 
 
 class ReliabilityDiagramPlot(BasePlot):
@@ -113,7 +115,7 @@ class ReliabilityDiagramPlot(BasePlot):
 
         # Shade skill region (above no-skill towards perfect)
         self.ax.fill_between(
-            x, y_no_skill, y_perfect, alpha=0.1, color="green", label="Skill Region"
+            x, y_no_skill, y_perfect, alpha=0.15, color="#009E73", label="Skill Region"
         )
 
     def _add_sharpness_histogram(self, data, x_col):
@@ -121,7 +123,7 @@ class ReliabilityDiagramPlot(BasePlot):
         from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
         inset_ax = inset_axes(self.ax, width=1.5, height=1.2, loc="upper right")
-        inset_ax.bar(data[x_col], data["count"], alpha=0.5, color="blue", width=0.08)
+        inset_ax.bar(data[x_col], data["count"], alpha=0.6, color="#0072B2", width=0.08)
         inset_ax.set_title("Sharpness")
         inset_ax.set_xlabel(x_col)
         inset_ax.set_ylabel("Count")

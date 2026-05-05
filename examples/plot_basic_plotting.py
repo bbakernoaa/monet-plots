@@ -20,6 +20,7 @@ includes geographic features.
 """
 
 import numpy as np
+
 from monet_plots import SpatialPlot
 
 # Step 1: Prepare spatial data

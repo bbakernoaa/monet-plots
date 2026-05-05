@@ -1,8 +1,9 @@
+import dask.array as da
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-import dask.array as da
+
 from monet_plots.plots import DiurnalErrorPlot
 
 

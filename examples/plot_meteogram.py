@@ -18,9 +18,10 @@ observational data.
     followed by a change in wind direction and temperature, indicating a frontal passage).
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.meteogram import Meteogram
 
 # 1. Prepare sample data

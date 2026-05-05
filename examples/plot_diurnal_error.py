@@ -20,8 +20,9 @@ layer, or the model's response to solar radiation.
     to a convective daytime one.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from monet_plots.plots.diurnal_error import DiurnalErrorPlot
 
 # Create dummy time series data

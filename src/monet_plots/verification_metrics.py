@@ -1,7 +1,8 @@
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import monet_stats
 import numpy as np
 import xarray as xr
-from typing import Tuple, Union, Dict, Any, Optional
 
 from .plot_utils import compute, is_cubed, is_dask, is_lazy
 
@@ -276,8 +277,8 @@ def compute_bias(
     >>> compute_bias(obs, mod)
     0.1
     """
-    # monet_stats.MB calculates (obs - mod), so we swap mod/obs
-    res = monet_stats.MB(mod, obs, axis=dim)
+    # monet_stats.MB(a, b) computes mean(b - a); pass (obs, mod) to get mean(mod - obs)
+    res = monet_stats.MB(obs, mod, axis=dim)
     if isinstance(res, (xr.DataArray, xr.Dataset)):
         return _update_history(res, f"Calculated Mean Bias along {dim}")
     return res
@@ -1239,6 +1240,7 @@ def compute_crps(
 def compute_radar_metrics(
     obs: Union[np.ndarray, xr.DataArray],
     mod: Union[np.ndarray, xr.DataArray],
+<<<<<<< develop
     dim: Optional[Union[str, list[str]]] = None,
     metrics: Optional[list[str]] = None,
 ) -> xr.Dataset:
@@ -1266,10 +1268,27 @@ def compute_radar_metrics(
         The dimension(s) over which to calculate the statistics.
     metrics : list of str, optional
         List of metrics to calculate. Defaults to ['R', 'IOA', 'KGE', 'CCC', 'NMB', 'NME', 'RMSE', 'MAE'].
+=======
+    metrics: Optional[List[str]] = None,
+) -> xr.Dataset:
+    """Compute normalized performance metrics for a radar (spider) chart.
+
+    All metrics are normalized to a 0-1 scale where 1 is perfect performance.
+
+    Parameters
+    ----------
+    obs : array-like
+        Observed values.
+    mod : array-like
+        Model/forecast values.
+    metrics : list of str, optional
+        Metrics to compute. Defaults to ['R', 'NMB', 'NME', 'RMSE', 'MAE'].
+>>>>>>> develop
 
     Returns
     -------
     xr.Dataset
+<<<<<<< develop
         Dataset containing the normalized metrics.
     """
     if metrics is None:
@@ -1321,3 +1340,48 @@ def compute_radar_metrics(
         ds = xr.Dataset({k: ([], np.clip(v, 0, 1)) for k, v in results.items()})
 
     return _update_history(ds, f"Calculated radar metrics along {dim}")
+=======
+        Dataset with one variable per metric, normalized to [0, 1].
+    """
+    if metrics is None:
+        metrics = ["R", "NMB", "NME", "RMSE", "MAE"]
+
+    obs_arr = np.asarray(obs).ravel()
+    mod_arr = np.asarray(mod).ravel()
+
+    # Remove NaN pairs
+    mask = np.isfinite(obs_arr) & np.isfinite(mod_arr)
+    obs_c = obs_arr[mask]
+    mod_c = mod_arr[mask]
+
+    result = {}
+
+    for metric in metrics:
+        m = metric.upper()
+        if m == "R":
+            val = float(compute_corr(obs_c, mod_c))
+            # R ranges from -1 to 1; normalize to 0-1
+            result[m] = np.clip((val + 1) / 2, 0, 1)
+        elif m == "NMB":
+            val = float(compute_nmb(obs_c, mod_c))
+            # NMB: 0 is perfect; normalize by mapping [-1,1] -> [0,1] (inverted)
+            result[m] = np.clip(1 - abs(val), 0, 1)
+        elif m == "NME":
+            val = float(compute_nme(obs_c, mod_c))
+            # NME: 0 is perfect; normalize by capping at 1 (100%)
+            result[m] = np.clip(1 - min(abs(val), 1), 0, 1)
+        elif m == "RMSE":
+            val = float(compute_rmse(obs_c, mod_c))
+            obs_std = float(np.std(obs_c)) if np.std(obs_c) > 0 else 1.0
+            # Normalize by obs std deviation; RMSE/std < 1 is good
+            result[m] = np.clip(1 - min(val / obs_std, 1), 0, 1)
+        elif m == "MAE":
+            val = float(compute_mae(obs_c, mod_c))
+            obs_mean = float(np.mean(np.abs(obs_c))) if np.mean(np.abs(obs_c)) > 0 else 1.0
+            result[m] = np.clip(1 - min(val / obs_mean, 1), 0, 1)
+        else:
+            result[m] = 0.0
+
+    ds = xr.Dataset({k: xr.DataArray(v) for k, v in result.items()})
+    return _update_history(ds, "Calculated radar metrics")
+>>>>>>> develop

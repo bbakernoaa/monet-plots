@@ -20,9 +20,10 @@ under-predicts high concentrations (a common issue in many environmental models)
     model's systematic error changes across the data range.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.conditional_bias import ConditionalBiasPlot
 
 # 1. Prepare sample data

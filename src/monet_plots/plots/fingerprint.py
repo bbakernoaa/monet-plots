@@ -1,11 +1,13 @@
 # src/monet_plots/plots/fingerprint.py
 """Fingerprint plot for visualizing temporal patterns."""
 
+from typing import Any
+
 import pandas as pd
 import seaborn as sns
-from .base import BasePlot
+
 from ..plot_utils import to_dataframe
-from typing import Any
+from .base import BasePlot
 
 
 class FingerprintPlot(BasePlot):

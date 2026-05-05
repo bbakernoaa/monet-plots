@@ -1,8 +1,10 @@
+from typing import Any, Optional
+
 import pandas as pd
 import seaborn as sns
-from typing import Optional, Any
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
 
 
 class ScorecardPlot(BasePlot):
@@ -33,7 +35,7 @@ class ScorecardPlot(BasePlot):
         y_col: str,
         val_col: str,
         sig_col: Optional[str] = None,
-        cmap: str = "RdYlGn",
+        cmap: str = "RdBu_r",
         center: float = 0.0,
         annot_cols: Optional[list[str]] = None,
         cbar_labels: Optional[tuple[str, str]] = None,

@@ -219,7 +219,7 @@ def colorbar_index(
     mappable.set_clim(-0.5, ncolors + 0.5)
 
     if basemap is not None:
-        colorbar = basemap.colorbar(mappable, format="%1.2g")
+        colorbar = basemap.colorbar(mappable, format="%g")
     elif ax is not None:
         from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
@@ -234,12 +234,12 @@ def colorbar_index(
             bbox_transform=ax.transAxes,
             borderpad=0,
         )
-        cbar_kwargs = {"format": "%1.2g", "cax": cax}
+        cbar_kwargs = {"format": "%g", "cax": cax}
         cbar_kwargs.update(kwargs)
         colorbar = plt.colorbar(mappable, **cbar_kwargs)
     else:
         # Fallback for case where no axes is provided
-        cbar_kwargs = {"format": "%1.2g", "fraction": 0.046, "pad": 0.04}
+        cbar_kwargs = {"format": "%g", "fraction": 0.046, "pad": 0.04}
         cbar_kwargs.update(kwargs)
         colorbar = plt.colorbar(mappable, **cbar_kwargs)
 

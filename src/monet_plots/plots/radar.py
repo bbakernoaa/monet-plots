@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+<<<<<<< develop
 import numpy as np
 import xarray as xr
 from typing import Any, Optional, Union, List, TYPE_CHECKING
@@ -10,6 +11,16 @@ from typing import Any, Optional, Union, List, TYPE_CHECKING
 from .base import BasePlot
 from ..plot_utils import _update_history, normalize_data
 from ..verification_metrics import compute_radar_metrics
+=======
+from typing import TYPE_CHECKING, Any, List, Optional, Union
+
+import numpy as np
+import xarray as xr
+
+from ..plot_utils import _update_history, normalize_data
+from ..verification_metrics import compute_radar_metrics
+from .base import BasePlot
+>>>>>>> develop
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -36,12 +47,20 @@ class RadarPlot(BasePlot):
         mod_cols: Optional[Union[str, List[str]]] = None,
         metrics: Optional[List[str]] = None,
         metrics_data: Optional[xr.Dataset] = None,
+<<<<<<< develop
         fig: Optional[matplotlib.figure.Figure] = None,
         ax: Optional[matplotlib.axes.Axes] = None,
         **kwargs: Any,
     ):
         """
         Initialize Radar Plot.
+=======
+        fig: Optional["matplotlib.figure.Figure"] = None,
+        ax: Optional["matplotlib.axes.Axes"] = None,
+        **kwargs: Any,
+    ):
+        """Initialize Radar Plot.
+>>>>>>> develop
 
         Parameters
         ----------
@@ -52,7 +71,12 @@ class RadarPlot(BasePlot):
         mod_cols : str or list of str, optional
             Column/variable names for model predictions.
         metrics : list of str, optional
+<<<<<<< develop
             List of metrics to calculate. Defaults to ['R', 'IOA', 'KGE', 'CCC', 'NMB', 'NME', 'RMSE', 'MAE'].
+=======
+            List of metrics to calculate. Defaults to
+            ['R', 'IOA', 'KGE', 'CCC', 'NMB', 'NME', 'RMSE', 'MAE'].
+>>>>>>> develop
         metrics_data : xr.Dataset, optional
             Pre-calculated normalized metrics. Should have metrics as variables
             and models as a dimension (e.g., 'model').
@@ -99,8 +123,11 @@ class RadarPlot(BasePlot):
         model_results = []
         for mod_col in mod_cols:
             mod = data_xr[mod_col]
+<<<<<<< develop
             # Use all non-specified dimensions for reduction by default
             # In most cases for radar plots, we want a single value per model/metric
+=======
+>>>>>>> develop
             ds = compute_radar_metrics(obs, mod, metrics=metrics)
             ds = ds.assign_coords(model=mod_col)
             model_results.append(ds)
@@ -108,7 +135,11 @@ class RadarPlot(BasePlot):
         self.metrics_data = xr.concat(model_results, dim="model")
         _update_history(self.metrics_data, "Calculated metrics for RadarPlot")
 
+<<<<<<< develop
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
+=======
+    def plot(self, **kwargs: Any) -> "matplotlib.axes.Axes":
+>>>>>>> develop
         """Generate the radar chart.
 
         Parameters
@@ -121,6 +152,7 @@ class RadarPlot(BasePlot):
         matplotlib.axes.Axes
             The polar axes object with the radar chart.
         """
+<<<<<<< develop
         # Variables to plot
         variables = list(self.metrics_data.data_vars)
         num_vars = len(variables)
@@ -137,6 +169,17 @@ class RadarPlot(BasePlot):
         self.ax.set_xticklabels(variables)
 
         # Draw ylabels
+=======
+        variables = list(self.metrics_data.data_vars)
+        num_vars = len(variables)
+
+        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+        angles += angles[:1]
+
+        self.ax.set_xticks(angles[:-1])
+        self.ax.set_xticklabels(variables)
+
+>>>>>>> develop
         self.ax.set_rlabel_position(0)
         self.ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
         self.ax.set_yticklabels(
@@ -144,7 +187,10 @@ class RadarPlot(BasePlot):
         )
         self.ax.set_ylim(0, 1)
 
+<<<<<<< develop
         # Plot each model
+=======
+>>>>>>> develop
         for model_name in self.metrics_data.model.values:
             model_ds = self.metrics_data.sel(model=model_name)
             values = [float(model_ds[var].values) for var in variables]
@@ -157,7 +203,10 @@ class RadarPlot(BasePlot):
             }
             line_kwargs.update(kwargs)
 
+<<<<<<< develop
             # Capture the color to use it for fill to ensure consistency
+=======
+>>>>>>> develop
             (line,) = self.ax.plot(angles, values, **line_kwargs)
             color = line.get_color()
             self.ax.fill(angles, values, color=color, alpha=0.1)
@@ -167,11 +216,15 @@ class RadarPlot(BasePlot):
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:
+<<<<<<< develop
         """Generate an interactive radar chart using hvPlot (Track B).
 
         Note: hvPlot/HoloViews doesn't have a native "radar" plot type that
         works exactly like Matplotlib's polar projection for this purpose,
         but we can represent it as a polar line plot.
+=======
+        """Generate an interactive radar chart using hvPlot.
+>>>>>>> develop
 
         Parameters
         ----------
@@ -190,6 +243,7 @@ class RadarPlot(BasePlot):
                 "hvplot and holoviews are required for interactive plotting."
             )
 
+<<<<<<< develop
         # Prepare data for hvplot
         variables = list(self.metrics_data.data_vars)
 
@@ -197,6 +251,11 @@ class RadarPlot(BasePlot):
         ds_melted = self.metrics_data.to_array(dim="metric", name="value")
 
         # Close the loop for hvplot by appending the first metric at the end
+=======
+        variables = list(self.metrics_data.data_vars)
+        ds_melted = self.metrics_data.to_array(dim="metric", name="value")
+
+>>>>>>> develop
         first_metric = variables[0]
         ds_first = ds_melted.sel(metric=first_metric)
         ds_melted_closed = xr.concat([ds_melted, ds_first], dim="metric")

@@ -21,9 +21,10 @@ analysis in air quality studies.
     events along the path with observed changes in the measured data.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.trajectory import TrajectoryPlot
 
 # 1. Prepare sample data

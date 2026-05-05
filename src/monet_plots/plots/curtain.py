@@ -1,10 +1,12 @@
 # src/monet_plots/plots/curtain.py
 """Vertical curtain plot for cross-sectional data."""
 
-import xarray as xr
-from .base import BasePlot
-from ..plot_utils import get_plot_kwargs
 from typing import Any, Optional
+
+import xarray as xr
+
+from ..plot_utils import get_plot_kwargs
+from .base import BasePlot
 
 
 class CurtainPlot(BasePlot):
@@ -47,6 +49,7 @@ class CurtainPlot(BasePlot):
             **kwargs: Additional arguments for the plotting function.
         """
         plot_kwargs = get_plot_kwargs(**kwargs)
+        plot_kwargs.setdefault("cmap", "viridis")
 
         # Ensure we have a DataArray
         if not isinstance(self.data, xr.DataArray):
@@ -79,9 +82,43 @@ class CurtainPlot(BasePlot):
             raise ValueError("kind must be 'pcolormesh' or 'contourf'")
 
         if colorbar:
-            self.add_colorbar(mappable)
+            # Auto-label colorbar from variable attrs
+            _long_name = getattr(da, "attrs", {}).get("long_name", "")
+            _units = getattr(da, "attrs", {}).get("units", "")
+            _cbar_label = (
+                f"{_long_name} ({_units})"
+                if _long_name and _units
+                else _long_name or _units or None
+            )
+            self.add_colorbar(mappable, label=_cbar_label)
 
-        self.ax.set_xlabel(self.x)
-        self.ax.set_ylabel(self.y)
+        # Use long_name as axis labels when available, fall back to dim names
+        self.ax.set_xlabel(
+            da.coords[self.x].attrs.get("long_name", self.x)
+            if self.x in da.coords
+            else self.x
+        )
+        self.ax.set_ylabel(
+            da.coords[self.y].attrs.get("long_name", self.y)
+            if self.y in da.coords
+            else self.y
+        )
+
+        # Invert y-axis for pressure-level data (hPa decreases with altitude)
+        _y_units = ""
+        if self.y in da.coords:
+            _y_units = da.coords[self.y].attrs.get("units", "").lower()
+        elif self.y in da.attrs:
+            _y_units = str(da.attrs.get("units", "")).lower()
+        if (
+            any(u in _y_units for u in ["hpa", "mbar", "pa", "mb"])
+            and not self.ax.yaxis_inverted()
+        ):
+            self.ax.invert_yaxis()
+
+        # Title from variable attrs
+        _title = da.attrs.get("long_name") or (da.name if da.name else None)
+        if _title and not self.ax.get_title():
+            self.ax.set_title(_title)
 
         return self.ax

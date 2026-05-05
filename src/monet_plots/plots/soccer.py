@@ -3,10 +3,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
 import matplotlib.patches as patches
 import numpy as np
 import xarray as xr
-from typing import Any, Optional, Dict, TYPE_CHECKING
 
 from .base import BasePlot
 from ..plot_utils import _update_history, normalize_data, compute, is_lazy
@@ -16,6 +17,7 @@ from ..verification_metrics import (
     compute_nmb,
     compute_nme,
 )
+from .base import BasePlot
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -169,8 +171,8 @@ class SoccerPlot(BasePlot):
                 2 * self.criteria["bias"],
                 self.criteria["error"],
                 linewidth=1,
-                edgecolor="lightgrey",
-                facecolor="lightgrey",
+                edgecolor="#888888",
+                facecolor="#cccccc",
                 alpha=0.3,
                 label="Criteria",
                 zorder=0,
@@ -183,9 +185,9 @@ class SoccerPlot(BasePlot):
                 2 * self.goal["bias"],
                 self.goal["error"],
                 linewidth=1,
-                edgecolor="grey",
-                facecolor="grey",
-                alpha=0.3,
+                edgecolor="#0072B2",
+                facecolor="#56B4E9",
+                alpha=0.25,
                 label="Goal",
                 zorder=1,
             )
@@ -231,7 +233,7 @@ class SoccerPlot(BasePlot):
         self.ax.set_xlim(-limit, limit)
         self.ax.set_ylim(0, limit_y)
 
-        self.ax.axvline(0, color="k", linestyle="--", alpha=0.5)
+        self.ax.axvline(0, color="k", linestyle="--", alpha=0.7)
         self.ax.set_xlabel(getattr(self, "xlabel", "Bias (%)"))
         self.ax.set_ylabel(getattr(self, "ylabel", "Error (%)"))
         self.ax.grid(True, linestyle=":", alpha=0.6)

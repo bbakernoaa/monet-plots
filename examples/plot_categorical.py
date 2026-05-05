@@ -20,9 +20,10 @@ geographic regions.
     variability or uncertainty within that category.
 """
 
-import xarray as xr
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
+
 from monet_plots.plots.categorical import categorical_plot
 
 # 1. Prepare sample data

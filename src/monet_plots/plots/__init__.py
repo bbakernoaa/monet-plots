@@ -54,6 +54,7 @@ __all__ = [
     "PerformanceDiagramPlot",
     "RadarPlot",
     "ROCCurvePlot",
+    "RadarPlot",
     "ReliabilityDiagramPlot",
     "RankHistogramPlot",
     "BrierScoreDecompositionPlot",

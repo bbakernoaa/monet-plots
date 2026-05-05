@@ -36,14 +36,23 @@ _wiley_style = {
     "axes.labelsize": 10,
     "axes.titlesize": 12,
     "axes.grid": True,
+    "axes.spines.top": False,
+    "axes.spines.right": False,
     "grid.linestyle": ":",
-    "grid.color": "gray",
+    "grid.color": "lightgray",
+    "grid.alpha": 0.7,
+    # Tick settings
+    "xtick.labelsize": 9,
+    "ytick.labelsize": 9,
+    "xtick.direction": "out",
+    "ytick.direction": "out",
     # Line settings
     "lines.linewidth": 1.5,
     "lines.markersize": 5,
     # Legend settings
     "legend.fontsize": 9,
     "legend.frameon": False,
+    "legend.borderpad": 0.4,
     # Figure settings
     "figure.figsize": (6, 4),
     "figure.dpi": 300,

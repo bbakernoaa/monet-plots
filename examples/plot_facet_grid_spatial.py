@@ -21,10 +21,11 @@ when models diverge in their spatial predictions.
     the maps in different rows and columns.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.facet_grid import SpatialFacetGridPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 
