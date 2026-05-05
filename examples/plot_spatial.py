@@ -2,7 +2,7 @@
 Spatial Plot
 ============
 
-**What it's for:**
+**What it'\''s for:**
 The `SpatialPlot` class is a high-level wrapper for creating geographic maps with
 pre-configured styles, projections, and features (like coastlines and states).
 
@@ -20,10 +20,6 @@ standalone for custom map visualizations.
 """
 
 import numpy as np
-<<<<<<< develop
-=======
-
->>>>>>> develop
 from monet_plots.plots.spatial import SpatialPlot
 
 data = np.random.random((20, 30)) * 100

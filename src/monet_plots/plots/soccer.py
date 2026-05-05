@@ -17,7 +17,6 @@ from ..verification_metrics import (
     compute_nmb,
     compute_nme,
 )
-from .base import BasePlot
 
 if TYPE_CHECKING:
     import matplotlib.axes
