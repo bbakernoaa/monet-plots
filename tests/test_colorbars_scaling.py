@@ -1,9 +1,10 @@
-import numpy as np
 import matplotlib.colors as mcolors
+import numpy as np
+
 from monet_plots.colorbars import (
-    get_linear_scale,
-    get_diverging_scale,
     get_discrete_scale,
+    get_diverging_scale,
+    get_linear_scale,
     get_log_scale,
 )
 

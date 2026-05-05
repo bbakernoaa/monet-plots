@@ -10,6 +10,7 @@ from .fingerprint import FingerprintPlot
 from .kde import KDEPlot
 from .performance_diagram import PerformanceDiagramPlot
 from .polar import BivariatePolarPlot
+from .radar import RadarPlot
 from .profile import ProfilePlot, StickPlot, VerticalBoxPlot, VerticalSlice
 from .rank_histogram import RankHistogramPlot
 from .reliability_diagram import ReliabilityDiagramPlot
@@ -52,6 +53,7 @@ __all__ = [
     "RidgelinePlot",
     "PerformanceDiagramPlot",
     "ROCCurvePlot",
+    "RadarPlot",
     "ReliabilityDiagramPlot",
     "RankHistogramPlot",
     "BrierScoreDecompositionPlot",

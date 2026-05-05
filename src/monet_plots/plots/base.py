@@ -98,7 +98,8 @@ class BasePlot:
             The added logo object.
         """
         import matplotlib.image as mpimg
-        from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+        from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+
         from ..plot_utils import get_logo_path
 
         if ax is None:
@@ -109,8 +110,8 @@ class BasePlot:
 
         if isinstance(logo, str):
             if logo.startswith("http"):
-                import urllib.request
                 import io
+                import urllib.request
 
                 with urllib.request.urlopen(logo) as url:
                     f = io.BytesIO(url.read())

@@ -20,8 +20,9 @@ def test_spatial_track_docstring_example(clear_figures):
     # --- The Logic (from docstring example) ---
     import numpy as np
     import xarray as xr
-    from monet_plots.plots.spatial import SpatialTrack
     from matplotlib.collections import PathCollection
+
+    from monet_plots.plots.spatial import SpatialTrack
 
     # 1. Create a sample xarray.DataArray
     time = np.arange(20)

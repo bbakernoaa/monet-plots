@@ -4,22 +4,34 @@ import typing as t
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
+from ..plot_utils import _update_history, compute, is_dask, is_lazy, normalize_data
 from .base import BasePlot
+
+if t.TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 
 class Windrose(BasePlot):
-    """Windrose plot."""
+    """Windrose plot class for static and interactive visualizations."""
 
-    def __init__(self, *, wd: np.ndarray, ws: np.ndarray, **kwargs: t.Any) -> None:
-        """
+    def __init__(
+        self,
+        *,
+        wd: np.ndarray | xr.DataArray | pd.Series,
+        ws: np.ndarray | xr.DataArray | pd.Series,
+        **kwargs: t.Any,
+    ) -> None:
+        """Initialize Windrose Plot.
+
         Parameters
         ----------
-        wd
-            wind direction
-        ws
-            wind speed
-        **kwargs
+        wd : numpy.ndarray or xarray.DataArray or pandas.Series
+            Wind direction data (degrees, 0-360).
+        ws : numpy.ndarray or xarray.DataArray or pandas.Series
+            Wind speed data.
+        **kwargs : Any
             Keyword arguments passed to the parent class.
         """
         if "subplot_kw" not in kwargs:
@@ -37,8 +49,58 @@ class Windrose(BasePlot):
         if not isinstance(self.ax, PolarAxes):
             raise ValueError("Windrose plot requires a polar axis.")
 
-        self.wd = wd
-        self.ws = ws
+        self.wd = normalize_data(wd)
+        self.ws = normalize_data(ws)
+
+    def _compute_windrose_histogram(
+        self,
+        *,
+        bins: int | np.ndarray = 16,
+        rose_bins: int | np.ndarray = 5,
+        percentage: bool = False,
+    ) -> t.Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Compute the 2D histogram for the windrose."""
+        if isinstance(bins, int):
+            dir_edges = np.linspace(0, 360, bins + 1)
+        else:
+            dir_edges = bins
+
+        if isinstance(rose_bins, int):
+            ws_min, ws_max = compute(self.ws.min(), self.ws.max())
+            ws_min = float(np.min(np.asarray(ws_min)))
+            ws_max = float(np.max(np.asarray(ws_max)))
+            speed_edges = np.linspace(ws_min, ws_max, rose_bins + 1)
+        else:
+            speed_edges = rose_bins
+
+        if is_lazy(self.wd) or is_lazy(self.ws):
+            wd_data = (self.wd.data if hasattr(self.wd, "data") else self.wd).ravel()
+            ws_data = (self.ws.data if hasattr(self.ws, "data") else self.ws).ravel()
+
+            if is_dask(self.wd) or is_dask(self.ws):
+                import dask.array as da
+
+                h, _, _ = da.histogram2d(
+                    wd_data, ws_data, bins=[dir_edges, speed_edges]
+                )
+                h = compute(h)
+            else:
+                wd_eager, ws_eager = compute(wd_data, ws_data)
+                h, _, _ = np.histogram2d(
+                    wd_eager, ws_eager, bins=[dir_edges, speed_edges]
+                )
+        else:
+            wd_data = np.asarray(self.wd).ravel()
+            ws_data = np.asarray(self.ws).ravel()
+            h, _, _ = np.histogram2d(wd_data, ws_data, bins=[dir_edges, speed_edges])
+
+        total = h.sum()
+        if total > 0:
+            h = h / total
+            if percentage:
+                h = h * 100
+
+        return h, dir_edges, speed_edges
 
     def plot(
         self,
@@ -46,49 +108,87 @@ class Windrose(BasePlot):
         bins: int | np.ndarray = 16,
         rose_bins: int | np.ndarray = 5,
         **kwargs: t.Any,
-    ) -> None:
-        """
-        Parameters
-        ----------
-        bins
-            Number of bins for the wind direction.
-        rose_bins
-            Number of bins for the wind speed.
-        **kwargs
-            Keyword arguments passed to `matplotlib.pyplot.bar`.
-        """
-        if isinstance(bins, int):
-            bins = np.linspace(0, 360, bins + 1)
-        if isinstance(rose_bins, int):
-            rose_bins = np.linspace(self.ws.min(), self.ws.max(), rose_bins + 1)
+    ) -> "Axes":
+        """Generate the windrose plot (Track A)."""
+        _update_history(self.wd, "Plotted Windrose (direction)")
+        _update_history(self.ws, "Plotted Windrose (speed)")
 
-        rose = pd.cut(self.ws, bins=rose_bins, right=True, include_lowest=True)
-        angle = pd.cut(
-            self.wd,
-            bins=bins,
-            right=False,
-            include_lowest=True,
-            labels=np.deg2rad(bins[:-1]),
+        h, dir_edges, speed_edges = self._compute_windrose_histogram(
+            bins=bins, rose_bins=rose_bins, percentage=False
         )
 
-        ct = pd.crosstab(rose, angle, normalize="all")
-        ct = ct.cumsum()
+        h_cumsum = np.cumsum(h, axis=1)
+
+        angles = np.deg2rad(dir_edges[:-1])
+        num_bins = dir_edges.size - 1
+        width = 2 * np.pi / num_bins
 
         self.ax.set_theta_zero_location("N")
         self.ax.set_theta_direction(-1)
-        self.ax.set_rgrids(
-            np.linspace(0.2, 1.0, 5) * ct.iloc[-1].max(),
-            labels=np.round(np.linspace(0.2, 1.0, 5) * 100).astype(int),
-            angle=180,
-        )
 
-        for i in reversed(ct.index):
+        r_max = h_cumsum[:, -1].max()
+        r_ticks = np.linspace(0.2, 1.0, 5) * r_max
+        r_labels = [f"{val * 100:.0f}%" for val in r_ticks]
+
+        self.ax.set_rgrids(r_ticks, labels=r_labels, angle=180)
+
+        for i in range(h_cumsum.shape[1] - 1, -1, -1):
+            label = f"{speed_edges[i]:.1f} - {speed_edges[i + 1]:.1f}"
             self.ax.bar(
-                ct.columns.astype(float) + np.pi / bins.size,
-                ct.loc[i].values,
-                width=2 * np.pi / bins.size,
-                label=i,
+                angles + width / 2,
+                h_cumsum[:, i],
+                width=width,
+                label=label,
                 **kwargs,
             )
 
-        self.ax.legend()
+        self.ax.legend(title="Wind Speed", loc="lower left", bbox_to_anchor=(1.1, 0))
+        return self.ax
+
+    def hvplot(
+        self,
+        *,
+        bins: int | np.ndarray = 16,
+        rose_bins: int | np.ndarray = 5,
+        **kwargs: t.Any,
+    ) -> t.Any:
+        """Generate an interactive windrose plot (Track B)."""
+        try:
+            import hvplot.pandas  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "hvplot and holoviews are required for interactive plotting."
+            )
+
+        _update_history(self.wd, "Plotted Windrose (direction)")
+        _update_history(self.ws, "Plotted Windrose (speed)")
+
+        h, dir_edges, speed_edges = self._compute_windrose_histogram(
+            bins=bins, rose_bins=rose_bins, percentage=True
+        )
+
+        angles = dir_edges[:-1]
+        speed_labels = [
+            f"{speed_edges[i]:.1f}-{speed_edges[i + 1]:.1f}"
+            for i in range(len(speed_edges) - 1)
+        ]
+
+        df_list = []
+        for i, label in enumerate(speed_labels):
+            temp_df = pd.DataFrame(
+                {"angle": angles, "percentage": h[:, i], "speed": label}
+            )
+            df_list.append(temp_df)
+
+        df = pd.concat(df_list)
+        df["angle"] = np.deg2rad(df["angle"])
+
+        return df.hvplot.scatter(
+            x="angle",
+            y="percentage",
+            by="speed",
+            polar=True,
+            xlabel="Direction (deg)",
+            ylabel="Frequency (%)",
+            **kwargs,
+        )

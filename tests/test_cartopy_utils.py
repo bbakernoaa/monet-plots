@@ -1,8 +1,9 @@
-import pytest
 import numpy as np
-import xarray as xr
-from monet_plots import cartopy_utils
 import pandas as pd
+import pytest
+import xarray as xr
+
+from monet_plots import cartopy_utils
 
 
 @pytest.fixture

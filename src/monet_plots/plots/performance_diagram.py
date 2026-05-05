@@ -1,8 +1,10 @@
+from typing import Any, List, Optional
+
 import numpy as np
-from typing import Optional, Any, List
-from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_pod, compute_success_ratio
+from .base import BasePlot
 
 
 class PerformanceDiagramPlot(BasePlot):

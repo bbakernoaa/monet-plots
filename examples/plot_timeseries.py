@@ -19,9 +19,10 @@ seasonal patterns, and episodic events.
     observations or different model scenarios.
 """
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 from monet_plots.plots.timeseries import TimeSeriesPlot
 
 dates = pd.date_range("2023-01-01", periods=100, freq="D")

@@ -1,9 +1,10 @@
 import numpy as np
 import xarray as xr
-from monet_plots.plots.spatial_imshow import SpatialImshowPlot
-from monet_plots.plots.spatial_contour import SpatialContourPlot
+
 from monet_plots.plots.spatial import SpatialTrack
 from monet_plots.plots.spatial_bias_scatter import SpatialBiasScatterPlot
+from monet_plots.plots.spatial_contour import SpatialContourPlot
+from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 
 
 def create_mock_data(lazy=False):

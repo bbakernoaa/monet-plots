@@ -1,10 +1,11 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-import matplotlib.pyplot as plt
+from cartopy.mpl.geoaxes import GeoAxes
+
 from monet_plots.plots.facet_grid import SpatialFacetGridPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
-from cartopy.mpl.geoaxes import GeoAxes
 
 
 def test_spatial_facet_grid_init():

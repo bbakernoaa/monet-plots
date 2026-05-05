@@ -1,9 +1,11 @@
+from typing import Any, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Optional, Any
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_brier_score_components
 from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
 
 
 class BrierScoreDecompositionPlot(BasePlot):

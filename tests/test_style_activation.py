@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from monet_plots.plots.base import BasePlot
 from monet_plots.plots.scatter import ScatterPlot
 from monet_plots.style import get_available_styles, set_style

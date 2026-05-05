@@ -21,8 +21,9 @@ high concentrations at high wind speeds suggest long-range transport.
     and speed) associated with high values of the variable.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from monet_plots.plots.polar import BivariatePolarPlot
 
 # Create dummy wind dependent data

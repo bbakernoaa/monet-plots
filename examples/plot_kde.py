@@ -22,9 +22,10 @@ the clutter of a scatter plot.
     correlation between the two variables.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 from monet_plots.plots.kde import KDEPlot
 
 # 1. Prepare sample data

@@ -1,5 +1,6 @@
-import pytest
 import numpy as np
+import pytest
+
 from monet_plots import verification_metrics
 
 

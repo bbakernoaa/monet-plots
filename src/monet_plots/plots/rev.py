@@ -1,8 +1,10 @@
+from typing import Any, List, Optional
+
 import numpy as np
-from typing import Optional, List, Any
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_rev
 from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
 
 
 class RelativeEconomicValuePlot(BasePlot):

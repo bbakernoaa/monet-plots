@@ -1,7 +1,9 @@
+from typing import Any, Optional
+
 import numpy as np
-from typing import Optional, Any
+
+from ..plot_utils import to_dataframe, validate_dataframe
 from .base import BasePlot
-from ..plot_utils import validate_dataframe, to_dataframe
 
 
 class RankHistogramPlot(BasePlot):

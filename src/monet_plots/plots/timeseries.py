@@ -148,9 +148,10 @@ class TimeSeriesPlot(BasePlot):
         self.ax.set_xlabel(self.x)
         self.ax.legend()
         self.ax.set_title(self.title)
-        from matplotlib.layout_engine import ConstrainedLayoutEngine
+        import warnings
 
-        if not isinstance(self.fig.get_layout_engine(), ConstrainedLayoutEngine):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
             self.fig.tight_layout()
         return self.ax
 
@@ -217,9 +218,10 @@ class TimeSeriesPlot(BasePlot):
         self.ax.set_xlabel(self.x)
         self.ax.legend()
         self.ax.set_title(self.title)
-        from matplotlib.layout_engine import ConstrainedLayoutEngine
+        import warnings
 
-        if not isinstance(self.fig.get_layout_engine(), ConstrainedLayoutEngine):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
             self.fig.tight_layout()
         return self.ax
 
@@ -359,9 +361,10 @@ class TimeSeriesStatsPlot(BasePlot):
         self.ax.set_ylabel(stat.upper())
         self.ax.set_xlabel(self.x.capitalize())
         self.ax.legend()
-        from matplotlib.layout_engine import ConstrainedLayoutEngine
+        import warnings
 
-        if not isinstance(self.fig.get_layout_engine(), ConstrainedLayoutEngine):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
             self.fig.tight_layout()
 
         # Update history for provenance

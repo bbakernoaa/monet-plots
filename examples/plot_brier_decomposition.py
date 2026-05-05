@@ -23,8 +23,9 @@ a certain way. It allows you to distinguish between a model that is poorly calib
     equal to the Uncertainty, resulting in a Brier Score of 0.
 """
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
+
 from monet_plots.plots.brier_decomposition import BrierScoreDecompositionPlot
 
 data = pd.DataFrame(

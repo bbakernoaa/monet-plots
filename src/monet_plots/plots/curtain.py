@@ -1,10 +1,12 @@
 # src/monet_plots/plots/curtain.py
 """Vertical curtain plot for cross-sectional data."""
 
-import xarray as xr
-from .base import BasePlot
-from ..plot_utils import get_plot_kwargs
 from typing import Any, Optional
+
+import xarray as xr
+
+from ..plot_utils import get_plot_kwargs
+from .base import BasePlot
 
 
 class CurtainPlot(BasePlot):

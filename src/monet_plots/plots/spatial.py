@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 from numpy.typing import ArrayLike
 
-from ..plot_utils import _update_history
+from ..plot_utils import _update_history, compute
 from ..style import get_style_setting
 from .base import BasePlot
 
@@ -486,21 +486,31 @@ class SpatialPlot(BasePlot):
         lon = data[lon_coord]
         lat = data[lat_coord]
 
-        # Use dask.compute for efficient parallel calculation of min/max
-        # if the data is chunked.
-        try:
-            import dask
-
-            lon_min, lon_max, lat_min, lat_max = dask.compute(
-                lon.min(), lon.max(), lat.min(), lat.max()
-            )
-        except (ImportError, AttributeError):
-            lon_min, lon_max = lon.min(), lon.max()
-            lat_min, lat_max = lat.min(), lat.max()
+        # Use compute utility for efficient parallel calculation of min/max
+        # if the data is lazy (dask or cubed).
+        lon_min, lon_max, lat_min, lat_max = compute(
+            lon.min(), lon.max(), lat.min(), lat.max()
+        )
 
         # Ensure they are scalar values (handles both numpy and dask returns)
         lon_min, lon_max = float(lon_min), float(lon_max)
         lat_min, lat_max = float(lat_min), float(lat_max)
+
+        # For proper bounding box around pixel centers (especially for imshow)
+        # we try to pad by half the grid resolution.
+        try:
+            lon_diff = abs(lon.diff(dim=lon.dims[0]).median().item())
+            lat_diff = abs(lat.diff(dim=lat.dims[0]).median().item())
+            lon_pad = lon_diff / 2.0
+            lat_pad = lat_diff / 2.0
+        except Exception:
+            lon_pad = 0.0
+            lat_pad = 0.0
+
+        lon_min -= lon_pad
+        lon_max += lon_pad
+        lat_min -= lat_pad
+        lat_max += lat_pad
 
         if buffer > 0:
             lon_range = lon_max - lon_min
@@ -511,6 +521,12 @@ class SpatialPlot(BasePlot):
             lon_max += lon_buf
             lat_min -= lat_buf
             lat_max += lat_buf
+
+        # Clip to valid ranges to avoid cartopy wrapping issues
+        lon_min = max(-180.0, lon_min)
+        lon_max = min(180.0, lon_max)
+        lat_min = max(-90.0, lat_min)
+        lat_max = min(90.0, lat_max)
 
         return [lon_min, lon_max, lat_min, lat_max]
 

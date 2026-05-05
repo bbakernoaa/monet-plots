@@ -1,9 +1,11 @@
+from typing import Any, List, Union
+
 import matplotlib.pyplot as plt
 from numpy import corrcoef
-from .base import BasePlot
+
 from .. import taylordiagram as td
 from ..plot_utils import to_dataframe
-from typing import Any, Union, List
+from .base import BasePlot
 
 
 class TaylorDiagramPlot(BasePlot):
@@ -82,5 +84,9 @@ class TaylorDiagramPlot(BasePlot):
             numpoints=1,
             loc="upper right",
         )
-        self.fig.tight_layout()
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            self.fig.tight_layout()
         return self.dia

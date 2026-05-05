@@ -1,10 +1,12 @@
 # src/monet_plots/plots/wind_quiver.py
 
-from .spatial import SpatialPlot
-from .. import tools
-import numpy as np
 from typing import Any
+
 import cartopy.crs as ccrs
+import numpy as np
+
+from .. import tools
+from .spatial import SpatialPlot
 
 
 class WindQuiverPlot(SpatialPlot):

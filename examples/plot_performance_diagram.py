@@ -22,8 +22,9 @@ commonly used in meteorology to assess weather warning systems and model skill.
 *   **Interpretation:** A perfect forecast resides at the top-right corner (Success Ratio = 1, POD = 1).
 """
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
+
 from monet_plots.plots.performance_diagram import PerformanceDiagramPlot
 
 # 1. Prepare sample data with pre-calculated metrics

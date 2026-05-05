@@ -23,9 +23,10 @@ model evaluation for assessing spatial or temporal patterns.
     The closer a model's point is to the reference point, the better it matches the observations.
 """
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 from monet_plots.plots.taylor_diagram import TaylorDiagramPlot
 
 # 1. Prepare model data

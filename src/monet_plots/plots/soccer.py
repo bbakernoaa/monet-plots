@@ -3,19 +3,20 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
 import matplotlib.patches as patches
 import numpy as np
 import xarray as xr
-from typing import Any, Optional, Dict, TYPE_CHECKING
 
-from .base import BasePlot
-from ..plot_utils import _update_history, normalize_data
+from ..plot_utils import _update_history, compute, is_lazy, normalize_data
 from ..verification_metrics import (
     compute_mfb,
     compute_mfe,
     compute_nmb,
     compute_nme,
 )
+from .base import BasePlot
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -195,10 +196,8 @@ class SoccerPlot(BasePlot):
         bias = self.bias_data
         error = self.error_data
 
-        if hasattr(bias, "compute") or hasattr(error, "compute"):
-            import dask
-
-            bias, error = dask.compute(bias, error)
+        if is_lazy(bias) or is_lazy(error):
+            bias, error = compute(bias, error)
 
         scatter_kwargs = {"zorder": 5}
         scatter_kwargs.update(kwargs)

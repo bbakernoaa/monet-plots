@@ -1,7 +1,8 @@
-import pytest
 import matplotlib.pyplot as plt
 import numpy as np
-from monet_plots.colorbars import colorbar_index, cmap_discretize
+import pytest
+
+from monet_plots.colorbars import cmap_discretize, colorbar_index
 
 
 @pytest.fixture

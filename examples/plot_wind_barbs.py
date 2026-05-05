@@ -20,8 +20,9 @@ wind data on weather maps.
     patterns, identifying features like wind shifts and areas of high wind speeds.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from monet_plots.plots.wind_barbs import WindBarbsPlot
 
 

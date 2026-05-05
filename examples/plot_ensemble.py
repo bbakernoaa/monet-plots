@@ -21,8 +21,9 @@ ensemble should have a spread that matches the expected error of the ensemble me
     much spread; the model is under-confident).
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from monet_plots.plots.ensemble import SpreadSkillPlot
 
 # 1. Prepare sample data

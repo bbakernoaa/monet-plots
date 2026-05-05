@@ -17,8 +17,9 @@ vortices or the flow around geographic obstacles.
     snapshot of the overall wind velocity field.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from monet_plots.plots.wind_quiver import WindQuiverPlot
 
 
