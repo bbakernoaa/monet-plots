@@ -8,6 +8,11 @@ import pytest
 import xarray as xr
 from cartopy.mpl.geoaxes import GeoAxes
 
+try:
+    import dask.array as da
+except ImportError:
+    da = None
+
 from monet_plots.plots.spatial import SpatialPlot, SpatialTrack
 
 
@@ -45,14 +50,14 @@ def sample_dataarray():
     lon = np.linspace(-120, -80, 20)
     lat = np.linspace(30, 45, 20)
     concentration = np.linspace(0, 100, 20)
-    da = xr.DataArray(
+    da_xr = xr.DataArray(
         concentration,
         dims=["time"],
         coords={"time": time, "lon": ("time", lon), "lat": ("time", lat)},
         name="O3_concentration",
         attrs={"units": "ppb"},
     )
-    return da
+    return da_xr
 
 
 def test_spatial_plot_init_default(clear_figures):
@@ -212,16 +217,16 @@ def test_spatialtrack_history_attribute_updated(sample_dataarray, clear_figures)
     assert "Plotted with monet-plots.SpatialTrack" in track_plot_2.data.attrs["history"]
 
 
+@pytest.mark.skipif(da is None, reason="dask not installed")
 def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
     """Test that SpatialTrack.plot preserves lazy evaluation with dask."""
-    dask = pytest.importorskip("dask")
-    import dask.array as da
+    import dask.array as dask_array
 
     # 1. Create lazy data
     time = np.arange(20)
     lon = np.linspace(-120, -80, 20)
     lat = np.linspace(30, 45, 20)
-    concentration = da.from_array(np.linspace(0, 100, 20), chunks=(10,))
+    concentration = dask_array.from_array(np.linspace(0, 100, 20), chunks=(10,))
     da_lazy = xr.DataArray(
         concentration,
         dims=["time"],
@@ -242,25 +247,73 @@ def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
         # Ensure 'c' is an xarray.DataArray wrapping a dask array
         assert isinstance(c_arg, xr.DataArray), "The 'c' argument is not a DataArray."
         assert isinstance(
-            c_arg.data, dask.array.Array
+            c_arg.data, dask_array.Array
         ), "The underlying data is not a dask array."
 
 
 def test_spatial_plot_coastlines_default():
     """Verify that SpatialPlot enables coastlines by default."""
-    from monet_plots.plots.spatial import SpatialPlot
-
-    # Initialize with default coastlines=True (stored in kwargs and passed to add_features)
-    # SpatialPlot doesn't store 'coastlines' as an attribute, but we can check if they were added.
+    # Initialize with default coastlines=True
     sp = SpatialPlot()
-    # Check if coastlines were added to the axes.
-    # Note: Cartopy's add_feature adds to ax.collections or other artists.
     assert len(sp.ax.collections) > 0
 
     # Initialize with explicit coastlines=False
     sp2 = SpatialPlot(coastlines=False)
-    # If no other features are added, collections should be empty
-    # But wait, BasePlot might add something? No.
-    # Actually, default in SpatialPlot.__init__ is to add coastlines if not in kwargs.
-    # If we pass coastlines=False, it won't add them.
     assert len(sp2.ax.collections) == 0
+
+
+@pytest.mark.skipif(da is None, reason="dask not installed")
+def test_track_laziness():
+    """Verify SpatialTrack handles lazy data without eager compute during init."""
+    lon = np.linspace(-120, -70, 10)
+    lat = np.linspace(25, 50, 10)
+    data = np.random.rand(10, 10)
+
+    da_lazy = xr.DataArray(
+        data, coords={"lon": lon, "lat": lat}, dims=("lat", "lon"), name="test_var"
+    ).chunk({"lat": 5, "lon": 5})
+
+    # Track needs a 1D path usually, but let's just use the coordinates
+    track_da = da_lazy.isel(lon=0)  # 1D along lat
+
+    # Initialize plot
+    plot = SpatialTrack(track_da)
+
+    # Verify data is still lazy
+    assert hasattr(plot.data.data, "chunks")
+    # Verify history was updated
+    assert "Plotted with monet-plots.SpatialTrack" in plot.data.attrs["history"]
+    plot.close()
+
+
+@pytest.mark.skipif(da is None, reason="dask not installed")
+def test_spatial_facet_grid_laziness():
+    """Verify SpatialFacetGridPlot handles lazy data without eager compute."""
+    from monet_plots.plots.facet_grid import SpatialFacetGridPlot
+    from monet_plots.plots.spatial_imshow import SpatialImshowPlot
+
+    # Create 3D data (time, lat, lon)
+    lon = np.linspace(-120, -70, 10)
+    lat = np.linspace(25, 50, 10)
+    time = np.arange(3)
+    data = np.random.rand(3, 10, 10)
+
+    da_lazy = xr.DataArray(
+        data,
+        coords={"time": time, "lon": lon, "lat": lat},
+        dims=("time", "lat", "lon"),
+        name="test_var",
+    ).chunk({"time": 1, "lat": 5, "lon": 5})
+
+    # Initialize facet grid
+    fg = SpatialFacetGridPlot(da_lazy, col="time")
+
+    # Verify data is still lazy
+    assert hasattr(fg.data.data, "chunks")
+
+    # Map a plotter
+    fg.map_monet(SpatialImshowPlot)
+
+    # Verify we have 3 axes
+    assert len(fg.grid.axes.flatten()) >= 3
+    plt.close("all")

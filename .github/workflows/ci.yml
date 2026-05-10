@@ -54,7 +54,7 @@ jobs:
 
     - name: Test with pytest (parallel)
       run: |
-        pytest -n auto tests/ --cov=src/monet_plots --cov-report=xml
+        pytest -n auto tests/ --cov=src/monet_plots --cov-report=xml --cov-fail-under=81
 
     - name: Build documentation
       run: |
