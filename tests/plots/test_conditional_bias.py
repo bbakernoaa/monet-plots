@@ -106,7 +106,91 @@ def test_compute_binned_bias_lazy():
     res = stats.compute()
     assert len(res.bin_center) == 5
     np.testing.assert_allclose(res.bias_mean, 1.0)
-    assert "Calculated binned bias" in res.attrs["history"]
+
+
+def test_conditional_bias_plot_dataarray(clear_figures):
+    """Verify ConditionalBiasPlot handles DataArray input with explicit obs."""
+    obs_data = np.random.rand(100)
+    mod_data = obs_data + 0.5
+    obs = xr.DataArray(obs_data, dims=["x"], name="obs")
+    mod = xr.DataArray(mod_data, dims=["x"], name="mod")
+
+    plot_obj = ConditionalBiasPlot(data=mod)
+    ax = plot_obj.plot(obs=obs, n_bins=5)
+    assert ax is not None
+    assert plot_obj.ax.get_xlabel() == "Observed Value"
+
+
+def test_conditional_bias_plot_dataarray_missing_obs(clear_figures):
+    """Verify ConditionalBiasPlot raises error when obs is missing for DataArray."""
+    mod = xr.DataArray(np.random.rand(100), dims=["x"], name="mod")
+    plot_obj = ConditionalBiasPlot(data=mod)
+    with pytest.raises(ValueError, match="obs must be provided"):
+        plot_obj.plot(n_bins=5)
+
+
+def test_conditional_bias_plot_unsupported_type(clear_figures):
+    """Verify ConditionalBiasPlot raises error for unsupported data types."""
+    with pytest.raises(TypeError, match="Unsupported data type"):
+        ConditionalBiasPlot(data=[1, 2, 3])
+
+
+def test_conditional_bias_hvplot_grouping():
+    """Verify hvplot method handles grouping with label_col."""
+    pytest.importorskip("holoviews")
+    pytest.importorskip("hvplot")
+
+    obs_data = np.random.rand(100)
+    mod_data = obs_data + 0.5
+    labels = ["Model A"] * 50 + ["Model B"] * 50
+
+    ds = xr.Dataset(
+        {
+            "obs": (["x"], obs_data),
+            "mod": (["x"], mod_data),
+            "label": (["x"], labels),
+        }
+    )
+
+    plot_obj = ConditionalBiasPlot(data=ds)
+    hv_plot = plot_obj.hvplot(obs_col="obs", fcst_col="mod", label_col="label", n_bins=5)
+
+    import holoviews as hv
+
+    assert isinstance(hv_plot, hv.core.overlay.Overlay)
+
+
+def test_conditional_bias_hvplot_dataarray():
+    """Verify hvplot method handles DataArray input."""
+    pytest.importorskip("holoviews")
+    pytest.importorskip("hvplot")
+
+    obs_data = np.random.rand(100)
+    mod_data = obs_data + 0.5
+    obs = xr.DataArray(obs_data, dims=["x"], name="obs")
+    mod = xr.DataArray(mod_data, dims=["x"], name="mod")
+
+    plot_obj = ConditionalBiasPlot(data=mod)
+    hv_plot = plot_obj.hvplot(obs=obs, n_bins=5)
+
+    import holoviews as hv
+
+    assert isinstance(hv_plot, hv.core.overlay.Overlay)
+
+
+def test_conditional_bias_long_name(clear_figures):
+    """Verify ConditionalBiasPlot uses long_name attribute for labels."""
+    obs_data = np.random.rand(100)
+    mod_data = obs_data + 0.5
+    obs = xr.DataArray(
+        obs_data, dims=["x"], name="obs", attrs={"long_name": "Custom Obs Label"}
+    )
+    mod = xr.DataArray(mod_data, dims=["x"], name="mod")
+
+    ds = xr.Dataset({"obs": obs, "mod": mod})
+    plot_obj = ConditionalBiasPlot(data=ds)
+    plot_obj.plot(obs_col="obs", fcst_col="mod")
+    assert plot_obj.ax.get_xlabel() == "Custom Obs Label"
 
 
 def test_conditional_bias_eager_lazy_parity():

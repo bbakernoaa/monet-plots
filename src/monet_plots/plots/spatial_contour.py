@@ -317,7 +317,8 @@ class SpatialContourPlot(SpatialPlot):
             titstring = self.date.strftime("%B %d %Y %H")
             self.ax.set_title(titstring)
 
-        self.fig.tight_layout()
+        if self.fig.get_layout_engine() is None:
+            self.fig.tight_layout()
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:

@@ -201,7 +201,7 @@ class VerticalProfilePlot(BasePlot):
 
                     self.ax.bxp(
                         bxp_stats,
-                        vert=False,
+                        orientation="horizontal",
                         positions=positions,
                         widths=width,
                         boxprops=dict(color=color),
@@ -339,6 +339,6 @@ class VerticalBoxPlot(BasePlot):
             (p1 + p2) / 2 for p1, p2 in zip(position_list_1, position_list_2)
         ]
 
-        return self.ax.boxplot(
-            output_list, vert=False, positions=position_list_mid, **kwargs
-        )
+        if "orientation" not in kwargs:
+            kwargs["orientation"] = "horizontal"
+        return self.ax.boxplot(output_list, positions=position_list_mid, **kwargs)
