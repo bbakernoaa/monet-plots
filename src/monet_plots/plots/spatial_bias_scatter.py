@@ -24,6 +24,25 @@ class SpatialBiasScatterPlot(SpatialPlot):
     Track B (interactive) visualization.
     """
 
+    def __new__(
+        cls,
+        data: Any,
+        col1: str,
+        col2: str,
+        **kwargs: Any,
+    ) -> Any:
+        """Redirect to SpatialFacetGridPlot if faceting is requested."""
+        from .facet_grid import SpatialFacetGridPlot
+
+        ax = kwargs.get("ax")
+        facet_kwargs = ["col", "row", "col_wrap"]
+        is_faceting = any(kwargs.get(k) is not None for k in facet_kwargs)
+
+        if ax is None and is_faceting:
+            return SpatialFacetGridPlot(data, **kwargs)
+
+        return super().__new__(cls)
+
     def __init__(
         self,
         data: Any,
@@ -72,6 +91,12 @@ class SpatialBiasScatterPlot(SpatialPlot):
         self.fact = fact
         self.cmap = cmap
 
+        # Identify coordinates
+        self.lon_coord, self.lat_coord = self._identify_coords(self.data)
+
+        # Ensure coordinates are monotonic if it's a grid (not strictly necessary for scatter but good practice)
+        self.data = self._ensure_monotonic(self.data, self.lon_coord, self.lat_coord)
+
         _update_history(self.data, "Initialized monet-plots.SpatialBiasScatterPlot")
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
@@ -110,31 +135,13 @@ class SpatialBiasScatterPlot(SpatialPlot):
 
             top = np.around(top)
 
-            # Identify coordinates
-            lat_name = next(
-                (
-                    c
-                    for c in ["latitude", "lat"]
-                    if c in self.data.coords
-                    or c in self.data.data_vars
-                    or c in self.data.dims
-                ),
-                "lat",
-            )
-            lon_name = next(
-                (
-                    c
-                    for c in ["longitude", "lon"]
-                    if c in self.data.coords
-                    or c in self.data.data_vars
-                    or c in self.data.dims
-                ),
-                "lon",
-            )
-
             # Compute only what's necessary for plotting
             plot_ds = xr.Dataset(
-                {"diff": diff, "lat": self.data[lat_name], "lon": self.data[lon_name]}
+                {
+                    "diff": diff,
+                    "lat": self.data[self.lat_coord],
+                    "lon": self.data[self.lon_coord],
+                }
             )
 
             # Drop NaNs before compute to minimize transfer
@@ -149,10 +156,8 @@ class SpatialBiasScatterPlot(SpatialPlot):
             # Fallback for Pandas
             df = self.data.dropna(subset=[self.col1, self.col2])
             diff_vals = (df[self.col2] - df[self.col1]).values
-            lat_name = next((c for c in ["latitude", "lat"] if c in df.columns), "lat")
-            lon_name = next((c for c in ["longitude", "lon"] if c in df.columns), "lon")
-            lat_vals = df[lat_name].values
-            lon_vals = df[lon_name].values
+            lat_vals = df[self.lat_coord].values
+            lon_vals = df[self.lon_coord].values
             top = np.around(np.nanquantile(np.abs(diff_vals), 0.95))
 
         # Use scaling tools
@@ -211,46 +216,16 @@ class SpatialBiasScatterPlot(SpatialPlot):
                 "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
             )
 
-        import pandas as pd
+        ds_plot = self.data.copy()
+        ds_plot["bias"] = ds_plot[self.col2] - ds_plot[self.col1]
 
-        if isinstance(self.data, pd.DataFrame):
-            lat_name = next(
-                (c for c in ["latitude", "lat"] if c in self.data.columns), "lat"
-            )
-            lon_name = next(
-                (c for c in ["longitude", "lon"] if c in self.data.columns), "lon"
-            )
-
-            ds_plot = self.data.copy()
-            ds_plot["bias"] = ds_plot[self.col2] - ds_plot[self.col1]
-            plot_target = ds_plot
-        else:
-            lat_name = next(
-                (
-                    c
-                    for c in ["latitude", "lat"]
-                    if c in self.data.coords or c in self.data.dims
-                ),
-                "lat",
-            )
-            lon_name = next(
-                (
-                    c
-                    for c in ["longitude", "lon"]
-                    if c in self.data.coords or c in self.data.dims
-                ),
-                "lon",
-            )
-
-            ds_plot = self.data.copy()
-            ds_plot["bias"] = ds_plot[self.col2] - ds_plot[self.col1]
+        if hasattr(ds_plot, "attrs"):
             _update_history(ds_plot, "Calculated bias for hvplot")
-            plot_target = ds_plot
 
         # Track B defaults
         plot_kwargs = {
-            "x": lon_name,
-            "y": lat_name,
+            "x": self.lon_coord,
+            "y": self.lat_coord,
             "c": "bias",
             "geo": True,
             "rasterize": True,

@@ -359,47 +359,53 @@ class SpatialPlot(BasePlot):
 
         # Handle xarray
         if hasattr(data, "coords"):
+            # Check coords, but also data_vars for Datasets
+            search_items = list(data.coords.items())
+            if hasattr(data, "data_vars"):
+                search_items += list(data.data_vars.items())
+
             # Check for standard names or units/axis attributes (CF conventions)
-            for name, coord in data.coords.items():
+            for name, obj in search_items:
+                name_str = str(name).lower()
                 # Longitude identification
                 if any(
-                    pattern in str(name).lower() for pattern in ["lon", "longitude"]
-                ) or coord.attrs.get("units") in [
+                    pattern in name_str for pattern in ["lon", "longitude", "x"]
+                ) or obj.attrs.get("units") in [
                     "degrees_east",
                     "degree_east",
                     "degree_E",
-                ]:
+                ] or obj.attrs.get("axis") == "X":
                     lon_name = str(name)
                 # Latitude identification
                 if any(
-                    pattern in str(name).lower() for pattern in ["lat", "latitude"]
-                ) or coord.attrs.get("units") in [
+                    pattern in name_str for pattern in ["lat", "latitude", "y"]
+                ) or obj.attrs.get("units") in [
                     "degrees_north",
                     "degree_north",
                     "degree_N",
-                ]:
+                ] or obj.attrs.get("axis") == "Y":
                     lat_name = str(name)
 
         # Handle pandas or other objects with columns
         elif hasattr(data, "columns"):
             cols = [str(c).lower() for c in data.columns]
-            if "lon" in cols:
-                lon_name = data.columns[cols.index("lon")]
-            elif "longitude" in cols:
-                lon_name = data.columns[cols.index("longitude")]
+            for pattern in ["lon", "longitude", "x"]:
+                if pattern in cols:
+                    lon_name = data.columns[cols.index(pattern)]
+                    break
 
-            if "lat" in cols:
-                lat_name = data.columns[cols.index("lat")]
-            elif "latitude" in cols:
-                lat_name = data.columns[cols.index("latitude")]
+            for pattern in ["lat", "latitude", "y"]:
+                if pattern in cols:
+                    lat_name = data.columns[cols.index(pattern)]
+                    break
 
         if lon_name and lat_name:
             return lon_name, lat_name
 
         raise ValueError(
             "Could not identify longitude and latitude coordinates. "
-            "Please ensure they are named 'lon'/'lat' or 'longitude'/'latitude', "
-            "or have CF-compliant units."
+            "Please ensure they are named 'lon'/'lat', 'longitude'/'latitude', "
+            "or 'x'/'y', or have CF-compliant units/axis attributes."
         )
 
     def _ensure_monotonic(self, data: Any, lon_name: str, lat_name: str) -> Any:
@@ -532,12 +538,29 @@ class SpatialTrack(SpatialPlot):
         The name of the latitude coordinate in the DataArray.
     """
 
+    def __new__(
+        cls,
+        data: xr.DataArray,
+        **kwargs: Any,
+    ) -> Any:
+        """Redirect to SpatialFacetGridPlot if faceting is requested."""
+        from .facet_grid import SpatialFacetGridPlot
+
+        ax = kwargs.get("ax")
+        facet_kwargs = ["col", "row", "col_wrap"]
+        is_faceting = any(kwargs.get(k) is not None for k in facet_kwargs)
+
+        if ax is None and is_faceting:
+            return SpatialFacetGridPlot(data, **kwargs)
+
+        return super().__new__(cls)
+
     def __init__(
         self,
         data: xr.DataArray,
         *,
-        lon_coord: str = "lon",
-        lat_coord: str = "lat",
+        lon_coord: str | None = None,
+        lat_coord: str | None = None,
         **kwargs: Any,
     ):
         """Initialize the SpatialTrack plot.
@@ -551,9 +574,11 @@ class SpatialTrack(SpatialPlot):
             The input trajectory data. Must be an xarray DataArray with
             coordinates for longitude and latitude.
         lon_coord : str, optional
-            Name of the longitude coordinate in the DataArray, by default 'lon'.
+            Name of the longitude coordinate in the DataArray. If None,
+            it is identified automatically.
         lat_coord : str, optional
-            Name of the latitude coordinate in the DataArray, by default 'lat'.
+            Name of the latitude coordinate in the DataArray. If None,
+            it is identified automatically.
         **kwargs : Any
             Keyword arguments passed to :class:`SpatialPlot`. These control
             the map projection, figure size, and cartopy features. For example:
@@ -562,14 +587,6 @@ class SpatialTrack(SpatialPlot):
         """
         if not isinstance(data, xr.DataArray):
             raise TypeError("Input 'data' must be an xarray.DataArray.")
-        if lon_coord not in data.coords:
-            raise ValueError(
-                f"Longitude coordinate '{lon_coord}' not found in DataArray."
-            )
-        if lat_coord not in data.coords:
-            raise ValueError(
-                f"Latitude coordinate '{lat_coord}' not found in DataArray."
-            )
 
         # Initialize the parent SpatialPlot, which creates the map canvas
         # and draws features from the keyword arguments.
@@ -577,8 +594,25 @@ class SpatialTrack(SpatialPlot):
 
         # Set data and update history for provenance
         self.data = data
-        self.lon_coord = lon_coord
-        self.lat_coord = lat_coord
+
+        # Identify coordinates if not provided
+        if lon_coord is None or lat_coord is None:
+            lon_id, lat_id = self._identify_coords(self.data)
+            self.lon_coord = lon_coord or lon_id
+            self.lat_coord = lat_coord or lat_id
+        else:
+            self.lon_coord = lon_coord
+            self.lat_coord = lat_coord
+
+        if self.lon_coord not in data.coords:
+            raise ValueError(
+                f"Longitude coordinate '{self.lon_coord}' not found in DataArray."
+            )
+        if self.lat_coord not in data.coords:
+            raise ValueError(
+                f"Latitude coordinate '{self.lat_coord}' not found in DataArray."
+            )
+
         _update_history(self.data, "Plotted with monet-plots.SpatialTrack")
 
     def plot(self, **kwargs: Any) -> plt.Artist:
