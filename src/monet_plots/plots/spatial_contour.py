@@ -93,6 +93,7 @@ class SpatialContourPlot(SpatialPlot):
         aspect: float | None = None,
         **kwargs: Any,
     ) -> None:
+        self._is_facetgrid = kwargs.pop("_is_facetgrid", False)
         """Initialize the spatial contour plot.
 
         Parameters
@@ -317,7 +318,11 @@ class SpatialContourPlot(SpatialPlot):
             titstring = self.date.strftime("%B %d %Y %H")
             self.ax.set_title(titstring)
 
-        if self.fig.get_layout_engine() is None:
+        if (
+            self.fig.get_layout_engine() is None
+            and not hasattr(self, "_is_facetgrid")
+            and not kwargs.get("_is_facetgrid")
+        ):
             self.fig.tight_layout()
         return self.ax
 

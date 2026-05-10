@@ -95,6 +95,9 @@ class SpatialOverlayPlot(SpatialPlot):
         # Coordinate identification for obs
         lon_o, lat_o = self._identify_coords(self.obs_data)
 
+        # Ensure monotonic for gridded data
+        self.model_data = self._ensure_monotonic(self.model_data, lon_m, lat_m)
+
         # Determine common vmin/vmax
         if vmin is None or vmax is None:
             m_da = (
