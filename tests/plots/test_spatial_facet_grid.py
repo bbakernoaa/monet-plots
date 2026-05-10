@@ -23,8 +23,12 @@ def test_spatial_facet_grid_init():
     )
 
     grid = SpatialFacetGridPlot(data, col="time")
-    assert len(grid.grid.axes.flatten()) == 2
-    assert isinstance(grid.grid.axes.flatten()[0], GeoAxes)
+    # Use robust axes access to avoid FutureWarnings
+    grid_axes = getattr(grid.grid, "axs", None)
+    if grid_axes is None:
+        grid_axes = getattr(grid.grid, "axes", None)
+    assert len(grid_axes.flatten()) == 2
+    assert isinstance(grid_axes.flatten()[0], GeoAxes)
     plt.close()
 
 
@@ -41,7 +45,10 @@ def test_spatial_facet_grid_dataset_variable():
     ds["temp"].attrs["long_name"] = "Temperature"
 
     grid = SpatialFacetGridPlot(ds, col="variable")
-    titles = [ax.get_title() for ax in grid.grid.axes.flatten()]
+    grid_axes = getattr(grid.grid, "axs", None)
+    if grid_axes is None:
+        grid_axes = getattr(grid.grid, "axes", None)
+    titles = [ax.get_title() for ax in grid_axes.flatten()]
     assert "Temperature" in titles[0]
     assert "pres" in titles[1]
     plt.close()
@@ -65,6 +72,9 @@ def test_spatial_facet_grid_map_monet():
     grid.map_monet(SpatialImshowPlot, coastlines=True)
 
     # Check that each axis has images (from imshow)
-    for ax in grid.grid.axes.flatten():
+    grid_axes = getattr(grid.grid, "axs", None)
+    if grid_axes is None:
+        grid_axes = getattr(grid.grid, "axes", None)
+    for ax in grid_axes.flatten():
         assert len(ax.images) > 0
     plt.close()

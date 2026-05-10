@@ -111,7 +111,8 @@ class ConditionalBiasPlot(BasePlot):
         )
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel("Mean Bias (Forecast - Observation)")
-        self.ax.legend()
+        if self.ax.get_legend_handles_labels()[0]:
+            self.ax.legend()
         return self.ax
 
     def _plot_single(self, obs, mod, n_bins, label, **kwargs):
@@ -190,7 +191,9 @@ class ConditionalBiasPlot(BasePlot):
                 s = get_stats(group)
                 s = s.assign_coords({label_col: name}).expand_dims(label_col)
                 stats_list.append(s)
-            pdf = xr.concat(stats_list, dim=label_col).dropna(dim="bin_center")
+            pdf = xr.concat(stats_list, dim=label_col, join="outer").dropna(
+                dim="bin_center"
+            )
             by = label_col
         else:
             if isinstance(plot_data, xr.Dataset):
