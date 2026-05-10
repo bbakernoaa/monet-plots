@@ -1,5 +1,4 @@
 import datetime
-from unittest.mock import MagicMock
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
