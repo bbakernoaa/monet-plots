@@ -118,7 +118,9 @@ class FacetGridPlot(BasePlot):
             )
 
         # Unified BasePlot initialization
-        axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
+        axes = getattr(self.grid, "axs", None)
+        if axes is None:
+            axes = getattr(self.grid, "axes", None)
         if axes is not None:
             super().__init__(fig=self.grid.fig, ax=axes.flatten()[0], style=style)
         else:
@@ -248,7 +250,9 @@ class SpatialFacetGridPlot(FacetGridPlot):
 
     def _set_default_titles(self) -> None:
         """Format facet titles with metadata and date-time."""
-        axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
+        axes = getattr(self.grid, "axs", None)
+        if axes is None:
+            axes = getattr(self.grid, "axes", None)
         if axes is None:
             return
 
@@ -318,7 +322,9 @@ class SpatialFacetGridPlot(FacetGridPlot):
         if "coastlines" not in kwargs:
             kwargs["coastlines"] = True
 
-        axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
+        axes = getattr(self.grid, "axs", None)
+        if axes is None:
+            axes = getattr(self.grid, "axes", None)
         if axes is None:
             return
 
@@ -439,7 +445,9 @@ class SpatialFacetGridPlot(FacetGridPlot):
 
             # Update BasePlot attributes
             self.fig = self.grid.fig
-            axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
+            axes = getattr(self.grid, "axs", None)
+            if axes is None:
+                axes = getattr(self.grid, "axes", None)
             self.ax = axes.flatten()[0]
             self.g = self.grid
 
@@ -476,7 +484,9 @@ class SpatialFacetGridPlot(FacetGridPlot):
         # Find the last mappable object in the facets and the last valid axis
         mappable = None
         target_ax = None
-        axes = getattr(self.grid, "axs", getattr(self.grid, "axes", None))
+        axes = getattr(self.grid, "axs", None)
+        if axes is None:
+            axes = getattr(self.grid, "axes", None)
         if axes is None:
             return
 
