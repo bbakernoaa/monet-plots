@@ -291,11 +291,16 @@ class SpatialFacetGridPlot(FacetGridPlot):
                                 pass
                         elif dim in self.original_data.coords:
                             target_obj = self.original_data.coords[dim]
-                        elif hasattr(self.original_data, "data_vars") and dim in self.original_data.data_vars:
+                        elif (
+                            hasattr(self.original_data, "data_vars")
+                            and dim in self.original_data.data_vars
+                        ):
                             target_obj = self.original_data.data_vars[dim]
 
                         if target_obj is not None:
-                            long_name = target_obj.attrs.get("long_name", dim if dim != "variable" else val)
+                            long_name = target_obj.attrs.get(
+                                "long_name", dim if dim != "variable" else val
+                            )
                             units = target_obj.attrs.get("units", "")
 
                             if dim == "variable":
@@ -303,7 +308,9 @@ class SpatialFacetGridPlot(FacetGridPlot):
                                 dim = ""
                             else:
                                 dim = long_name
-                                if units and not any(u in val for u in [f"({units})", f"[{units}]"]):
+                                if units and not any(
+                                    u in val for u in [f"({units})", f"[{units}]"]
+                                ):
                                     val = f"{val} ({units})"
 
                         new_parts.append(f"{dim} {val}".strip())
@@ -475,7 +482,9 @@ class SpatialFacetGridPlot(FacetGridPlot):
                                     coords = {
                                         c: full_da.coords[c]
                                         for c in full_da.coords
-                                        if all(d in dims for d in full_da.coords[c].dims)
+                                        if all(
+                                            d in dims for d in full_da.coords[c].dims
+                                        )
                                     }
                             elif isinstance(self.data, xr.DataArray):
                                 dims = [

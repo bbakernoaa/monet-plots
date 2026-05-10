@@ -234,4 +234,4 @@ class SpatialBiasScatterPlot(SpatialPlot):
 
         plot_kwargs.update(kwargs)
 
-        return plot_target.hvplot.points(**plot_kwargs)
+        return ds_plot.hvplot.points(**plot_kwargs)

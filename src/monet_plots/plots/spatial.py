@@ -368,22 +368,28 @@ class SpatialPlot(BasePlot):
             for name, obj in search_items:
                 name_str = str(name).lower()
                 # Longitude identification
-                if any(
-                    pattern in name_str for pattern in ["lon", "longitude", "x"]
-                ) or obj.attrs.get("units") in [
-                    "degrees_east",
-                    "degree_east",
-                    "degree_E",
-                ] or obj.attrs.get("axis") == "X":
+                if (
+                    any(pattern in name_str for pattern in ["lon", "longitude", "x"])
+                    or obj.attrs.get("units")
+                    in [
+                        "degrees_east",
+                        "degree_east",
+                        "degree_E",
+                    ]
+                    or obj.attrs.get("axis") == "X"
+                ):
                     lon_name = str(name)
                 # Latitude identification
-                if any(
-                    pattern in name_str for pattern in ["lat", "latitude", "y"]
-                ) or obj.attrs.get("units") in [
-                    "degrees_north",
-                    "degree_north",
-                    "degree_N",
-                ] or obj.attrs.get("axis") == "Y":
+                if (
+                    any(pattern in name_str for pattern in ["lat", "latitude", "y"])
+                    or obj.attrs.get("units")
+                    in [
+                        "degrees_north",
+                        "degree_north",
+                        "degree_N",
+                    ]
+                    or obj.attrs.get("axis") == "Y"
+                ):
                     lat_name = str(name)
 
         # Handle pandas or other objects with columns
