@@ -153,7 +153,9 @@ def test_conditional_bias_hvplot_grouping():
     )
 
     plot_obj = ConditionalBiasPlot(data=ds)
-    hv_plot = plot_obj.hvplot(obs_col="obs", fcst_col="mod", label_col="label", n_bins=5)
+    hv_plot = plot_obj.hvplot(
+        obs_col="obs", fcst_col="mod", label_col="label", n_bins=5
+    )
 
     import holoviews as hv
 

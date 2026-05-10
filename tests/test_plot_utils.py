@@ -63,7 +63,9 @@ def test_validate_plot_parameters():
         plot_utils.validate_plot_parameters("SpatialPlot", "plot", ncolors=0)
 
     with pytest.raises(TypeError, match="plotargs parameter must be dict"):
-        plot_utils.validate_plot_parameters("SpatialPlot", "plot", plotargs="not a dict")
+        plot_utils.validate_plot_parameters(
+            "SpatialPlot", "plot", plotargs="not a dict"
+        )
 
     with pytest.raises(TypeError, match="colormap must be string"):
         plot_utils.validate_plot_parameters(
