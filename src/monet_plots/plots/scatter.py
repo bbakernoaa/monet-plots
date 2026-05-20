@@ -18,80 +18,76 @@ if TYPE_CHECKING:
 
 
 class ScatterPlot(BasePlot):
-    """Create a scatter plot with a regression line.
+    """
+    Create a scatter plot with a regression line (Unified API).
 
     This plot shows the relationship between two variables and includes a
     linear regression model fit. It supports lazy evaluation for large
     Xarray/Dask datasets by delaying computation until the plot call.
 
-    Attributes
+    Parameters
     ----------
-    data : Union[xr.Dataset, xr.DataArray, pd.DataFrame]
+    data : Any
         The input data for the plot.
-    x : str
+    var1 : str
         The name of the variable for the x-axis.
-    y : List[str]
-        The names of the variables for the y-axis.
+    var2 : str or list of str
+        The name(s) of the variable(s) for the y-axis.
     c : Optional[str]
         The name of the variable used for colorizing points.
     colorbar : bool
         Whether to add a colorbar to the plot.
     title : Optional[str]
         The title for the plot.
+    fig : matplotlib.figure.Figure, optional
+        An existing Figure object.
+    ax : matplotlib.axes.Axes, optional
+        An existing Axes object.
+    df : Any, optional
+        Deprecated alias for ``data``.
+    x : str, optional
+        Legacy alias for var1.
+    y : str or list, optional
+        Legacy alias for var2.
+    **kwargs : Any
+        Additional keyword arguments passed to BasePlot.
     """
 
     def __init__(
         self,
         data: Any = None,
-        x: Optional[str] = None,
-        y: Optional[Union[str, List[str]]] = None,
+        var1: Optional[str] = None,
+        var2: Optional[Union[str, List[str]]] = None,
         c: Optional[str] = None,
         colorbar: bool = False,
         title: Optional[str] = None,
         fig: Optional[matplotlib.figure.Figure] = None,
         ax: Optional[matplotlib.axes.Axes] = None,
         df: Any = None,  # Backward compatibility alias
+        x: Optional[str] = None,  # legacy alias
+        y: Optional[Union[str, List[str]]] = None,  # legacy alias
         **kwargs: Any,
     ) -> None:
-        """Initialize the scatter plot.
-
-        Parameters
-        ----------
-        data : Any, optional
-            Input data. Can be a pandas DataFrame, xarray DataArray,
-            xarray Dataset, or numpy ndarray, by default None.
-        x : str, optional
-            Variable name for the x-axis, by default None.
-        y : Union[str, List[str]], optional
-            Variable name(s) for the y-axis, by default None.
-        c : str, optional
-            Variable name for colorizing the points, by default None.
-        colorbar : bool, optional
-            Whether to add a colorbar, by default False.
-        title : str, optional
-            Title for the plot, by default None.
-        fig : matplotlib.figure.Figure, optional
-            An existing Figure object, by default None.
-        ax : matplotlib.axes.Axes, optional
-            An existing Axes object, by default None.
-        df : Any, optional
-            Alias for `data` for backward compatibility, by default None.
-        **kwargs : Any
-            Additional keyword arguments passed to BasePlot.
-        """
         super().__init__(fig=fig, ax=ax, **kwargs)
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1)
 
-        self.data = normalize_data(data if data is not None else df)
-        self.x = x
-        self.y = [y] if isinstance(y, str) else (y if y is not None else [])
+        if df is not None and data is None:
+            data = df
+        self.data = normalize_data(data)
+        self.var1 = var1 or x
+        if var2 is not None:
+            self.var2 = [var2] if isinstance(var2, str) else var2
+        elif y is not None:
+            self.var2 = [y] if isinstance(y, str) else y
+        else:
+            self.var2 = []
         self.c = c
         self.colorbar = colorbar
         self.title = title
 
-        if not self.x or not self.y:
-            raise ValueError("Parameters 'x' and 'y' must be provided.")
+        if not self.var1 or not self.var2:
+            raise ValueError("Parameters 'var1' and 'var2' must be provided.")
 
         # Update history for provenance if Xarray
         if isinstance(self.data, (xr.DataArray, xr.Dataset)):
@@ -170,7 +166,8 @@ class ScatterPlot(BasePlot):
         transform = s_kws.get("transform")
 
         # Performance: Compute required variables once to avoid double work
-        cols = [self.x] + self.y
+
+        cols = [self.var1] + self.var2
         if self.c:
             cols.append(self.c)
 
@@ -181,9 +178,9 @@ class ScatterPlot(BasePlot):
         else:
             concrete_data = self.data
 
-        x_plot = concrete_data[self.x].values.flatten()
+        x_plot = concrete_data[self.var1].values.flatten()
 
-        for y_col in self.y:
+        for y_col in self.var2:
             y_plot = concrete_data[y_col].values.flatten()
 
             if self.c is not None:
@@ -214,16 +211,17 @@ class ScatterPlot(BasePlot):
 
             self.ax.plot(x_reg, y_reg, **final_l_kwargs)
 
-        if len(self.y) > 1 and self.c is None:
+
+        if len(self.var2) > 1 and self.c is None:
             self.ax.legend()
 
         if self.title:
             self.ax.set_title(self.title)
         else:
-            self.ax.set_title(f"Scatter: {self.x} vs {', '.join(self.y)}")
+            self.ax.set_title(f"Scatter: {self.var1} vs {', '.join(self.var2)}")
 
-        self.ax.set_xlabel(self.x)
-        self.ax.set_ylabel(", ".join(self.y) if len(self.y) > 1 else self.y[0])
+        self.ax.set_xlabel(self.var1)
+        self.ax.set_ylabel(", ".join(self.var2) if len(self.var2) > 1 else self.var2[0])
 
         # Update history for provenance
         if isinstance(self.data, (xr.DataArray, xr.Dataset)):

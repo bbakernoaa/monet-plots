@@ -24,7 +24,7 @@ class TimeSeriesPlot(BasePlot):
 
     def __init__(
         self,
-        df: Any,
+        data: Any = None,
         x: str = "time",
         y: str = "obs",
         plotargs: dict = {},
@@ -33,14 +33,15 @@ class TimeSeriesPlot(BasePlot):
         ylabel: Optional[str] = None,
         label: Optional[str] = None,
         *args,
+        df: Any = None,
         **kwargs,
     ):
         """
         Initialize the plot with data and plot settings.
 
         Args:
-            df (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray):
-                DataFrame with the data to plot.
+            data (pd.DataFrame, np.ndarray, xr.Dataset, xr.DataArray):
+                Data to plot.
             x (str): Column name for the x-axis (time).
             y (str): Column name for the y-axis (values).
             plotargs (dict): Arguments for the plot.
@@ -48,13 +49,16 @@ class TimeSeriesPlot(BasePlot):
             title (str): Title for the plot.
             ylabel (str, optional): Y-axis label.
             label (str, optional): Label for the plotted line.
+            df: Deprecated alias for ``data``.
             *args, **kwargs: Arguments passed to BasePlot.
         """
         super().__init__(*args, **kwargs)
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1)
 
-        self.df = normalize_data(df, prefer_xarray=False)
+        if df is not None and data is None:
+            data = df
+        self.data = normalize_data(data, prefer_xarray=False)
         self.x = x
         self.y = y
         self.plotargs = plotargs
@@ -90,7 +94,7 @@ class TimeSeriesPlot(BasePlot):
         import xarray as xr
 
         # Handle xarray objects differently from pandas DataFrames
-        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
             return self._plot_xarray(**kwargs)
         else:
             return self._plot_dataframe(**kwargs)
@@ -113,18 +117,18 @@ class TimeSeriesPlot(BasePlot):
         --------
         >>> plot._plot_dataframe()
         """
-        df = self.df.copy()
+        df = self.data.copy()
         df.index = df[self.x]
         # Keep only numeric columns for grouping, but make sure self.y is there
         df = df.reset_index(drop=True)
         # We need to preserve self.x for grouping if it's not the index
-        m = self.df.groupby(self.x).mean(numeric_only=True)
-        e = self.df.groupby(self.x).std(numeric_only=True)
+        m = self.data.groupby(self.x).mean(numeric_only=True)
+        e = self.data.groupby(self.x).std(numeric_only=True)
 
         variable = self.y
         unit = "None"
-        if "units" in self.df.columns:
-            unit = str(self.df["units"].iloc[0])
+        if "units" in self.data.columns:
+            unit = str(self.data["units"].iloc[0])
 
         upper = m[self.y] + e[self.y]
         lower = m[self.y] - e[self.y]
@@ -176,16 +180,16 @@ class TimeSeriesPlot(BasePlot):
         import xarray as xr
 
         # Ensure we have the right data structure
-        if isinstance(self.df, xr.DataArray):
+        if isinstance(self.data, xr.DataArray):
             data = (
-                self.df.to_dataset(name=self.y)
-                if self.df.name is None
-                else self.df.to_dataset()
+                self.data.to_dataset(name=self.y)
+                if self.data.name is None
+                else self.data.to_dataset()
             )
-            if self.df.name is not None:
-                self.y = self.df.name
+            if self.data.name is not None:
+                self.y = self.data.name
         else:
-            data = self.df
+            data = self.data
 
         # Calculate mean and std along other dimensions if any
         # If it's already a 1D time series, mean/std won't do much
@@ -199,7 +203,7 @@ class TimeSeriesPlot(BasePlot):
             std_data = xr.zeros_like(mean_data)
 
         plot_label = self.label if self.label is not None else self.y
-        mean_data.plot(ax=self.ax, label=plot_label, **self.plotargs)
+        mean_data.dropna(self.x).plot(ax=self.ax, label=plot_label, **self.plotargs)
 
         upper = mean_data + std_data
         lower = mean_data - std_data
@@ -229,50 +233,62 @@ class TimeSeriesPlot(BasePlot):
 class TimeSeriesStatsPlot(BasePlot):
     """
     Create a time series plot of a specified statistic calculated between
-    observations and model data, resampled to a given frequency.
+    var1 and var2, resampled to a given frequency (Unified API).
 
     Supports lazy evaluation via xarray and dask.
+
+    Parameters
+    ----------
+    data : Any
+        Data containing a time coordinate and the columns to compare.
+    var1 : str
+        Name of the first variable (e.g., observations).
+    var2 : str or list of str
+        Name(s) of the second variable(s) (e.g., model(s)).
+    x : str, optional
+        The time dimension/column name. If None, it attempts to find it
+        automatically (prefers 'time' or 'datetime'), by default None.
+    fig : matplotlib.figure.Figure, optional
+        An existing Figure object.
+    ax : matplotlib.axes.Axes, optional
+        An existing Axes object.
+    df : Any, optional
+        Deprecated alias for ``data``.
+    col1 : str, optional
+        Legacy alias for var1.
+    col2 : str or list, optional
+        Legacy alias for var2.
+    **kwargs : Any
+        Additional arguments passed to BasePlot.
     """
 
     def __init__(
         self,
-        df: Any,
-        col1: str,
-        col2: Union[str, list[str]],
+        data: Any = None,
+        var1: str = None,
+        var2: Union[str, list[str]] = None,
         x: Optional[str] = None,
         fig: Optional[matplotlib.figure.Figure] = None,
         ax: Optional[matplotlib.axes.Axes] = None,
+        df: Any = None,
+        col1: str = None,  # legacy alias
+        col2: Union[str, list[str]] = None,  # legacy alias
         **kwargs: Any,
     ):
-        """
-        Initialize the TimeSeriesStatsPlot.
-
-        Parameters
-        ----------
-        df : Any
-            Data containing a time coordinate and the columns to compare.
-            Can be pandas DataFrame, xarray Dataset, or xarray DataArray.
-        col1 : str
-            Name of the first column/variable (e.g., 'Obs').
-        col2 : str or list of str
-            Name of the second column(s)/variable(s) (e.g., 'Model').
-        x : str, optional
-            The time dimension/column name. If None, it attempts to find it
-            automatically (prefers 'time' or 'datetime'), by default None.
-        fig : matplotlib.figure.Figure, optional
-            An existing Figure object.
-        ax : matplotlib.axes.Axes, optional
-            An existing Axes object.
-        **kwargs : Any
-            Additional arguments passed to BasePlot.
-        """
         super().__init__(fig=fig, ax=ax, **kwargs)
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1)
 
-        self.df = normalize_data(df)
-        self.col1 = col1
-        self.col2 = [col2] if isinstance(col2, str) else col2
+        if df is not None and data is None:
+            data = df
+        self.data = normalize_data(data)
+        self.var1 = var1 or col1
+        if var2 is not None:
+            self.var2 = [var2] if isinstance(var2, str) else var2
+        elif col2 is not None:
+            self.var2 = [col2] if isinstance(col2, str) else col2
+        else:
+            self.var2 = None
 
         # Determine time coordinate/column
         if x is not None:
@@ -281,9 +297,9 @@ class TimeSeriesStatsPlot(BasePlot):
             self.x = self._identify_time_coord()
 
         # Update history for provenance if xarray
-        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
-            history = self.df.attrs.get("history", "")
-            self.df.attrs["history"] = f"Initialized TimeSeriesStatsPlot; {history}"
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
+            history = self.data.attrs.get("history", "")
+            self.data.attrs["history"] = f"Initialized TimeSeriesStatsPlot; {history}"
 
     def _identify_time_coord(self) -> str:
         """
@@ -299,19 +315,19 @@ class TimeSeriesStatsPlot(BasePlot):
         ValueError
             If no suitable time coordinate or column is found.
         """
-        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
             for candidate in ["time", "datetime", "date"]:
-                if candidate in self.df.coords or candidate in self.df.dims:
+                if candidate in self.data.coords or candidate in self.data.dims:
                     return candidate
-            if self.df.dims:
-                return str(self.df.dims[0])
+            if self.data.dims:
+                return str(self.data.dims[0])
             raise ValueError("Could not identify time dimension in xarray object.")
 
         # Pandas
-        if isinstance(self.df.index, pd.DatetimeIndex):
-            return self.df.index.name if self.df.index.name else "index"
+        if isinstance(self.data.index, pd.DatetimeIndex):
+            return self.data.index.name if self.data.index.name else "index"
         for candidate in ["time", "datetime", "date"]:
-            if candidate in self.df.columns:
+            if candidate in self.data.columns:
                 return candidate
         raise ValueError(
             "Could not identify time coordinate. Please specify 'x' parameter."
@@ -350,7 +366,7 @@ class TimeSeriesStatsPlot(BasePlot):
         # Handle 'grid' separately as it's not a Line2D property
         show_grid = plot_kwargs.pop("grid", True)
 
-        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
             self._plot_xarray(metric_func, freq, stat_lower, plot_kwargs)
         else:
             self._plot_dataframe(metric_func, freq, stat_lower, plot_kwargs)
@@ -368,9 +384,9 @@ class TimeSeriesStatsPlot(BasePlot):
             self.fig.tight_layout()
 
         # Update history for provenance
-        if isinstance(self.df, (xr.DataArray, xr.Dataset)):
-            history = self.df.attrs.get("history", "")
-            self.df.attrs["history"] = (
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
+            history = self.data.attrs.get("history", "")
+            self.data.attrs["history"] = (
                 f"Generated TimeSeriesStatsPlot ({stat}, freq={freq}); {history}"
             )
 
@@ -397,7 +413,7 @@ class TimeSeriesStatsPlot(BasePlot):
         --------
         >>> plot._plot_xarray(compute_bias, 'D', 'bias', {'color': 'red'})
         """
-        for model_col in self.col2:
+        for model_col in self.var2:
 
             def resample_func(ds):
                 # Dim is None means reduce over all dimensions in the group
@@ -405,7 +421,7 @@ class TimeSeriesStatsPlot(BasePlot):
                 return metric_func(ds[self.col1], ds[model_col])
 
             # Resample and calculate using .map() to maintain laziness
-            resampled = self.df.resample({self.x: freq})
+            resampled = self.data.resample({self.x: freq})
             stat_series = resampled.map(resample_func)
 
             # Extract label if present or use col name
@@ -433,14 +449,14 @@ class TimeSeriesStatsPlot(BasePlot):
         --------
         >>> plot._plot_dataframe(compute_bias, 'D', 'bias', {'marker': 'x'})
         """
-        df = self.df.copy()
+        df = self.data.copy()
         if self.x != "index" and self.x in df.columns:
             df = df.set_index(self.x)
 
         if not isinstance(df.index, pd.DatetimeIndex):
             df.index = pd.to_datetime(df.index)
 
-        for model_col in self.col2:
+        for model_col in self.var2:
             # Resample and apply metric
             # Note: Pandas resample.apply is less efficient but necessary here
             # for arbitrary metric functions on DataFrames.
@@ -449,3 +465,208 @@ class TimeSeriesStatsPlot(BasePlot):
 
             stat_series = df.resample(freq).apply(pandas_metric)
             stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
+
+
+class TimeSeriesErrorBarPlot(BasePlot):
+    """Time series plot with discrete error bars.
+
+    Plots the mean of one or more variables over time with ±1 standard
+    deviation (or explicit error values) shown as error bars.  Unlike
+    :class:`TimeSeriesPlot`, which uses a continuous shaded fill, this class
+    uses ``ax.errorbar`` so individual bars are visible at each time step.
+
+    Typical use cases include comparing model vs. observation means at each
+    forecast cycle, or visualising ensemble spread at discrete lead times.
+    """
+
+    def __init__(
+        self,
+        data: Any = None,
+        x: str = "time",
+        y: Union[str, list[str]] = "obs",
+        *,
+        yerr: Optional[Union[str, list[str]]] = None,
+        freq: Optional[str] = None,
+        label_col: Optional[str] = None,
+        title: str = "",
+        xlabel: Optional[str] = None,
+        ylabel: Optional[str] = None,
+        df: Any = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialise the error-bar time series plot.
+
+        Parameters
+        ----------
+        data : Any
+            Input data. Accepts a pandas DataFrame, xarray Dataset/DataArray,
+            or numpy array.
+        x : str, optional
+            Column / coordinate name for the time axis, by default ``"time"``.
+        y : str or list of str, optional
+            Column(s) to plot on the y-axis, by default ``"obs"``.  Each
+            column produces one error-bar series.
+        yerr : str or list of str, optional
+            Column(s) containing the pre-computed error for each ``y`` column.
+            When *None* (default) and ``freq`` is set, the standard deviation
+            within each resampled bin is used.  When *None* and ``freq`` is
+            *None*, the standard deviation across repeated time values is used.
+        freq : str, optional
+            Pandas/xarray resampling frequency (e.g. ``"D"``, ``"6h"``).  When
+            provided the data are resampled to this frequency before computing
+            mean and std, by default *None* (no resampling).
+        label_col : str, optional
+            Column whose unique values are used to split the data into separate
+            series (e.g. a ``"model"`` column), by default *None*.
+        title : str, optional
+            Plot title, by default ``""``.
+        xlabel : str, optional
+            Override for the x-axis label, by default *None* (uses ``x``).
+        ylabel : str, optional
+            Override for the y-axis label, by default *None* (uses ``y``).
+        df : Any, optional
+            Deprecated alias for ``data``.
+        **kwargs : Any
+            Forwarded to :class:`BasePlot`.
+        """
+        super().__init__(**kwargs)
+        if self.ax is None:
+            self.ax = self.fig.add_subplot(1, 1, 1)
+
+        if df is not None and data is None:
+            data = df
+        self.data = normalize_data(data, prefer_xarray=False)
+        self.x = x
+        self.y = [y] if isinstance(y, str) else list(y)
+        self.yerr = (
+            ([yerr] if isinstance(yerr, str) else list(yerr))
+            if yerr is not None
+            else None
+        )
+        self.freq = freq
+        self.label_col = label_col
+        self.title = title
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+
+    # ------------------------------------------------------------------
+    # Public interface
+    # ------------------------------------------------------------------
+
+    def plot(
+        self,
+        capsize: int = 4,
+        fmt: str = "o-",
+        **kwargs: Any,
+    ) -> plt.Axes:
+        """Generate the error-bar time series plot.
+
+        Parameters
+        ----------
+        capsize : int, optional
+            Length of the error-bar caps in points, by default ``4``.
+        fmt : str, optional
+            Format string passed to ``ax.errorbar``, by default ``"o-"``.
+        **kwargs : Any
+            Additional keyword arguments forwarded to ``ax.errorbar``.
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The axes object containing the plot.
+        """
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
+            self._plot_xarray(capsize=capsize, fmt=fmt, **kwargs)
+        else:
+            self._plot_dataframe(capsize=capsize, fmt=fmt, **kwargs)
+
+        self.ax.set_xlabel(self.xlabel or self.x)
+        self.ax.set_ylabel(self.ylabel or (self.y[0] if len(self.y) == 1 else "value"))
+        self.ax.set_title(self.title)
+        self.ax.legend()
+
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            self.fig.tight_layout()
+
+        return self.ax
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    def _plot_dataframe(self, capsize: int, fmt: str, **kwargs: Any) -> None:
+        """Plot from a pandas DataFrame."""
+        df = self.data.copy()
+
+        # Ensure time column is available as a column (not only as index)
+        if self.x == "index" or self.x not in df.columns:
+            df[self.x] = df.index
+
+        if not pd.api.types.is_datetime64_any_dtype(df[self.x]):
+            df[self.x] = pd.to_datetime(df[self.x])
+
+        groups = (
+            [("_all_", df)]
+            if self.label_col is None
+            else [(lbl, grp) for lbl, grp in df.groupby(self.label_col)]
+        )
+
+        for grp_label, grp_df in groups:
+            for idx, col in enumerate(self.y):
+                label = (
+                    col
+                    if grp_label == "_all_"
+                    else f"{grp_label} – {col}" if len(self.y) > 1 else str(grp_label)
+                )
+
+                if self.freq is not None:
+                    tmp = grp_df.set_index(self.x)[col]
+                    if not isinstance(tmp.index, pd.DatetimeIndex):
+                        tmp.index = pd.to_datetime(tmp.index)
+                    mean_s = tmp.resample(self.freq).mean()
+                    err_s = tmp.resample(self.freq).std().fillna(0)
+                    times, means, errs = mean_s.index, mean_s.values, err_s.values
+                elif self.yerr is not None:
+                    err_col = self.yerr[idx] if idx < len(self.yerr) else self.yerr[-1]
+                    agg = grp_df.groupby(self.x).agg(
+                        _mean=(col, "mean"), _err=(err_col, "mean")
+                    )
+                    times, means, errs = agg.index, agg["_mean"].values, agg["_err"].values
+                else:
+                    agg = grp_df.groupby(self.x)[col].agg(["mean", "std"]).fillna(0)
+                    times, means, errs = agg.index, agg["mean"].values, agg["std"].values
+
+                self.ax.errorbar(
+                    times, means, yerr=errs, label=label, fmt=fmt, capsize=capsize, **kwargs
+                )
+
+    def _plot_xarray(self, capsize: int, fmt: str, **kwargs: Any) -> None:
+        """Plot from an xarray Dataset or DataArray."""
+        if isinstance(self.data, xr.DataArray):
+            ds = self.data.to_dataset(name=self.data.name or self.y[0])
+        else:
+            ds = self.data
+
+        for col in self.y:
+            da = ds[col]
+            time_dim = self.x if self.x in da.dims else da.dims[0]
+
+            if self.freq is not None:
+                mean_da = da.resample({time_dim: self.freq}).mean()
+                err_da = da.resample({time_dim: self.freq}).std().fillna(0)
+            else:
+                # Reduce any non-time dimensions
+                other_dims = [d for d in da.dims if d != time_dim]
+                mean_da = da.mean(dim=other_dims) if other_dims else da
+                err_da = da.std(dim=other_dims).fillna(0) if other_dims else xr.zeros_like(da)
+
+            times = mean_da[time_dim].values
+            means = mean_da.values
+            errs = err_da.values
+
+            self.ax.errorbar(
+                times, means, yerr=errs, label=col, fmt=fmt, capsize=capsize, **kwargs
+            )

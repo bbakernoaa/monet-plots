@@ -10,37 +10,47 @@ from .base import BasePlot
 
 
 class ProfilePlot(BasePlot):
-    """Profile or cross-section plot."""
+    """
+    Profile or cross-section plot (Unified API).
+
+    Parameters
+    ----------
+    data : Any, optional
+        Not used, for API consistency.
+    var1 : np.ndarray
+        X-axis data.
+    var2 : np.ndarray
+        Y-axis data.
+    z : np.ndarray, optional
+        Optional Z-axis data for contour plots.
+    alt_adjust : float, optional
+        Value to subtract from the y-axis data for altitude adjustment.
+    x : np.ndarray, optional
+        Legacy alias for var1.
+    y : np.ndarray, optional
+        Legacy alias for var2.
+    **kwargs : Any
+        Additional keyword arguments.
+    """
 
     def __init__(
         self,
         *,
-        x: np.ndarray,
-        y: np.ndarray,
+        data: t.Any = None,
+        var1: np.ndarray = None,
+        var2: np.ndarray = None,
         z: np.ndarray | None = None,
         alt_adjust: float | None = None,
+        x: np.ndarray = None,  # legacy alias
+        y: np.ndarray = None,  # legacy alias
         **kwargs: t.Any,
     ) -> None:
-        """
-        Parameters
-        ----------
-        x
-            X-axis data.
-        y
-            Y-axis data.
-        z
-            Optional Z-axis data for contour plots.
-        alt_adjust
-            Value to subtract from the y-axis data for altitude adjustment.
-        **kwargs
-            Keyword arguments passed to the parent class.
-        """
         super().__init__(**kwargs)
-        self.x = x
+        self.x = var1 if var1 is not None else x
         if alt_adjust is not None:
-            self.y = y - alt_adjust
+            self.y = (var2 if var2 is not None else y) - alt_adjust
         else:
-            self.y = y
+            self.y = var2 if var2 is not None else y
         self.z = z
 
     def plot(self, **kwargs: t.Any) -> None:

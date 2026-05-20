@@ -26,9 +26,10 @@ class SpatialContourPlot(SpatialPlot):
 
     def __new__(
         cls,
-        modelvar: Any,
+        data: Any = None,
         gridobj: Any | None = None,
         date: Any | None = None,
+        modelvar: Any = None,
         **kwargs: Any,
     ) -> Any:
         """Redirect to SpatialFacetGridPlot if faceting is requested.
@@ -56,6 +57,8 @@ class SpatialContourPlot(SpatialPlot):
         from .facet_grid import SpatialFacetGridPlot
 
         ax = kwargs.get("ax")
+        # Resolve data/modelvar alias
+        _data = data if data is not None else modelvar
 
         # Aligns with Xarray's trigger for faceting
         facet_kwargs = ["col", "row", "col_wrap"]
@@ -63,23 +66,23 @@ class SpatialContourPlot(SpatialPlot):
 
         # Redirect to FacetGrid if faceting requested and no existing axes
         if ax is None and is_faceting:
-            return SpatialFacetGridPlot(modelvar, **kwargs)
+            return SpatialFacetGridPlot(_data, **kwargs)
 
         # Also redirect if input is a Dataset with multiple variables
         if (
             ax is None
-            and isinstance(modelvar, xr.Dataset)
-            and len(modelvar.data_vars) > 1
+            and isinstance(_data, xr.Dataset)
+            and len(_data.data_vars) > 1
         ):
             # Default to faceting by variable if not specified
             kwargs.setdefault("col", "variable")
-            return SpatialFacetGridPlot(modelvar, **kwargs)
+            return SpatialFacetGridPlot(_data, **kwargs)
 
         return super().__new__(cls)
 
     def __init__(
         self,
-        modelvar: Any,
+        data: Any = None,
         gridobj: Any | None = None,
         date: datetime | None = None,
         discrete: bool = True,
@@ -90,13 +93,14 @@ class SpatialContourPlot(SpatialPlot):
         col_wrap: int | None = None,
         size: float | None = None,
         aspect: float | None = None,
+        modelvar: Any = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the spatial contour plot.
 
         Parameters
         ----------
-        modelvar : Any
+        data : Any
             The input data to contour. Preferred format is an xarray DataArray.
         gridobj : Any, optional
             Object with LAT and LON variables to determine extent, by default None.
@@ -118,6 +122,8 @@ class SpatialContourPlot(SpatialPlot):
             Height (in inches) of each facet. Aligns with Xarray.
         aspect : float, optional
             Aspect ratio of each facet. Aligns with Xarray.
+        modelvar : Any, optional
+            Deprecated alias for ``data``.
         **kwargs : Any
             Keyword arguments passed to :class:`SpatialPlot` for map features
             and projection.
@@ -125,8 +131,11 @@ class SpatialContourPlot(SpatialPlot):
         # Initialize the map canvas via SpatialPlot
         super().__init__(**kwargs)
 
+        if modelvar is not None and data is None:
+            data = modelvar
         # Standardize data to Xarray for consistency and lazy evaluation
-        self.modelvar = normalize_data(modelvar)
+        self.modelvar = normalize_data(data)
+        self.data = self.modelvar
         if isinstance(self.modelvar, xr.Dataset) and len(self.modelvar.data_vars) == 1:
             self.modelvar = self.modelvar[list(self.modelvar.data_vars)[0]]
 

@@ -64,29 +64,32 @@ class DiurnalErrorPlot(BasePlot):
 
     def __init__(
         self,
-        data: Any,
-        obs_col: str,
-        mod_col: str,
+        data: Any = None,
+        var1: str = None,
+        var2: str = None,
         *,
         time_col: str = "time",
         second_dim: str = "month",
         metric: str = "bias",
-        fig: matplotlib.figure.Figure | None = None,
-        ax: matplotlib.axes.Axes | None = None,
+        fig: "matplotlib.figure.Figure | None" = None,
+        ax: "matplotlib.axes.Axes | None" = None,
+        df: Any = None,
+        obs_col: str = None,  # legacy alias
+        mod_col: str = None,  # legacy alias
         **kwargs: Any,
     ) -> None:
         """
-        Initialize Diurnal Error Plot.
+        Initialize Diurnal Error Plot (Unified API).
 
         Parameters
         ----------
         data : Any
             Input data. Can be a pandas DataFrame, xarray DataArray,
             xarray Dataset, or dask-backed object.
-        obs_col : str
-            Column/variable name for observations.
-        mod_col : str
-            Column/variable name for model values.
+        var1 : str
+            Name of the first variable (e.g., observations).
+        var2 : str
+            Name of the second variable (e.g., model/forecast).
         time_col : str, optional
             Dimension/column name for timestamp, by default "time".
         second_dim : str, optional
@@ -98,15 +101,22 @@ class DiurnalErrorPlot(BasePlot):
             Existing figure object, by default None.
         ax : matplotlib.axes.Axes, optional
             Existing axes object, by default None.
+        df : Any, optional
+            Deprecated alias for ``data``.
+        obs_col : str, optional
+            Legacy alias for var1.
+        mod_col : str, optional
+            Legacy alias for var2.
         **kwargs : Any
             Additional arguments passed to BasePlot.
         """
         super().__init__(fig=fig, ax=ax, **kwargs)
 
-        # Normalize data to Xarray if possible
+        if df is not None and data is None:
+            data = df
         self.data = normalize_data(data)
-        self.obs_col = obs_col
-        self.mod_col = mod_col
+        self.var1 = var1 or obs_col
+        self.var2 = var2 or mod_col
         self.time_col = time_col
         self.second_dim = second_dim
         self.metric = metric
@@ -137,13 +147,13 @@ class DiurnalErrorPlot(BasePlot):
         if isinstance(ds, xr.Dataset):
             # Calculate individual error/bias lazily
             if self.metric == "bias":
-                val = ds[self.mod_col] - ds[self.obs_col]
+                val = ds[self.var2] - ds[self.var1]
                 val.name = "bias"
-                msg = "Calculated diurnal bias"
+                msg = f"Calculated diurnal bias ({self.var2} - {self.var1})"
             elif self.metric == "error":
-                val = np.abs(ds[self.mod_col] - ds[self.obs_col])
+                val = np.abs(ds[self.var2] - ds[self.var1])
                 val.name = "error"
-                msg = "Calculated diurnal absolute error"
+                msg = f"Calculated diurnal absolute error ({self.var2} - {self.var1})"
             else:
                 raise ValueError("metric must be 'bias' or 'error'")
 
@@ -222,17 +232,17 @@ class DiurnalErrorPlot(BasePlot):
                 self.second_label = self.second_dim
 
             if self.metric == "bias":
-                df["val"] = df[self.mod_col] - df[self.obs_col]
+                df["val"] = df[self.var2] - df[self.var1]
                 metric_name = "bias"
-                msg = "Calculated diurnal bias"
+                msg = f"Calculated diurnal bias ({self.var2} - {self.var1})"
             elif self.metric == "error":
-                df["val"] = np.abs(df[self.mod_col] - df[self.obs_col])
+                df["val"] = np.abs(df[self.var2] - df[self.var1])
                 metric_name = "error"
-                msg = "Calculated diurnal absolute error"
+                msg = f"Calculated diurnal absolute error ({self.var2} - {self.var1})"
             else:
-                df["val"] = df[self.mod_col]
+                df["val"] = df[self.var2]
                 metric_name = "value"
-                msg = "Calculated diurnal values"
+                msg = f"Calculated diurnal values ({self.var2})"
 
             pivot = df.pivot_table(
                 index="second_val", columns="hour", values="val", aggfunc="mean"

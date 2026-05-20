@@ -25,15 +25,18 @@ from .spatial_bias_scatter import SpatialBiasScatterPlot
 from .spatial_contour import SpatialContourPlot
 from .spatial_imshow import SpatialImshowPlot
 from .taylor_diagram import TaylorDiagramPlot
-from .timeseries import TimeSeriesPlot
+from .timeseries import TimeSeriesPlot, TimeSeriesStatsPlot, TimeSeriesErrorBarPlot
 from .trajectory import TrajectoryPlot
 from .wind_barbs import WindBarbsPlot
 from .wind_quiver import WindQuiverPlot
+from .categorical import categorical_plot
 
 __all__ = [
     "BasePlot",
     "ScatterPlot",
     "TimeSeriesPlot",
+    "TimeSeriesStatsPlot",
+    "TimeSeriesErrorBarPlot",
     "SpatialPlot",
     "SpatialTrack",
     "KDEPlot",
@@ -67,4 +70,5 @@ __all__ = [
     "FingerprintPlot",
     "BivariatePolarPlot",
     "ConditionalQuantilePlot",
+    "categorical_plot",
 ]

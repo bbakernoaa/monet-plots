@@ -51,8 +51,8 @@ def test_timeseries_stats_xarray_lazy(sample_ts_data):
     assert ax is not None
 
     # Verify provenance
-    assert "history" in plot.df.attrs
-    assert "Generated TimeSeriesStatsPlot" in plot.df.attrs["history"]
+    assert "history" in plot.data.attrs
+    assert "Generated TimeSeriesStatsPlot" in plot.data.attrs["history"]
 
     # Check values (RMSE should be 0.1)
     # We can't easily check the plot values without more effort,
