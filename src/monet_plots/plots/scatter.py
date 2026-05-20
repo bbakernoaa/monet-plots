@@ -82,6 +82,9 @@ class ScatterPlot(BasePlot):
             self.var2 = [y] if isinstance(y, str) else y
         else:
             self.var2 = []
+        # Backward-compatible aliases for legacy internal/external access.
+        self.x = self.var1
+        self.y = self.var2
         self.c = c
         self.colorbar = colorbar
         self.title = title
@@ -203,7 +206,7 @@ class ScatterPlot(BasePlot):
                 "color": "#333333",
                 "linestyle": "--",
                 "linewidth": 1.5,
-                "label": "Fit" if (self.c is None and len(self.y) == 1) else None,
+                "label": "Fit" if (self.c is None and len(self.var2) == 1) else None,
             }
             final_l_kwargs.update(l_kws)
             if transform:
@@ -255,8 +258,8 @@ class ScatterPlot(BasePlot):
 
         # Track B defaults
         plot_kwargs = {
-            "x": self.x,
-            "y": self.y[0] if len(self.y) == 1 else self.y,
+            "x": self.var1,
+            "y": self.var2[0] if len(self.var2) == 1 else self.var2,
             "rasterize": True,
         }
         if self.c:

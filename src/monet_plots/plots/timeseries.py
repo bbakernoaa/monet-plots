@@ -283,12 +283,14 @@ class TimeSeriesStatsPlot(BasePlot):
             data = df
         self.data = normalize_data(data)
         self.var1 = var1 or col1
+        self.col1 = self.var1
         if var2 is not None:
             self.var2 = [var2] if isinstance(var2, str) else var2
         elif col2 is not None:
             self.var2 = [col2] if isinstance(col2, str) else col2
         else:
             self.var2 = None
+        self.col2 = self.var2
 
         # Determine time coordinate/column
         if x is not None:
