@@ -1,5 +1,6 @@
 from typing import Any, Optional
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
@@ -40,6 +41,8 @@ class ScorecardPlot(BasePlot):
         annot_cols: Optional[list[str]] = None,
         cbar_labels: Optional[tuple[str, str]] = None,
         key_text: Optional[str] = None,
+        x_label: Optional[str] = None,
+        y_label: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -56,6 +59,8 @@ class ScorecardPlot(BasePlot):
             annot_cols (list[str], optional): Columns to combine for cell annotations (e.g., ['mod', 'obs']).
             cbar_labels (tuple[str, str], optional): Labels for the left and right ends of the colorbar.
             key_text (str, optional): Text to display in a legend box at the top right.
+            x_label (str, optional): Override label for x-axis.
+            y_label (str, optional): Override label for y-axis.
             **kwargs: Seaborn heatmap kwargs.
         """
         df = to_dataframe(data).copy()
@@ -90,31 +95,74 @@ class ScorecardPlot(BasePlot):
         is_weathermesh_layout = bool(cbar_labels or key_text)
 
         if is_weathermesh_layout:
-            self.ax.set_title(title, pad=60)
+            # Adjust margins to make room for the header
+            self.fig.subplots_adjust(top=0.7, left=0.15, right=0.95, bottom=0.15)
+
+            # Place Title at the top left
+            self.fig.text(
+                0.15, 0.92, title, fontsize=20, fontweight="bold", ha="left", va="top"
+            )
 
             if cbar_labels:
-                # Create a small axes for the colorbar at the top left
-                cbar_ax = self.fig.add_axes([0.15, 0.85, 0.3, 0.02])
+                # Create a small axes for the colorbar
+                # Position it below the title
+                cbar_ax = self.fig.add_axes([0.15, 0.80, 0.25, 0.02])
+                kwargs["cbar_ax"] = cbar_ax
+                kwargs["cbar_kws"] = kwargs.get("cbar_kws", {})
+                kwargs["cbar_kws"]["orientation"] = "horizontal"
+
+                # Add labels above the colorbar if provided
+                if cbar_labels[0]:
+                    self.fig.text(
+                        0.15, 0.83, cbar_labels[0], ha="left", va="bottom", fontsize=10
+                    )
+                if cbar_labels[1]:
+                    self.fig.text(
+                        0.40, 0.83, cbar_labels[1], ha="right", va="bottom", fontsize=10
+                    )
+            elif "cbar_ax" not in kwargs and (
+                "cbar" not in kwargs or kwargs["cbar"] is not False
+            ):
+                # Default horizontal cbar if not specified but in weathermesh mode
+                cbar_ax = self.fig.add_axes([0.15, 0.80, 0.25, 0.02])
                 kwargs["cbar_ax"] = cbar_ax
                 kwargs["cbar_kws"] = kwargs.get("cbar_kws", {})
                 kwargs["cbar_kws"]["orientation"] = "horizontal"
 
             if key_text:
-                # Add a box at the top right
+                # Add a box at the top right, vertically aligned with colorbar
                 self.fig.text(
-                    0.85,
-                    0.86,
+                    0.95,
+                    0.81,
                     key_text,
                     ha="right",
                     va="center",
-                    bbox=dict(boxstyle="square", facecolor="white", edgecolor="black"),
+                    fontsize=12,
+                    fontweight="bold",
+                    bbox=dict(
+                        boxstyle="square,pad=0.5",
+                        facecolor="white",
+                        edgecolor="black",
+                        linewidth=1.5,
+                    ),
                 )
+
+            # Add horizontal separator line
+            line = plt.Line2D(
+                [0.15, 0.95],
+                [0.75, 0.75],
+                transform=self.fig.transFigure,
+                color="black",
+                linewidth=2,
+            )
+            self.fig.lines.append(line)
+
         else:
             self.ax.set_title(title)
 
         # Plot Heatmap
-        kwargs.setdefault("linewidths", 0.5)
-        kwargs.setdefault("linecolor", "lightgray")
+        kwargs.setdefault("linewidths", 1.0)
+        kwargs.setdefault("linecolor", "white")
         sns.heatmap(
             pivot_data,
             ax=self.ax,
@@ -124,23 +172,21 @@ class ScorecardPlot(BasePlot):
         )
 
         # Post-process colorbar labels
-        if cbar_ax and cbar_labels:
+        if cbar_ax is not None:
             cbar_ax.set_xticks([])
             cbar_ax.set_yticks([])
-            self.fig.text(0.15, 0.83, cbar_labels[0], ha="left", va="top", fontsize=9)
-            self.fig.text(0.45, 0.83, cbar_labels[1], ha="right", va="top", fontsize=9)
 
         # Add Significance Markers
         if sig_col:
             pivot_sig = df.pivot(index=y_col, columns=x_col, values=sig_col)
             self._overlay_significance(pivot_data, pivot_sig)
 
-        self.ax.set_xlabel(x_col.title())
+        self.ax.set_xlabel(x_label or x_col)
         if is_weathermesh_layout:
-            self.ax.set_ylabel("")
+            self.ax.set_ylabel(y_label or "")
             self.ax.tick_params(axis="x", rotation=0)
         else:
-            self.ax.set_ylabel(y_col.title())
+            self.ax.set_ylabel(y_label or y_col)
             self.ax.tick_params(axis="x", rotation=45)
 
         # Invert Y axis to have cities A-Z from top to bottom if desired,
