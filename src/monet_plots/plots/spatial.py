@@ -499,11 +499,8 @@ class SpatialPlot(BasePlot):
         # For proper bounding box around pixel centers (especially for imshow)
         # we try to pad by half the grid resolution.
         try:
-<<<<<<< develop
             # We use absolute differences between adjacent elements and median
             # to be robust against irregular grids.
-=======
->>>>>>> develop
             lon_diff = abs(lon.diff(dim=lon.dims[0]).median().item())
             lat_diff = abs(lat.diff(dim=lat.dims[0]).median().item())
             lon_pad = lon_diff / 2.0
@@ -527,11 +524,7 @@ class SpatialPlot(BasePlot):
             lat_min -= lat_buf
             lat_max += lat_buf
 
-<<<<<<< develop
         # Clip longitude to [-180, 180] and latitude to [-90, 90] to avoid cartopy wrapping issues
-=======
-        # Clip to valid ranges to avoid cartopy wrapping issues
->>>>>>> develop
         lon_min = max(-180.0, lon_min)
         lon_max = min(180.0, lon_max)
         lat_min = max(-90.0, lat_min)
