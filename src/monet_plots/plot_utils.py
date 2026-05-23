@@ -327,6 +327,12 @@ def get_plot_kwargs(cmap: Any = None, norm: Any = None, **kwargs: Any) -> dict:
     if norm is not None:
         kwargs["norm"] = norm
 
+    # If norm is present and not None, vmin and vmax should not be in kwargs
+    # for many matplotlib functions (e.g., scatter, imshow).
+    if kwargs.get("norm") is not None:
+        kwargs.pop("vmin", None)
+        kwargs.pop("vmax", None)
+
     return kwargs
 
 

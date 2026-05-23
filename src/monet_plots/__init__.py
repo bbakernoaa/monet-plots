@@ -1,4 +1,5 @@
 # src/monet_plots/__init__.py
+from .style import get_available_styles, get_style_setting, set_style
 from .plots.brier_decomposition import BrierScoreDecompositionPlot
 from .plots.conditional_bias import ConditionalBiasPlot
 from .plots.ensemble import SpreadSkillPlot
@@ -45,9 +46,11 @@ __all__ = [
     "ConditionalBiasPlot",
     "SpreadSkillPlot",
     "SpatialImshowPlot",
-    "SpScatterBiasPlot",
     "Windrose",
     "Meteogram",
     "UpperAir",
     "ProfilePlot",
+    "set_style",
+    "get_available_styles",
+    "get_style_setting",
 ]

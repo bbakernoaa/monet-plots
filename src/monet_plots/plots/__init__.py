@@ -50,7 +50,6 @@ __all__ = [
     "SpatialBiasScatterPlot",
     "SpatialContourPlot",
     "SpatialImshowPlot",
-    "SpScatterBiasPlot",
     "ProfilePlot",
     "VerticalSlice",
     "StickPlot",

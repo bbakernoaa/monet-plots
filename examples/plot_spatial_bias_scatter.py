@@ -20,7 +20,6 @@ systematic bias along a coastline.
     suggest localized systematic errors in the model.
 """
 
-import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -38,20 +37,18 @@ df = pd.DataFrame(
     }
 )
 
-# 2. Initialize and plot with CONUS extent to match the data
+# 2. Initialize and plot
 # Bias is calculated as col2 - col1
-# Set extent to [lon_min, lon_max, lat_min, lat_max] to match the data coverage
 plot = SpatialBiasScatterPlot(
     df,
     col1="obs",
     col2="model",
-    projection=ccrs.PlateCarree(),
     figsize=(10, 8),
     extent=[-130, -65, 25, 55],  # CONUS extent
-    coastlines=True,
     states=True,
+    coastlines=True,
 )
-plot.plot()
+plot.plot(cmap="RdBu_r", vmin=-20, vmax=20, s=80, edgecolor="black", linewidth=0.5)
 
-plt.title("Spatial Bias Scatter Example")
+plt.title("Model Bias at Observation Sites")
 plt.show()

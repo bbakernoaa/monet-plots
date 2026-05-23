@@ -161,8 +161,10 @@ class SpatialBiasScatterPlot(SpatialPlot):
             top = np.around(np.nanquantile(np.abs(diff_vals), 0.95))
 
         # Use scaling tools
+        v_min = self.vmin if self.vmin is not None else -top
+        v_max = self.vmax if self.vmax is not None else top
         cmap, norm = get_discrete_scale(
-            diff_vals, cmap=self.cmap, n_levels=self.ncolors, vmin=-top, vmax=top
+            diff_vals, cmap=self.cmap, n_levels=self.ncolors, vmin=v_min, vmax=v_max
         )
 
         # Create colorbar
@@ -170,10 +172,30 @@ class SpatialBiasScatterPlot(SpatialPlot):
         cbar = self.add_colorbar(mappable, format="%1.2g")
         cbar.ax.tick_params(labelsize=10)
 
-        ss = np.abs(diff_vals) / top * 100.0 * self.fact
+        if top > 0:
+            ss = np.abs(diff_vals) / top * 100.0 * self.fact
+        else:
+            ss = np.ones_like(diff_vals) * 20.0  # Constant size if no variance
         ss[ss > 300] = 300.0
 
-        # Prepare scatter kwargs
+        # Prepare scatter kwargs, popping handled keys to avoid conflicts in get_plot_kwargs
+        # We also pop aliases to avoid "Got both 'edgecolor' and 'edgecolors'"
+        for key in [
+            "cmap",
+            "norm",
+            "s",
+            "c",
+            "transform",
+            "edgecolors",
+            "edgecolor",
+            "ec",
+            "linewidths",
+            "linewidth",
+            "lw",
+            "alpha",
+        ]:
+            scatter_kwargs.pop(key, None)
+
         final_scatter_kwargs = get_plot_kwargs(
             cmap=cmap,
             norm=norm,
