@@ -32,12 +32,12 @@ z_data = 50 * np.exp(-((dist_grid - 200) ** 2 / 5000 + (alt_grid - 2) ** 2 / 2))
 
 # 2. Initialize and plot
 plot = VerticalSlice(x=dist_grid, y=alt_grid, z=z_data, figsize=(10, 6))
-plot.plot(cmap="YlOrRd")
+im = plot.ax.contourf(dist_grid, alt_grid, z_data, cmap="YlOrRd")
 
 # 3. Add titles and labels
 plot.ax.set_title("Vertical Cross-Section of Pollutant Plume")
 plot.ax.set_xlabel("Distance (km)")
 plot.ax.set_ylabel("Altitude (km)")
-plot.add_colorbar(label="Concentration (ppb)")
+plot.add_colorbar(im, label="Concentration (ppb)")
 
 plt.show()

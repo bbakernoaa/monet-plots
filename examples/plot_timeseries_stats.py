@@ -40,8 +40,13 @@ df.columns = [f"member_{i}" for i in range(n_members)]
 df["time"] = dates
 
 # 2. Initialize and plot
-# TimeSeriesStatsPlot can take a list of columns to compute stats over
-plot = TimeSeriesStatsPlot(df=df, figsize=(12, 6))
+# TimeSeriesStatsPlot requires col1 (obs) and col2 (model)
+plot = TimeSeriesStatsPlot(
+    df=df,
+    col1="member_0",
+    col2=[f"member_{i}" for i in range(1, n_members)],
+    figsize=(12, 6),
+)
 
 # In this example, we manually plot the mean and spread using standard matplotlib on the provided axis
 # Note: TimeSeriesStatsPlot is often used as a base for more complex statistical time series

@@ -52,7 +52,7 @@ obs_df = pd.DataFrame(
 plot = SpatialOverlayPlot(
     model_da,
     obs_df,
-    obs_col="obs_value",
+    obs_var="obs_value",
     figsize=(12, 8),
     states=True,
     coastlines=True,

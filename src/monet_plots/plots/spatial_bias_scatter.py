@@ -173,7 +173,19 @@ class SpatialBiasScatterPlot(SpatialPlot):
         ss = np.abs(diff_vals) / top * 100.0 * self.fact
         ss[ss > 300] = 300.0
 
-        # Prepare scatter kwargs
+        # Prepare scatter kwargs, popping handled keys to avoid conflicts in get_plot_kwargs
+        for key in [
+            "cmap",
+            "norm",
+            "s",
+            "c",
+            "transform",
+            "edgecolors",
+            "linewidths",
+            "alpha",
+        ]:
+            scatter_kwargs.pop(key, None)
+
         final_scatter_kwargs = get_plot_kwargs(
             cmap=cmap,
             norm=norm,
