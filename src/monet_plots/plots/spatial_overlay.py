@@ -57,7 +57,33 @@ class SpatialOverlayPlot(SpatialPlot):
         else:
             self.model_var = model_var
 
-        self.obs_var = obs_var
+        if obs_var is None:
+            # Attempt to identify variable that is not a coordinate
+            if hasattr(self.obs_data, "data_vars"):
+                vars = list(self.obs_data.data_vars)
+                if vars:
+                    self.obs_var = vars[0]
+            elif hasattr(self.obs_data, "columns"):
+                # Simple heuristic for pandas
+                coords = [
+                    "lat",
+                    "lon",
+                    "latitude",
+                    "longitude",
+                    "x",
+                    "y",
+                    "time",
+                    "datetime",
+                ]
+                vars = [
+                    c
+                    for k in self.obs_data.columns
+                    if (c := str(k)).lower() not in coords
+                ]
+                if vars:
+                    self.obs_var = vars[0]
+        else:
+            self.obs_var = obs_var
 
         _update_history(
             self.model_data, "Initialized monet-plots.SpatialOverlayPlot (model)"

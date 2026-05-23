@@ -174,6 +174,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
         ss[ss > 300] = 300.0
 
         # Prepare scatter kwargs, popping handled keys to avoid conflicts in get_plot_kwargs
+        # We also pop aliases to avoid "Got both 'edgecolor' and 'edgecolors'"
         for key in [
             "cmap",
             "norm",
@@ -181,7 +182,11 @@ class SpatialBiasScatterPlot(SpatialPlot):
             "c",
             "transform",
             "edgecolors",
+            "edgecolor",
+            "ec",
             "linewidths",
+            "linewidth",
+            "lw",
             "alpha",
         ]:
             scatter_kwargs.pop(key, None)
