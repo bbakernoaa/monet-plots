@@ -90,7 +90,7 @@ ts_plot.save("timeseries_plot.png")
 | Spatial | [`SpatialPlot`](./plots/spatial.md) | Geospatial plots with cartopy support |
 | Time Series | [`TimeSeriesPlot`](./plots/timeseries.md) | Time series with statistical bands |
 | Scatter | [`ScatterPlot`](./plots/scatter.md) | Scatter plots with regression lines |
-| Taylor Diagram | [`TaylorDiagramPlot`](./plots/taylor.md) | Model evaluation diagrams |
+| Taylor Diagram | [`TaylorDiagramPlot`](./plots/taylor_diagram.md) | Model evaluation diagrams |
 | KDE | [`KDEPlot`](./plots/kde.md) | Kernel density estimation plots |
 | Wind | [`WindQuiverPlot`](./plots/wind.md) | Wind vector plots |
 | Facet Grid | [`FacetGridPlot`](./plots/facet_grid.md) | Multi-panel figure layouts |
