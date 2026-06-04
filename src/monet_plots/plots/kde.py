@@ -31,7 +31,18 @@ class KDEPlot(BasePlot):
         Additional keyword arguments.
     """
 
-    def __init__(self, data=None, var1=None, title=None, label=None, *args, df=None, x=None, y=None, **kwargs):
+    def __init__(
+        self,
+        data=None,
+        var1=None,
+        title=None,
+        label=None,
+        *args,
+        df=None,
+        x=None,
+        y=None,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         if df is not None and data is None:
             data = df

@@ -69,11 +69,7 @@ class SpatialContourPlot(SpatialPlot):
             return SpatialFacetGridPlot(_data, **kwargs)
 
         # Also redirect if input is a Dataset with multiple variables
-        if (
-            ax is None
-            and isinstance(_data, xr.Dataset)
-            and len(_data.data_vars) > 1
-        ):
+        if ax is None and isinstance(_data, xr.Dataset) and len(_data.data_vars) > 1:
             # Default to faceting by variable if not specified
             kwargs.setdefault("col", "variable")
             return SpatialFacetGridPlot(_data, **kwargs)

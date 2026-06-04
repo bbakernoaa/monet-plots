@@ -94,7 +94,9 @@ class TaylorDiagramPlot(BasePlot):
         # Loop through each model column and add it to the diagram
         for model_col in self.var2:
             model_std = self.data[model_col].std()
-            cc = corrcoef(self.data[self.var1].values, self.data[model_col].values)[0, 1]
+            cc = corrcoef(self.data[self.var1].values, self.data[model_col].values)[
+                0, 1
+            ]
             self.dia.add_sample(model_std, cc, label=model_col, **kwargs)
 
         self.fig.legend(

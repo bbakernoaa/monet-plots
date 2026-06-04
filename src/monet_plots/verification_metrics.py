@@ -744,9 +744,7 @@ def compute_reliability_curve(
     Tuple[Any, Any, Any]
         Tuple of (bin_centers, observed_frequencies, bin_counts).
     """
-    result = monet_stats.reliability_diagram(
-        observations, forecasts, n_bins=n_bins
-    )
+    result = monet_stats.reliability_diagram(observations, forecasts, n_bins=n_bins)
     bin_centers = result["forecast_prob"]
     observed_frequencies = result["observed_freq"]
     bin_counts = result["bin_counts"]
@@ -763,7 +761,10 @@ def compute_reliability_curve(
             np.asarray(bin_counts), coords=coords, dims=["bin_center"], name="bin_count"
         )
         bin_centers = xr.DataArray(
-            np.asarray(bin_centers), coords=coords, dims=["bin_center"], name="bin_center"
+            np.asarray(bin_centers),
+            coords=coords,
+            dims=["bin_center"],
+            name="bin_center",
         )
         _update_history(observed_frequencies, "Computed reliability curve")
 
@@ -877,7 +878,9 @@ def compute_rank_histogram(
     axis: Union[int, str] = member_dim if isinstance(ensemble, xr.DataArray) else 0
     res = monet_stats.rank_histogram(ensemble, observations, axis=axis)
     if isinstance(res, (xr.DataArray, xr.Dataset)):
-        return _update_history(res, f"Computed rank histogram (member_dim={member_dim})")
+        return _update_history(
+            res, f"Computed rank histogram (member_dim={member_dim})"
+        )
     return res
 
 

@@ -27,7 +27,13 @@ class Meteogram(BasePlot):
     """
 
     def __init__(
-        self, *, data: pd.DataFrame = None, var1: list[str] = None, df: pd.DataFrame = None, variables: list[str] = None, **kwargs: t.Any
+        self,
+        *,
+        data: pd.DataFrame = None,
+        var1: list[str] = None,
+        df: pd.DataFrame = None,
+        variables: list[str] = None,
+        **kwargs: t.Any,
     ) -> None:
         if "fig" not in kwargs and "ax" not in kwargs:
             kwargs["fig"] = plt.figure()

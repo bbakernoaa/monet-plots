@@ -214,7 +214,6 @@ class ScatterPlot(BasePlot):
 
             self.ax.plot(x_reg, y_reg, **final_l_kwargs)
 
-
         if len(self.var2) > 1 and self.c is None:
             self.ax.legend()
 

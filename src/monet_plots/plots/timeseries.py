@@ -621,7 +621,9 @@ class TimeSeriesErrorBarPlot(BasePlot):
                 label = (
                     col
                     if grp_label == "_all_"
-                    else f"{grp_label} – {col}" if len(self.y) > 1 else str(grp_label)
+                    else f"{grp_label} – {col}"
+                    if len(self.y) > 1
+                    else str(grp_label)
                 )
 
                 if self.freq is not None:
@@ -636,13 +638,27 @@ class TimeSeriesErrorBarPlot(BasePlot):
                     agg = grp_df.groupby(self.x).agg(
                         _mean=(col, "mean"), _err=(err_col, "mean")
                     )
-                    times, means, errs = agg.index, agg["_mean"].values, agg["_err"].values
+                    times, means, errs = (
+                        agg.index,
+                        agg["_mean"].values,
+                        agg["_err"].values,
+                    )
                 else:
                     agg = grp_df.groupby(self.x)[col].agg(["mean", "std"]).fillna(0)
-                    times, means, errs = agg.index, agg["mean"].values, agg["std"].values
+                    times, means, errs = (
+                        agg.index,
+                        agg["mean"].values,
+                        agg["std"].values,
+                    )
 
                 self.ax.errorbar(
-                    times, means, yerr=errs, label=label, fmt=fmt, capsize=capsize, **kwargs
+                    times,
+                    means,
+                    yerr=errs,
+                    label=label,
+                    fmt=fmt,
+                    capsize=capsize,
+                    **kwargs,
                 )
 
     def _plot_xarray(self, capsize: int, fmt: str, **kwargs: Any) -> None:
@@ -663,7 +679,11 @@ class TimeSeriesErrorBarPlot(BasePlot):
                 # Reduce any non-time dimensions
                 other_dims = [d for d in da.dims if d != time_dim]
                 mean_da = da.mean(dim=other_dims) if other_dims else da
-                err_da = da.std(dim=other_dims).fillna(0) if other_dims else xr.zeros_like(da)
+                err_da = (
+                    da.std(dim=other_dims).fillna(0)
+                    if other_dims
+                    else xr.zeros_like(da)
+                )
 
             times = mean_da[time_dim].values
             means = mean_da.values

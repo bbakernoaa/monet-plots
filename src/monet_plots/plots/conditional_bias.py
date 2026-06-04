@@ -10,7 +10,6 @@ from ..verification_metrics import compute_binned_bias
 from .base import BasePlot
 
 
-
 class ConditionalBiasPlot(BasePlot):
     """
     Conditional Bias Plot (Unified API).
@@ -118,7 +117,9 @@ class ConditionalBiasPlot(BasePlot):
                     v2 = plot_data
                     v1 = kwargs.pop("var1_data", None)
                     if v1 is None:
-                        raise ValueError("var1_data must be provided if data is a DataArray.")
+                        raise ValueError(
+                            "var1_data must be provided if data is a DataArray."
+                        )
                 elif isinstance(plot_data, pd.DataFrame):
                     v1 = plot_data[var1]
                     v2 = plot_data[var2]
