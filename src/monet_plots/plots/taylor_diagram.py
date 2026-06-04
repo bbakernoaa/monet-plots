@@ -74,7 +74,7 @@ class TaylorDiagramPlot(BasePlot):
         """Generate the Taylor diagram."""
         # If no diagram is provided, create a new one
         if self.dia is None:
-            obsstd = self.data[self.col1].std()
+            obsstd = self.data[self.var1].std()
 
             # Remove the default axes created by BasePlot to avoid an extra empty plot
             if hasattr(self, "ax") and self.ax is not None:

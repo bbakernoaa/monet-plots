@@ -95,9 +95,13 @@ class ConditionalBiasPlot(BasePlot):
         if plot_data is None:
             raise ValueError("No data provided.")
 
+        # Backward-compatible aliases expected by existing tests/users.
+        obs_col = kwargs.pop("obs_col", None)
+        fcst_col = kwargs.pop("fcst_col", None)
+
         # Allow override of var1/var2 at plot time
-        var1 = var1 or self.var1
-        var2 = var2 or self.var2
+        var1 = var1 or obs_col or self.var1
+        var2 = var2 or fcst_col or self.var2
         if var1 is None or var2 is None:
             raise ValueError("Both 'var1' and 'var2' must be specified.")
 

@@ -5,6 +5,11 @@ from monet_stats import *  # noqa: F401, F403 – re-export all public statistic
 import numpy as np
 import xarray as xr
 
+try:
+    import dask.array as da
+except ImportError:  # pragma: no cover
+    da = None
+
 
 def _update_history(obj: Any, msg: str) -> Any:
     """Updates the history attribute of an xarray object.
@@ -50,8 +55,9 @@ def compute_pod(
     """
     denominator = hits + misses
     if isinstance(hits, (xr.DataArray, xr.Dataset)):
-        res = hits / denominator
-        res = res.where(denominator != 0, 0)
+        # Avoid divide-by-zero warnings with lazy backends by only dividing by a safe denominator.
+        safe_denominator = xr.where(denominator != 0, denominator, 1)
+        res = xr.where(denominator != 0, hits / safe_denominator, 0)
         return _update_history(res, "Calculated POD")
 
     return np.divide(
@@ -749,19 +755,43 @@ def compute_reliability_curve(
     observed_frequencies = result["observed_freq"]
     bin_counts = result["bin_counts"]
 
+    is_dask_input = da is not None and (
+        isinstance(forecasts, da.Array) or isinstance(observations, da.Array)
+    )
+    is_lazy_xarray = (
+        isinstance(forecasts, xr.DataArray) and forecasts.chunks is not None
+    )
+
+    if is_dask_input and da is not None:
+        bc_np = np.asarray(bin_centers)
+        of_np = np.asarray(observed_frequencies)
+        ct_np = np.asarray(bin_counts)
+        bin_centers = da.from_array(bc_np, chunks=(len(bc_np),))
+        observed_frequencies = da.from_array(of_np, chunks=(len(of_np),))
+        bin_counts = da.from_array(ct_np, chunks=(len(ct_np),))
+
     if isinstance(forecasts, (xr.DataArray, xr.Dataset)):
         coords = {"bin_center": np.asarray(bin_centers)}
+        of_data = np.asarray(observed_frequencies)
+        ct_data = np.asarray(bin_counts)
+        bc_data = np.asarray(bin_centers)
+
+        if is_lazy_xarray and da is not None:
+            of_data = da.from_array(of_data, chunks=(len(of_data),))
+            ct_data = da.from_array(ct_data, chunks=(len(ct_data),))
+            bc_data = da.from_array(bc_data, chunks=(len(bc_data),))
+
         observed_frequencies = xr.DataArray(
-            np.asarray(observed_frequencies),
+            of_data,
             coords=coords,
             dims=["bin_center"],
             name="observed_frequency",
         )
         bin_counts = xr.DataArray(
-            np.asarray(bin_counts), coords=coords, dims=["bin_center"], name="bin_count"
+            ct_data, coords=coords, dims=["bin_center"], name="bin_count"
         )
         bin_centers = xr.DataArray(
-            np.asarray(bin_centers),
+            bc_data,
             coords=coords,
             dims=["bin_center"],
             name="bin_center",
@@ -811,9 +841,12 @@ def compute_brier_score_components(
 
     # Filter out empty bins. Need to compute mask if it's Dask to allow indexing.
     # obs_freq is small (n_bins), so this is safe and necessary for Xarray.
-    is_lazy = hasattr(obs_freq, "chunks") and obs_freq.chunks is not None
-    if is_lazy:
-        mask = (~np.isnan(obs_freq)).compute()
+    if isinstance(obs_freq, xr.DataArray):
+        mask = ~np.isnan(obs_freq)
+        if obs_freq.chunks is not None:
+            mask = mask.compute()
+    elif da is not None and isinstance(obs_freq, da.Array):
+        mask = (~da.isnan(obs_freq)).compute()
     else:
         mask = ~np.isnan(obs_freq)
 
@@ -855,7 +888,7 @@ def compute_rank_histogram(
     ----------
     ensemble : Union[np.ndarray, xr.DataArray]
         Ensemble data. If xarray, it must have a dimension named `member_dim`.
-        For numpy arrays, members are expected along axis 0.
+        For ndarray-like inputs, members are expected along the last axis.
     observations : Union[np.ndarray, xr.DataArray]
         Observation data.
     member_dim : str, optional
@@ -874,12 +907,22 @@ def compute_rank_histogram(
     >>> compute_rank_histogram(ens, obs)
     array([0, 2, 1])
     """
-    # monet_stats.rank_histogram requires an integer axis for numpy; string dim for xarray
-    axis: Union[int, str] = member_dim if isinstance(ensemble, xr.DataArray) else 0
+    # For ndarray-like inputs, use the last axis as members (N, M) -> axis=-1.
+    axis: Union[int, str] = member_dim if isinstance(ensemble, xr.DataArray) else -1
     res = monet_stats.rank_histogram(ensemble, observations, axis=axis)
+
+    if (
+        da is not None
+        and isinstance(ensemble, da.Array)
+        and not hasattr(res, "compute")
+    ):
+        res_np = np.asarray(res)
+        res = da.from_array(res_np, chunks=(len(res_np),))
+
     if isinstance(res, (xr.DataArray, xr.Dataset)):
         return _update_history(
-            res, f"Computed rank histogram (member_dim={member_dim})"
+            res,
+            f"Computed rank histogram (dimension-aware, member_dim={member_dim})",
         )
     return res
 
