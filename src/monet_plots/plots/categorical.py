@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 import xarray as xr
 
@@ -59,43 +60,66 @@ def categorical_plot(
 
     from .. import style
 
-    col = "site" if "site" in df else None
-    with plt.style.context(style.wiley_style):
-        catplot_kwargs = {
-            "data": df,
-            "kind": kind,
-            "sharey": sharey,
-            **kwargs,
-        }
-        if col is not None:
-            catplot_kwargs["col"] = col
-            catplot_kwargs["col_wrap"] = col_wrap
+    # Only facet when explicitly requested. Using axis-level plotting for the
+    # common single-panel case avoids seaborn FacetGrid attachment issues seen
+    # in some CI environments.
+    facet_col = kwargs.pop("col", None)
+    facet_row = kwargs.pop("row", None)
+    facet_col_wrap = kwargs.pop("col_wrap", col_wrap)
+    should_facet = facet_col is not None or facet_row is not None
 
-        p = sns.catplot(**catplot_kwargs)
-        p.fig.set_size_inches(figsize)
+    with plt.style.context(style.wiley_style):
+        if should_facet:
+            catplot_kwargs = {
+                "data": df,
+                "kind": kind,
+                "sharey": sharey,
+                "col": facet_col,
+                "row": facet_row,
+                "col_wrap": facet_col_wrap,
+                **kwargs,
+            }
+            p = sns.catplot(**catplot_kwargs)
+            p.fig.set_size_inches(figsize)
+            fig = p.fig
+            axes = p.axes
+            first_ax = axes.flatten()[0]
+        else:
+            fig, ax = plt.subplots(figsize=figsize)
+            x = kwargs.pop("x")
+            y = kwargs.pop("y")
+
+            if kind == "bar":
+                sns.barplot(data=df, x=x, y=y, ax=ax, **kwargs)
+            elif kind == "violin":
+                sns.violinplot(data=df, x=x, y=y, ax=ax, **kwargs)
+            else:
+                raise ValueError("kind must be 'bar' or 'violin'")
+
+            axes = np.array([[ax]])
+            first_ax = ax
 
         if title is not None:
-            p.fig.suptitle(title)
+            fig.suptitle(title)
 
         if ylabel is not None:
-            p.axes.flatten()[0].set_ylabel(ylabel)
+            first_ax.set_ylabel(ylabel)
         if xlabel is not None:
-            p.axes.flatten()[0].set_xlabel(xlabel)
+            first_ax.set_xlabel(xlabel)
 
         if legend == "auto":
-            if "hue" in kwargs:
-                legend = True
-            else:
-                legend = False
+            legend = "hue" in kwargs
 
         if legend is True:
             if isinstance(legend_labels, list) and len(legend_labels) > 0:
                 # To be implemented: custom legend labels
                 pass
-            # Seaborn handles legend automatically when using 'hue'
-            pass
+            if not should_facet:
+                handles, labels = first_ax.get_legend_handles_labels()
+                if handles:
+                    fig.legend(handles, labels)
 
-    return p.fig, p.axes
+    return fig, axes
 
 
 def categorical_timeseries(data, **kwargs):
