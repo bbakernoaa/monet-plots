@@ -30,3 +30,13 @@ def test_taylor_diagram_plot_creates_plot(clear_figures, sample_taylor_data):
     plot = TaylorDiagramPlot(df=sample_taylor_data, col1="obs", col2="model")
     dia = plot.plot()
     assert dia is not None
+
+
+def test_taylor_diagram_model_sample_is_visible(clear_figures, sample_taylor_data):
+    """Model sample should use a marker by default so single-point samples are visible."""
+    plot = TaylorDiagramPlot(df=sample_taylor_data, col1="obs", col2="model")
+    plot.plot()
+
+    # samplePoints[0] is reference; samplePoints[1] is first model sample.
+    assert len(plot.dia.samplePoints) >= 2
+    assert plot.dia.samplePoints[1].get_marker() != "None"

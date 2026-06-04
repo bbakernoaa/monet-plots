@@ -90,7 +90,7 @@ ts_plot.save("timeseries_plot.png")
 | Spatial | [`SpatialPlot`](./plots/spatial.md) | Geospatial plots with cartopy support |
 | Time Series | [`TimeSeriesPlot`](./plots/timeseries.md) | Time series with statistical bands |
 | Scatter | [`ScatterPlot`](./plots/scatter.md) | Scatter plots with regression lines |
-| Taylor Diagram | [`TaylorDiagramPlot`](./plots/taylor.md) | Model evaluation diagrams |
+| Taylor Diagram | [`TaylorDiagramPlot`](./plots/taylor_diagram.md) | Model evaluation diagrams |
 | KDE | [`KDEPlot`](./plots/kde.md) | Kernel density estimation plots |
 | Wind | [`WindQuiverPlot`](./plots/wind.md) | Wind vector plots |
 | Facet Grid | [`FacetGridPlot`](./plots/facet_grid.md) | Multi-panel figure layouts |
@@ -149,21 +149,21 @@ colorbar, cmap = colorbar_index(10, 'viridis', minval=0, maxval=100)
 ### Support and Troubleshooting
 
 - **[Troubleshooting and FAQ](./troubleshooting/index.md)**: Common issues, solutions, and expert guidance
-- **[Contributing Guidelines](../CONTRIBUTING.md)**: How to contribute to the project
+- **[Contributing Guidelines](https://github.com/noaa-oar-arl/monet-plots/blob/main/CONTRIBUTING.md)**: How to contribute to the project
 - **[License](../LICENSE)**: Project licensing information
 
 ### Documentation Categories
 
 | Category | Description | Level |
 |----------|-------------|-------|
-| **Beginner** | [Getting Started](./getting-started.md), [Basic Examples](./examples/getting-started) | New users |
+| **Beginner** | [Getting Started](./getting-started.md), [Basic Examples](./examples/index.md) | New users |
 | **Intermediate** | [API Reference](./api/index.md), [Plot Types](./plots/index.md), [Configuration](./configuration/index.md) | Regular users |
-| **Advanced** | [Performance](./performance/index.md), [Advanced Examples](./examples/advanced-workflows), [Troubleshooting](./troubleshooting/index.md) | Power users |
-| **Expert** | [Contributing](../CONTRIBUTING.md), [Development](../development) | Developers |
+| **Advanced** | [Performance](./performance/index.md), [Advanced Examples](./gallery/index.md), [Troubleshooting](./troubleshooting/index.md) | Power users |
+| **Expert** | [Contributing](https://github.com/noaa-oar-arl/monet-plots/blob/main/CONTRIBUTING.md), [Development](https://github.com/noaa-oar-arl/monet-plots/tree/main) | Developers |
 
 ## Contributing
 
-We welcome contributions! Please see our [contributing guidelines](../CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [contributing guidelines](https://github.com/noaa-oar-arl/monet-plots/blob/main/CONTRIBUTING.md) for details.
 
 ## License
 

@@ -61,14 +61,17 @@ def categorical_plot(
 
     col = "site" if "site" in df else None
     with plt.style.context(style.wiley_style):
-        p = sns.catplot(
-            data=df,
-            kind=kind,
-            col=col,
-            col_wrap=col_wrap if col is not None else None,
-            sharey=sharey,
+        catplot_kwargs = {
+            "data": df,
+            "kind": kind,
+            "sharey": sharey,
             **kwargs,
-        )
+        }
+        if col is not None:
+            catplot_kwargs["col"] = col
+            catplot_kwargs["col_wrap"] = col_wrap
+
+        p = sns.catplot(**catplot_kwargs)
         p.fig.set_size_inches(figsize)
 
         if title is not None:

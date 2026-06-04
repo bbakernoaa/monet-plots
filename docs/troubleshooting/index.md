@@ -814,7 +814,7 @@ plot.save("notebook_plot.png")
 
 **Q3: How do I contribute to MONET Plots?**
 
-**A**: We welcome contributions! Please see our [contributing guidelines](../CONTRIBUTING.md) for details on reporting issues, suggesting features, or submitting code.
+**A**: We welcome contributions! Please see our [contributing guidelines](https://github.com/noaa-oar-arl/monet-plots/blob/main/CONTRIBUTING.md) for details on reporting issues, suggesting features, or submitting code.
 
 ### Technical Questions
 
