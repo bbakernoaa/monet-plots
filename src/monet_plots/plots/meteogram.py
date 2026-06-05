@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as t
 from typing import Any, List, Optional
 
-import pandas as pd
 import xarray as xr
 from matplotlib import pyplot as plt
 
