@@ -5,6 +5,7 @@ import pytest
 import xarray as xr
 from monet_plots.plots import KDEPlot
 
+
 def test_kde_univariate_pandas():
     """Test univariate KDE with pandas DataFrame."""
     df = pd.DataFrame({"val": np.random.randn(100)})
@@ -15,18 +16,17 @@ def test_kde_univariate_pandas():
     assert ax.get_title() == "Test Univariate"
     plt.close(plot.fig)
 
+
 def test_kde_bivariate_pandas():
     """Test bivariate KDE with pandas DataFrame."""
-    df = pd.DataFrame({
-        "x": np.random.randn(100),
-        "y": np.random.randn(100)
-    })
+    df = pd.DataFrame({"x": np.random.randn(100), "y": np.random.randn(100)})
     plot = KDEPlot(df, x="x", y="y", title="Test Bivariate")
     ax = plot.plot(fill=True)
 
     assert isinstance(ax, plt.Axes)
     assert ax.get_title() == "Test Bivariate"
     plt.close(plot.fig)
+
 
 def test_kde_univariate_xarray():
     """Test univariate KDE with xarray DataArray."""
@@ -37,6 +37,7 @@ def test_kde_univariate_xarray():
     assert isinstance(ax, plt.Axes)
     assert "Temperature" in da.attrs.get("history", "")
     plt.close(plot.fig)
+
 
 def test_kde_lazy_dask():
     """Test KDE with lazy Dask-backed xarray."""
@@ -54,6 +55,7 @@ def test_kde_lazy_dask():
 
     assert isinstance(ax, plt.Axes)
     plt.close(plot.fig)
+
 
 def test_kde_legacy_keyword():
     """Test KDEPlot with legacy 'df' keyword argument."""
