@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 
-from ..style import set_style
+from ..style import get_style_setting, set_style
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -163,9 +163,9 @@ class BasePlot:
         *,
         ax: matplotlib.axes.Axes | None = None,
         label: str | None = None,
-        loc: str = "right",
-        size: str = "5%",
-        pad: float = 0.05,
+        loc: str | None = None,
+        size: str | None = None,
+        pad: float | None = None,
         **kwargs: Any,
     ) -> matplotlib.colorbar.Colorbar:
         """Add a colorbar that matches the axes size.
@@ -203,6 +203,10 @@ class BasePlot:
         if ax is None:
             ax = self.ax
 
+        loc = loc or get_style_setting("cbar.location", "right")
+        size = size or get_style_setting("cbar.size", "5%")
+        pad = pad if pad is not None else get_style_setting("cbar.pad", 0.05)
+
         orientation = "vertical" if loc in ["right", "left"] else "horizontal"
 
         # Determine anchor and position based on location
@@ -232,6 +236,8 @@ class BasePlot:
         cb = self.fig.colorbar(mappable, cax=cax, orientation=orientation, **kwargs)
 
         if label:
-            cb.set_label(label)
+            cb.set_label(label, size=get_style_setting("cbar.labelsize", None))
+
+        cb.ax.tick_params(labelsize=get_style_setting("cbar.tick.labelsize", None))
 
         return cb

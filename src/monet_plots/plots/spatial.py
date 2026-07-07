@@ -11,7 +11,7 @@ import xarray as xr
 from numpy.typing import ArrayLike
 
 from ..plot_utils import _update_history, compute
-from ..style import get_style_setting
+from ..style import get_style_setting, set_style
 from .base import BasePlot
 
 if TYPE_CHECKING:
@@ -86,12 +86,31 @@ class SpatialPlot(BasePlot):
         current_subplot_kw = subplot_kw.copy() if subplot_kw else {}
         current_subplot_kw["projection"] = projection
 
-        self.resolution = kwargs.pop("resolution", "50m")
         style = kwargs.pop("style", "wiley")
+        if style:
+            set_style(style)
+
+        self.resolution = kwargs.pop("resolution", get_style_setting("resolution", "50m"))
 
         # Ensure coastlines are enabled by default if not specified.
         if "coastlines" not in kwargs:
-            kwargs["coastlines"] = True
+            kwargs["coastlines"] = get_style_setting("coastlines", True)
+
+        for feature_key in (
+            "natural_earth",
+            "land",
+            "ocean",
+            "lakes",
+            "rivers",
+            "states",
+            "borders",
+            "countries",
+            "counties",
+            "gridlines",
+        ):
+            default_value = get_style_setting(feature_key, None)
+            if feature_key not in kwargs and default_value is not None:
+                kwargs[feature_key] = default_value
 
         # Initialize the base plot, which creates the figure and axes.
         super().__init__(
@@ -149,6 +168,18 @@ class SpatialPlot(BasePlot):
             "edgecolor": get_style_setting("borders.color", "black"),
             "facecolor": "none",
         }
+        ocean_defaults = get_style_setting("ocean", {"facecolor": cfeature.COLORS["water"]})
+        land_defaults = get_style_setting("land", {"facecolor": cfeature.COLORS["land"]})
+        rivers_defaults = get_style_setting("rivers", {"edgecolor": cfeature.COLORS["water"]})
+        lakes_defaults = get_style_setting("lakes", {"facecolor": cfeature.COLORS["water"]})
+        counties_defaults = get_style_setting(
+            "counties",
+            {
+                "linewidth": get_style_setting("borders.width", 0.25),
+                "edgecolor": get_style_setting("borders.color", "gray"),
+                "facecolor": "none",
+            },
+        )
 
         feature_mapping = {
             "coastlines": {
@@ -167,10 +198,10 @@ class SpatialPlot(BasePlot):
                 "feature": BORDERS.with_scale(resolution),
                 "defaults": borders_defaults,
             },
-            "ocean": {"feature": OCEAN.with_scale(resolution), "defaults": {}},
-            "land": {"feature": LAND.with_scale(resolution), "defaults": {}},
-            "rivers": {"feature": RIVERS.with_scale(resolution), "defaults": {}},
-            "lakes": {"feature": LAKES.with_scale(resolution), "defaults": {}},
+            "ocean": {"feature": OCEAN.with_scale(resolution), "defaults": ocean_defaults},
+            "land": {"feature": LAND.with_scale(resolution), "defaults": land_defaults},
+            "rivers": {"feature": RIVERS.with_scale(resolution), "defaults": rivers_defaults},
+            "lakes": {"feature": LAKES.with_scale(resolution), "defaults": lakes_defaults},
             "counties": {
                 "feature": cfeature.NaturalEarthFeature(
                     category="cultural",
@@ -178,7 +209,7 @@ class SpatialPlot(BasePlot):
                     scale=resolution,
                     facecolor="none",
                 ),
-                "defaults": borders_defaults,
+                "defaults": counties_defaults,
             },
         }
         return feature_mapping
@@ -327,11 +358,11 @@ class SpatialPlot(BasePlot):
             return
 
         gridline_defaults = {
-            "draw_labels": True,
-            "linestyle": "--",
-            "linewidth": 0.5,
-            "color": "gray",
-            "alpha": 0.6,
+            "draw_labels": get_style_setting("gridlines.draw_labels", True),
+            "linestyle": get_style_setting("gridlines.linestyle", "--"),
+            "linewidth": get_style_setting("gridlines.linewidth", 0.5),
+            "color": get_style_setting("gridlines.color", "gray"),
+            "alpha": get_style_setting("gridlines.alpha", 0.6),
         }
         gridline_kwargs = self._get_style(style, gridline_defaults)
         self.ax.gridlines(**gridline_kwargs)

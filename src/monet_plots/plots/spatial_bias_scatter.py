@@ -6,6 +6,7 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib import colors as mcolors
 
 from ..colorbars import get_discrete_scale
 from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
@@ -34,6 +35,8 @@ class SpatialBiasScatterPlot(SpatialPlot):
         ncolors: int = 15,
         fact: float = 1.5,
         cmap: str = "RdBu_r",
+        discrete: bool = False,
+        cbar_label: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the plot with data and map projection.
@@ -71,6 +74,8 @@ class SpatialBiasScatterPlot(SpatialPlot):
         self.ncolors = ncolors
         self.fact = fact
         self.cmap = cmap
+        self.discrete = discrete
+        self.cbar_label = cbar_label
 
         _update_history(self.data, "Initialized monet-plots.SpatialBiasScatterPlot")
 
@@ -95,20 +100,6 @@ class SpatialBiasScatterPlot(SpatialPlot):
         if isinstance(self.data, (xr.Dataset, xr.DataArray)):
             # Vectorized calculation using Xarray/Dask
             diff = self.data[self.col2] - self.data[self.col1]
-
-            # Efficient percentile calculation
-            try:
-                top_val = diff.assign_coords(
-                    {"abs_diff": np.abs(diff)}
-                ).abs_diff.quantile(0.95)
-                if hasattr(top_val, "compute"):
-                    top = float(top_val.compute())
-                else:
-                    top = float(top_val)
-            except (ImportError, AttributeError, ValueError):
-                top = float(np.nanquantile(np.abs(diff.values), 0.95))
-
-            top = np.around(top)
 
             # Identify coordinates
             lat_name = next(
@@ -153,22 +144,53 @@ class SpatialBiasScatterPlot(SpatialPlot):
             lon_name = next((c for c in ["longitude", "lon"] if c in df.columns), "lon")
             lat_vals = df[lat_name].values
             lon_vals = df[lon_name].values
-            top = np.around(np.nanquantile(np.abs(diff_vals), 0.95))
 
-        # Use scaling tools
-        cmap, norm = get_discrete_scale(
-            diff_vals, cmap=self.cmap, n_levels=self.ncolors, vmin=-top, vmax=top
-        )
+        # Use constructor-provided limits when present; quantiles are fallback only.
+        try:
+            quantile_top = float(np.around(np.nanquantile(np.abs(diff_vals), 0.95)))
+        except (ValueError, TypeError):
+            quantile_top = np.nan
+
+        if not np.isfinite(quantile_top) or quantile_top <= 0:
+            finite_abs = np.abs(diff_vals[np.isfinite(diff_vals)])
+            quantile_top = float(np.nanmax(finite_abs)) if finite_abs.size else 1.0
+
+        if quantile_top <= 0:
+            quantile_top = 1.0
+
+        default_vmin = -quantile_top
+        default_vmax = quantile_top
+        color_vmin = self.vmin if self.vmin is not None else default_vmin
+        color_vmax = self.vmax if self.vmax is not None else default_vmax
+
+        size_ref = max(abs(color_vmin), abs(color_vmax))
+        if not np.isfinite(size_ref) or size_ref <= 0:
+            size_ref = quantile_top
+        if size_ref <= 0:
+            size_ref = 1.0
+
+        # Use discrete or continuous normalization depending on user preference.
+        if self.discrete:
+            cmap, norm = get_discrete_scale(
+                diff_vals,
+                cmap=self.cmap,
+                n_levels=self.ncolors,
+                vmin=color_vmin,
+                vmax=color_vmax,
+            )
+        else:
+            cmap = plt.get_cmap(self.cmap) if isinstance(self.cmap, str) else self.cmap
+            norm = mcolors.Normalize(vmin=color_vmin, vmax=color_vmax)
 
         # Create colorbar with units label
         mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
         _units = getattr(self.data, "attrs", {}).get("units", "")
-        _cbar_label = f"Bias ({_units})" if _units else "Bias"
+        _cbar_label = self.cbar_label or (f"Bias ({_units})" if _units else "Bias")
         cbar = self.add_colorbar(mappable, label=_cbar_label)
         cbar.ax.tick_params(labelsize=9)
 
         with np.errstate(divide="ignore", invalid="ignore"):
-            ss = np.abs(diff_vals) / top * 100.0 * self.fact
+            ss = np.abs(diff_vals) / size_ref * 100.0 * self.fact
             ss[np.isnan(ss)] = 0.0
             ss[ss > 300] = 300.0
 

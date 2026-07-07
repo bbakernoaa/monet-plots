@@ -2,6 +2,7 @@ import datetime
 from unittest.mock import MagicMock
 
 import cartopy.crs as ccrs
+import matplotlib.collections as mcoll
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -63,3 +64,26 @@ def test_spatial_bias_scatter_on_existing_ax():
     # 5. Assert that a scatter plot was actually created
     # A scatter plot adds a PathCollection to the axes
     assert len(ax.collections) > 0
+
+
+def test_spatial_bias_scatter_honors_constructor_limits_for_scale_and_sizes():
+    """Constructor vmin/vmax should control color limits and size scaling."""
+    df = pd.DataFrame(
+        {
+            "latitude": [30.0, 31.0, 32.0],
+            "longitude": [-100.0, -99.0, -98.0],
+            "Obs": [0.0, 0.0, 0.0],
+            "CMAQ": [1.0, 2.0, 3.0],
+        }
+    )
+
+    plot = SpatialBiasScatterPlot(df, col1="Obs", col2="CMAQ", vmin=-20, vmax=20, fact=1)
+    ax = plot.plot()
+
+    scatter = next(
+        coll for coll in ax.collections if isinstance(coll, mcoll.PathCollection)
+    )
+
+    assert scatter.norm.boundaries[0] == -20
+    assert scatter.norm.boundaries[-1] == 20
+    assert np.allclose(scatter.get_sizes(), np.array([5.0, 10.0, 15.0]))
