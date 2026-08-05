@@ -33,6 +33,7 @@ python -c "import sys; print(sys.executable)"
 # Verify installation
 try:
     import monet_plots
+
     print(f"MONET Plots version: {monet_plots.__version__}")
     print("Installation successful!")
 except ImportError as e:
@@ -58,10 +59,10 @@ pip install scipy  # For statistical functions
 ```python
 # Check for optional dependencies
 optional_deps = {
-    'cartopy': 'Geospatial plotting',
-    'xarray': 'NetCDF data handling',
-    'seaborn': 'Enhanced statistical plotting',
-    'scipy': 'Advanced statistical functions'
+    "cartopy": "Geospatial plotting",
+    "xarray": "NetCDF data handling",
+    "seaborn": "Enhanced statistical plotting",
+    "scipy": "Advanced statistical functions",
 }
 
 missing_deps = []
@@ -164,18 +165,20 @@ plot.plot(downsampled, title="Downsampled Data")
 plot.save("downsampled_plot.png")
 plot.close()
 
+
 # Strategy 2: Process in chunks
 def process_large_data_in_chunks(data, chunk_size=1000):
     """Process large spatial data in chunks."""
     h, w = data.shape
     for i in range(0, h, chunk_size):
         for j in range(0, w, chunk_size):
-            chunk = data[i:i+chunk_size, j:j+chunk_size]
+            chunk = data[i : i + chunk_size, j : j + chunk_size]
             # Process and save chunk
             plot = SpatialPlot()
             plot.plot(chunk)
             plot.save(f"chunk_{i}_{j}.png")
             plot.close()
+
 
 # Process a section of the large data
 process_large_data_in_chunks(large_data[:2000, :2000])
@@ -210,7 +213,7 @@ discrete_time = time.time() - start_time
 print(f"Discrete colormap: {discrete_time:.2f}s")
 
 # Technique 2: Choose efficient colormaps
-fast_colormaps = ['viridis', 'plasma', 'inferno', 'magma', 'cividis']
+fast_colormaps = ["viridis", "plasma", "inferno", "magma", "cividis"]
 
 for cmap in fast_colormaps:
     start_time = time.time()
@@ -251,10 +254,10 @@ plot.close()
 
 # Solution 2: Custom colorbar creation
 plot = SpatialPlot()
-plot.plot(data, cmap='viridis')
+plot.plot(data, cmap="viridis")
 
 # Add custom colorbar
-cbar, cmap = colorbar_index(15, 'viridis', minval=0, maxval=100, dtype=int)
+cbar, cmap = colorbar_index(15, "viridis", minval=0, maxval=100, dtype=int)
 plot.save("custom_colorbar.png")
 plot.close()
 
@@ -267,7 +270,7 @@ plot.plot(
     data_with_extreme_values,
     vmin=0,
     vmax=100,
-    title="Data with Extreme Values (Clamped)"
+    title="Data with Extreme Values (Clamped)",
 )
 plot.save("clamped_colorbar.png")
 plot.close()
@@ -297,12 +300,12 @@ plot.close()
 # Problem: Font sizes too small or too large
 # Solution: Customize font settings
 custom_style = {
-    'font.size': 12,
-    'axes.labelsize': 10,
-    'axes.titlesize': 14,
-    'xtick.labelsize': 9,
-    'ytick.labelsize': 9,
-    'legend.fontsize': 10
+    "font.size": 12,
+    "axes.labelsize": 10,
+    "axes.titlesize": 14,
+    "xtick.labelsize": 9,
+    "ytick.labelsize": 9,
+    "legend.fontsize": 10,
 }
 
 plt.style.use(custom_style)
@@ -339,37 +342,35 @@ from monet_plots import TimeSeriesPlot
 # Solution: Ensure proper datetime handling
 
 # Create proper datetime data
-dates = pd.date_range('2023-01-01', periods=100, freq='D')
+dates = pd.date_range("2023-01-01", periods=100, freq="D")
 values = np.cumsum(np.random.normal(0, 1, 100))
 
-df = pd.DataFrame({
-    'date': dates,
-    'value': values,
-    'category': np.random.choice(['A', 'B'], 100)
-})
+df = pd.DataFrame(
+    {"date": dates, "value": values, "category": np.random.choice(["A", "B"], 100)}
+)
 
 # Correct time series plotting
 plot = TimeSeriesPlot()
-plot.plot(df, x='date', y='value', title="Proper Time Series")
+plot.plot(df, x="date", y="value", title="Proper Time Series")
 plot.save("correct_timeseries.png")
 plot.close()
 
 # Problem: Missing datetime values
 # Solution: Handle missing data
 df_with_missing = df.copy()
-df_with_missing.loc[10:15, 'value'] = np.nan
+df_with_missing.loc[10:15, "value"] = np.nan
 
 plot = TimeSeriesPlot()
-plot.plot(df_with_missing, x='date', y='value', title="Time Series with Missing Data")
+plot.plot(df_with_missing, x="date", y="value", title="Time Series with Missing Data")
 plot.save("timeseries_missing_data.png")
 plot.close()
 
 # Problem: Multiple time series not distinguished
 # Solution: Use proper coloring and legends
 plot = TimeSeriesPlot()
-for category in ['A', 'B']:
-    subset = df[df['category'] == category]
-    plot.plot(subset, x='date', y='value', label=category)
+for category in ["A", "B"]:
+    subset = df[df["category"] == category]
+    plot.plot(subset, x="date", y="value", label=category)
 
 plot.title("Multiple Time Series")
 plot.legend()
@@ -448,10 +449,12 @@ import os
 import numpy as np
 from monet_plots import SpatialPlot
 
+
 def get_memory_usage():
     """Get current memory usage in MB."""
     process = psutil.Process(os.getpid())
     return process.memory_info().rss / (1024 * 1024)
+
 
 # Problem: Memory buildup from unclosed plots
 initial_memory = get_memory_usage()
@@ -560,26 +563,26 @@ import pandas as pd
 import numpy as np
 from monet_plots import SpatialPlot
 
+
 def collect_system_info():
     """Collect comprehensive system information."""
     info = {
-        'System': platform.system(),
-        'Python Version': sys.version,
-        'Matplotlib Version': matplotlib.__version__,
-        'Pandas Version': pd.__version__,
-        'NumPy Version': np.__version__,
-        'Platform': platform.platform(),
-        'Processor': platform.processor(),
-        'Memory': f"{round(platform.meminfo().total / (1024**3), 2)} GB"
+        "System": platform.system(),
+        "Python Version": sys.version,
+        "Matplotlib Version": matplotlib.__version__,
+        "Pandas Version": pd.__version__,
+        "NumPy Version": np.__version__,
+        "Platform": platform.platform(),
+        "Processor": platform.processor(),
+        "Memory": f"{round(platform.meminfo().total / (1024**3), 2)} GB",
     }
-
 
     print("System Information:")
     for key, value in info.items():
         print(f"{key}: {value}")
 
-
     return info
+
 
 def collect_plot_debug_info():
     """Collect plot-specific debug information."""
@@ -587,34 +590,30 @@ def collect_plot_debug_info():
         # Test basic plot creation
         test_data = np.random.random((10, 10))
 
-
         plot = SpatialPlot()
         plot.plot(test_data)
 
-
         debug_info = {
-            'Plot Created': True,
-            'Data Shape': test_data.shape,
-            'Data Type': test_data.dtype,
-            'Memory Usage': f"{test_data.nbytes / 1024} KB",
-            'Matplotlib Backend': matplotlib.get_backend(),
-            'Figure Size': plot.fig.get_size_inches(),
-            'DPI': plot.fig.get_dpi()
+            "Plot Created": True,
+            "Data Shape": test_data.shape,
+            "Data Type": test_data.dtype,
+            "Memory Usage": f"{test_data.nbytes / 1024} KB",
+            "Matplotlib Backend": matplotlib.get_backend(),
+            "Figure Size": plot.fig.get_size_inches(),
+            "DPI": plot.fig.get_dpi(),
         }
-
 
         print("\nPlot Debug Information:")
         for key, value in debug_info.items():
             print(f"{key}: {value}")
 
-
         plot.close()
         return debug_info
 
-
     except Exception as e:
         print(f"\nPlot Creation Failed: {e}")
-        return {'Plot Created': False, 'Error': str(e)}
+        return {"Plot Created": False, "Error": str(e)}
+
 
 # Collect and display debug information
 system_info = collect_system_info()
@@ -634,9 +633,9 @@ import io
 import numpy as np
 from monet_plots import SpatialPlot, TimeSeriesPlot, ScatterPlot
 
+
 def profile_plot_operations():
     """Profile different plot operations."""
-
 
     def profile_spatial_plot():
         data = np.random.random((500, 500))
@@ -645,57 +644,50 @@ def profile_plot_operations():
         plot.save("profiled_spatial.png")
         plot.close()
 
-
     def profile_timeseries_plot():
         import pandas as pd
-        dates = pd.date_range('2023-01-01', periods=1000, freq='D')
-        values = np.cumsum(np.random.normal(0, 1, 1000))
-        df = pd.DataFrame({'time': dates, 'value': values})
 
+        dates = pd.date_range("2023-01-01", periods=1000, freq="D")
+        values = np.cumsum(np.random.normal(0, 1, 1000))
+        df = pd.DataFrame({"time": dates, "value": values})
 
         plot = TimeSeriesPlot()
-        plot.plot(df, x='time', y='value')
+        plot.plot(df, x="time", y="value")
         plot.save("profiled_timeseries.png")
         plot.close()
 
-
     def profile_scatter_plot():
         import pandas as pd
+
         x = np.random.normal(0, 1, 5000)
         y = x * 2 + np.random.normal(0, 1, 5000)
-        df = pd.DataFrame({'x': x, 'y': y})
-
+        df = pd.DataFrame({"x": x, "y": y})
 
         plot = ScatterPlot()
-        plot.plot(df, x='x', y='y')
+        plot.plot(df, x="x", y="y")
         plot.save("profiled_scatter.png")
         plot.close()
-
 
     # Profile each operation
     operations = [
         ("Spatial Plot", profile_spatial_plot),
         ("Time Series Plot", profile_timeseries_plot),
-        ("Scatter Plot", profile_scatter_plot)
+        ("Scatter Plot", profile_scatter_plot),
     ]
-
 
     for name, operation in operations:
         print(f"\nProfiling {name}:")
-
 
         profiler = cProfile.Profile()
         profiler.enable()
         operation()
         profiler.disable()
 
-
         # Get statistics
         stats_stream = io.StringIO()
         stats = pstats.Stats(profiler, stream=stats_stream)
-        stats.sort_stats('cumulative')
+        stats.sort_stats("cumulative")
         stats.print_stats(5)  # Top 5 functions
-
 
         print(stats_stream.getvalue())
 ```
@@ -716,12 +708,10 @@ import numpy as np
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('plotting_errors.log'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("plotting_errors.log"), logging.StreamHandler()],
 )
+
 
 def safe_plot_creation(data, config, output_path):
     """Safely create plots with error handling and logging."""
@@ -729,31 +719,25 @@ def safe_plot_creation(data, config, output_path):
         logging.info(f"Starting plot creation for {output_path}")
         logging.info(f"Data shape: {data.shape}, config: {config}")
 
-
         # Validate input data
         if data is None:
             raise ValueError("Data cannot be None")
-        if not hasattr(data, 'shape'):
+        if not hasattr(data, "shape"):
             raise ValueError("Data must be a numpy array or similar")
 
-
         # Create plot
-        plot = SpatialPlot(**config.get('plot_kwargs', {}))
-
+        plot = SpatialPlot(**config.get("plot_kwargs", {}))
 
         # Plot data
-        plot_kwargs = config.get('plot_kwargs', {})
+        plot_kwargs = config.get("plot_kwargs", {})
         plot.plot(data, **plot_kwargs)
 
-
         # Save plot
-        plot.save(output_path, **config.get('save_kwargs', {}))
+        plot.save(output_path, **config.get("save_kwargs", {}))
         plot.close()
-
 
         logging.info(f"Successfully created plot: {output_path}")
         return True
-
 
     except MemoryError as e:
         logging.error(f"Memory error creating {output_path}: {e}")
@@ -761,26 +745,23 @@ def safe_plot_creation(data, config, output_path):
         try:
             downsampled_data = data[::2, ::2]
             logging.info(f"Attempting with downsampled data: {downsampled_data.shape}")
-            return safe_plot_creation(downsampled_data, config, f"downsampled_{output_path}")
+            return safe_plot_creation(
+                downsampled_data, config, f"downsampled_{output_path}"
+            )
         except Exception as retry_error:
             logging.error(f"Retry failed for {output_path}: {retry_error}")
             return False
-
 
     except Exception as e:
         logging.error(f"Error creating {output_path}: {e}")
         logging.error(f"Traceback: {traceback.format_exc()}")
         return False
 
+
 # Usage example
 plot_config = {
-    'plot_kwargs': {
-        'title': 'Safe Plot Creation Example',
-        'cmap': 'viridis'
-    },
-    'save_kwargs': {
-        'dpi': 300
-    }
+    "plot_kwargs": {"title": "Safe Plot Creation Example", "cmap": "viridis"},
+    "save_kwargs": {"dpi": 300},
 }
 
 test_data = np.random.random((1000, 1000))
@@ -835,7 +816,7 @@ plot.save("notebook_plot.png")
 import xarray as xr
 from monet_plots import SpatialPlot
 
-ds = xr.open_dataset('data.nc')
+ds = xr.open_dataset("data.nc")
 plot = SpatialPlot()
 plot.plot(ds.temperature)
 plot.save("netcdf_plot.png")
@@ -894,12 +875,12 @@ datasets = [np.random.random((100, 100)) for _ in range(10)]
 plots = []
 for i, data in enumerate(datasets):
     plot = SpatialPlot()
-    plot.plot(data, title=f"Plot {i+1}")
+    plot.plot(data, title=f"Plot {i + 1}")
     plots.append(plot)
 
 # Save all plots
 for i, plot in enumerate(plots):
-    plot.save(f"batch_plot_{i+1}.png")
+    plot.save(f"batch_plot_{i + 1}.png")
     plot.close()
 ```
 
@@ -930,18 +911,9 @@ plot.close()
 ```python
 from monet_plots import SpatialPlot
 
-plot = SpatialPlot(
-    figsize=(12, 8),
-    dpi=150
-)
+plot = SpatialPlot(figsize=(12, 8), dpi=150)
 
-plot.plot(
-    data,
-    cmap='viridis',
-    title="Custom Styled Plot",
-    fontsize=12,
-    linewidth=2
-)
+plot.plot(data, cmap="viridis", title="Custom Styled Plot", fontsize=12, linewidth=2)
 
 plot.xlabel("Custom X Label", fontsize=10)
 plot.ylabel("Custom Y Label", fontsize=10)
@@ -959,11 +931,11 @@ from monet_plots import style
 
 # Create custom style
 custom_style = {
-    'font.size': 12,
-    'axes.labelsize': 10,
-    'axes.titlesize': 14,
-    'figure.figsize': (10, 6),
-    'savefig.dpi': 300
+    "font.size": 12,
+    "axes.labelsize": 10,
+    "axes.titlesize": 14,
+    "figure.figsize": (10, 6),
+    "savefig.dpi": 300,
 }
 
 # Save style

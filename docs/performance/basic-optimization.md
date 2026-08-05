@@ -41,6 +41,7 @@ plot.plot(downsampled_data)  # Takes fractions of a second
 ```python
 import numpy as np
 
+
 def smart_downsample(data, target_points=10000):
     """Intelligently downsample data to target point count."""
     total_points = np.prod(data.shape)
@@ -55,6 +56,7 @@ def smart_downsample(data, target_points=10000):
     downsampled = data[::downsample_factor, ::downsample_factor]
 
     return downsampled
+
 
 # Usage
 data = np.random.random((1000, 1000))
@@ -74,21 +76,21 @@ from monet_plots import TimeSeriesPlot
 # Problem: Memory leak
 for i in range(10):
     plot = TimeSeriesPlot()
-    plot.plot(df, x='time', y='value')
+    plot.plot(df, x="time", y="value")
     plot.save(f"plot_{i}.png")
     # plot.close()  # Missing this line causes memory buildup!
 
 # Solution: Proper cleanup
 for i in range(10):
     plot = TimeSeriesPlot()
-    plot.plot(df, x='time', y='value')
+    plot.plot(df, x="time", y="value")
     plot.save(f"plot_{i}.png")
     plot.close()  # Important: Free memory
 
 # Or use context manager for automatic cleanup
 for i in range(10):
     with TimeSeriesPlot() as plot:
-        plot.plot(df, x='time', y='value')
+        plot.plot(df, x="time", y="value")
         plot.save(f"plot_{i}.png")
 ```
 
@@ -132,7 +134,7 @@ x = np.random.normal(0, 1, n_points)
 y = np.random.normal(0, 1, n_points)
 
 plot = ScatterPlot()
-plot.plot(pd.DataFrame({'x': x, 'y': y}), x='x', y='y')  # Slow with 100K points
+plot.plot(pd.DataFrame({"x": x, "y": y}), x="x", y="y")  # Slow with 100K points
 
 # After: Optimized scatter plot
 # Sample data for scatter plot
@@ -141,7 +143,7 @@ x_sampled = x[sample_indices]
 y_sampled = y[sample_indices]
 
 plot = ScatterPlot()
-plot.plot(pd.DataFrame({'x': x_sampled, 'y': y_sampled}), x='x', y='y')  # Much faster
+plot.plot(pd.DataFrame({"x": x_sampled, "y": y_sampled}), x="x", y="y")  # Much faster
 ```
 
 ## Batch Operations
@@ -159,8 +161,8 @@ import pandas as pd
 # Before: Individual plot creation (slow)
 for month in range(1, 13):
     plot = TimeSeriesPlot()
-    month_data = df[df['month'] == month]
-    plot.plot(month_data, x='date', y='value')
+    month_data = df[df["month"] == month]
+    plot.plot(month_data, x="date", y="value")
     plot.save(f"month_{month}.png")
     plot.close()
 
@@ -168,8 +170,8 @@ for month in range(1, 13):
 plots_to_create = []
 for month in range(1, 13):
     plot = TimeSeriesPlot()
-    month_data = df[df['month'] == month]
-    plot.plot(month_data, x='date', y='value')
+    month_data = df[df["month"] == month]
+    plot.plot(month_data, x="date", y="value")
     plots_to_create.append((plot, f"month_{month}.png"))
 
 # Save all plots at once
@@ -192,8 +194,8 @@ from monet_plots import SpatialPlot
 for i in range(5):
     data = np.random.random((100, 100))
     plot = SpatialPlot()
-    plot.plot(data, title=f"Plot {i+1}")
-    plot.save(f"plot_{i+1}.png")
+    plot.plot(data, title=f"Plot {i + 1}")
+    plot.save(f"plot_{i + 1}.png")
     plot.close()
 
 # After: Pre-computation (faster)
@@ -203,8 +205,8 @@ all_data = [np.random.random((100, 100)) for _ in range(5)]
 # Create plots with pre-computed data
 for i, data in enumerate(all_data):
     plot = SpatialPlot()
-    plot.plot(data, title=f"Plot {i+1}")
-    plot.save(f"plot_{i+1}.png")
+    plot.plot(data, title=f"Plot {i + 1}")
+    plot.save(f"plot_{i + 1}.png")
     plot.close()
 ```
 
@@ -245,12 +247,12 @@ import numpy as np
 data = np.random.random((100, 100))
 
 # Fast colormaps
-fast_colormaps = ['viridis', 'plasma', 'inferno', 'magma', 'cividis']
-slow_colormaps = ['jet', 'rainbow', 'gist_rainbow']
+fast_colormaps = ["viridis", "plasma", "inferno", "magma", "cividis"]
+slow_colormaps = ["jet", "rainbow", "gist_rainbow"]
 
 # Use fast colormaps for better performance
 plot = SpatialPlot()
-plot.plot(data, cmap='viridis')  # Fast
+plot.plot(data, cmap="viridis")  # Fast
 plot.save("fast_colormap.png")
 
 # Avoid slow colormaps
@@ -275,7 +277,7 @@ plt.ion()
 
 # Create interactive plot
 plot = TimeSeriesPlot()
-plot.plot(df, x='time', y='value')
+plot.plot(df, x="time", y="value")
 
 # Plot will update immediately when modified
 plot.title("Interactive Plot")
@@ -294,7 +296,7 @@ plt.ioff()
 
 # Perform multiple operations
 plot = TimeSeriesPlot()
-plot.plot(df, x='time', y='value')
+plot.plot(df, x="time", y="value")
 plot.title("Batch Update")
 plot.xlabel("Custom Label")
 
@@ -319,22 +321,30 @@ import numpy as np
 
 # Before: Memory-inefficient DataFrame
 n_rows = 1_000_000
-large_df = pd.DataFrame({
-    'id': range(n_rows),
-    'value': np.random.random(n_rows),
-    'category': np.random.choice(['A', 'B', 'C'], n_rows)
-})
+large_df = pd.DataFrame(
+    {
+        "id": range(n_rows),
+        "value": np.random.random(n_rows),
+        "category": np.random.choice(["A", "B", "C"], n_rows),
+    }
+)
 
 print(f"Memory usage: {large_df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
 
 # After: Memory-optimized DataFrame
-optimized_df = pd.DataFrame({
-    'id': pd.Series(range(n_rows), dtype='int32'),
-    'value': pd.Series(np.random.random(n_rows), dtype='float32'),
-    'category': pd.Series(np.random.choice(['A', 'B', 'C'], n_rows), dtype='category')
-})
+optimized_df = pd.DataFrame(
+    {
+        "id": pd.Series(range(n_rows), dtype="int32"),
+        "value": pd.Series(np.random.random(n_rows), dtype="float32"),
+        "category": pd.Series(
+            np.random.choice(["A", "B", "C"], n_rows), dtype="category"
+        ),
+    }
+)
 
-print(f"Optimized memory: {optimized_df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
+print(
+    f"Optimized memory: {optimized_df.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
+)
 ```
 
 ### Process Data in Chunks
@@ -359,8 +369,8 @@ total_size = 5000
 for i in range(0, total_size, chunk_size):
     chunk = np.random.random((chunk_size, chunk_size))
     plot = SpatialPlot()
-    plot.plot(chunk, title=f"Chunk {i//chunk_size + 1}")
-    plot.save(f"chunk_{i//chunk_size + 1}.png")
+    plot.plot(chunk, title=f"Chunk {i // chunk_size + 1}")
+    plot.save(f"chunk_{i // chunk_size + 1}.png")
     plot.close()
 ```
 
@@ -394,10 +404,12 @@ import os
 from monet_plots import SpatialPlot
 import numpy as np
 
+
 def get_memory_usage():
     """Get current memory usage in MB."""
     process = psutil.Process(os.getpid())
     return process.memory_info().rss / (1024 * 1024)
+
 
 # Monitor memory usage
 initial_memory = get_memory_usage()
@@ -440,11 +452,13 @@ def create_plot_with_lazy_loading(data_source, plot_config):
 from functools import lru_cache
 import numpy as np
 
+
 @lru_cache(maxsize=10)
 def generate_cached_data(shape, seed):
     """Cache generated data to avoid recomputation."""
     np.random.seed(seed)
     return np.random.random(shape)
+
 
 # Usage
 data1 = generate_cached_data((100, 100), 42)  # First call - computes
@@ -498,12 +512,14 @@ Add performance monitoring to your existing plotting scripts.
 import cProfile
 import pstats
 
+
 def profile_plot_creation():
     data = np.random.random((100, 100))
     plot = SpatialPlot()
     plot.plot(data)
     plot.save("profiled_plot.png")
     plot.close()
+
 
 # Run profiler
 profiler = cProfile.Profile()
@@ -513,7 +529,7 @@ profiler.disable()
 
 # Print statistics
 stats = pstats.Stats(profiler)
-stats.sort_stats('cumulative')
+stats.sort_stats("cumulative")
 stats.print_stats(10)  # Show top 10 time-consuming functions
 ```
 
@@ -534,6 +550,7 @@ gc.collect()  # Force garbage collection
 ```python
 # Check interactive mode
 import matplotlib.pyplot as plt
+
 print(f"Interactive mode: {plt.isinteractive()}")
 
 # Enable if needed
@@ -542,7 +559,7 @@ plt.ion()
 # Turn off blitting for complex plots
 plot = SpatialPlot()
 plot.plot(data)
-plot.ax.set_title('Interactive Plot', blit=False)
+plot.ax.set_title("Interactive Plot", blit=False)
 ```
 
 ## Next Steps

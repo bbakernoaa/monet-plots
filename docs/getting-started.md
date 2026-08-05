@@ -92,15 +92,22 @@ Test your installation with these verification steps:
 ```python
 # Basic import test
 import monet_plots
+
 print(f"MONET Plots version: {monet_plots.__version__}")
 
 # Test all major components
 try:
     from monet_plots import (
-        SpatialPlot, TimeSeriesPlot, ScatterPlot,
-        TaylorDiagramPlot, KDEPlot, WindQuiverPlot, WindBarbsPlot,
-        FacetGridPlot
+        SpatialPlot,
+        TimeSeriesPlot,
+        ScatterPlot,
+        TaylorDiagramPlot,
+        KDEPlot,
+        WindQuiverPlot,
+        WindBarbsPlot,
+        FacetGridPlot,
     )
+
     print("All plot classes imported successfully!")
 except ImportError as e:
     print(f"Import error: {e}")
@@ -108,12 +115,14 @@ except ImportError as e:
 # Test optional dependencies
 try:
     import cartopy
+
     print("Cartopy available for geospatial plotting")
 except ImportError:
     print("Cartopy not available - install for geospatial features")
 
 try:
     import xarray
+
     print("xarray available for NetCDF support")
 except ImportError:
     print("xarray not available - install for NetCDF support")
@@ -204,9 +213,9 @@ from monet_plots import style
 
 # Set up plotting style and defaults
 plt.style.use(style.wiley_style)
-plt.rcParams['figure.figsize'] = (8, 6)
-plt.rcParams['savefig.dpi'] = 300
-plt.rcParams['savefig.format'] = 'png'
+plt.rcParams["figure.figsize"] = (8, 6)
+plt.rcParams["savefig.dpi"] = 300
+plt.rcParams["savefig.format"] = "png"
 ```
 
 ## Your First Plot
@@ -219,16 +228,26 @@ import numpy as np
 from monet_plots import TimeSeriesPlot
 
 # Create sample data
-dates = pd.date_range('2023-01-01', periods=100, freq='D')
-data = pd.DataFrame({
-    'time': dates,
-    'temperature': 20 + 10 * np.sin(np.arange(100) * 0.1) + np.random.normal(0, 2, 100)
-})
+dates = pd.date_range("2023-01-01", periods=100, freq="D")
+data = pd.DataFrame(
+    {
+        "time": dates,
+        "temperature": 20
+        + 10 * np.sin(np.arange(100) * 0.1)
+        + np.random.normal(0, 2, 100),
+    }
+)
 
 # Create and plot
 plot = TimeSeriesPlot()
-plot.plot(data, x='time', y='temperature', title='Daily Temperature', ylabel='Temperature (°C)')
-plot.save('temperature_plot.png')
+plot.plot(
+    data,
+    x="time",
+    y="temperature",
+    title="Daily Temperature",
+    ylabel="Temperature (°C)",
+)
+plot.save("temperature_plot.png")
 plot.close()
 ```
 
@@ -260,11 +279,11 @@ BasePlot (abstract base class)
 
 ```python
 # General workflow pattern
-plot = SpatialPlot(figsize=(10, 6))         # 1. Initialize
-plot.plot(data, cmap='viridis')             # 2. Plot data
-plot.title("My Plot").xlabel("X Axis")      # 3. Customize
-plot.save("output.png")                    # 4. Save
-plot.close()                               # 5. Close
+plot = SpatialPlot(figsize=(10, 6))  # 1. Initialize
+plot.plot(data, cmap="viridis")  # 2. Plot data
+plot.title("My Plot").xlabel("X Axis")  # 3. Customize
+plot.save("output.png")  # 4. Save
+plot.close()  # 5. Close
 ```
 
 ## Data Requirements
@@ -275,11 +294,13 @@ plot.close()                               # 5. Close
 Most plots expect pandas DataFrames with specific column names:
 
 ```python
-df = pd.DataFrame({
-    'time': pd.date_range('2023-01-01', periods=100),
-    'observed': np.random.normal(0, 1, 100),
-    'modeled': np.random.normal(0.1, 1.1, 100)
-})
+df = pd.DataFrame(
+    {
+        "time": pd.date_range("2023-01-01", periods=100),
+        "observed": np.random.normal(0, 1, 100),
+        "modeled": np.random.normal(0.1, 1.1, 100),
+    }
+)
 ```
 
 #### NumPy Arrays
@@ -287,6 +308,7 @@ For some plots, raw numpy arrays are sufficient:
 
 ```python
 import numpy as np
+
 data = np.random.random((50, 100))  # 2D array for spatial plots
 ```
 
@@ -295,10 +317,11 @@ For geospatial data:
 
 ```python
 import xarray as xr
+
 data = xr.DataArray(
     np.random.random((10, 20)),
-    dims=['lat', 'lon'],
-    coords={'lat': range(10), 'lon': range(20)}
+    dims=["lat", "lon"],
+    coords={"lat": range(10), "lon": range(20)},
 )
 ```
 
@@ -318,11 +341,11 @@ import matplotlib.pyplot as plt
 
 # Create custom style
 custom_style = {
-    'font.size': 12,
-    'axes.labelsize': 10,
-    'axes.titlesize': 14,
-    'lines.linewidth': 2,
-    'figure.figsize': (10, 6)
+    "font.size": 12,
+    "axes.labelsize": 10,
+    "axes.titlesize": 14,
+    "lines.linewidth": 2,
+    "figure.figsize": (10, 6),
 }
 
 plt.style.use(custom_style)
@@ -337,8 +360,8 @@ from monet_plots import style
 
 # Modify the default style
 modified_style = style.wiley_style.copy()
-modified_style['font.size'] = 11
-modified_style['figure.figsize'] = (12, 8)
+modified_style["font.size"] = 11
+modified_style["figure.figsize"] = (12, 8)
 
 plt.style.use(modified_style)
 ```

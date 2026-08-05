@@ -69,15 +69,14 @@ spatial_plot.plot(data, title="Sample Spatial Plot")
 spatial_plot.save("spatial_plot.png")
 
 # Create time series data
-dates = pd.date_range('2023-01-01', periods=100, freq='D')
-time_series_data = pd.DataFrame({
-    'time': dates,
-    'obs': np.random.normal(0, 1, 100) + np.sin(np.arange(100) * 0.1)
-})
+dates = pd.date_range("2023-01-01", periods=100, freq="D")
+time_series_data = pd.DataFrame(
+    {"time": dates, "obs": np.random.normal(0, 1, 100) + np.sin(np.arange(100) * 0.1)}
+)
 
 # Create a time series plot
 ts_plot = TimeSeriesPlot()
-ts_plot.plot(time_series_data, x='time', y='obs', title="Time Series Example")
+ts_plot.plot(time_series_data, x="time", y="obs", title="Time Series Example")
 ts_plot.save("timeseries_plot.png")
 ```
 
@@ -111,7 +110,7 @@ ts_plot.save("timeseries_plot.png")
 plot = SpatialPlot(figsize=(10, 6))
 
 # Plot data
-plot.plot(data, cmap='viridis', title="My Plot")
+plot.plot(data, cmap="viridis", title="My Plot")
 
 # Save and close
 plot.save("output.png")
@@ -129,7 +128,8 @@ plt.style.use(wiley_style)
 
 # Custom colorbars
 from monet_plots import colorbar_index
-colorbar, cmap = colorbar_index(10, 'viridis', minval=0, maxval=100)
+
+colorbar, cmap = colorbar_index(10, "viridis", minval=0, maxval=100)
 ```
 
 ## Documentation Structure

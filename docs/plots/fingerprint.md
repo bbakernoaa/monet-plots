@@ -7,6 +7,6 @@ Displays a variable as a heatmap across two different temporal scales, such as h
 ```python
 from monet_plots.plots import FingerprintPlot
 
-plot = FingerprintPlot(df, val_col='concentration', x_scale='hour', y_scale='dayofyear')
+plot = FingerprintPlot(df, val_col="concentration", x_scale="hour", y_scale="dayofyear")
 plot.plot()
 ```

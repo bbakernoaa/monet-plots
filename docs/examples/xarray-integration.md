@@ -34,13 +34,13 @@ The [`TimeSeriesPlot`](src/monet_plots/plots/timeseries.py:9) class now automati
 from monet_plots.plots.timeseries import TimeSeriesPlot
 
 # Works with pandas DataFrames (backward compatible)
-plot = TimeSeriesPlot(pandas_df, x='time', y='value')
+plot = TimeSeriesPlot(pandas_df, x="time", y="value")
 
 # Works with xarray DataArrays
-plot = TimeSeriesPlot(xarray_dataarray, x='time', y='value')
+plot = TimeSeriesPlot(xarray_dataarray, x="time", y="value")
 
 # Works with xarray Datasets
-plot = TimeSeriesPlot(xarray_dataset, x='time', y='variable_name')
+plot = TimeSeriesPlot(xarray_dataset, x="time", y="variable_name")
 ```
 
 ## Usage Examples
@@ -54,21 +54,27 @@ import numpy as np
 from monet_plots.plots.timeseries import TimeSeriesPlot
 
 # Create sample xarray data
-dates = pd.date_range('2023-01-01', periods=100, freq='h')
-temperature = 15 + 5 * np.sin(np.arange(100) * 2 * np.pi / 24) + np.random.normal(0, 1, 100)
+dates = pd.date_range("2023-01-01", periods=100, freq="h")
+temperature = (
+    15 + 5 * np.sin(np.arange(100) * 2 * np.pi / 24) + np.random.normal(0, 1, 100)
+)
 
 da = xr.DataArray(
     temperature,
-    dims=['time'],
-    coords={'time': dates},
-    name='temperature',
-    attrs={'units': '°C', 'long_name': 'Air Temperature'}
+    dims=["time"],
+    coords={"time": dates},
+    name="temperature",
+    attrs={"units": "°C", "long_name": "Air Temperature"},
 )
 
 # Create and plot
-plot = TimeSeriesPlot(da, x='time', y='temperature',
-                     title="Temperature Time Series",
-                     ylabel="Temperature (°C)")
+plot = TimeSeriesPlot(
+    da,
+    x="time",
+    y="temperature",
+    title="Temperature Time Series",
+    ylabel="Temperature (°C)",
+)
 ax = plot.plot()
 plot.save("temperature_timeseries.png")
 plot.close()
@@ -78,15 +84,27 @@ plot.close()
 
 ```python
 # Create xarray dataset with multiple variables
-ds = xr.Dataset({
-    'temperature': (['time'], 15 + 5 * np.sin(np.arange(100) * 2 * np.pi / 24) + np.random.normal(0, 1, 100)),
-    'humidity': (['time'], 50 + 20 * np.sin(np.arange(100) * 2 * np.pi / 24) + np.random.normal(0, 5, 100)),
-    'pressure': (['time'], 1013 + 5 * np.random.normal(0, 1, 100))
-}, coords={'time': dates})
+ds = xr.Dataset(
+    {
+        "temperature": (
+            ["time"],
+            15
+            + 5 * np.sin(np.arange(100) * 2 * np.pi / 24)
+            + np.random.normal(0, 1, 100),
+        ),
+        "humidity": (
+            ["time"],
+            50
+            + 20 * np.sin(np.arange(100) * 2 * np.pi / 24)
+            + np.random.normal(0, 5, 100),
+        ),
+        "pressure": (["time"], 1013 + 5 * np.random.normal(0, 1, 100)),
+    },
+    coords={"time": dates},
+)
 
 # Plot temperature from the dataset
-plot = TimeSeriesPlot(ds, x='time', y='temperature',
-                     title="Temperature from Dataset")
+plot = TimeSeriesPlot(ds, x="time", y="temperature", title="Temperature from Dataset")
 ax = plot.plot()
 plot.save("dataset_temperature.png")
 plot.close()
@@ -96,14 +114,9 @@ plot.close()
 
 ```python
 # Existing pandas code continues to work unchanged
-df = pd.DataFrame({
-    'time': dates,
-    'value': np.random.normal(0, 1, 100),
-    'units': 'm/s'
-})
+df = pd.DataFrame({"time": dates, "value": np.random.normal(0, 1, 100), "units": "m/s"})
 
-plot = TimeSeriesPlot(df, x='time', y='value',
-                     title="Pandas DataFrame Plot")
+plot = TimeSeriesPlot(df, x="time", y="value", title="Pandas DataFrame Plot")
 ax = plot.plot()
 plot.save("pandas_timeseries.png")
 plot.close()
@@ -121,8 +134,7 @@ Xarray attributes and coordinate information are preserved throughout the plotti
 
 ```python
 da = xr.DataArray(
-    data,
-    attrs={'units': '°C', 'long_name': 'Temperature', 'instrument': 'thermometer'}
+    data, attrs={"units": "°C", "long_name": "Temperature", "instrument": "thermometer"}
 )
 # Attributes are preserved and can be used in plots
 ```
@@ -135,9 +147,8 @@ Xarray's native support for multi-dimensional data enables more sophisticated vi
 # 2D xarray data
 data_2d = xr.DataArray(
     np.random.randn(10, 20),
-    dims=['time', 'space'],
-    coords={'time': pd.date_range('2023-01-01', periods=10),
-            'space': np.arange(20)}
+    dims=["time", "space"],
+    coords={"time": pd.date_range("2023-01-01", periods=10), "space": np.arange(20)},
 )
 ```
 
@@ -203,11 +214,13 @@ n = 1_000_000
 data = np.random.randn(n)
 
 # Pandas approach
-df = pd.DataFrame({'time': pd.date_range('2023-01-01', periods=n), 'value': data})
+df = pd.DataFrame({"time": pd.date_range("2023-01-01", periods=n), "value": data})
 print(f"Pandas memory: {sys.getsizeof(df)} bytes")
 
 # Xarray approach
-da = xr.DataArray(data, dims=['time'], coords={'time': pd.date_range('2023-01-01', periods=n)})
+da = xr.DataArray(
+    data, dims=["time"], coords={"time": pd.date_range("2023-01-01", periods=n)}
+)
 print(f"Xarray memory: {sys.getsizeof(da)} bytes")
 ```
 
