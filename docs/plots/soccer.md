@@ -8,12 +8,9 @@ The Soccer Plot is a model evaluation tool that plots model bias against error. 
 from monet_plots.plots import SoccerPlot
 import pandas as pd
 
-df = pd.DataFrame({
-    'obs': [10, 20, 30],
-    'mod': [12, 18, 35]
-})
+df = pd.DataFrame({"obs": [10, 20, 30], "mod": [12, 18, 35]})
 
-plot = SoccerPlot(df, obs_col='obs', mod_col='mod')
+plot = SoccerPlot(df, obs_col="obs", mod_col="mod")
 plot.plot()
 ```
 

@@ -10,5 +10,5 @@ import xarray as xr
 
 # da is a 2D DataArray with dimensions (level, time)
 plot = CurtainPlot(da)
-plot.plot(kind='pcolormesh')
+plot.plot(kind="pcolormesh")
 ```

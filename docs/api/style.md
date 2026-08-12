@@ -17,6 +17,7 @@ from monet_plots import style
 
 # Apply Wiley style
 import matplotlib.pyplot as plt
+
 plt.style.use(style.wiley_style)
 ```
 
@@ -25,31 +26,27 @@ plt.style.use(style.wiley_style)
 ```python
 wiley_style = {
     # Font settings
-    'font.family': 'serif',
-    'font.serif': 'Times New Roman',
-    'font.size': 10,
-
+    "font.family": "serif",
+    "font.serif": "Times New Roman",
+    "font.size": 10,
     # Axes settings
-    'axes.labelsize': 10,
-    'axes.titlesize': 12,
-    'axes.grid': True,
-    'grid.linestyle': ':',
-    'grid.color': 'gray',
-
+    "axes.labelsize": 10,
+    "axes.titlesize": 12,
+    "axes.grid": True,
+    "grid.linestyle": ":",
+    "grid.color": "gray",
     # Line settings
-    'lines.linewidth': 1.5,
-    'lines.markersize': 5,
-
+    "lines.linewidth": 1.5,
+    "lines.markersize": 5,
     # Legend settings
-    'legend.fontsize': 9,
-    'legend.frameon': False,
-
+    "legend.fontsize": 9,
+    "legend.frameon": False,
     # Figure settings
-    'figure.figsize': (6, 4),
-    'figure.dpi': 300,
-    'savefig.dpi': 300,
-    'savefig.format': 'tiff',
-    'savefig.bbox': 'tight',
+    "figure.figsize": (6, 4),
+    "figure.dpi": 300,
+    "savefig.dpi": 300,
+    "savefig.format": "tiff",
+    "savefig.bbox": "tight",
 }
 ```
 
@@ -59,6 +56,7 @@ American Physical Society (APS) compliant style for physics journals.
 
 ```python
 import matplotlib.pyplot as plt
+
 plt.style.use(style.aps_style)
 ```
 
@@ -67,28 +65,24 @@ plt.style.use(style.aps_style)
 ```python
 aps_style = {
     # Font settings - APS uses Helvetica
-    'font.family': 'sans-serif',
-    'font.sans-serif': ['Helvetica', 'Arial', 'DejaVu Sans'],
-    'font.size': 10,
-
+    "font.family": "sans-serif",
+    "font.sans-serif": ["Helvetica", "Arial", "DejaVu Sans"],
+    "font.size": 10,
     # Axes settings
-    'axes.labelsize': 10,
-    'axes.titlesize': 12,
-    'axes.grid': False,
-
+    "axes.labelsize": 10,
+    "axes.titlesize": 12,
+    "axes.grid": False,
     # Line settings
-    'lines.linewidth': 1.5,
-    'lines.markersize': 6,
-
+    "lines.linewidth": 1.5,
+    "lines.markersize": 6,
     # Legend settings
-    'legend.fontsize': 9,
-    'legend.framealpha': 0.8,
-
+    "legend.fontsize": 9,
+    "legend.framealpha": 0.8,
     # Figure settings
-    'figure.figsize': (5, 4),
-    'figure.dpi': 600,
-    'savefig.dpi': 600,
-    'savefig.format': 'pdf',
+    "figure.figsize": (5, 4),
+    "figure.dpi": 600,
+    "savefig.dpi": 600,
+    "savefig.format": "pdf",
 }
 ```
 
@@ -98,6 +92,7 @@ Nature journal compliant style.
 
 ```python
 import matplotlib.pyplot as plt
+
 plt.style.use(style.nature_style)
 ```
 
@@ -107,6 +102,7 @@ Science journal compliant style.
 
 ```python
 import matplotlib.pyplot as plt
+
 plt.style.use(style.science_style)
 ```
 
@@ -121,13 +117,11 @@ from monet_plots import style
 
 # Create custom style from Wiley style
 custom = style.custom_style(
-    font_size=12,
-    figure_size=(10, 8),
-    grid_style='--',
-    grid_alpha=0.3
+    font_size=12, figure_size=(10, 8), grid_style="--", grid_alpha=0.3
 )
 
 import matplotlib.pyplot as plt
+
 plt.style.use(custom)
 ```
 
@@ -198,7 +192,7 @@ from monet_plots import style
 with plt.style.context(style.aps_style):
     plot = SpatialPlot()
     plot.plot(data)
-    plot.save('aps_style.png')
+    plot.save("aps_style.png")
 
 # Style is automatically reverted
 ```
@@ -212,7 +206,7 @@ from monet_plots import SpatialPlot, style
 plot = SpatialPlot()
 plot.plot(data)
 plt.style.use(style.nature_style)  # Affects only this plot
-plot.save('nature_style.png')
+plot.save("nature_style.png")
 ```
 
 ## Style Parameters Reference
@@ -285,15 +279,15 @@ plot.save('nature_style.png')
 ```python
 # Good: Modify existing style incrementally
 custom_wiley = style.custom_style(
-    base_style='wiley',
+    base_style="wiley",
     font_size=11,  # Slight modification
-    grid_alpha=0.3  # Subtle grid
+    grid_alpha=0.3,  # Subtle grid
 )
 
 # Avoid: Completely overriding styles
 bad_style = {
-    'font.size': 12,  # Missing many other parameters
-    'figure.figsize': (8, 6)
+    "font.size": 12,  # Missing many other parameters
+    "figure.figsize": (8, 6),
 }
 ```
 
@@ -333,13 +327,14 @@ plot.plot(data)
 ```python
 # Install missing fonts
 import matplotlib.pyplot as plt
-plt.rcParams['font.family'] = ['Arial', 'Helvetica', 'sans-serif']
+
+plt.rcParams["font.family"] = ["Arial", "Helvetica", "sans-serif"]
 ```
 
 **Style Conflicts:**
 ```python
 # Reset matplotlib style before applying new one
-plt.style.use('default')  # Reset to defaults
+plt.style.use("default")  # Reset to defaults
 plt.style.use(style.aps_style)  # Apply new style
 ```
 
@@ -350,18 +345,12 @@ plt.style.use(style.aps_style)  # Apply new style
 ```python
 # Large format presentation
 presentation_style = style.custom_style(
-    base_style='wiley',
-    font_size=16,
-    figure_size=(14, 10),
-    grid_alpha=0.3
+    base_style="wiley", font_size=16, figure_size=(14, 10), grid_alpha=0.3
 )
 
 # Small format presentation
 small_presentation = style.custom_style(
-    base_style='wiley',
-    font_size=12,
-    figure_size=(8, 6),
-    grid_alpha=0.2
+    base_style="wiley", font_size=12, figure_size=(8, 6), grid_alpha=0.2
 )
 ```
 
@@ -370,16 +359,16 @@ small_presentation = style.custom_style(
 ```python
 # Two-column journal
 two_column_style = style.custom_style(
-    base_style='wiley',
+    base_style="wiley",
     figure_size=(3.5, 2.5),  # Two-column width
-    font_size=9
+    font_size=9,
 )
 
 # Full-page figure
 full_page_style = style.custom_style(
-    base_style='wiley',
+    base_style="wiley",
     figure_size=(7, 9),  # Full page
-    font_size=10
+    font_size=10,
 )
 ```
 

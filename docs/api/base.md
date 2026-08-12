@@ -12,7 +12,6 @@ The `monet_plots.base` module provides the foundational classes and functionalit
 class BasePlot:
     """Abstract base class for all plot types in MONET Plots."""
 
-
     def __init__(self, figsize=(8, 6), dpi=100, **kwargs):
         """Initialize a BasePlot instance.
 
@@ -80,7 +79,7 @@ def save(self, filename, dpi=None, **kwargs):
 ```python
 plot = SpatialPlot()
 plot.plot(data)
-plot.save('output.png', dpi=300)  # High resolution output
+plot.save("output.png", dpi=300)  # High resolution output
 ```
 
 #### `close()`
@@ -102,7 +101,7 @@ def close(self):
 ```python
 plot = SpatialPlot()
 plot.plot(data)
-plot.save('output.png')
+plot.save("output.png")
 plot.close()  # Free memory
 ```
 
@@ -158,7 +157,7 @@ def xlabel(self, text, fontsize=12, **kwargs):
 **Example:**
 ```python
 plot = TimeSeriesPlot()
-plot.plot(df, x='time', y='value')
+plot.plot(df, x="time", y="value")
 plot.xlabel("Date", fontsize=12)
 ```
 
@@ -186,7 +185,7 @@ def ylabel(self, text, fontsize=12, **kwargs):
 **Example:**
 ```python
 plot = TimeSeriesPlot()
-plot.plot(df, x='time', y='value')
+plot.plot(df, x="time", y="value")
 plot.ylabel("Temperature (°C)")
 ```
 
@@ -213,9 +212,9 @@ def legend(self, *args, **kwargs):
 **Example:**
 ```python
 plot = ScatterPlot()
-plot.plot(data1, label='Model 1')
-plot.plot(data2, label='Model 2')
-plot.legend(loc='upper right', fontsize=10)
+plot.plot(data1, label="Model 1")
+plot.plot(data2, label="Model 2")
+plot.legend(loc="upper right", fontsize=10)
 ```
 
 #### `grid(show=True, **kwargs)`
@@ -242,7 +241,7 @@ def grid(self, show=True, **kwargs):
 ```python
 plot = ScatterPlot()
 plot.plot(data)
-plot.grid(show=True, linestyle='--', alpha=0.5)
+plot.grid(show=True, linestyle="--", alpha=0.5)
 ```
 
 ### Properties
@@ -275,12 +274,9 @@ All setter methods return `self`, allowing method chaining:
 
 ```python
 plot = SpatialPlot()
-plot.plot(data)\
-   .title("My Plot")\
-   .xlabel("X-axis")\
-   .ylabel("Y-axis")\
-   .legend()\
-   .save("output.png")
+plot.plot(data).title("My Plot").xlabel("X-axis").ylabel("Y-axis").legend().save(
+    "output.png"
+)
 ```
 
 ### Subclass Implementation
@@ -290,6 +286,7 @@ When creating custom plot classes, inherit from `BasePlot` and implement the `pl
 ```python
 from monet_plots.base import BasePlot
 import matplotlib.pyplot as plt
+
 
 class CustomPlot(BasePlot):
     def plot(self, data, **kwargs):

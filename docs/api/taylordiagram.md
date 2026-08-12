@@ -12,8 +12,7 @@ Taylor diagrams display the standard deviation and correlation coefficient betwe
 class TaylorDiagram:
     """Create a Taylor diagram for model evaluation."""
 
-
-    def __init__(self, obsstd, scale=1.5, fig=None, rect=111, label='OBS', **kwargs):
+    def __init__(self, obsstd, scale=1.5, fig=None, rect=111, label="OBS", **kwargs):
         """Initialize a Taylor diagram.
 
 
@@ -47,7 +46,7 @@ Add a model sample to the Taylor diagram.
 
 ```python
 td = TaylorDiagram(obsstd=1.0)
-td.add_sample(stddev=0.8, corrcoef=0.9, marker='s', label='Model 1')
+td.add_sample(stddev=0.8, corrcoef=0.9, marker="s", label="Model 1")
 ```
 
 **Parameters:**
@@ -65,12 +64,12 @@ td.add_sample(stddev=0.8, corrcoef=0.9, marker='s', label='Model 1')
 from monet_plots import taylordiagram
 
 # Create Taylor diagram
-td = taylordiagram.TaylorDiagram(obsstd=1.2, scale=2.0, label='Observations')
+td = taylordiagram.TaylorDiagram(obsstd=1.2, scale=2.0, label="Observations")
 
 # Add model samples
-td.add_sample(stddev=1.1, corrcoef=0.95, marker='o', label='Model A', color='red')
-td.add_sample(stddev=1.3, corrcoef=0.88, marker='s', label='Model B', color='blue')
-td.add_sample(stddev=0.9, corrcoef=0.92, marker='^', label='Model C', color='green')
+td.add_sample(stddev=1.1, corrcoef=0.95, marker="o", label="Model A", color="red")
+td.add_sample(stddev=1.3, corrcoef=0.88, marker="s", label="Model B", color="blue")
+td.add_sample(stddev=0.9, corrcoef=0.92, marker="^", label="Model C", color="green")
 
 # Add contours and legend
 td.add_contours(levels=[0.5, 0.8, 0.9, 0.95])
@@ -82,7 +81,7 @@ td.finish_plot()
 Add contour lines to the Taylor diagram.
 
 ```python
-td.add_contours(levels=[0.5, 0.8, 0.9, 0.95], colors='gray', linestyles='--')
+td.add_contours(levels=[0.5, 0.8, 0.9, 0.95], colors="gray", linestyles="--")
 ```
 
 **Parameters:**
@@ -97,10 +96,10 @@ td.add_contours(levels=[0.5, 0.8, 0.9, 0.95], colors='gray', linestyles='--')
 # Add custom contours
 td.add_contours(
     levels=[0.6, 0.7, 0.8, 0.9, 0.95],
-    colors='gray',
-    linestyles=['-', '--', ':', '-.', (0, (3, 1, 1, 1))],
+    colors="gray",
+    linestyles=["-", "--", ":", "-.", (0, (3, 1, 1, 1))],
     linewidths=1.5,
-    alpha=0.7
+    alpha=0.7,
 )
 ```
 
@@ -110,7 +109,7 @@ Finalize the plot by adding legend and adjusting layout.
 
 ```python
 td.finish_plot()
-td.save('taylor_diagram.png')
+td.save("taylor_diagram.png")
 ```
 
 **Parameters:**
@@ -119,12 +118,12 @@ td.save('taylor_diagram.png')
 **Example:**
 ```python
 td = taylordiagram.TaylorDiagram(obsstd=1.0)
-td.add_sample(0.8, 0.9, 'o', 'Model 1')
+td.add_sample(0.8, 0.9, "o", "Model 1")
 td.add_contours([0.5, 0.8, 0.9])
 
 # Finalize and save
 td.finish_plot()
-td.fig.savefig('taylor_diagram.png', dpi=300, bbox_inches='tight')
+td.fig.savefig("taylor_diagram.png", dpi=300, bbox_inches="tight")
 ```
 
 #### `set_xlabel(label, **kwargs)`
@@ -132,7 +131,7 @@ td.fig.savefig('taylor_diagram.png', dpi=300, bbox_inches='tight')
 Set the x-axis label.
 
 ```python
-td.set_xlabel('Standard Deviation', fontsize=12)
+td.set_xlabel("Standard Deviation", fontsize=12)
 ```
 
 #### `set_ylabel(label, **kwargs)`
@@ -140,7 +139,7 @@ td.set_xlabel('Standard Deviation', fontsize=12)
 Set the y-axis label.
 
 ```python
-td.set_ylabel('Standard Deviation', fontsize=12)
+td.set_ylabel("Standard Deviation", fontsize=12)
 ```
 
 #### `set_title(title, **kwargs)`
@@ -148,7 +147,7 @@ td.set_ylabel('Standard Deviation', fontsize=12)
 Set the plot title.
 
 ```python
-td.set_title('Model Performance Comparison', fontsize=14, pad=20)
+td.set_title("Model Performance Comparison", fontsize=14, pad=20)
 ```
 
 ### Properties
@@ -186,34 +185,25 @@ from monet_plots import taylordiagram
 # Create sample data
 obs_std = 1.2
 model_data = [
-    (1.1, 0.95, 'Model A'),
-    (1.3, 0.88, 'Model B'),
-    (0.9, 0.92, 'Model C'),
-    (1.0, 0.97, 'Model D')
+    (1.1, 0.95, "Model A"),
+    (1.3, 0.88, "Model B"),
+    (0.9, 0.92, "Model C"),
+    (1.0, 0.97, "Model D"),
 ]
 
 # Create Taylor diagram
-td = taylordiagram.TaylorDiagram(
-    obsstd=obs_std,
-    scale=1.8,
-    label='Observations'
-)
+td = taylordiagram.TaylorDiagram(obsstd=obs_std, scale=1.8, label="Observations")
 
 # Add model samples
 for stddev, corrcoef, label in model_data:
-    td.add_sample(
-        stddev=stddev,
-        corrcoef=corrcoef,
-        marker='o',
-        label=label
-    )
+    td.add_sample(stddev=stddev, corrcoef=corrcoef, marker="o", label=label)
 
 # Add contours and finalize
 td.add_contours(levels=[0.5, 0.8, 0.9, 0.95])
 td.finish_plot()
 
 # Save the plot
-td.save('basic_taylor_diagram.png')
+td.save("basic_taylor_diagram.png")
 ```
 
 ### Advanced Taylor Diagram with Custom Styling
@@ -294,39 +284,39 @@ from monet_plots import TaylorDiagramPlot
 import pandas as pd
 
 # Load model evaluation data
-data = pd.DataFrame({
-    'model': ['Model A', 'Model B', 'Model C', 'Model D'],
-    'stddev': [1.1, 1.3, 0.9, 1.0],
-    'corrcoef': [0.95, 0.88, 0.92, 0.97],
-    'obs_std': 1.2  # Reference standard deviation
-})
+data = pd.DataFrame(
+    {
+        "model": ["Model A", "Model B", "Model C", "Model D"],
+        "stddev": [1.1, 1.3, 0.9, 1.0],
+        "corrcoef": [0.95, 0.88, 0.92, 0.97],
+        "obs_std": 1.2,  # Reference standard deviation
+    }
+)
 
 # Create Taylor diagram using MONET Plots
 plot = TaylorDiagramPlot(
-    obsstd=data['obs_std'].iloc[0],
-    scale=1.5,
-    label='Observations'
+    obsstd=data["obs_std"].iloc[0], scale=1.5, label="Observations"
 )
 
 # Add all models
 for _, row in data.iterrows():
     plot.add_sample(
-        df=pd.DataFrame({'obs': [1], 'model': [1]}),  # Dummy data for corrcoef
-        col1='obs',
-        col2='model',
-        marker='o',
-        label=row['model']
+        df=pd.DataFrame({"obs": [1], "model": [1]}),  # Dummy data for corrcoef
+        col1="obs",
+        col2="model",
+        marker="o",
+        label=row["model"],
     )
 
 # Update standard deviations manually
-plot.dia.samples[-1].set_stddev(row['stddev'])
-plot.dia.samples[-1].set_corrcoef(row['corrcoef'])
+plot.dia.samples[-1].set_stddev(row["stddev"])
+plot.dia.samples[-1].set_corrcoef(row["corrcoef"])
 
 # Add contours and finish
 plot.add_contours([0.5, 0.8, 0.9, 0.95])
 plot.finish_plot()
 
-plot.save('monet_taylor_diagram.png')
+plot.save("monet_taylor_diagram.png")
 ```
 
 ## Advanced Features
@@ -339,16 +329,23 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
 # Create custom colormap
-colors = ['#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#bd0026', '#800026']
+colors = [
+    "#ffffcc",
+    "#ffeda0",
+    "#fed976",
+    "#feb24c",
+    "#fd8d3c",
+    "#fc4e2a",
+    "#e31a1c",
+    "#bd0026",
+    "#800026",
+]
 n_bins = 100
-cmap = LinearSegmentedColormap.from_list('custom', colors, N=n_bins)
+cmap = LinearSegmentedColormap.from_list("custom", colors, N=n_bins)
 
 # Add styled contours
 td.add_contours(
-    levels=[0.5, 0.7, 0.8, 0.9, 0.95, 0.98],
-    cmap=cmap,
-    linewidths=2,
-    alpha=0.8
+    levels=[0.5, 0.7, 0.8, 0.9, 0.95, 0.98], cmap=cmap, linewidths=2, alpha=0.8
 )
 ```
 
@@ -357,10 +354,12 @@ td.add_contours(
 ```python
 # Enable interactive features
 import matplotlib.pyplot as plt
+
 plt.ion()  # Turn on interactive mode
 
 td = taylordiagram.TaylorDiagram(obsstd=1.0)
-td.add_sample(0.8, 0.9, 'o', 'Interactive Model')
+td.add_sample(0.8, 0.9, "o", "Interactive Model")
+
 
 # Add click interaction
 def on_click(event):
@@ -370,10 +369,11 @@ def on_click(event):
         r = np.sqrt(x**2 + y**2)
         if r > 0:
             corrcoef = y / r
-            td.add_sample(x, corrcoef, 'x', f'Clicked Model {len(td.dia.samples)}')
+            td.add_sample(x, corrcoef, "x", f"Clicked Model {len(td.dia.samples)}")
             td.fig.canvas.draw()
 
-td.fig.canvas.mpl_connect('button_press_event', on_click)
+
+td.fig.canvas.mpl_connect("button_press_event", on_click)
 ```
 
 ## Data Requirements
@@ -391,6 +391,7 @@ Taylor diagrams require two key metrics for each model:
 import numpy as np
 from scipy import stats
 
+
 def calculate_taylor_metrics(obs, model):
     """Calculate standard deviation and correlation for Taylor diagram.
 
@@ -407,12 +408,11 @@ def calculate_taylor_metrics(obs, model):
     obs_std = np.std(obs, ddof=1)
     model_std = np.std(model, ddof=1)
 
-
     # Calculate correlation coefficient
     corrcoef, _ = stats.pearsonr(obs, model)
 
-
     return model_std, corrcoef
+
 
 # Example usage
 obs_data = np.random.normal(0, 1, 1000)
@@ -452,16 +452,16 @@ print(f"Correlation Coefficient: {corrcoef:.3f}")
 ```python
 # Compare multiple climate models
 climate_models = {
-    'GCM Model A': (1.05, 0.96),
-    'GCM Model B': (1.15, 0.92),
-    'GCM Model C': (0.95, 0.94),
-    'Regional Model': (1.25, 0.88),
-    'Statistical Model': (0.85, 0.91)
+    "GCM Model A": (1.05, 0.96),
+    "GCM Model B": (1.15, 0.92),
+    "GCM Model C": (0.95, 0.94),
+    "Regional Model": (1.25, 0.88),
+    "Statistical Model": (0.85, 0.91),
 }
 
-td = taylordiagram.TaylorDiagram(obsstd=1.0, label='Reanalysis')
+td = taylordiagram.TaylorDiagram(obsstd=1.0, label="Reanalysis")
 for name, (std, corr) in climate_models.items():
-    td.add_sample(std, corr, 'o', name)
+    td.add_sample(std, corr, "o", name)
 
 td.add_contours([0.5, 0.8, 0.9, 0.95])
 td.finish_plot()
@@ -472,16 +472,16 @@ td.finish_plot()
 ```python
 # Compare different forecast lead times
 forecast_models = {
-    '24h Forecast': (0.8, 0.98),
-    '48h Forecast': (1.0, 0.94),
-    '72h Forecast': (1.2, 0.88),
-    '96h Forecast': (1.4, 0.82),
-    '120h Forecast': (1.6, 0.75)
+    "24h Forecast": (0.8, 0.98),
+    "48h Forecast": (1.0, 0.94),
+    "72h Forecast": (1.2, 0.88),
+    "96h Forecast": (1.4, 0.82),
+    "120h Forecast": (1.6, 0.75),
 }
 
-td = taylordiagram.TaylorDiagram(obsstd=1.0, label='Observations')
+td = taylordiagram.TaylorDiagram(obsstd=1.0, label="Observations")
 for name, (std, corr) in forecast_models.items():
-    td.add_sample(std, corr, 's', name)
+    td.add_sample(std, corr, "s", name)
 
 td.add_contours([0.5, 0.8, 0.9, 0.95])
 td.finish_plot()

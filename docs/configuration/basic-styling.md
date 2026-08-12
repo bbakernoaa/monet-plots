@@ -31,7 +31,7 @@ style.set_style("wiley")
 
 # Create a plot
 plot = TimeSeriesPlot(figsize=(12, 6))
-plot.plot(df, x='time', y='value', title="Wiley Style Plot")
+plot.plot(df, x="time", y="value", title="Wiley Style Plot")
 plot.save("wiley_style.png")
 ```
 
@@ -49,6 +49,7 @@ For American Physical Society publications, use the `paper` style context:
 
 ```python
 from monet_plots import style
+
 style.set_style("paper")
 ```
 
@@ -58,6 +59,7 @@ For Nature journal publications, use the `paper` style context (or customize fur
 
 ```python
 from monet_plots import style
+
 style.set_style("paper")
 # Further customizations can be applied after setting the base style
 # plt.rcParams.update({'font.size': 7, 'figure.figsize': (3.5, 2)})
@@ -72,18 +74,20 @@ import matplotlib.pyplot as plt
 from monet_plots import TimeSeriesPlot
 
 # Use a custom color palette
-custom_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+custom_colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
 
 # Apply custom style
-plt.style.use({
-    'axes.prop_cycle': plt.cycler('color', custom_colors),
-    'axes.labelsize': 12,
-    'axes.titlesize': 14,
-    'legend.fontsize': 11
-})
+plt.style.use(
+    {
+        "axes.prop_cycle": plt.cycler("color", custom_colors),
+        "axes.labelsize": 12,
+        "axes.titlesize": 14,
+        "legend.fontsize": 11,
+    }
+)
 
 plot = TimeSeriesPlot()
-plot.plot(df, x='time', y='value', color=custom_colors[0])
+plot.plot(df, x="time", y="value", color=custom_colors[0])
 plot.save("custom_colors.png")
 ```
 
@@ -92,14 +96,14 @@ plot.save("custom_colors.png")
 ```python
 # Custom font configuration
 font_style = {
-    'font.family': 'serif',
-    'font.serif': ['Georgia', 'Times New Roman', 'serif'],
-    'font.size': 11,
-    'axes.labelsize': 11,
-    'axes.titlesize': 14,
-    'legend.fontsize': 10,
-    'xtick.labelsize': 9,
-    'ytick.labelsize': 9
+    "font.family": "serif",
+    "font.serif": ["Georgia", "Times New Roman", "serif"],
+    "font.size": 11,
+    "axes.labelsize": 11,
+    "axes.titlesize": 14,
+    "legend.fontsize": 10,
+    "xtick.labelsize": 9,
+    "ytick.labelsize": 9,
 }
 
 plt.style.use(font_style)
@@ -110,13 +114,13 @@ plt.style.use(font_style)
 ```python
 # Figure size and layout customization
 layout_style = {
-    'figure.figsize': (14, 10),  # Large figure
-    'figure.dpi': 150,           # Lower DPI for web
-    'figure.autolayout': True,   # Automatic layout
-    'axes.titlesize': 16,        # Larger titles
-    'axes.labelsize': 14,        # Larger labels
-    'savefig.dpi': 300,          # High quality saves
-    'savefig.bbox': 'tight'      # Tight bounding box
+    "figure.figsize": (14, 10),  # Large figure
+    "figure.dpi": 150,  # Lower DPI for web
+    "figure.autolayout": True,  # Automatic layout
+    "axes.titlesize": 16,  # Larger titles
+    "axes.labelsize": 14,  # Larger labels
+    "savefig.dpi": 300,  # High quality saves
+    "savefig.bbox": "tight",  # Tight bounding box
 }
 
 plt.style.use(layout_style)
@@ -139,9 +143,15 @@ plot.xlabel("Longitude (degrees)")
 plot.ylabel("Latitude (degrees)")
 
 # Add subtitle
-plot.ax.text(0.5, 0.95, "Regional Analysis",
-            transform=plot.ax.transAxes,
-            ha='center', fontsize=11, style='italic')
+plot.ax.text(
+    0.5,
+    0.95,
+    "Regional Analysis",
+    transform=plot.ax.transAxes,
+    ha="center",
+    fontsize=11,
+    style="italic",
+)
 
 plot.save("custom_labels.png")
 ```
@@ -154,17 +164,17 @@ from monet_plots import TimeSeriesPlot
 plot = TimeSeriesPlot(figsize=(12, 6))
 
 # Plot data
-plot.plot(df, x='time', y='value')
+plot.plot(df, x="time", y="value")
 
 # Customize grid
-plot.ax.grid(True, linestyle='--', alpha=0.7, color='gray')
+plot.ax.grid(True, linestyle="--", alpha=0.7, color="gray")
 
 # Customize ticks
-plot.ax.tick_params(axis='both', which='major', labelsize=10, length=6, width=1.5)
-plot.ax.tick_params(axis='both', which='minor', length=3, width=1)
+plot.ax.tick_params(axis="both", which="major", labelsize=10, length=6, width=1.5)
+plot.ax.tick_params(axis="both", which="minor", length=3, width=1)
 
 # Add minor grid
-plot.ax.grid(True, axis='both', which='minor', linestyle=':', alpha=0.3)
+plot.ax.grid(True, axis="both", which="minor", linestyle=":", alpha=0.3)
 
 plot.save("custom_grid.png")
 ```
@@ -177,29 +187,23 @@ from monet_plots import TimeSeriesPlot
 plot = TimeSeriesPlot(figsize=(12, 6))
 
 # Plot with custom legend
-plot.plot(
-    df,
-    x='time',
-    y='value',
-    title="Custom Legend Example",
-    label="Main Dataset"
-)
+plot.plot(df, x="time", y="value", title="Custom Legend Example", label="Main Dataset")
 
 # Customize legend
 legend = plot.ax.legend(
-    loc='upper right',
+    loc="upper right",
     frameon=True,
     fancybox=True,
     shadow=True,
     framealpha=0.9,
     fontsize=10,
     markerscale=1.2,
-    edgecolor='black',
-    facecolor='white'
+    edgecolor="black",
+    facecolor="white",
 )
 
 # Add legend title
-legend.set_title("Data Sources", prop={'size': 11, 'weight': 'bold'})
+legend.set_title("Data Sources", prop={"size": 11, "weight": "bold"})
 
 plot.save("custom_legend.png")
 ```
@@ -219,8 +223,8 @@ sequential_data = np.random.random((20, 30)) * 100
 
 plot.plot(
     sequential_data,
-    cmap='viridis',  # Sequential colormap
-    title="Sequential Color Scheme"
+    cmap="viridis",  # Sequential colormap
+    title="Sequential Color Scheme",
 )
 
 plot.save("sequential_colors.png")
@@ -239,8 +243,8 @@ diverging_data = np.random.normal(0, 50, (20, 30))
 
 plot.plot(
     diverging_data,
-    cmap='RdBu_r',  # Red-Blue diverging
-    title="Diverging Color Scheme"
+    cmap="RdBu_r",  # Red-Blue diverging
+    title="Diverging Color Scheme",
 )
 
 plot.save("diverging_colors.png")
@@ -255,13 +259,14 @@ from monet_plots import ScatterPlot
 plot = ScatterPlot(figsize=(12, 8))
 
 # Create categorical data
-categories = ['A', 'B', 'C', 'D', 'E']
+categories = ["A", "B", "C", "D", "E"]
 colors = plt.cm.Set3(np.linspace(0, 1, len(categories)))
 
 for i, (category, color) in enumerate(zip(categories, colors)):
-    subset = df[df['category'] == category]
-    plot.ax.scatter(subset['x'], subset['y'],
-                   color=color, label=category, s=50, alpha=0.7)
+    subset = df[df["category"] == category]
+    plot.ax.scatter(
+        subset["x"], subset["y"], color=color, label=category, s=50, alpha=0.7
+    )
 
 plot.ax.legend(title="Categories")
 plot.title("Qualitative Color Scheme")
@@ -296,8 +301,8 @@ data = np.random.random((20, 30)) * 100
 
 plot.plot(
     data,
-    cmap='viridis',  # Colorblind-friendly sequential colormap
-    title="Sequential Data with Viridis Colormap"
+    cmap="viridis",  # Colorblind-friendly sequential colormap
+    title="Sequential Data with Viridis Colormap",
 )
 plot.save("colorblind_sequential.png")
 ```
@@ -325,8 +330,8 @@ diverging_data = np.random.normal(0, 50, (20, 30))
 
 plot.plot(
     diverging_data,
-    cmap='RdBu_r',  # Colorblind-friendly diverging colormap
-    title="Diverging Data with RdBu_r Colormap"
+    cmap="RdBu_r",  # Colorblind-friendly diverging colormap
+    title="Diverging Data with RdBu_r Colormap",
 )
 plot.save("colorblind_diverging.png")
 ```
@@ -350,21 +355,22 @@ import numpy as np
 plot = ScatterPlot(figsize=(12, 8))
 
 # Create categorical data
-categories = ['Group A', 'Group B', 'Group C', 'Group D']
+categories = ["Group A", "Group B", "Group C", "Group D"]
 data = {
-    'x': np.random.rand(100) * 10,
-    'y': np.random.rand(100) * 10,
-    'category': np.random.choice(categories, 100)
+    "x": np.random.rand(100) * 10,
+    "y": np.random.rand(100) * 10,
+    "category": np.random.choice(categories, 100),
 }
 df = pd.DataFrame(data)
 
 # Use a colorblind-friendly qualitative palette (tab10)
-colors = plt.cm.get_cmap('tab10', len(categories))
+colors = plt.cm.get_cmap("tab10", len(categories))
 
 for i, category in enumerate(categories):
-    subset = df[df['category'] == category]
-    plot.ax.scatter(subset['x'], subset['y'],
-                   color=colors(i), label=category, s=50, alpha=0.7)
+    subset = df[df["category"] == category]
+    plot.ax.scatter(
+        subset["x"], subset["y"], color=colors(i), label=category, s=50, alpha=0.7
+    )
 
 plot.ax.legend(title="Categories")
 plot.title("Qualitative Data with Colorblind-Friendly Palette")
@@ -388,6 +394,7 @@ Apply a style optimized for presentations:
 
 ```python
 from monet_plots import style
+
 style.set_style("presentation")
 ```
 
@@ -397,6 +404,7 @@ Apply a style suitable for academic papers:
 
 ```python
 from monet_plots import style
+
 style.set_style("paper")
 ```
 
@@ -406,6 +414,7 @@ Apply a style designed for web content:
 
 ```python
 from monet_plots import style
+
 style.set_style("web")
 ```
 
@@ -415,10 +424,10 @@ style.set_style("web")
 
 ```python
 # Apply style before creating plot
-plt.style.use('seaborn-v0_8-whitegrid')
+plt.style.use("seaborn-v0_8-whitegrid")
 
 plot = TimeSeriesPlot()
-plot.plot(df, x='time', y='value')
+plot.plot(df, x="time", y="value")
 plot.save("quick_style.png")
 ```
 
@@ -426,9 +435,9 @@ plot.save("quick_style.png")
 
 ```python
 # Apply style temporarily
-with plt.style.context('seaborn-v0_8-darkgrid'):
+with plt.style.context("seaborn-v0_8-darkgrid"):
     plot = TimeSeriesPlot()
-    plot.plot(df, x='time', y='value')
+    plot.plot(df, x="time", y="value")
     plot.save("temp_style.png")
 ```
 
@@ -436,14 +445,14 @@ with plt.style.context('seaborn-v0_8-darkgrid'):
 
 ```python
 # Combine multiple styles
-base_style = plt.style.library['seaborn-v0_8-whitegrid']
-custom_colors = {'axes.prop_cycle': plt.cycler('color', ['#e74c3c', '#3498db'])}
+base_style = plt.style.library["seaborn-v0_8-whitegrid"]
+custom_colors = {"axes.prop_cycle": plt.cycler("color", ["#e74c3c", "#3498db"])}
 
 combined_style = {**base_style, **custom_colors}
 plt.style.use(combined_style)
 
 plot = TimeSeriesPlot()
-plot.plot(df, x='time', y='value')
+plot.plot(df, x="time", y="value")
 plot.save("combined_style.png")
 ```
 
@@ -471,7 +480,7 @@ Create a style that optimizes plot layout for multi-panel figures.
 ```python
 # Reset matplotlib defaults before applying new style
 plt.rcParams.update(plt.rcParamsDefault)
-plt.style.use('your_style')
+plt.style.use("your_style")
 ```
 
 ### Issue 2: Font Not Available
@@ -479,12 +488,13 @@ plt.style.use('your_style')
 ```python
 # Check available fonts
 import matplotlib.font_manager as fm
+
 print([f.name for f in fm.fontManager.ttflist])
 
 # Use fallback fonts
 font_style = {
-    'font.family': 'serif',
-    'font.serif': ['Georgia', 'Times New Roman', 'serif']  # Fallback chain
+    "font.family": "serif",
+    "font.serif": ["Georgia", "Times New Roman", "serif"],  # Fallback chain
 }
 ```
 
@@ -493,12 +503,12 @@ font_style = {
 ```python
 # Improve text readability
 readable_style = {
-    'font.size': 12,
-    'axes.labelsize': 14,
-    'axes.titlesize': 16,
-    'legend.fontsize': 12,
-    'axes.titlesize': 16,
-    'axes.labelweight': 'bold'
+    "font.size": 12,
+    "axes.labelsize": 14,
+    "axes.titlesize": 16,
+    "legend.fontsize": 12,
+    "axes.titlesize": 16,
+    "axes.labelweight": "bold",
 }
 ```
 

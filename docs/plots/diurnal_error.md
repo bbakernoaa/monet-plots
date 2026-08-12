@@ -7,6 +7,6 @@ Visualizes model error (bias) as a function of the hour of day and another tempo
 ```python
 from monet_plots.plots import DiurnalErrorPlot
 
-plot = DiurnalErrorPlot(df, obs_col='obs', mod_col='mod', second_dim='month')
+plot = DiurnalErrorPlot(df, obs_col="obs", mod_col="mod", second_dim="month")
 plot.plot()
 ```

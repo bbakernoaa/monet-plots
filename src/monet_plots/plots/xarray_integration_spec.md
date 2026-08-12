@@ -25,6 +25,7 @@ A new utility function, `_normalize_data`, will be introduced in [`src/monet_plo
 import pandas as pd
 import xarray as xr
 
+
 def _normalize_data(data):
     """
     Inspects the input data and prepares it for plotting.
@@ -49,8 +50,9 @@ def _normalize_data(data):
     elif isinstance(data, xr.Dataset):
         return data
     else:
-        raise TypeError("Unsupported data type. Please provide a pandas DataFrame or an xarray object.")
-
+        raise TypeError(
+            "Unsupported data type. Please provide a pandas DataFrame or an xarray object."
+        )
 ```
 
 ### 2. Refactor `TimeSeriesPlot`
@@ -62,6 +64,7 @@ The [`TimeSeriesPlot`](src/monet_plots/plots/timeseries.py) class will be update
 
 from monet_plots.plot_utils import _normalize_data
 from monet_plots.plots.base import BasePlot
+
 
 class TimeSeriesPlot(BasePlot):
     """A class for creating time series plots."""
@@ -84,7 +87,7 @@ class TimeSeriesPlot(BasePlot):
         # - test_get_plot_data_from_dataset: Ensure correct data slicing from an xarray Dataset.
         if isinstance(self.data, pd.DataFrame):
             return self.data[variables]
-        else: # xarray.Dataset
+        else:  # xarray.Dataset
             return self.data[variables]
 
     def plot(self, variables, **kwargs):
@@ -101,7 +104,7 @@ class TimeSeriesPlot(BasePlot):
             # Existing pandas-based plotting logic
             # e.g., ax.plot(plot_data.index, plot_data[var], ...)
             pass
-        else: # xarray.Dataset
+        else:  # xarray.Dataset
             # New xarray-based plotting logic
             # e.g., plot_data[var].plot(ax=ax, ...)
             # This leverages xarray's built-in plotting capabilities.
@@ -110,7 +113,6 @@ class TimeSeriesPlot(BasePlot):
         # TDD Anchor:
         # - test_plot_with_xarray_input: Create a plot with an xarray Dataset and verify the output.
         # - test_plot_with_pandas_input: Ensure backward compatibility by plotting with a DataFrame.
-
 ```
 
 ---
@@ -142,27 +144,31 @@ import numpy as np
 from monet_plots.plots.timeseries import TimeSeriesPlot
 from monet_plots.plot_utils import _normalize_data
 
+
 # TDD: Test the normalization utility
 def test_normalize_dataframe_passthrough():
-    df = pd.DataFrame({'a': [1, 2]})
+    df = pd.DataFrame({"a": [1, 2]})
     assert _normalize_data(df) is df
 
+
 def test_normalize_dataarray_to_dataset():
-    da = xr.DataArray(np.random.rand(3), name='test_var')
+    da = xr.DataArray(np.random.rand(3), name="test_var")
     ds = _normalize_data(da)
     assert isinstance(ds, xr.Dataset)
-    assert 'test_var' in ds.data_vars
+    assert "test_var" in ds.data_vars
+
 
 # TDD: Test the refactored TimeSeriesPlot
 @pytest.fixture
 def sample_xarray_dataset():
     # Create a sample xarray Dataset for testing
-    time = pd.to_datetime(['2023-01-01', '2023-01-02'])
+    time = pd.to_datetime(["2023-01-01", "2023-01-02"])
     data = np.random.rand(2, 3)
     return xr.Dataset(
-        {'temperature': (('time', 'location'), data)},
-        coords={'time': time, 'location': ['A', 'B', 'C']}
+        {"temperature": (("time", "location"), data)},
+        coords={"time": time, "location": ["A", "B", "C"]},
     )
+
 
 def test_timeseries_plot_with_xarray(sample_xarray_dataset):
     """
@@ -176,13 +182,15 @@ def test_timeseries_plot_with_xarray(sample_xarray_dataset):
     assert isinstance(plot.data, xr.Dataset)
     # Further implementation would mock the plotting backend to verify calls.
 
+
 def test_backward_compatibility_with_pandas():
     """
     Ensure that the refactored class still works perfectly with pandas DataFrames.
     """
-    df = pd.DataFrame({'temperature': [10, 12]}, index=pd.to_datetime(['2023-01-01', '2023-01-02']))
+    df = pd.DataFrame(
+        {"temperature": [10, 12]}, index=pd.to_datetime(["2023-01-01", "2023-01-02"])
+    )
     plot = TimeSeriesPlot(df)
     assert isinstance(plot.data, pd.DataFrame)
     # Add plotting assertions here.
-
 ```

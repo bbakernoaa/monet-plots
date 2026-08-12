@@ -16,12 +16,7 @@ Create a colorbar with discrete colors and custom tick labels.
 from monet_plots import colorbar_index
 
 # Create indexed colorbar
-cbar, cmap = colorbar_index(
-    ncolors=10,
-    cmap='viridis',
-    minval=0,
-    maxval=100
-)
+cbar, cmap = colorbar_index(ncolors=10, cmap="viridis", minval=0, maxval=100)
 ```
 
 **Parameters:**
@@ -51,20 +46,14 @@ plot = SpatialPlot(figsize=(10, 8))
 data = np.random.random((50, 100)) * 100
 
 # Plot with indexed colorbar
-im = plot.ax.imshow(data, cmap='viridis')
+im = plot.ax.imshow(data, cmap="viridis")
 
 # Create indexed colorbar
-cbar, cmap = colorbar_index(
-    ncolors=10,
-    cmap='viridis',
-    minval=0,
-    maxval=100,
-    dtype=int
-)
+cbar, cmap = colorbar_index(ncolors=10, cmap="viridis", minval=0, maxval=100, dtype=int)
 
 # Use the discretized colormap for the plot
 im.set_cmap(cmap)
-plot.save('indexed_colorbar.png')
+plot.save("indexed_colorbar.png")
 ```
 
 ### `cmap_discretize(cmap, N)`
@@ -75,7 +64,7 @@ Return a discrete colormap from a continuous colormap.
 from monet_plots import cmap_discretize
 
 # Discretize continuous colormap
-discrete_cmap = cmap_discretize('viridis', 5)
+discrete_cmap = cmap_discretize("viridis", 5)
 ```
 
 **Parameters:**
@@ -95,13 +84,13 @@ import matplotlib.pyplot as plt
 from monet_plots import cmap_discretize, SpatialPlot
 
 # Create discretized colormap
-discrete_cmap = cmap_discretize('plasma', 7)
+discrete_cmap = cmap_discretize("plasma", 7)
 
 # Use in plot
 plot = SpatialPlot()
 data = np.random.random((30, 50))
 plot.plot(data, cmap=discrete_cmap, title="Discrete Colormap")
-plot.save('discrete_colormap.png')
+plot.save("discrete_colormap.png")
 ```
 
 ### `colorbar_from_cmap(cmap, vmin=None, vmax=None, **kwargs)`
@@ -112,7 +101,7 @@ Create a colorbar directly from a colormap.
 from monet_plots import colorbar_from_cmap
 
 # Create colorbar from colormap
-cbar = colorbar_from_cmap('viridis', vmin=0, vmax=1)
+cbar = colorbar_from_cmap("viridis", vmin=0, vmax=1)
 ```
 
 **Parameters:**
@@ -135,17 +124,12 @@ plot = SpatialPlot()
 data = np.random.random((40, 60))
 
 # Create plot with custom colorbar
-im = plot.ax.imshow(data, cmap='RdBu_r', vmin=-1, vmax=1)
+im = plot.ax.imshow(data, cmap="RdBu_r", vmin=-1, vmax=1)
 
 # Add colorbar
-cbar = colorbar_from_cmap(
-    'RdBu_r',
-    vmin=-1,
-    vmax=1,
-    label='Temperature Anomaly'
-)
+cbar = colorbar_from_cmap("RdBu_r", vmin=-1, vmax=1, label="Temperature Anomaly")
 
-plot.save('custom_colorbar.png')
+plot.save("custom_colorbar.png")
 ```
 
 ### `add_colorbar(ax, im, label='', **kwargs)`
@@ -156,7 +140,7 @@ Add a colorbar to an existing axes object.
 from monet_plots import add_colorbar
 
 # Add colorbar to existing plot
-cbar = add_colorbar(plot.ax, im, label='Value')
+cbar = add_colorbar(plot.ax, im, label="Value")
 ```
 
 **Parameters:**
@@ -180,18 +164,14 @@ plot = SpatialPlot()
 data = np.random.random((35, 55))
 
 # Create image
-im = plot.ax.imshow(data, cmap='coolwarm')
+im = plot.ax.imshow(data, cmap="coolwarm")
 
 # Add colorbar with custom formatting
 cbar = add_colorbar(
-    plot.ax,
-    im,
-    label='Concentration (ppb)',
-    orientation='horizontal',
-    shrink=0.8
+    plot.ax, im, label="Concentration (ppb)", orientation="horizontal", shrink=0.8
 )
 
-plot.save('horizontal_colorbar.png')
+plot.save("horizontal_colorbar.png")
 ```
 
 ### `create_diverging_cmap(n_colors=256, center=0, **kwargs)`
@@ -225,15 +205,11 @@ plot = SpatialPlot()
 data = np.random.normal(0, 1, (40, 60))
 
 # Create diverging colormap
-div_cmap = create_diverging_cmap(
-    n_colors=128,
-    center=0,
-    name='custom_diverging'
-)
+div_cmap = create_diverging_cmap(n_colors=128, center=0, name="custom_diverging")
 
 # Plot with diverging colormap
 plot.plot(data, cmap=div_cmap, title="Diverging Colormap")
-plot.save('diverging_colormap.png')
+plot.save("diverging_colormap.png")
 ```
 
 ## Advanced Colorbar Techniques
@@ -245,17 +221,11 @@ from monet_plots import colorbar_index
 import numpy as np
 
 # Create colorbar with custom labels
-cbar, cmap = colorbar_index(
-    ncolors=5,
-    cmap='YlOrRd',
-    minval=0,
-    maxval=50,
-    dtype=float
-)
+cbar, cmap = colorbar_index(ncolors=5, cmap="YlOrRd", minval=0, maxval=50, dtype=float)
 
 # Customize tick labels manually
 cbar.set_ticks([0, 10, 20, 30, 40, 50])
-cbar.set_ticklabels(['Low', 'Low-Med', 'Medium', 'Med-High', 'High'])
+cbar.set_ticklabels(["Low", "Low-Med", "Medium", "Med-High", "High"])
 ```
 
 ### Colorbar with Scientific Notation
@@ -265,7 +235,7 @@ from monet_plots import colorbar_from_cmap
 import matplotlib.ticker as ticker
 
 # Create colorbar with scientific notation
-cbar = colorbar_from_cmap('viridis', vmin=1e-6, vmax=1e2)
+cbar = colorbar_from_cmap("viridis", vmin=1e-6, vmax=1e2)
 
 # Format ticks with scientific notation
 formatter = ticker.ScalarFormatter(useMathText=True)
@@ -283,11 +253,7 @@ levels = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 n_colors = len(levels) - 1
 
 cbar, cmap = colorbar_index(
-    ncolors=n_colors,
-    cmap='RdYlBu_r',
-    minval=levels[0],
-    maxval=levels[-1],
-    dtype=int
+    ncolors=n_colors, cmap="RdYlBu_r", minval=levels[0], maxval=levels[-1], dtype=int
 )
 
 # Set custom tick positions
@@ -307,16 +273,10 @@ plot = SpatialPlot(figsize=(10, 8))
 data = np.random.random((50, 100)) * 150
 
 # Plot data
-im = plot.ax.imshow(data, cmap='viridis')
+im = plot.ax.imshow(data, cmap="viridis")
 
 # Create indexed colorbar
-cbar, cmap = colorbar_index(
-    ncolors=15,
-    cmap='viridis',
-    minval=0,
-    maxval=150,
-    dtype=int
-)
+cbar, cmap = colorbar_index(ncolors=15, cmap="viridis", minval=0, maxval=150, dtype=int)
 
 # Update plot colormap
 im.set_cmap(cmap)
@@ -341,15 +301,10 @@ x = np.random.normal(0, 1, 1000)
 y = np.random.normal(0, 1, 1000)
 colors = np.random.uniform(0, 100, 1000)
 
-scatter = plot.ax.scatter(x, y, c=colors, cmap='plasma', alpha=0.6)
+scatter = plot.ax.scatter(x, y, c=colors, cmap="plasma", alpha=0.6)
 
 # Add colorbar
-cbar = colorbar_from_cmap(
-    'plasma',
-    vmin=0,
-    vmax=100,
-    label='Confidence Level'
-)
+cbar = colorbar_from_cmap("plasma", vmin=0, vmax=100, label="Confidence Level")
 
 plot.title("Scatter Plot with Color Mapping")
 plot.xlabel("X Variable")
@@ -366,33 +321,33 @@ import pandas as pd
 from monet_plots import TimeSeriesPlot, colorbar_index
 
 # Create time series data
-dates = pd.date_range('2023-01-01', periods=365, freq='D')
-data = pd.DataFrame({
-    'date': dates,
-    'temperature': 15 + 10 * np.sin(np.arange(365) * 0.1) + np.random.normal(0, 2, 365),
-    'confidence': np.random.uniform(0.8, 1.0, 365)
-})
+dates = pd.date_range("2023-01-01", periods=365, freq="D")
+data = pd.DataFrame(
+    {
+        "date": dates,
+        "temperature": 15
+        + 10 * np.sin(np.arange(365) * 0.1)
+        + np.random.normal(0, 2, 365),
+        "confidence": np.random.uniform(0.8, 1.0, 365),
+    }
+)
 
 # Create time series plot with colored confidence bands
 plot = TimeSeriesPlot(figsize=(12, 6))
 
 # Plot temperature with confidence-based coloring
 for i in range(len(data) - 1):
-    color_value = data['confidence'].iloc[i]
+    color_value = data["confidence"].iloc[i]
     plot.ax.plot(
-        data['date'].iloc[i:i+2],
-        data['temperature'].iloc[i:i+2],
+        data["date"].iloc[i : i + 2],
+        data["temperature"].iloc[i : i + 2],
         color=plt.cm.RdYlGn(color_value),
-        linewidth=2
+        linewidth=2,
     )
 
 # Add colorbar for confidence
 cbar, cmap = colorbar_index(
-    ncolors=10,
-    cmap='RdYlGn',
-    minval=0.8,
-    maxval=1.0,
-    dtype=float
+    ncolors=10, cmap="RdYlGn", minval=0.8, maxval=1.0, dtype=float
 )
 
 plot.title("Temperature with Confidence Bands")
@@ -430,7 +385,7 @@ cbar = plt.colorbar(im, ax=plot.ax)  # Explicitly specify axes
 ```python
 # Manually set tick labels
 cbar.set_ticks([0, 25, 50, 75, 100])
-cbar.set_ticklabels(['Min', 'Q1', 'Median', 'Q3', 'Max'])
+cbar.set_ticklabels(["Min", "Q1", "Median", "Q3", "Max"])
 ```
 
 ### Colorbar Alignment Issues

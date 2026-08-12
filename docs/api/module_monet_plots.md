@@ -57,11 +57,11 @@ print(monet_plots.__email__)
 ### Version Information
 
 ```python
-print(monet_plots.__version__)      # Version string
-print(monet_plots.__author__)       # Author name
-print(monet_plots.__email__)        # Contact email
+print(monet_plots.__version__)  # Version string
+print(monet_plots.__author__)  # Author name
+print(monet_plots.__email__)  # Contact email
 print(monet_plots.__description__)  # Package description
-print(monet_plots.__url__)          # Project URL
+print(monet_plots.__url__)  # Project URL
 ```
 
 ### Dependencies
@@ -72,9 +72,9 @@ print(monet_plots.__dependencies__)
 print(monet_plots.__optional_dependencies__)
 
 # Check if optional dependencies are available
-print(monet_plots.has_cartopy)      # True if cartopy is installed
-print(monet_plots.has_seaborn)     # True if seaborn is installed
-print(monet_plots.has_xarray)       # True if xarray is installed
+print(monet_plots.has_cartopy)  # True if cartopy is installed
+print(monet_plots.has_seaborn)  # True if seaborn is installed
+print(monet_plots.has_xarray)  # True if xarray is installed
 ```
 
 ## Style Configuration
@@ -96,31 +96,27 @@ plt.style.use(monet_plots.wiley_style)
 ```python
 wiley_style = {
     # Font settings
-    'font.family': 'serif',
-    'font.serif': 'Times New Roman',
-    'font.size': 10,
-
+    "font.family": "serif",
+    "font.serif": "Times New Roman",
+    "font.size": 10,
     # Axes settings
-    'axes.labelsize': 10,
-    'axes.titlesize': 12,
-    'axes.grid': True,
-    'grid.linestyle': ':',
-    'grid.color': 'gray',
-
+    "axes.labelsize": 10,
+    "axes.titlesize": 12,
+    "axes.grid": True,
+    "grid.linestyle": ":",
+    "grid.color": "gray",
     # Line settings
-    'lines.linewidth': 1.5,
-    'lines.markersize': 5,
-
+    "lines.linewidth": 1.5,
+    "lines.markersize": 5,
     # Legend settings
-    'legend.fontsize': 9,
-    'legend.frameon': False,
-
+    "legend.fontsize": 9,
+    "legend.frameon": False,
     # Figure settings
-    'figure.figsize': (6, 4),
-    'figure.dpi': 300,
-    'savefig.dpi': 300,
-    'savefig.format': 'tiff',
-    'savefig.bbox': 'tight',
+    "figure.figsize": (6, 4),
+    "figure.dpi": 300,
+    "savefig.dpi": 300,
+    "savefig.format": "tiff",
+    "savefig.bbox": "tight",
 }
 ```
 
@@ -130,6 +126,7 @@ American Physical Society (APS) compliant style.
 
 ```python
 import matplotlib.pyplot as plt
+
 plt.style.use(monet_plots.aps_style)
 ```
 
@@ -139,6 +136,7 @@ Nature journal compliant style.
 
 ```python
 import matplotlib.pyplot as plt
+
 plt.style.use(monet_plots.nature_style)
 ```
 
@@ -148,6 +146,7 @@ Science journal compliant style.
 
 ```python
 import matplotlib.pyplot as plt
+
 plt.style.use(monet_plots.science_style)
 ```
 
@@ -167,7 +166,7 @@ plt.style.use(monet_plots.wiley_style)
 plot = monet_plots.SpatialPlot(figsize=(10, 8))
 data = np.random.random((50, 100))
 plot.plot(data, title="Basic Spatial Plot")
-plot.save('basic_plot.png')
+plot.save("basic_plot.png")
 ```
 
 ### Working with Different Plot Types
@@ -178,12 +177,14 @@ import pandas as pd
 import numpy as np
 
 # Create sample data
-dates = pd.date_range('2023-01-01', periods=100, freq='D')
-data = pd.DataFrame({
-    'time': dates,
-    'observed': np.random.normal(0, 1, 100),
-    'modeled': np.random.normal(0.1, 1.1, 100)
-})
+dates = pd.date_range("2023-01-01", periods=100, freq="D")
+data = pd.DataFrame(
+    {
+        "time": dates,
+        "observed": np.random.normal(0, 1, 100),
+        "modeled": np.random.normal(0.1, 1.1, 100),
+    }
+)
 
 # Create different plot types
 spatial_plot = monet_plots.SpatialPlot()
@@ -192,13 +193,13 @@ scatter_plot = monet_plots.ScatterPlot()
 
 # Plot data
 spatial_plot.plot(np.random.random((30, 50)), title="Spatial Data")
-timeseries_plot.plot(data, x='time', y='observed', title="Time Series")
-scatter_plot.plot(data, x='observed', y='modeled', title="Scatter Plot")
+timeseries_plot.plot(data, x="time", y="observed", title="Time Series")
+scatter_plot.plot(data, x="observed", y="modeled", title="Scatter Plot")
 
 # Save plots
-spatial_plot.save('spatial.png')
-timeseries_plot.save('timeseries.png')
-scatter_plot.save('scatter.png')
+spatial_plot.save("spatial.png")
+timeseries_plot.save("timeseries.png")
+scatter_plot.save("scatter.png")
 
 # Clean up
 spatial_plot.close()
@@ -214,10 +215,7 @@ import matplotlib.pyplot as plt
 
 # Create custom presentation style
 presentation_style = monet_plots.custom_style(
-    base_style='wiley',
-    font_size=14,
-    figure_size=(12, 8),
-    grid_alpha=0.3
+    base_style="wiley", font_size=14, figure_size=(12, 8), grid_alpha=0.3
 )
 
 plt.style.use(presentation_style)
@@ -225,7 +223,7 @@ plt.style.use(presentation_style)
 # Create plots with custom style
 plot = monet_plots.SpatialPlot(figsize=(14, 10))
 plot.plot(data, title="Presentation Style Plot")
-plot.save('presentation_plot.png')
+plot.save("presentation_plot.png")
 ```
 
 ### Conditional Import Handling
@@ -236,14 +234,16 @@ import monet_plots
 # Safe import with optional dependencies
 try:
     import cartopy
+
     print("Cartopy is available for geospatial plotting")
     plot = monet_plots.SpatialPlot()
 except ImportError:
     print("Cartopy not available, using basic matplotlib")
     from matplotlib import pyplot as plt
+
     fig, ax = plt.subplots()
     ax.imshow(np.random.random((50, 100)))
-    plt.savefig('fallback_plot.png')
+    plt.savefig("fallback_plot.png")
 ```
 
 ## Package Configuration
@@ -255,13 +255,13 @@ import os
 import monet_plots
 
 # Set custom style directory
-os.environ['MONET_PLOTS_STYLE_DIR'] = '/path/to/custom/styles'
+os.environ["MONET_PLOTS_STYLE_DIR"] = "/path/to/custom/styles"
 
 # Set default figure size
-os.environ['MONET_PLOTS_DEFAULT_FIGSIZE'] = '10,8'
+os.environ["MONET_PLOTS_DEFAULT_FIGSIZE"] = "10,8"
 
 # Set output directory
-os.environ['MONET_PLOTS_OUTPUT_DIR'] = './plots'
+os.environ["MONET_PLOTS_OUTPUT_DIR"] = "./plots"
 ```
 
 ### Configuration File
@@ -288,10 +288,7 @@ import monet_plots
 
 # Set global configuration
 monet_plots.set_config(
-    default_style='aps',
-    figure_size=(12, 9),
-    dpi=300,
-    save_format='pdf'
+    default_style="aps", figure_size=(12, 9), dpi=300, save_format="pdf"
 )
 
 # Get current configuration
@@ -307,16 +304,18 @@ print(f"Default style: {config['default_style']}")
 ```python
 import monet_plots
 
+
 # Register custom plot types
 class CustomPlot(monet_plots.BasePlot):
     def plot(self, data, **kwargs):
         # Custom plotting logic
         pass
 
-monet_plots.register_plot_type('custom', CustomPlot)
+
+monet_plots.register_plot_type("custom", CustomPlot)
 
 # Use custom plot
-plot = monet_plots.create_plot('custom')
+plot = monet_plots.create_plot("custom")
 plot.plot(data)
 ```
 
@@ -327,7 +326,7 @@ import monet_plots
 import glob
 
 # Process multiple files
-files = glob.glob('data/*.nc')
+files = glob.glob("data/*.nc")
 
 for file in files:
     # Load data
@@ -338,7 +337,7 @@ for file in files:
     plot.plot(data, title=f"Data from {file}")
 
     # Save with consistent naming
-    filename = file.replace('.nc', '.png').replace('data/', 'plots/')
+    filename = file.replace(".nc", ".png").replace("data/", "plots/")
     plot.save(filename)
     plot.close()
 ```
@@ -349,14 +348,14 @@ for file in files:
 import monet_plots
 
 # Export style configuration
-style_config = monet_plots.export_style('wiley')
-with open('wiley_style.json', 'w') as f:
+style_config = monet_plots.export_style("wiley")
+with open("wiley_style.json", "w") as f:
     json.dump(style_config, f, indent=2)
 
 # Import style configuration
-with open('custom_style.json', 'r') as f:
+with open("custom_style.json", "r") as f:
     custom_style = json.load(f)
-monet_plots.import_style('custom', custom_style)
+monet_plots.import_style("custom", custom_style)
 ```
 
 ## Error Handling
@@ -391,7 +390,7 @@ monet_plots.enable_performance_mode()
 plot = monet_plots.SpatialPlot(
     figsize=(8, 6),
     dpi=100,  # Lower DPI for faster rendering
-    optimize=True
+    optimize=True,
 )
 
 # Disable interactive features for batch processing
@@ -405,7 +404,7 @@ for data in data_list:
     plots.append(plot)
 
 # Save all plots at once
-monet_plots.batch_save(plots, output_dir='./plots')
+monet_plots.batch_save(plots, output_dir="./plots")
 
 # Clean up
 monet_plots.cleanup()
