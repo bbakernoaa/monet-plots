@@ -104,3 +104,26 @@ def test_ridgeline_new_features():
     ax = plot.plot(color_by_group=True)
     assert isinstance(ax, plt.Axes)
     plt.close(plot.fig)
+
+
+def test_ridgeline_lazy_and_hvplot():
+    """Test RidgelinePlot with Dask/lazy xarray data and hvplot method."""
+    lats = np.linspace(-90, 90, 10)
+    lons = np.linspace(-180, 180, 20)
+    data_np = np.random.randn(len(lats), len(lons))
+
+    da = xr.DataArray(
+        data_np,
+        coords={"lat": lats, "lon": lons},
+        dims=("lat", "lon"),
+        name="Temperature",
+    ).chunk({"lat": 5, "lon": 10})
+
+    plot = RidgelinePlot(da, group_dim="lat", title="Lazy Ridgeline")
+    ax = plot.plot()
+    assert isinstance(ax, plt.Axes)
+    assert "history" in plot.data.attrs
+    plt.close(plot.fig)
+
+    hv_obj = plot.hvplot()
+    assert hv_obj is not None
