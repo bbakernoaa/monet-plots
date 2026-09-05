@@ -3,14 +3,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import xarray as xr
 from scipy.stats import gaussian_kde
 
 from ..colorbars import get_linear_scale
-from ..plot_utils import normalize_data
+from ..plot_utils import _update_history, compute, normalize_data
 from .base import BasePlot
 
 if TYPE_CHECKING:
@@ -37,45 +37,78 @@ class RidgelinePlot(BasePlot):
 
     def __init__(
         self,
-        data: Any,
-        group_dim: str,
-        x: Optional[str] = None,
+        data: Any | None = None,
+        group_dim: str | None = None,
+        x: str | None = None,
         *,
-        x_range: Optional[Tuple[float, float]] = None,
+        x_range: tuple[float, float] | None = None,
         scale_factor: float = 1.0,
         overlap: float = 0.5,
         cmap: str = "viridis",
-        title: Optional[str] = None,
-        bw_method: Optional[Any] = None,
+        title: str | None = None,
+        bw_method: Any | None = None,
         alpha: float = 0.8,
-        quantiles: Optional[list[float]] = None,
+        quantiles: list[float] | None = None,
+        fig: Any | None = None,
+        ax: Any | None = None,
         **kwargs: Any,
-    ):
+    ) -> None:
         """
-        Initializes the ridgeline plot with data and settings.
+        Initialize the ridgeline plot with data and visualization settings.
 
-        Args:
-            data (Any): The data to plot (xr.DataArray, xr.Dataset, or pd.DataFrame).
-            group_dim (str): The dimension or column to group by for the Y-axis.
-            x (str, optional): The variable/column to plot distributions of.
-                Required if data is a Dataset or DataFrame with multiple variables.
-            x_range (tuple[float, float], optional): Tuple (min, max) for the x-axis limits.
-                If None, auto-calculated.
-            scale_factor (float): Height scaling of the curves. Defaults to 1.0.
-            overlap (float): Vertical spacing between curves. Higher values mean more overlap.
-                Defaults to 0.5.
-            cmap (str): Colormap name for coloring curves. Defaults to 'viridis'.
-            title (str, optional): Plot title.
-            bw_method (Any, optional): KDE bandwidth method (passed to scipy.stats.gaussian_kde).
-            alpha (float): Transparency of the ridges. Defaults to 0.8.
-            quantiles (list[float], optional): List of quantiles to display (e.g., [0.5]).
-            **kwargs: Additional keyword arguments for BasePlot (figure/axes creation).
+        Parameters
+        ----------
+        data : Any, optional
+            The data to plot (xr.DataArray, xr.Dataset, or pd.DataFrame).
+        group_dim : str, optional
+            The dimension or column name to group by for the Y-axis.
+        x : str, optional
+            The variable or column name to plot distributions of.
+            Required if data is a Dataset or DataFrame with multiple variables.
+        x_range : tuple[float, float], optional
+            Tuple (min, max) for the x-axis limits. If None, auto-calculated.
+        scale_factor : float, optional
+            Height scaling of the distribution curves, by default 1.0.
+        overlap : float, optional
+            Vertical spacing between curves. Higher values mean more overlap, by default 0.5.
+        cmap : str, optional
+            Colormap name for coloring curves, by default "viridis".
+        title : str, optional
+            Plot title, by default None.
+        bw_method : Any, optional
+            KDE bandwidth method (passed to `scipy.stats.gaussian_kde`), by default None.
+        alpha : float, optional
+            Transparency of the ridges, by default 0.8.
+        quantiles : list[float], optional
+            List of quantiles to display (e.g., [0.5]), by default None.
+        fig : Any, optional
+            Matplotlib figure instance, by default None.
+        ax : Any, optional
+            Matplotlib axes instance, by default None.
+        **kwargs : Any
+            Additional keyword arguments for BasePlot (figure/axes creation).
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> from monet_plots.plots import RidgelinePlot
+        >>> df = pd.DataFrame({'group': ['A']*50 + ['B']*50, 'val': np.random.randn(100)})
+        >>> plot = RidgelinePlot(df, group_dim='group', x='val')
         """
-        super().__init__(**kwargs)
+        # Support legacy 'df' keyword if 'data' is not provided
+        if data is None and "df" in kwargs:
+            data = kwargs.pop("df")
+
+        super().__init__(fig=fig, ax=ax, **kwargs)
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1)
 
-        self.data = normalize_data(data, prefer_xarray=False)
+        self.data = normalize_data(data)
         self.group_dim = group_dim
         self.x = x
         self.x_range = x_range
@@ -87,35 +120,54 @@ class RidgelinePlot(BasePlot):
         self.alpha = alpha
         self.quantiles = quantiles
 
+        _update_history(
+            self.data, f"Initialized RidgelinePlot for group_dim={group_dim}, x={x}"
+        )
+
     def plot(
         self, gradient: bool = True, color_by_group: bool = False, **kwargs: Any
     ) -> matplotlib.axes.Axes:
         """
-        Generate the ridgeline plot.
+        Generate the ridgeline plot (Track A).
 
-        Args:
-            gradient (bool): If True, fill curves with a gradient based on x-values.
-            color_by_group (bool): If True, color each ridge by its group category.
-                Takes precedence over gradient if True.
-            **kwargs: Additional keyword arguments for formatting.
+        Parameters
+        ----------
+        gradient : bool, optional
+            If True, fill curves with a gradient based on x-values, by default True.
+        color_by_group : bool, optional
+            If True, color each ridge by its group category.
+            Takes precedence over gradient, by default False.
+        **kwargs : Any
+            Additional formatting arguments.
 
-        Returns:
-            matplotlib.axes.Axes: The axes object containing the plot.
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The matplotlib axes object containing the plot.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> from monet_plots.plots import RidgelinePlot
+        >>> df = pd.DataFrame({'group': ['A']*50 + ['B']*50, 'val': np.random.randn(100)})
+        >>> plot = RidgelinePlot(df, group_dim='group', x='val')
+        >>> ax = plot.plot()
         """
         import matplotlib.pyplot as plt
-
-        from ..verification_metrics import _update_history
 
         # 1. Prepare Data and Groups
         if isinstance(self.data, xr.DataArray):
             da = self.data
             da_sorted = da.sortby(self.group_dim, ascending=False)
-            groups = da_sorted[self.group_dim].values
+            groups = compute(da_sorted[self.group_dim])
+            if hasattr(groups, "values"):
+                groups = groups.values
             data_name = str(da.name) if da.name else "Value"
 
             if self.x_range is None:
-                vmin = float(da.min().compute())
-                vmax = float(da.max().compute())
+                vmin_raw, vmax_raw = compute(da.min(), da.max())
+                vmin, vmax = float(vmin_raw), float(vmax_raw)
             else:
                 vmin, vmax = self.x_range
 
@@ -124,15 +176,17 @@ class RidgelinePlot(BasePlot):
 
         elif isinstance(self.data, xr.Dataset):
             if self.x is None:
-                self.x = list(self.data.data_vars)[0]
+                self.x = next(iter(self.data.data_vars))
             da = self.data[self.x]
             da_sorted = da.sortby(self.group_dim, ascending=False)
-            groups = da_sorted[self.group_dim].values
+            groups = compute(da_sorted[self.group_dim])
+            if hasattr(groups, "values"):
+                groups = groups.values
             data_name = str(da.name) if da.name else self.x
 
             if self.x_range is None:
-                vmin = float(da.min().compute())
-                vmax = float(da.max().compute())
+                vmin_raw, vmax_raw = compute(da.min(), da.max())
+                vmin, vmax = float(vmin_raw), float(vmax_raw)
             else:
                 vmin, vmax = self.x_range
 
@@ -177,7 +231,11 @@ class RidgelinePlot(BasePlot):
         for i, val in enumerate(groups):
             if isinstance(self.data, (xr.DataArray, xr.Dataset)):
                 # Handle DataArray/Dataset slice
-                data_slice = da_sorted.sel({self.group_dim: val}).values.flatten()
+                slice_raw = compute(da_sorted.sel({self.group_dim: val}))
+                if hasattr(slice_raw, "values"):
+                    data_slice = slice_raw.values.ravel()
+                else:
+                    data_slice = np.asarray(slice_raw).ravel()
             else:
                 # Handle DataFrame slice
                 data_slice = df_sorted[df_sorted[self.group_dim] == val][
@@ -306,3 +364,50 @@ class RidgelinePlot(BasePlot):
             _update_history(self.data, f"Created ridgeline plot for {data_name}")
 
         return self.ax
+
+    def hvplot(self, **kwargs: Any) -> Any:
+        """
+        Generate an interactive ridgeline KDE plot using hvPlot (Track B).
+
+        Parameters
+        ----------
+        **kwargs : Any
+            Keyword arguments passed to `hvplot.kde`.
+
+        Returns
+        -------
+        Any
+            The interactive hvPlot object.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> from monet_plots.plots import RidgelinePlot
+        >>> df = pd.DataFrame({'group': ['A']*50 + ['B']*50, 'val': np.random.randn(100)})
+        >>> plot = RidgelinePlot(df, group_dim='group', x='val')
+        >>> # interactive = plot.hvplot() # Requires hvplot installed
+        """
+        try:
+            import hvplot.pandas
+            import hvplot.xarray  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "hvplot is required for interactive plotting. Install it with 'pip install hvplot'."
+            )
+
+        plot_kwargs = {}
+        if self.x:
+            plot_kwargs["y"] = self.x
+        if self.group_dim:
+            plot_kwargs["by"] = self.group_dim
+        if self.title:
+            plot_kwargs["title"] = self.title
+
+        res = self.data.hvplot.kde(**{**plot_kwargs, **kwargs})
+
+        _update_history(
+            self.data,
+            f"Generated interactive hvplot Ridgeline for group_dim={self.group_dim}",
+        )
+        return res

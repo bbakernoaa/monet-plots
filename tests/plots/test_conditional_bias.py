@@ -79,7 +79,7 @@ def test_conditional_bias_zero_bias_line(clear_figures, sample_data):
     plot.plot(data=sample_data, obs_col="obs", fcst_col="fcst")
     # Check for a horizontal line at y=0
     found = any(
-        getattr(line, "get_ydata", lambda: [])()[0] == 0
+        getattr(line, "get_ydata", list)()[0] == 0
         and all(y == 0 for y in line.get_ydata())
         for line in plot.ax.get_lines()
     )

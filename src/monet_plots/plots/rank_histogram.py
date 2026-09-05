@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -30,8 +30,8 @@ class RankHistogramPlot(BasePlot):
         self,
         data: Any,
         rank_col: str = "rank",
-        n_members: Optional[int] = None,
-        label_col: Optional[str] = None,
+        n_members: int | None = None,
+        label_col: str | None = None,
         normalize: bool = True,
         **kwargs,
     ):

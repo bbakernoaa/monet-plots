@@ -20,6 +20,7 @@ standalone for custom map visualizations.
 """
 
 import numpy as np
+
 from monet_plots.plots.spatial import SpatialPlot
 
 data = np.random.random((20, 30)) * 100

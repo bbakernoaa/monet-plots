@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -134,7 +134,7 @@ def validate_plot_parameters(plot_class: str, method: str, **kwargs) -> None:
         _validate_timeseries_plot_params(kwargs)
 
 
-def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None:
+def validate_data_array(data: Any, required_dims: list | None = None) -> None:
     """
     Validate data array parameters.
 
@@ -164,7 +164,7 @@ def validate_data_array(data: Any, required_dims: Optional[list] = None) -> None
                 )
 
 
-def validate_dataframe(df: Any, required_columns: Optional[list] = None) -> None:
+def validate_dataframe(df: Any, required_columns: list | None = None) -> None:
     """
     Validate DataFrame parameters.
 

@@ -66,7 +66,7 @@ class Windrose(BasePlot):
         bins: int | np.ndarray = 16,
         rose_bins: int | np.ndarray = 5,
         percentage: bool = False,
-    ) -> t.Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Compute the 2D histogram for the windrose.
 

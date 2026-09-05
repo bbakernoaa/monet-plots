@@ -3,20 +3,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
-import matplotlib.patches as patches
 import numpy as np
 import xarray as xr
+from matplotlib import patches
 
-from .base import BasePlot
-from ..plot_utils import _update_history, normalize_data, compute, is_lazy
+from ..plot_utils import _update_history, compute, is_lazy, normalize_data
 from ..verification_metrics import (
     compute_mfb,
     compute_mfe,
     compute_nmb,
     compute_nme,
 )
+from .base import BasePlot
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -44,16 +44,16 @@ class SoccerPlot(BasePlot):
         self,
         data: Any,
         *,
-        obs_col: Optional[str] = None,
-        mod_col: Optional[str] = None,
-        bias_col: Optional[str] = None,
-        error_col: Optional[str] = None,
-        label_col: Optional[str] = None,
+        obs_col: str | None = None,
+        mod_col: str | None = None,
+        bias_col: str | None = None,
+        error_col: str | None = None,
+        label_col: str | None = None,
         metric: str = "fractional",
-        goal: Optional[Dict[str, float]] = {"bias": 30.0, "error": 50.0},
-        criteria: Optional[Dict[str, float]] = {"bias": 60.0, "error": 75.0},
-        fig: Optional[matplotlib.figure.Figure] = None,
-        ax: Optional[matplotlib.axes.Axes] = None,
+        goal: dict[str, float] | None = {"bias": 30.0, "error": 50.0},
+        criteria: dict[str, float] | None = {"bias": 60.0, "error": 75.0},
+        fig: matplotlib.figure.Figure | None = None,
+        ax: matplotlib.axes.Axes | None = None,
         **kwargs: Any,
     ):
         """
@@ -257,7 +257,7 @@ class SoccerPlot(BasePlot):
             The interactive soccer plot.
         """
         try:
-            import hvplot.pandas  # noqa: F401
+            import hvplot.pandas
             import hvplot.xarray  # noqa: F401
         except ImportError:
             raise ImportError(

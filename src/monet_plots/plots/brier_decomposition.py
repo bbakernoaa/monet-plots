@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -26,10 +26,10 @@ class BrierScoreDecompositionPlot(BasePlot):
         reliability_col: str = "reliability",
         resolution_col: str = "resolution",
         uncertainty_col: str = "uncertainty",
-        forecasts_col: Optional[str] = None,
-        observations_col: Optional[str] = None,
+        forecasts_col: str | None = None,
+        observations_col: str | None = None,
         n_bins: int = 10,
-        label_col: Optional[str] = None,
+        label_col: str | None = None,
         **kwargs,
     ):
         """

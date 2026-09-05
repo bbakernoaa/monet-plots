@@ -3,13 +3,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
 import xarray as xr
-from typing import Any, Optional, Union, List, TYPE_CHECKING
 
-from .base import BasePlot
 from ..plot_utils import _update_history, normalize_data
 from ..verification_metrics import compute_radar_metrics
+from .base import BasePlot
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -32,12 +33,12 @@ class RadarPlot(BasePlot):
         self,
         data: Any = None,
         *,
-        obs_col: Optional[str] = None,
-        mod_cols: Optional[Union[str, List[str]]] = None,
-        metrics: Optional[List[str]] = None,
-        metrics_data: Optional[xr.Dataset] = None,
-        fig: Optional[matplotlib.figure.Figure] = None,
-        ax: Optional[matplotlib.axes.Axes] = None,
+        obs_col: str | None = None,
+        mod_cols: str | list[str] | None = None,
+        metrics: list[str] | None = None,
+        metrics_data: xr.Dataset | None = None,
+        fig: matplotlib.figure.Figure | None = None,
+        ax: matplotlib.axes.Axes | None = None,
         **kwargs: Any,
     ):
         """
@@ -86,8 +87,8 @@ class RadarPlot(BasePlot):
         self,
         data: Any,
         obs_col: str,
-        mod_cols: Union[str, List[str]],
-        metrics: Optional[List[str]],
+        mod_cols: str | list[str],
+        metrics: list[str] | None,
     ) -> None:
         """Calculate normalized metrics for one or more models."""
         if isinstance(mod_cols, str):

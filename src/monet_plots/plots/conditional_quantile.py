@@ -1,7 +1,7 @@
 # src/monet_plots/plots/conditional_quantile.py
 """Conditional quantile plot for model evaluation."""
 
-from typing import Any, List, Union
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,8 +25,8 @@ class ConditionalQuantilePlot(BasePlot):
         obs_col: str,
         mod_col: str,
         *,
-        bins: Union[int, List[float]] = 10,
-        quantiles: List[float] = [0.25, 0.5, 0.75],
+        bins: int | list[float] = 10,
+        quantiles: list[float] = [0.25, 0.5, 0.75],
         **kwargs,
     ):
         """

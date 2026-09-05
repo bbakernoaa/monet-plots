@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -35,8 +35,8 @@ class PerformanceDiagramPlot(BasePlot):
         data: Any,
         x_col: str = "success_ratio",
         y_col: str = "pod",
-        counts_cols: Optional[List[str]] = None,
-        label_col: Optional[str] = None,
+        counts_cols: list[str] | None = None,
+        label_col: str | None = None,
         **kwargs,
     ):
         """

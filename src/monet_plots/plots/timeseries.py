@@ -1,7 +1,7 @@
 # src/monet_plots/plots/timeseries.py
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -30,8 +30,8 @@ class TimeSeriesPlot(BasePlot):
         plotargs: dict = {},
         fillargs: dict = None,
         title: str = "",
-        ylabel: Optional[str] = None,
-        label: Optional[str] = None,
+        ylabel: str | None = None,
+        label: str | None = None,
         *args,
         **kwargs,
     ):
@@ -238,10 +238,10 @@ class TimeSeriesStatsPlot(BasePlot):
         self,
         df: Any,
         col1: str,
-        col2: Union[str, list[str]],
-        x: Optional[str] = None,
-        fig: Optional[matplotlib.figure.Figure] = None,
-        ax: Optional[matplotlib.axes.Axes] = None,
+        col2: str | list[str],
+        x: str | None = None,
+        fig: matplotlib.figure.Figure | None = None,
+        ax: matplotlib.axes.Axes | None = None,
         **kwargs: Any,
     ):
         """

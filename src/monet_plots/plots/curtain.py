@@ -1,7 +1,7 @@
 # src/monet_plots/plots/curtain.py
 """Vertical curtain plot for cross-sectional data."""
 
-from typing import Any, Optional
+from typing import Any
 
 import xarray as xr
 
@@ -21,8 +21,8 @@ class CurtainPlot(BasePlot):
         self,
         data: Any,
         *,
-        x: Optional[str] = None,
-        y: Optional[str] = None,
+        x: str | None = None,
+        y: str | None = None,
         **kwargs,
     ):
         """

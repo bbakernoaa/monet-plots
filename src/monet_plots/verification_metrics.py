@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 import monet_stats
 import numpy as np
@@ -29,9 +29,9 @@ def _update_history(obj: Any, msg: str) -> Any:
 
 
 def compute_pod(
-    hits: Union[int, np.ndarray, xr.DataArray],
-    misses: Union[int, np.ndarray, xr.DataArray],
-) -> Union[float, np.ndarray, xr.DataArray]:
+    hits: int | np.ndarray | xr.DataArray,
+    misses: int | np.ndarray | xr.DataArray,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Probability of Detection (POD) or Hit Rate.
 
@@ -64,9 +64,9 @@ def compute_pod(
 
 
 def compute_far(
-    hits: Union[int, np.ndarray, xr.DataArray],
-    fa: Union[int, np.ndarray, xr.DataArray],
-) -> Union[float, np.ndarray, xr.DataArray]:
+    hits: int | np.ndarray | xr.DataArray,
+    fa: int | np.ndarray | xr.DataArray,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates False Alarm Ratio (FAR).
 
@@ -99,9 +99,9 @@ def compute_far(
 
 
 def compute_success_ratio(
-    hits: Union[int, np.ndarray, xr.DataArray],
-    fa: Union[int, np.ndarray, xr.DataArray],
-) -> Union[float, np.ndarray, xr.DataArray]:
+    hits: int | np.ndarray | xr.DataArray,
+    fa: int | np.ndarray | xr.DataArray,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Success Ratio (SR).
 
@@ -134,10 +134,10 @@ def compute_success_ratio(
 
 
 def compute_csi(
-    hits: Union[int, np.ndarray, xr.DataArray],
-    misses: Union[int, np.ndarray, xr.DataArray],
-    fa: Union[int, np.ndarray, xr.DataArray],
-) -> Union[float, np.ndarray, xr.DataArray]:
+    hits: int | np.ndarray | xr.DataArray,
+    misses: int | np.ndarray | xr.DataArray,
+    fa: int | np.ndarray | xr.DataArray,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Critical Success Index (CSI).
 
@@ -172,10 +172,10 @@ def compute_csi(
 
 
 def compute_frequency_bias(
-    hits: Union[int, np.ndarray, xr.DataArray],
-    misses: Union[int, np.ndarray, xr.DataArray],
-    fa: Union[int, np.ndarray, xr.DataArray],
-) -> Union[float, np.ndarray, xr.DataArray]:
+    hits: int | np.ndarray | xr.DataArray,
+    misses: int | np.ndarray | xr.DataArray,
+    fa: int | np.ndarray | xr.DataArray,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Frequency Bias.
 
@@ -211,9 +211,9 @@ def compute_frequency_bias(
 
 
 def compute_pofd(
-    fa: Union[int, np.ndarray, xr.DataArray],
-    cn: Union[int, np.ndarray, xr.DataArray],
-) -> Union[float, np.ndarray, xr.DataArray]:
+    fa: int | np.ndarray | xr.DataArray,
+    cn: int | np.ndarray | xr.DataArray,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Probability of False Detection (POFD).
 
@@ -246,10 +246,10 @@ def compute_pofd(
 
 
 def compute_bias(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Mean Bias using monet-stats.
 
@@ -285,11 +285,11 @@ def compute_bias(
 
 
 def compute_binned_bias(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
     n_bins: int = 10,
-    bin_range: Optional[tuple[float, float]] = None,
-    dim: Optional[Union[str, list[str]]] = None,
+    bin_range: tuple[float, float] | None = None,
+    dim: str | list[str] | None = None,
 ) -> xr.Dataset:
     """
     Calculates mean bias binned by observed values.
@@ -370,10 +370,10 @@ def compute_binned_bias(
 
 
 def compute_rmse(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Root Mean Square Error (RMSE) using monet-stats.
 
@@ -408,10 +408,10 @@ def compute_rmse(
 
 
 def compute_mae(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Mean Absolute Error (MAE) using monet-stats.
 
@@ -446,10 +446,10 @@ def compute_mae(
 
 
 def compute_mfb(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Mean Fractional Bias (MFB) using monet-stats.
 
@@ -487,10 +487,10 @@ def compute_mfb(
 
 
 def compute_mfe(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Mean Fractional Error (MFE) using monet-stats.
 
@@ -526,10 +526,10 @@ def compute_mfe(
 
 
 def compute_nmb(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Normalized Mean Bias (NMB) using monet-stats.
 
@@ -565,10 +565,10 @@ def compute_nmb(
 
 
 def compute_nme(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Normalized Mean Error (NME).
 
@@ -607,10 +607,10 @@ def compute_nme(
 
 
 def compute_corr(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[str] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Pearson correlation coefficient using monet-stats.
 
@@ -643,10 +643,10 @@ def compute_corr(
 
 
 def compute_ioa(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Index of Agreement (IOA) using monet-stats.
 
@@ -671,10 +671,10 @@ def compute_ioa(
 
 
 def compute_kge(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Kling-Gupta Efficiency (KGE) using monet-stats.
 
@@ -699,10 +699,10 @@ def compute_kge(
 
 
 def compute_ccc(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-) -> Union[float, np.ndarray, xr.DataArray]:
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Concordance Correlation Coefficient (CCC) using monet-stats.
 
@@ -727,10 +727,10 @@ def compute_ccc(
 
 
 def compute_auc(
-    x: Union[np.ndarray, xr.DataArray],
-    y: Union[np.ndarray, xr.DataArray],
-    dim: Optional[str] = None,
-) -> Union[float, xr.DataArray]:
+    x: np.ndarray | xr.DataArray,
+    y: np.ndarray | xr.DataArray,
+    dim: str | None = None,
+) -> float | xr.DataArray:
     """
     Calculates Area Under Curve (AUC) using the trapezoidal rule.
 
@@ -800,13 +800,13 @@ def compute_auc(
 
 
 def compute_reliability_curve(
-    forecasts: Union[np.ndarray, xr.DataArray],
-    observations: Union[np.ndarray, xr.DataArray],
+    forecasts: np.ndarray | xr.DataArray,
+    observations: np.ndarray | xr.DataArray,
     n_bins: int = 10,
-) -> Tuple[
-    Union[np.ndarray, xr.DataArray],
-    Union[np.ndarray, xr.DataArray],
-    Union[np.ndarray, xr.DataArray],
+) -> tuple[
+    np.ndarray | xr.DataArray,
+    np.ndarray | xr.DataArray,
+    np.ndarray | xr.DataArray,
 ]:
     """
     Computes reliability curve statistics.
@@ -887,10 +887,10 @@ def compute_reliability_curve(
 
 
 def compute_brier_score_components(
-    forecasts: Union[np.ndarray, xr.DataArray],
-    observations: Union[np.ndarray, xr.DataArray],
+    forecasts: np.ndarray | xr.DataArray,
+    observations: np.ndarray | xr.DataArray,
     n_bins: int = 10,
-) -> Dict[str, Union[float, xr.DataArray]]:
+) -> dict[str, float | xr.DataArray]:
     """
     Decomposes Brier Score into Reliability, Resolution, and Uncertainty.
 
@@ -959,10 +959,10 @@ def compute_brier_score_components(
 
 
 def compute_rank_histogram(
-    ensemble: Union[np.ndarray, xr.DataArray],
-    observations: Union[np.ndarray, xr.DataArray],
+    ensemble: np.ndarray | xr.DataArray,
+    observations: np.ndarray | xr.DataArray,
     member_dim: str = "member",
-) -> Union[np.ndarray, xr.DataArray]:
+) -> np.ndarray | xr.DataArray:
     """
     Computes rank histogram counts.
 
@@ -1061,13 +1061,13 @@ def compute_rank_histogram(
 
 
 def compute_rev(
-    hits: Union[float, np.ndarray, xr.DataArray],
-    misses: Union[float, np.ndarray, xr.DataArray],
-    fa: Union[float, np.ndarray, xr.DataArray],
-    cn: Union[float, np.ndarray, xr.DataArray],
-    cost_loss_ratios: Union[np.ndarray, xr.DataArray],
+    hits: float | np.ndarray | xr.DataArray,
+    misses: float | np.ndarray | xr.DataArray,
+    fa: float | np.ndarray | xr.DataArray,
+    cn: float | np.ndarray | xr.DataArray,
+    cost_loss_ratios: np.ndarray | xr.DataArray,
     climatology: float | None = None,
-) -> Union[np.ndarray, xr.DataArray]:
+) -> np.ndarray | xr.DataArray:
     """
     Calculates Relative Economic Value (REV).
 
@@ -1150,10 +1150,10 @@ def compute_rev(
 
 
 def compute_crps(
-    ensemble: Union[np.ndarray, xr.DataArray],
-    observation: Union[np.ndarray, xr.DataArray],
+    ensemble: np.ndarray | xr.DataArray,
+    observation: np.ndarray | xr.DataArray,
     member_dim: str = "member",
-) -> Union[float, np.ndarray, xr.DataArray]:
+) -> float | np.ndarray | xr.DataArray:
     """
     Calculates Continuous Ranked Probability Score (CRPS).
 
@@ -1238,10 +1238,10 @@ def compute_crps(
 
 
 def compute_radar_metrics(
-    obs: Union[np.ndarray, xr.DataArray],
-    mod: Union[np.ndarray, xr.DataArray],
-    dim: Optional[Union[str, list[str]]] = None,
-    metrics: Optional[list[str]] = None,
+    obs: np.ndarray | xr.DataArray,
+    mod: np.ndarray | xr.DataArray,
+    dim: str | list[str] | None = None,
+    metrics: list[str] | None = None,
 ) -> xr.Dataset:
     """
     Calculates normalized metrics for radar (spider) charts.

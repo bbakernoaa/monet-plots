@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_auc
@@ -32,7 +32,7 @@ class ROCCurvePlot(BasePlot):
         data: Any,
         x_col: str = "pofd",
         y_col: str = "pod",
-        label_col: Optional[str] = None,
+        label_col: str | None = None,
         show_auc: bool = True,
         **kwargs,
     ):

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
 import numpy as np
@@ -43,13 +43,13 @@ class ScatterPlot(BasePlot):
     def __init__(
         self,
         data: Any = None,
-        x: Optional[str] = None,
-        y: Optional[Union[str, List[str]]] = None,
-        c: Optional[str] = None,
+        x: str | None = None,
+        y: str | list[str] | None = None,
+        c: str | None = None,
         colorbar: bool = False,
-        title: Optional[str] = None,
-        fig: Optional[matplotlib.figure.Figure] = None,
-        ax: Optional[matplotlib.axes.Axes] = None,
+        title: str | None = None,
+        fig: matplotlib.figure.Figure | None = None,
+        ax: matplotlib.axes.Axes | None = None,
         df: Any = None,  # Backward compatibility alias
         **kwargs: Any,
     ) -> None:
@@ -127,8 +127,8 @@ class ScatterPlot(BasePlot):
 
     def plot(
         self,
-        scatter_kws: Optional[dict[str, Any]] = None,
-        line_kws: Optional[dict[str, Any]] = None,
+        scatter_kws: dict[str, Any] | None = None,
+        line_kws: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> matplotlib.axes.Axes:
         """Generate a static publication-quality scatter plot (Track A).
@@ -248,7 +248,7 @@ class ScatterPlot(BasePlot):
             The interactive hvPlot object.
         """
         try:
-            import hvplot.pandas  # noqa: F401
+            import hvplot.pandas
             import hvplot.xarray  # noqa: F401
         except ImportError:
             raise ImportError(
