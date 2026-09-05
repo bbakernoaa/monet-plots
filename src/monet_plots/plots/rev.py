@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -30,10 +30,10 @@ class RelativeEconomicValuePlot(BasePlot):
     def plot(
         self,
         data: Any,
-        counts_cols: List[str] = ["hits", "misses", "fa", "cn"],
-        climatology: Optional[float] = None,
-        label_col: Optional[str] = None,
-        cost_loss_ratios: Optional[np.ndarray] = None,
+        counts_cols: list[str] = ["hits", "misses", "fa", "cn"],
+        climatology: float | None = None,
+        label_col: str | None = None,
+        cost_loss_ratios: np.ndarray | None = None,
         **kwargs,
     ):
         """

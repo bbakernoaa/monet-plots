@@ -1,7 +1,8 @@
 # src/monet_plots/plots/facet_grid.py
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt

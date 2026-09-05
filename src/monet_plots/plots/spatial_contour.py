@@ -13,6 +13,7 @@ from .spatial import SpatialPlot
 
 if TYPE_CHECKING:
     from datetime import datetime
+
     from matplotlib.axes import Axes
 
 

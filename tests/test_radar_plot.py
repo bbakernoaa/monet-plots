@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import xarray as xr
+
 from monet_plots.plots.radar import RadarPlot
 from monet_plots.verification_metrics import compute_radar_metrics
 

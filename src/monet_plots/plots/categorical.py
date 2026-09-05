@@ -90,7 +90,6 @@ def categorical_plot(
                 # To be implemented: custom legend labels
                 pass
             # Seaborn handles legend automatically when using 'hue'
-            pass
 
     return p.fig, p.axes
 

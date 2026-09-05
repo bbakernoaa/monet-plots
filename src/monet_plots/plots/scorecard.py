@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -35,14 +35,14 @@ class ScorecardPlot(BasePlot):
         x_col: str,
         y_col: str,
         val_col: str,
-        sig_col: Optional[str] = None,
+        sig_col: str | None = None,
         cmap: str = "RdBu_r",
         center: float = 0.0,
-        annot_cols: Optional[list[str]] = None,
-        cbar_labels: Optional[tuple[str, str]] = None,
-        key_text: Optional[str] = None,
-        x_label: Optional[str] = None,
-        y_label: Optional[str] = None,
+        annot_cols: list[str] | None = None,
+        cbar_labels: tuple[str, str] | None = None,
+        key_text: str | None = None,
+        x_label: str | None = None,
+        y_label: str | None = None,
         **kwargs,
     ):
         """

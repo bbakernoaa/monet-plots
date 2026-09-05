@@ -165,7 +165,7 @@ class KDEPlot(BasePlot):
         >>> # interactive = plot.hvplot() # Requires hvplot installed
         """
         try:
-            import hvplot.pandas  # noqa: F401
+            import hvplot.pandas
             import hvplot.xarray  # noqa: F401
         except ImportError:
             raise ImportError(

@@ -118,6 +118,7 @@ def test_imshow_plot_parity():
 def test_spatial_facet_grid_laziness():
     """Verify SpatialFacetGridPlot handles lazy data without eager compute."""
     import matplotlib.pyplot as plt
+
     from monet_plots.plots.facet_grid import SpatialFacetGridPlot
 
     plt.switch_backend("Agg")

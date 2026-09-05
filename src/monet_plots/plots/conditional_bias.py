@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 import xarray as xr
@@ -18,7 +18,7 @@ class ConditionalBiasPlot(BasePlot):
     Supports native Xarray/Dask objects and interactive visualization.
     """
 
-    def __init__(self, data: Optional[Any] = None, fig=None, ax=None, **kwargs):
+    def __init__(self, data: Any | None = None, fig=None, ax=None, **kwargs):
         """
         Initializes the plot.
 
@@ -38,12 +38,12 @@ class ConditionalBiasPlot(BasePlot):
 
     def plot(
         self,
-        data: Optional[Any] = None,
-        obs_col: Optional[str] = None,
-        fcst_col: Optional[str] = None,
+        data: Any | None = None,
+        obs_col: str | None = None,
+        fcst_col: str | None = None,
         n_bins: int = 10,
         label: str = "Model",
-        label_col: Optional[str] = None,
+        label_col: str | None = None,
         **kwargs,
     ):
         """
@@ -139,11 +139,11 @@ class ConditionalBiasPlot(BasePlot):
 
     def hvplot(
         self,
-        data: Optional[Any] = None,
-        obs_col: Optional[str] = None,
-        fcst_col: Optional[str] = None,
+        data: Any | None = None,
+        obs_col: str | None = None,
+        fcst_col: str | None = None,
         n_bins: int = 10,
-        label_col: Optional[str] = None,
+        label_col: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -197,10 +197,7 @@ class ConditionalBiasPlot(BasePlot):
             pdf = xr.concat(stats_list, dim=label_col).dropna(dim="bin_center")
             by = label_col
         else:
-            if isinstance(plot_data, xr.Dataset):
-                obs = plot_data[obs_col]
-                mod = plot_data[fcst_col]
-            elif isinstance(plot_data, pd.DataFrame):
+            if isinstance(plot_data, xr.Dataset) or isinstance(plot_data, pd.DataFrame):
                 obs = plot_data[obs_col]
                 mod = plot_data[fcst_col]
             else:

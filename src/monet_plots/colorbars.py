@@ -211,7 +211,7 @@ def colorbar_index(
         - colorbar is the matplotlib.colorbar.Colorbar instance
         - discretized_cmap is the discretized colormap
     """
-    import matplotlib.cm as cm
+    from matplotlib import cm
 
     cmap = cmap_discretize(cmap, ncolors)
     mappable = cm.ScalarMappable(cmap=cmap)

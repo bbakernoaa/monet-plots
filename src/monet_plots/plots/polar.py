@@ -1,7 +1,7 @@
 # src/monet_plots/plots/polar.py
 """Bivariate polar plot for analyzing variable dependence on wind."""
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -24,7 +24,7 @@ class BivariatePolarPlot(BasePlot):
         wd_col: str,
         val_col: str,
         *,
-        ws_max: Optional[float] = None,
+        ws_max: float | None = None,
         **kwargs,
     ):
         """

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import xarray as xr
@@ -41,7 +41,7 @@ class RidgelinePlot(BasePlot):
         group_dim: str | None = None,
         x: str | None = None,
         *,
-        x_range: Tuple[float, float] | None = None,
+        x_range: tuple[float, float] | None = None,
         scale_factor: float = 1.0,
         overlap: float = 0.5,
         cmap: str = "viridis",
@@ -176,7 +176,7 @@ class RidgelinePlot(BasePlot):
 
         elif isinstance(self.data, xr.Dataset):
             if self.x is None:
-                self.x = list(self.data.data_vars)[0]
+                self.x = next(iter(self.data.data_vars))
             da = self.data[self.x]
             da_sorted = da.sortby(self.group_dim, ascending=False)
             groups = compute(da_sorted[self.group_dim])
@@ -389,7 +389,7 @@ class RidgelinePlot(BasePlot):
         >>> # interactive = plot.hvplot() # Requires hvplot installed
         """
         try:
-            import hvplot.pandas  # noqa: F401
+            import hvplot.pandas
             import hvplot.xarray  # noqa: F401
         except ImportError:
             raise ImportError(

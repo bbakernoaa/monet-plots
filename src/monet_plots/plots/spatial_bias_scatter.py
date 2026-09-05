@@ -208,7 +208,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
             The interactive hvPlot object.
         """
         try:
-            import hvplot.pandas  # noqa: F401
+            import hvplot.pandas
             import hvplot.xarray  # noqa: F401
         except ImportError:
             raise ImportError(

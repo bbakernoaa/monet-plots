@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -34,11 +34,11 @@ class ReliabilityDiagramPlot(BasePlot):
         data: Any,
         x_col: str = "prob",
         y_col: str = "freq",
-        forecasts_col: Optional[str] = None,
-        observations_col: Optional[str] = None,
+        forecasts_col: str | None = None,
+        observations_col: str | None = None,
         n_bins: int = 10,
-        climatology: Optional[float] = None,
-        label_col: Optional[str] = None,
+        climatology: float | None = None,
+        label_col: str | None = None,
         show_hist: bool = False,
         **kwargs,
     ):

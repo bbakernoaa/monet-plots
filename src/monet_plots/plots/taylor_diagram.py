@@ -1,4 +1,4 @@
-from typing import Any, List, Union
+from typing import Any
 
 import matplotlib.pyplot as plt
 from numpy import corrcoef
@@ -18,7 +18,7 @@ class TaylorDiagramPlot(BasePlot):
         self,
         df: Any,
         col1: str = "obs",
-        col2: Union[str, List[str]] = "model",
+        col2: str | list[str] = "model",
         label1: str = "OBS",
         scale: float = 1.5,
         dia=None,
