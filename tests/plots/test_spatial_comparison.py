@@ -1,12 +1,13 @@
 """Correctness and lazy-computation contracts for observation/model/bias maps."""
 
 import matplotlib.pyplot as plt
-import monet_plots as mp
 import numpy as np
 import pytest
 import xarray as xr
 from dask.callbacks import Callback
 from matplotlib.colors import Normalize, TwoSlopeNorm
+
+import monet_plots as mp
 
 
 @pytest.fixture(autouse=True)

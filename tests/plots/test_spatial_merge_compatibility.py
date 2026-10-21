@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 import xarray as xr
+
 from monet_plots.plots.spatial_contour import SpatialContourPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 from monet_plots.plots.spatial_mesh import SpatialMeshPlot

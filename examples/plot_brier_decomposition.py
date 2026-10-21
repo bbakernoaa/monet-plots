@@ -25,6 +25,7 @@ a certain way. It allows you to distinguish between a model that is poorly calib
 
 import matplotlib.pyplot as plt
 import pandas as pd
+
 from monet_plots.plots.brier_decomposition import BrierScoreDecompositionPlot
 
 data = pd.DataFrame(

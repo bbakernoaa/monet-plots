@@ -24,6 +24,7 @@ uncertainty in the model increases or decreases with the magnitude of the variab
 
 import numpy as np
 import pandas as pd
+
 from monet_plots.plots.conditional_quantile import ConditionalQuantilePlot
 
 # Create dummy model vs obs

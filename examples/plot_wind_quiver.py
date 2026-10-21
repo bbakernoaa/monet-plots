@@ -19,6 +19,7 @@ vortices or the flow around geographic obstacles.
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from monet_plots.plots.wind_quiver import WindQuiverPlot
 
 

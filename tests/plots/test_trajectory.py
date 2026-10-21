@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+
 from monet_plots.plots import TrajectoryPlot
 
 
@@ -31,6 +32,7 @@ def test_trajectory_axes_count():
 
 def test_spatial_track_auto_extent():
     import xarray as xr
+
     from monet_plots.plots.spatial import SpatialTrack
 
     lon = np.array([-10, 10])

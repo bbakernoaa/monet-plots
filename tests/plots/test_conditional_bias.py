@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+
 from monet_plots.plots.conditional_bias import ConditionalBiasPlot
 from monet_plots.verification_metrics import compute_binned_bias
 

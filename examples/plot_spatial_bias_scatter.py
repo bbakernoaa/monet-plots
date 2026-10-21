@@ -23,6 +23,7 @@ systematic bias along a coastline.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from monet_plots.plots.spatial_bias_scatter import SpatialBiasScatterPlot
 
 # 1. Prepare sample data (CONUS region)

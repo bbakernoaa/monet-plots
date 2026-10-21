@@ -18,6 +18,7 @@ profiles at a single location over time (if the x-axis represents time).
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from monet_plots.plots.profile import StickPlot
 
 # 1. Create dummy vertical wind data

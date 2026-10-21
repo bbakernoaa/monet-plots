@@ -129,8 +129,9 @@ def run_case(case):
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    import monet_plots as mp
     from dask.callbacks import Callback
+
+    import monet_plots as mp
 
     # Prime plotting imports and font caches outside the measured region.
     warm = {"size": 8, "facets": 1, "backend": "numpy", "chunks": 8}

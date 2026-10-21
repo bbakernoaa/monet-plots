@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import cartopy.crs as ccrs
 import pytest
+
 from monet_plots.plots.spatial import SpatialPlot
 
 

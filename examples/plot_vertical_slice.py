@@ -19,6 +19,7 @@ cross-section of a model domain.
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from monet_plots.plots.profile import VerticalSlice
 
 # 1. Create dummy 2D data for a cross-section

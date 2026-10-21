@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+
 from monet_plots import ScatterPlot, SpatialImshowPlot, SpatialPlot, style_context
 from monet_plots.plots.base import BasePlot
 from monet_plots.plots.curtain import CurtainPlot

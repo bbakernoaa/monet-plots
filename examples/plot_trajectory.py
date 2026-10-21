@@ -24,6 +24,7 @@ analysis in air quality studies.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from monet_plots.plots.trajectory import TrajectoryPlot
 
 # 1. Prepare sample data

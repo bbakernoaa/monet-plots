@@ -20,6 +20,7 @@ platform and want to see how a measured variable changes geographically.
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+
 from monet_plots.plots.spatial import SpatialTrack
 
 # 1. Create dummy trajectory data

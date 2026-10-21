@@ -3,10 +3,11 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import monet_plots as mp
 import numpy as np
 import xarray as xr
 from matplotlib.testing.compare import compare_images
+
+import monet_plots as mp
 
 
 def render_reference(path):

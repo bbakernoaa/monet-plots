@@ -23,6 +23,7 @@ ridges, troughs, jet streams, and other features that drive surface weather.
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from monet_plots.plots.upper_air import UpperAir
 
 # 1. Prepare sample data

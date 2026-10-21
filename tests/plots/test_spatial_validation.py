@@ -21,6 +21,7 @@ def test_spatial_track_docstring_example(clear_figures):
     import numpy as np
     import xarray as xr
     from matplotlib.collections import PathCollection
+
     from monet_plots.plots.spatial import SpatialTrack
 
     # 1. Create a sample xarray.DataArray

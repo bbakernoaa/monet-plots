@@ -23,6 +23,7 @@ across different sites, months, variables, or experiment groups. It enables
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from monet_plots.plots.facet_grid import FacetGridPlot
 
 # 1. Prepare sample data

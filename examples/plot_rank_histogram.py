@@ -26,6 +26,7 @@ essential for diagnosing issues with ensemble spread and bias.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from monet_plots.plots.rank_histogram import RankHistogramPlot
 
 # 1. Prepare sample data for a uniform rank distribution

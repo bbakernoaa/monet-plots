@@ -21,6 +21,7 @@ observational data.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from monet_plots.plots.meteogram import Meteogram
 
 # 1. Prepare sample data

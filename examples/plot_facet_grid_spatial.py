@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+
 from monet_plots.plots.facet_grid import SpatialFacetGridPlot
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 

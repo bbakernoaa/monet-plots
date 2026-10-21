@@ -21,6 +21,7 @@ shaded area representing the spread.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from monet_plots.plots.timeseries import TimeSeriesStatsPlot
 
 # 1. Create dummy time series data for multiple "members"

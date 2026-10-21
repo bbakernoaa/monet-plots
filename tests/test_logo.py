@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+
 from monet_plots.plot_utils import get_logo_path
 from monet_plots.plots.base import BasePlot
 

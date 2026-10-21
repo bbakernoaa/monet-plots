@@ -7,9 +7,9 @@ import tarfile
 import zipfile
 from pathlib import Path
 
-import monet_plots
 import pytest
 
+import monet_plots
 from scripts.check_release import check_release
 
 

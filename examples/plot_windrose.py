@@ -25,6 +25,7 @@ pollutants from a local source.
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from monet_plots.plots.windrose import Windrose
 
 # 1. Prepare sample data

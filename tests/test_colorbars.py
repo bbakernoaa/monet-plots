@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+
 from monet_plots.colorbars import cmap_discretize, colorbar_index
 
 

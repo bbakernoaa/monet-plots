@@ -20,6 +20,7 @@ observing the overall structure of a field.
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from monet_plots.plots.spatial_contour import SpatialContourPlot
 
 

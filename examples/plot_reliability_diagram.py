@@ -27,6 +27,7 @@ underconfident, or well-calibrated.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 from monet_plots.plots.reliability_diagram import ReliabilityDiagramPlot
 
 # 1. Prepare sample data
