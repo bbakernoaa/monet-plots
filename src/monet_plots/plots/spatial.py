@@ -12,7 +12,7 @@ import xarray as xr
 from numpy.typing import ArrayLike
 
 from ..geo import identify_coords, ordered_grid, validate_data_crs
-from ..plot_utils import _update_history, normalize_data
+from ..plot_utils import _update_history, compute, normalize_data
 from ..style import get_style_setting
 from .base import BasePlot
 
@@ -348,6 +348,8 @@ class SpatialPlot(BasePlot):
         gridline_defaults = {
             "draw_labels": True,
             "linestyle": "--",
+            "linewidth": 0.5,
+            "alpha": 0.6,
             "color": "gray",
             "x_inline": False,
             "y_inline": False,
@@ -405,17 +407,10 @@ class SpatialPlot(BasePlot):
         lon = data[lon_coord]
         lat = data[lat_coord]
 
-        # Use dask.compute for efficient parallel calculation of min/max
-        # if the data is chunked.
-        try:
-            import dask
-
-            lon_min, lon_max, lat_min, lat_max = dask.compute(
-                lon.min(), lon.max(), lat.min(), lat.max()
-            )
-        except (ImportError, AttributeError):
-            lon_min, lon_max = lon.min(), lon.max()
-            lat_min, lat_max = lat.min(), lat.max()
+        # Preserve upstream's common lazy-backend computation helper.
+        lon_min, lon_max, lat_min, lat_max = compute(
+            lon.min(), lon.max(), lat.min(), lat.max()
+        )
 
         # Ensure they are scalar values (handles both numpy and dask returns)
         lon_min, lon_max = float(lon_min), float(lon_max)

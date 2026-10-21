@@ -444,6 +444,6 @@ cbar.ax.set_position([0.92, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
 
 **Related Resources**:
 
-- [Style Configuration](./style) - Plot styling and themes
-- [Plot Types API](../plots) - Specific plot implementations
-- [Examples](../examples) - Practical usage examples
+- [Style Configuration](./style.md) - Plot styling and themes
+- [Plot Types API](../plots/index.md) - Specific plot implementations
+- [Examples](../examples/index.md) - Practical usage examples

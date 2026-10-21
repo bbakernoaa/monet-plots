@@ -25,7 +25,6 @@ theory and meteorological verification.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from monet_plots.plots.roc_curve import ROCCurvePlot
 
 # 1. Prepare sample data

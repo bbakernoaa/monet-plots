@@ -20,7 +20,6 @@ simple mean or median profile.
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 from monet_plots.plots.profile import VerticalBoxPlot
 
 # 1. Create dummy data

@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-
 from monet_plots.plots.spatial_overlay import SpatialOverlayPlot
 
 # 1. Create dummy gridded model data

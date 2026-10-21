@@ -24,7 +24,6 @@ vs. ozone concentration).
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from monet_plots.plots.scatter import ScatterPlot
 
 # 1. Prepare sample data

@@ -20,7 +20,6 @@ ideal for satellite imagery, model output on regular grids, and radar data.
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-
 from monet_plots.plots.spatial_imshow import SpatialImshowPlot
 
 # 1. Create dummy xarray data

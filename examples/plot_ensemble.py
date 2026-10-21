@@ -23,7 +23,6 @@ ensemble should have a spread that matches the expected error of the ensemble me
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 from monet_plots.plots.ensemble import SpreadSkillPlot
 
 # 1. Prepare sample data

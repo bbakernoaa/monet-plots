@@ -3,14 +3,13 @@
 import cartopy.crs as ccrs
 import dask.array as da
 import matplotlib.pyplot as plt
+import monet_plots as mp
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
 from dask.callbacks import Callback
 from matplotlib.colors import BoundaryNorm, TwoSlopeNorm
-
-import monet_plots as mp
 from monet_plots.geo import identify_coords
 from monet_plots.plots.spatial_overlay import SpatialOverlayPlot
 

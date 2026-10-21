@@ -71,6 +71,7 @@ class CurtainPlot(BasePlot):
             **kwargs: Additional arguments for the plotting function.
         """
         plot_kwargs = get_plot_kwargs(**kwargs)
+        plot_kwargs.setdefault("cmap", "viridis")
 
         # Ensure we have a DataArray for gridded data
         if not isinstance(self.data, xr.DataArray):
@@ -111,9 +112,11 @@ class CurtainPlot(BasePlot):
         else:
             raise ValueError("kind must be 'pcolormesh' or 'contourf'")
 
-        ax1.set_ylabel(self.y)
+        xlabel = da.coords[self.x].attrs.get("long_name", self.x)
+        ylabel = da.coords[self.y].attrs.get("long_name", self.y)
+        ax1.set_ylabel(ylabel)
         if ax2 is None:
-            ax1.set_xlabel(self.x)
+            ax1.set_xlabel(xlabel)
 
         # Overlay observations
         if self.obs_data is not None and self.obs_var is not None:
@@ -141,18 +144,25 @@ class CurtainPlot(BasePlot):
                     edgecolors="k",
                     alpha=0.7,
                 )
-                ax2.set_ylabel(self.y)
-                ax2.set_xlabel(self.x)
+                ax2.set_ylabel(ylabel)
+                ax2.set_xlabel(xlabel)
                 ax2.set_title("Observations Only")
 
         # Invert y-axis if pressure
-        if "pressure" in str(self.y).lower():
-            ax1.invert_yaxis()
-            if ax2 is not None:
+        y_units = da.coords[self.y].attrs.get("units", "").lower()
+        if "pressure" in str(self.y).lower() or y_units in {"hpa", "mbar", "pa", "mb"}:
+            if not ax1.yaxis_inverted():
+                ax1.invert_yaxis()
+            if ax2 is not None and not ax2.yaxis_inverted():
                 ax2.invert_yaxis()
 
         if colorbar:
-            cb_kwargs = cbar_kwargs or {}
+            label = da.attrs.get("long_name", da.name or "")
+            units = da.attrs.get("units", "")
+            cb_kwargs = {
+                "label": f"{label} ({units})" if units else label,
+                **(cbar_kwargs or {}),
+            }
             if two_subplot:
                 # Shared colorbar for both subplots
                 self.fig.colorbar(
@@ -169,6 +179,9 @@ class CurtainPlot(BasePlot):
         if two_subplot:
             ax1.set_title("Model with Obs Overlay")
             self.fig.autofmt_xdate()
+
+        elif not ax1.get_title():
+            ax1.set_title(da.attrs.get("long_name", da.name or ""))
 
         return self.ax
 

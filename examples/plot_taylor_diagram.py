@@ -26,7 +26,6 @@ model evaluation for assessing spatial or temporal patterns.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from monet_plots.plots.taylor_diagram import TaylorDiagramPlot
 
 # 1. Prepare model data

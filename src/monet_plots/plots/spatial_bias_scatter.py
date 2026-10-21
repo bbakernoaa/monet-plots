@@ -162,7 +162,9 @@ class SpatialBiasScatterPlot(SpatialPlot):
             **get_plot_kwargs(cmap=cmap, norm=norm, **options),
         )
         if add_colorbar:
-            self.add_colorbar(self.mappable, **cbar_kwargs)
+            units = self.data.attrs.get("units", "")
+            label = f"Bias ({units})" if units else "Bias"
+            self.add_colorbar(self.mappable, **{"label": label, **cbar_kwargs})
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:

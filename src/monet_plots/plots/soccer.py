@@ -9,7 +9,7 @@ import matplotlib.patches as patches
 import numpy as np
 import xarray as xr
 
-from ..plot_utils import _update_history, normalize_data
+from ..plot_utils import _update_history, compute, is_lazy, normalize_data
 from ..verification_metrics import (
     compute_mfb,
     compute_mfe,
@@ -170,8 +170,8 @@ class SoccerPlot(BasePlot):
                 2 * self.criteria["bias"],
                 self.criteria["error"],
                 linewidth=1,
-                edgecolor="lightgrey",
-                facecolor="lightgrey",
+                edgecolor="#888888",
+                facecolor="#cccccc",
                 alpha=0.3,
                 label="Criteria",
                 zorder=0,
@@ -184,9 +184,9 @@ class SoccerPlot(BasePlot):
                 2 * self.goal["bias"],
                 self.goal["error"],
                 linewidth=1,
-                edgecolor="grey",
-                facecolor="grey",
-                alpha=0.3,
+                edgecolor="#0072B2",
+                facecolor="#56B4E9",
+                alpha=0.25,
                 label="Goal",
                 zorder=1,
             )
@@ -196,10 +196,8 @@ class SoccerPlot(BasePlot):
         bias = self.bias_data
         error = self.error_data
 
-        if hasattr(bias, "compute") or hasattr(error, "compute"):
-            import dask
-
-            bias, error = dask.compute(bias, error)
+        if is_lazy(bias) or is_lazy(error):
+            bias, error = compute(bias, error)
 
         scatter_kwargs = {"zorder": 5}
         scatter_kwargs.update(kwargs)
@@ -234,7 +232,7 @@ class SoccerPlot(BasePlot):
         self.ax.set_xlim(-limit, limit)
         self.ax.set_ylim(0, limit_y)
 
-        self.ax.axvline(0, color="k", linestyle="--", alpha=0.5)
+        self.ax.axvline(0, color="k", linestyle="--", alpha=0.7)
         self.ax.set_xlabel(getattr(self, "xlabel", "Bias (%)"))
         self.ax.set_ylabel(getattr(self, "ylabel", "Error (%)"))
         self.ax.grid(True, linestyle=":", alpha=0.6)

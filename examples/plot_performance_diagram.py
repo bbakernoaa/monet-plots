@@ -24,7 +24,6 @@ commonly used in meteorology to assess weather warning systems and model skill.
 
 import matplotlib.pyplot as plt
 import pandas as pd
-
 from monet_plots.plots.performance_diagram import PerformanceDiagramPlot
 
 # 1. Prepare sample data with pre-calculated metrics

@@ -2,7 +2,6 @@ import dask.array as da
 import numpy as np
 import pytest
 import xarray as xr
-
 from monet_plots import verification_metrics
 
 

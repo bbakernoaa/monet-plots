@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-
 from monet_plots.plots.curtain import CurtainPlot
 
 

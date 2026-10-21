@@ -7,10 +7,9 @@ spatial plot that mimics the aesthetic of Pivotal Weather maps.
 """
 
 import matplotlib.pyplot as plt
+import monet_plots as mplots
 import numpy as np
 import xarray as xr
-
-import monet_plots as mplots
 from monet_plots.plots.spatial import SpatialPlot
 
 # Set the custom style

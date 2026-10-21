@@ -24,7 +24,6 @@ high-level summaries of large datasets.
 """
 
 import pandas as pd
-
 from monet_plots.plots.soccer import SoccerPlot
 
 # Create dummy data

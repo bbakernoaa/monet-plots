@@ -1,6 +1,5 @@
 import matplotlib.colors as mcolors
 import numpy as np
-
 from monet_plots.colorbars import (
     get_discrete_scale,
     get_diverging_scale,

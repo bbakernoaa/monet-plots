@@ -19,9 +19,7 @@ standalone for custom map visualizations.
     gradients of a variable across a region.
 """
 
-import matplotlib.pyplot as plt
 import numpy as np
-
 from monet_plots.plots.spatial import SpatialPlot
 
 data = np.random.random((20, 30)) * 100
@@ -29,4 +27,4 @@ plot = SpatialPlot(figsize=(10, 8))
 im = plot.ax.pcolormesh(data, cmap="viridis", shading="auto")
 plot.ax.set_title("Basic Spatial Plot")
 plot.add_colorbar(im, label="Value")
-plt.show()
+plot.fig.savefig("spatial_plot.png", dpi=300)

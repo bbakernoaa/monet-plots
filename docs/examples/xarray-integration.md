@@ -4,7 +4,7 @@ MONET Plots now supports direct plotting with xarray DataArrays and Datasets, pr
 
 ## Overview
 
-Previously, MONET Plots would automatically convert all input data to pandas DataFrames using the [`to_dataframe()`](src/monet_plots/plot_utils.py:7) function. While this provided a consistent interface, it had several limitations:
+Previously, MONET Plots would automatically convert all input data to pandas DataFrames using the [`to_dataframe()`](../api/plot_utils.md) function. While this provided a consistent interface, it had several limitations:
 
 - **Performance overhead**: Unnecessary conversion from xarray to pandas
 - **Loss of metadata**: Xarray attributes and coordinate information were lost
@@ -16,7 +16,7 @@ The new xarray integration preserves xarray objects throughout the plotting pipe
 
 ### New `normalize_data()` Function
 
-The new [`normalize_data()`](src/monet_plots/plot_utils.py:175) function replaces the previous `to_dataframe()` approach:
+The new [`normalize_data()`](../api/plot_utils.md) function replaces the previous `to_dataframe()` approach:
 
 ```python
 from monet_plots.plot_utils import normalize_data
@@ -28,7 +28,7 @@ pandas_df = normalize_data(pandas_dataframe)  # Returns pandas.DataFrame
 
 ### Updated TimeSeriesPlot
 
-The [`TimeSeriesPlot`](src/monet_plots/plots/timeseries.py:9) class now automatically detects and handles xarray objects:
+The [`TimeSeriesPlot`](../plots/timeseries.md) class now automatically detects and handles xarray objects:
 
 ```python
 from monet_plots.plots.timeseries import TimeSeriesPlot
@@ -154,6 +154,7 @@ No changes are required! Your existing pandas-based code will continue to work e
 ### For New Projects
 
 Consider using xarray for:
+
 - **Time series data** with regular or irregular time coordinates
 - **Multi-dimensional data** (e.g., time × space × variables)
 - **Data with rich metadata** that should be preserved
@@ -176,7 +177,7 @@ graph TD
 
 The implementation uses a **duck typing** approach:
 
-1. **Detection**: [`normalize_data()`](src/monet_plots/plot_utils.py:175) identifies the input data type
+1. **Detection**: [`normalize_data()`](../api/plot_utils.md) identifies the input data type
 2. **Preservation**: Xarray objects are preserved; pandas objects remain pandas
 3. **Routing**: Plot methods dispatch to appropriate handlers (`_plot_xarray()` vs `_plot_dataframe()`)
 4. **Unification**: Common interface ensures consistent behavior
@@ -184,6 +185,7 @@ The implementation uses a **duck typing** approach:
 ### Error Handling
 
 The system gracefully handles edge cases:
+
 - Missing xarray dependency (falls back to pandas)
 - Invalid data structures (clear error messages)
 - Mixed data types (automatic conversion where appropriate)
@@ -248,6 +250,7 @@ The xarray integration is designed to be extensible. Future improvements may inc
 The xarray integration in MONET Plots provides a powerful new way to visualize scientific data while maintaining full backward compatibility. Whether you're working with time series, multi-dimensional data, or complex metadata, xarray support enables more efficient and feature-rich plotting.
 
 For more information, see:
+
 - [Xarray Documentation](https://xarray.dev/)
 - [Pandas vs Xarray Comparison](https://xarray.dev/comparison.html)
-- [MONET Plots API Reference](docs/api/index.md)
+- [MONET Plots API Reference](../api/index.md)

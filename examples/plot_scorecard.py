@@ -26,7 +26,6 @@ for identifying which meteorological variables or forecast horizons are most pro
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from monet_plots.plots.scorecard import ScorecardPlot
 from monet_plots.style import set_style
 

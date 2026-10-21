@@ -25,7 +25,6 @@ the clutter of a scatter plot.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from monet_plots.plots.kde import KDEPlot
 
 # 1. Prepare sample data

@@ -47,9 +47,9 @@ print(monet_plots.__email__)
 
 | Module | Description |
 |--------|-------------|
-| [`colorbars`](../colorbars) | Colorbar creation utilities |
-| [`taylordiagram`](../taylordiagram) | Taylor diagram functionality |
-| [`plot_utils`](../plot_utils) | Common plotting utilities |
+| [`colorbars`](./colorbars.md) | Colorbar creation utilities |
+| [`taylordiagram`](./taylordiagram.md) | Taylor diagram functionality |
+| [`plot_utils`](./plot_utils.md) | Common plotting utilities |
 | [`cartopy_utils`](../cartopy_utils) | Cartopy integration utilities |
 
 ## Package Attributes

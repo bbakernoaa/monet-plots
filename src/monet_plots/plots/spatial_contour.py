@@ -25,9 +25,10 @@ class SpatialContourPlot(SpatialPlot):
 
     def __new__(
         cls,
-        modelvar: Any,
+        data: Any = None,
         gridobj: Any | None = None,
         date: Any | None = None,
+        modelvar: Any = None,
         **kwargs: Any,
     ) -> Any:
         """Redirect to SpatialFacetGridPlot if faceting is requested.
@@ -37,7 +38,7 @@ class SpatialContourPlot(SpatialPlot):
 
         Parameters
         ----------
-        modelvar : Any
+        data : Any
             The input data to contour.
         gridobj : Any, optional
             Object with LAT and LON variables, by default None.
@@ -54,6 +55,7 @@ class SpatialContourPlot(SpatialPlot):
         """
         from .facet_grid import SpatialFacetGridPlot
 
+        modelvar = data if data is not None else modelvar
         ax = kwargs.get("ax")
 
         # Aligns with Xarray's trigger for faceting
@@ -88,7 +90,7 @@ class SpatialContourPlot(SpatialPlot):
 
     def __init__(
         self,
-        modelvar: Any,
+        data: Any = None,
         gridobj: Any | None = None,
         date: datetime | None = None,
         discrete: bool = True,
@@ -99,6 +101,7 @@ class SpatialContourPlot(SpatialPlot):
         col_wrap: int | None = None,
         size: float | None = None,
         aspect: float | None = None,
+        modelvar: Any = None,
         **kwargs: Any,
     ) -> None:
         self._is_facetgrid = kwargs.pop("_is_facetgrid", False)
@@ -106,7 +109,7 @@ class SpatialContourPlot(SpatialPlot):
 
         Parameters
         ----------
-        modelvar : Any
+        data : Any
             The input data to contour. Preferred format is an xarray DataArray.
         gridobj : Any, optional
             Object with LAT and LON variables to determine extent, by default None.
@@ -137,7 +140,7 @@ class SpatialContourPlot(SpatialPlot):
         super().__init__(**kwargs)
 
         # Standardize data to Xarray for consistency and lazy evaluation
-        self.modelvar = normalize_data(modelvar)
+        self.modelvar = normalize_data(data if data is not None else modelvar)
         if isinstance(self.modelvar, xr.Dataset) and len(self.modelvar.data_vars) == 1:
             self.modelvar = self.modelvar[list(self.modelvar.data_vars)[0]]
 
@@ -174,6 +177,7 @@ class SpatialContourPlot(SpatialPlot):
                 self.modelvar, self.lon_coord, self.lat_coord
             )
 
+        self.data = self.modelvar
         _update_history(self.modelvar, "Initialized monet-plots.SpatialContourPlot")
 
     def plot(self, **kwargs: Any) -> Axes:
@@ -212,6 +216,12 @@ class SpatialContourPlot(SpatialPlot):
             self.add_colorbar(self.mappable, **{"label": label, **cbar_kwargs})
         if self.date:
             self.ax.set_title(self.date.strftime("%B %d %Y %H"))
+        if not self.ax.get_title():
+            title = self.modelvar.attrs.get("long_name") or getattr(
+                self.modelvar, "name", None
+            )
+            if title:
+                self.ax.set_title(title)
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:

@@ -1,5 +1,6 @@
 from .base import BasePlot
 from .brier_decomposition import BrierScoreDecompositionPlot
+from .categorical import categorical_plot
 from .conditional_bias import ConditionalBiasPlot
 from .conditional_quantile import ConditionalQuantilePlot
 from .curtain import CurtainPlot
@@ -17,6 +18,7 @@ from .profile import (
     VerticalProfilePlot,
     VerticalSlice,
 )
+from .radar import RadarPlot
 from .rank_histogram import RankHistogramPlot
 from .reliability_diagram import ReliabilityDiagramPlot
 from .rev import RelativeEconomicValuePlot
@@ -33,7 +35,7 @@ from .spatial_imshow import SpatialImshowPlot
 from .spatial_mesh import SpatialMeshPlot
 from .spatial_overlay import SpatialOverlayPlot
 from .taylor_diagram import TaylorDiagramPlot
-from .timeseries import TimeSeriesPlot
+from .timeseries import TimeSeriesErrorBarPlot, TimeSeriesPlot, TimeSeriesStatsPlot
 from .trajectory import TrajectoryPlot
 from .wind_barbs import WindBarbsPlot
 from .wind_quiver import WindQuiverPlot
@@ -45,6 +47,8 @@ __all__ = [
     "BasePlot",
     "ScatterPlot",
     "TimeSeriesPlot",
+    "TimeSeriesStatsPlot",
+    "TimeSeriesErrorBarPlot",
     "SpatialPlot",
     "SpatialTrack",
     "KDEPlot",
@@ -64,6 +68,7 @@ __all__ = [
     "RidgelinePlot",
     "PerformanceDiagramPlot",
     "ROCCurvePlot",
+    "RadarPlot",
     "ReliabilityDiagramPlot",
     "RankHistogramPlot",
     "BrierScoreDecompositionPlot",
@@ -78,4 +83,5 @@ __all__ = [
     "FingerprintPlot",
     "BivariatePolarPlot",
     "ConditionalQuantilePlot",
+    "categorical_plot",
 ]

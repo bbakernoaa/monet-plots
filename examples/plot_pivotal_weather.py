@@ -22,10 +22,9 @@ typography.
 """
 
 import matplotlib.pyplot as plt
+import monet_plots as mplots
 import numpy as np
 import xarray as xr
-
-import monet_plots as mplots
 from monet_plots.plots.spatial_contour import SpatialContourPlot
 
 # 1. Set the custom style

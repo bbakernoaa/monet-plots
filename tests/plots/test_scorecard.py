@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
-
 from monet_plots.plots.scorecard import ScorecardPlot
 
 

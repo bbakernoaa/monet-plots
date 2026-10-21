@@ -22,7 +22,6 @@ wind data on weather maps.
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 from monet_plots.plots.wind_barbs import WindBarbsPlot
 
 

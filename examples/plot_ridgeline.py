@@ -22,7 +22,6 @@ easier to read than multiple overlapping histograms or KDE plots.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from monet_plots.plots.ridgeline import RidgelinePlot
 
 # 1. Prepare sample data

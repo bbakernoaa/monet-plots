@@ -1,8 +1,14 @@
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import monet_stats
 import numpy as np
 import xarray as xr
+from monet_stats import *  # noqa: F401, F403 – re-export all public statistics
+
+try:
+    import dask.array as da
+except ImportError:  # pragma: no cover
+    da = None
 
 
 def _update_history(obj: Any, msg: str) -> Any:
@@ -49,8 +55,9 @@ def compute_pod(
     """
     denominator = hits + misses
     if isinstance(hits, (xr.DataArray, xr.Dataset)):
-        res = hits / denominator
-        res = res.where(denominator != 0, 0)
+        # Avoid divide-by-zero warnings with lazy backends by only dividing by a safe denominator.
+        safe_denominator = xr.where(denominator != 0, denominator, 1)
+        res = xr.where(denominator != 0, hits / safe_denominator, 0)
         return _update_history(res, "Calculated POD")
 
     return np.divide(
@@ -275,6 +282,7 @@ def compute_bias(
     >>> compute_bias(obs, mod)
     0.1
     """
+    # monet_stats.MB(a, b) computes mean(b - a); pass (obs, mod) to get mean(mod - obs)
     res = monet_stats.MB(obs, mod, axis=dim)
     if isinstance(res, (xr.DataArray, xr.Dataset)):
         return _update_history(res, f"Calculated Mean Bias along {dim}")
@@ -827,8 +835,7 @@ def compute_reliability_curve(
     Union[np.ndarray, xr.DataArray],
     Union[np.ndarray, xr.DataArray],
 ]:
-    """
-    Computes reliability curve statistics.
+    """Computes reliability curve statistics via monet-stats.
 
     Parameters
     ----------
@@ -844,50 +851,51 @@ def compute_reliability_curve(
     Tuple[Any, Any, Any]
         Tuple of (bin_centers, observed_frequencies, bin_counts).
     """
-    bins = np.linspace(0, 1, n_bins + 1)
-    bin_centers = (bins[:-1] + bins[1:]) / 2
+    result = monet_stats.reliability_diagram(observations, forecasts, n_bins=n_bins)
+    bin_centers = result["forecast_prob"]
+    observed_frequencies = result["observed_freq"]
+    bin_counts = result["bin_counts"]
 
-    # Handle Dask for "Lazy by Default"
-    is_dask = hasattr(forecasts, "chunks") or (
+    is_dask_input = da is not None and (
+        isinstance(forecasts, da.Array) or isinstance(observations, da.Array)
+    )
+    is_lazy_xarray = (
         isinstance(forecasts, xr.DataArray) and forecasts.chunks is not None
     )
 
-    if is_dask:
-        import dask.array as da
+    if is_dask_input and da is not None:
+        bc_np = np.asarray(bin_centers)
+        of_np = np.asarray(observed_frequencies)
+        ct_np = np.asarray(bin_counts)
+        bin_centers = da.from_array(bc_np, chunks=(len(bc_np),))
+        observed_frequencies = da.from_array(of_np, chunks=(len(of_np),))
+        bin_counts = da.from_array(ct_np, chunks=(len(ct_np),))
 
-        f_data = forecasts.data if isinstance(forecasts, xr.DataArray) else forecasts
-        o_data = (
-            observations.data
-            if isinstance(observations, xr.DataArray)
-            else observations
-        )
-        bin_counts, _ = da.histogram(f_data, bins=bins)
-        obs_sum, _ = da.histogram(f_data, bins=bins, weights=o_data)
-    else:
-        bin_counts, _ = np.histogram(forecasts, bins=bins)
-        obs_sum, _ = np.histogram(forecasts, bins=bins, weights=observations)
-
-    observed_frequencies = np.divide(
-        obs_sum,
-        bin_counts,
-        out=np.full_like(obs_sum, np.nan, dtype=float),
-        where=bin_counts > 0,
-    )
-
-    # Return as Xarray for provenance if inputs were Xarray
     if isinstance(forecasts, (xr.DataArray, xr.Dataset)):
-        coords = {"bin_center": bin_centers}
+        coords = {"bin_center": np.asarray(bin_centers)}
+        of_data = np.asarray(observed_frequencies)
+        ct_data = np.asarray(bin_counts)
+        bc_data = np.asarray(bin_centers)
+
+        if is_lazy_xarray and da is not None:
+            of_data = da.from_array(of_data, chunks=(len(of_data),))
+            ct_data = da.from_array(ct_data, chunks=(len(ct_data),))
+            bc_data = da.from_array(bc_data, chunks=(len(bc_data),))
+
         observed_frequencies = xr.DataArray(
-            observed_frequencies,
+            of_data,
             coords=coords,
             dims=["bin_center"],
             name="observed_frequency",
         )
         bin_counts = xr.DataArray(
-            bin_counts, coords=coords, dims=["bin_center"], name="bin_count"
+            ct_data, coords=coords, dims=["bin_center"], name="bin_count"
         )
         bin_centers = xr.DataArray(
-            bin_centers, coords=coords, dims=["bin_center"], name="bin_center"
+            bc_data,
+            coords=coords,
+            dims=["bin_center"],
+            name="bin_center",
         )
         _update_history(observed_frequencies, "Computed reliability curve")
 
@@ -934,9 +942,12 @@ def compute_brier_score_components(
 
     # Filter out empty bins. Need to compute mask if it's Dask to allow indexing.
     # obs_freq is small (n_bins), so this is safe and necessary for Xarray.
-    is_lazy = hasattr(obs_freq, "chunks") and obs_freq.chunks is not None
-    if is_lazy:
-        mask = (~np.isnan(obs_freq)).compute()
+    if isinstance(obs_freq, xr.DataArray):
+        mask = ~np.isnan(obs_freq)
+        if obs_freq.chunks is not None:
+            mask = mask.compute()
+    elif da is not None and isinstance(obs_freq, da.Array):
+        mask = (~da.isnan(obs_freq)).compute()
     else:
         mask = ~np.isnan(obs_freq)
 
@@ -972,19 +983,17 @@ def compute_rank_histogram(
     observations: Union[np.ndarray, xr.DataArray],
     member_dim: str = "member",
 ) -> Union[np.ndarray, xr.DataArray]:
-    """
-    Computes rank histogram counts.
-
-    Supports multidimensional xarray inputs with automatic broadcasting.
+    """Computes rank histogram counts via monet-stats.
 
     Parameters
     ----------
     ensemble : Union[np.ndarray, xr.DataArray]
         Ensemble data. If xarray, it must have a dimension named `member_dim`.
+        For ndarray-like inputs, members are expected along the last axis.
     observations : Union[np.ndarray, xr.DataArray]
         Observation data.
     member_dim : str, optional
-        The name of the ensemble member dimension, by default "member".
+        The name of the ensemble member dimension (xarray only), by default "member".
 
     Returns
     -------
@@ -999,61 +1008,24 @@ def compute_rank_histogram(
     >>> compute_rank_histogram(ens, obs)
     array([0, 2, 1])
     """
-    if isinstance(ensemble, xr.DataArray) and isinstance(observations, xr.DataArray):
-        # Use xarray's dimension-aware broadcasting
-        ranks = (ensemble < observations).sum(dim=member_dim)
-        n_members = ensemble.sizes[member_dim]
+    # For ndarray-like inputs, use the last axis as members (N, M) -> axis=-1.
+    axis: Union[int, str] = member_dim if isinstance(ensemble, xr.DataArray) else -1
+    res = monet_stats.rank_histogram(ensemble, observations, axis=axis)
 
-        # Flatten ranks for histogram (preserving dask if present)
-        ranks_flat = ranks.data.ravel()
+    if (
+        da is not None
+        and isinstance(ensemble, da.Array)
+        and not hasattr(res, "compute")
+    ):
+        res_np = np.asarray(res)
+        res = da.from_array(res_np, chunks=(len(res_np),))
 
-        if hasattr(ranks_flat, "chunks"):
-            import dask.array as da
-
-            counts, _ = da.histogram(ranks_flat, bins=np.arange(n_members + 2) - 0.5)
-        else:
-            counts = np.bincount(ranks_flat.astype(int), minlength=n_members + 1)
-
-        counts_xr = xr.DataArray(
-            counts,
-            coords={"rank": np.arange(len(counts))},
-            dims=["rank"],
-            name="rank_counts",
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
+        return _update_history(
+            res,
+            f"Computed rank histogram (dimension-aware, member_dim={member_dim})",
         )
-        return _update_history(counts_xr, "Computed rank histogram (dimension-aware)")
-
-    # Fallback for numpy or mixed (including plain dask arrays)
-    is_dask = hasattr(ensemble, "chunks") or hasattr(observations, "chunks")
-
-    # Assume member is the last dimension for fallback
-    # Or if 2D/1D pair, assume (n_samples, n_members) for backward compatibility
-    if ensemble.ndim == 2 and observations.ndim == 1:
-        obs_expanded = observations[:, np.newaxis]
-        ranks = (ensemble < obs_expanded).sum(axis=1)
-        n_members = ensemble.shape[1]
-    else:
-        # Generic case: assume last axis is members
-        obs_expanded = np.expand_dims(observations, axis=-1)
-        ranks = (ensemble < obs_expanded).sum(axis=-1)
-        n_members = ensemble.shape[-1]
-
-    if is_dask:
-        import dask.array as da
-
-        counts, _ = da.histogram(ranks.ravel(), bins=np.arange(n_members + 2) - 0.5)
-    else:
-        counts = np.bincount(ranks.astype(int).ravel(), minlength=n_members + 1)
-
-    if isinstance(ensemble, (xr.DataArray, xr.Dataset)):
-        counts_xr = xr.DataArray(
-            counts,
-            coords={"rank": np.arange(len(counts))},
-            dims=["rank"],
-            name="rank_counts",
-        )
-        return _update_history(counts_xr, "Computed rank histogram")
-
-    return counts
+    return res
 
 
 def compute_rev(
@@ -1150,26 +1122,22 @@ def compute_crps(
     observation: Union[np.ndarray, xr.DataArray],
     member_dim: str = "member",
 ) -> Union[float, np.ndarray, xr.DataArray]:
-    """
-    Calculates Continuous Ranked Probability Score (CRPS).
-
-    CRPS measures the difference between the cumulative distribution function (CDF)
-    of a probabilistic forecast and the empirical CDF of the observation.
-    This implementation uses the efficient O(M log M) sorted ensemble method.
+    """Calculates Continuous Ranked Probability Score (CRPS) via monet-stats.
 
     Parameters
     ----------
     ensemble : Union[np.ndarray, xr.DataArray]
         Ensemble data. If xarray, it must have a dimension named `member_dim`.
+        For numpy arrays, members are expected along axis 0.
     observation : Union[np.ndarray, xr.DataArray]
         Observation data.
     member_dim : str, optional
-        The name of the ensemble member dimension, by default "member".
+        The name of the ensemble member dimension (xarray only), by default "member".
 
     Returns
     -------
     Union[float, np.ndarray, xr.DataArray]
-        The calculated CRPS. Returns xarray.DataArray if inputs are xarray.
+        The calculated CRPS.
 
     Examples
     --------
@@ -1179,55 +1147,125 @@ def compute_crps(
     >>> compute_crps(ens, obs)
     0.2222222222222222
     """
-
-    def _crps_ufunc(ens_arr, obs_arr):
-        # ens_arr has member dimension as last axis
-        # obs_arr is scalar relative to the member dimension
-        m = ens_arr.shape[-1]
-
-        # Absolute difference from observation
-        mae = np.mean(np.abs(ens_arr - np.expand_dims(obs_arr, axis=-1)), axis=-1)
-
-        # Internal ensemble spread (Gini mean difference)
-        ens_sorted = np.sort(ens_arr, axis=-1)
-        i = np.arange(1, m + 1)
-        # Using the formula: 2 * sum((2i - m - 1) * X_i) / m^2
-        # Note: i is 1-based index
-        spread = np.sum((2 * i - m - 1) * ens_sorted, axis=-1) / (m * m)
-
-        return mae - spread
-
-    if isinstance(ensemble, xr.DataArray) and isinstance(observation, xr.DataArray):
-        # Ensure member dim is not chunked for the ufunc
-        ensemble = ensemble.chunk({member_dim: -1})
-
-        res = xr.apply_ufunc(
-            _crps_ufunc,
-            ensemble,
-            observation,
-            input_core_dims=[[member_dim], []],
-            dask="parallelized",
-            output_dtypes=[float],
-        )
+    # monet_stats.CRPS requires an integer axis for numpy; string dim for xarray
+    axis: Union[int, str] = member_dim if isinstance(ensemble, xr.DataArray) else 0
+    res = monet_stats.CRPS(ensemble, observation, axis=axis)
+    if isinstance(res, (xr.DataArray, xr.Dataset)):
         return _update_history(res, f"Calculated CRPS (member_dim={member_dim})")
+    return res
 
-    # Fallback for numpy or mixed
-    ens_val = np.asarray(ensemble)
-    obs_val = np.asarray(observation)
 
-    # Simple case for 1D ensemble and scalar observation
-    if ens_val.ndim == 1 and obs_val.ndim == 0:
-        return float(_crps_ufunc(ens_val, obs_val))
+def compute_radar_metrics(
+    obs: Union[np.ndarray, xr.DataArray],
+    mod: Union[np.ndarray, xr.DataArray],
+    metrics: Optional[List[str]] = None,
+) -> xr.Dataset:
+    """Compute normalized performance metrics for a radar (spider) chart.
 
-    # For more complex numpy shapes, we might need more logic,
-    # but the ufunc logic is generally applicable if axes are aligned.
-    # For simplicity, we assume the last axis is members if not xarray.
-    res_val = _crps_ufunc(ens_val, obs_val)
+    All metrics are normalized to a 0-1 scale where 1 is perfect performance.
 
-    if isinstance(ensemble, (xr.DataArray, xr.Dataset)) or isinstance(
-        observation, (xr.DataArray, xr.Dataset)
-    ):
-        res_xr = xr.DataArray(res_val, name="crps")
-        return _update_history(res_xr, "Calculated CRPS")
+    Parameters
+    ----------
+    obs : array-like
+        Observed values.
+    mod : array-like
+        Model/forecast values.
+    metrics : list of str, optional
+        Metrics to compute. Defaults to ['R', 'NMB', 'NME', 'RMSE', 'MAE'].
 
-    return res_val
+    Returns
+    -------
+    xr.Dataset
+        Dataset with one variable per metric, normalized to [0, 1].
+    """
+    if metrics is None:
+        metrics = ["R", "NMB", "NME", "RMSE", "MAE", "d1", "E1", "KGE", "CCC"]
+
+    obs_arr = np.asarray(obs).ravel()
+    mod_arr = np.asarray(mod).ravel()
+
+    # Remove NaN pairs
+    mask = np.isfinite(obs_arr) & np.isfinite(mod_arr)
+    obs_c = obs_arr[mask]
+    mod_c = mod_arr[mask]
+
+    result = {}
+
+    for metric in metrics:
+        m = metric.upper()
+        if m == "R":
+            val = float(compute_corr(obs_c, mod_c))
+            # R ranges from -1 to 1; normalize to 0-1
+            result[m] = np.clip((val + 1) / 2, 0, 1)
+        elif m == "NMB":
+            val = float(compute_nmb(obs_c, mod_c))
+            # NMB is a percentage (e.g. 3.3 = 3.3%); 0% is perfect, ±100% is worst
+            result[m] = np.clip(1 - abs(val) / 100.0, 0, 1)
+        elif m == "NME":
+            val = float(compute_nme(obs_c, mod_c))
+            # NME is a percentage (always >= 0); 0% is perfect, 100%+ is worst
+            result[m] = np.clip(1 - val / 100.0, 0, 1)
+        elif m == "RMSE":
+            val = float(compute_rmse(obs_c, mod_c))
+            obs_std = float(np.std(obs_c)) if np.std(obs_c) > 0 else 1.0
+            # Normalize by obs std deviation; RMSE/std < 1 is good
+            result[m] = np.clip(1 - min(val / obs_std, 1), 0, 1)
+        elif m == "MAE":
+            val = float(compute_mae(obs_c, mod_c))
+            obs_mean = (
+                float(np.mean(np.abs(obs_c))) if np.mean(np.abs(obs_c)) > 0 else 1.0
+            )
+            result[m] = np.clip(1 - min(val / obs_mean, 1), 0, 1)
+        elif m == "E1":
+            val = float(monet_stats.E1(obs_c, mod_c))
+            # E1 (modified IOA): ranges 0-1, already normalized
+            result[m] = np.clip(val, 0, 1)
+        elif m == "D1":
+            val = float(monet_stats.IOA(obs_c, mod_c))
+            # IOA ranges 0-1, already normalized
+            result[m] = np.clip(val, 0, 1)
+        elif m == "KGE":
+            val = float(monet_stats.KGE(obs_c, mod_c))
+            # KGE: 1 is perfect, can be negative; normalize [-1,1] -> [0,1]
+            result[m] = np.clip((val + 1) / 2, 0, 1)
+        elif m == "CCC":
+            val = float(monet_stats.CCC(obs_c, mod_c))
+            # CCC ranges -1 to 1; normalize to 0-1
+            result[m] = np.clip((val + 1) / 2, 0, 1)
+        else:
+            result[m] = 0.0
+
+    ds = xr.Dataset({k: xr.DataArray(v) for k, v in result.items()})
+    return _update_history(ds, "Calculated radar metrics")
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+__all__ = [
+    # Local compute wrappers
+    "compute_pod",
+    "compute_far",
+    "compute_success_ratio",
+    "compute_csi",
+    "compute_frequency_bias",
+    "compute_pofd",
+    "compute_bias",
+    "compute_binned_bias",
+    "compute_rmse",
+    "compute_mae",
+    "compute_mfb",
+    "compute_mfe",
+    "compute_nmb",
+    "compute_nme",
+    "compute_corr",
+    "compute_auc",
+    "compute_reliability_curve",
+    "compute_brier_score_components",
+    "compute_rank_histogram",
+    "compute_rev",
+    "compute_crps",
+    "compute_radar_metrics",
+    # All public symbols from monet_stats
+    *monet_stats.__all__,
+]

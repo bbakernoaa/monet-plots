@@ -172,6 +172,9 @@ class TaylorDiagram:
         Points closer to the reference point indicate better agreement with
         the reference dataset.
         """
+        # A single-point line is invisible without a marker; provide sensible defaults.
+        kwargs.setdefault("marker", "o")
+        kwargs.setdefault("ls", "")
         (line,) = self.ax.plot(
             np.arccos(corrcoef), stddev, *args, **kwargs
         )  # (theta,radius)

@@ -23,7 +23,6 @@ under-predicts high concentrations (a common issue in many environmental models)
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from monet_plots.plots.conditional_bias import ConditionalBiasPlot
 
 # 1. Prepare sample data

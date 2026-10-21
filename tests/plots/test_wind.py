@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-
 from monet_plots.plots.wind_barbs import WindBarbsPlot
 from monet_plots.plots.wind_quiver import WindQuiverPlot
 

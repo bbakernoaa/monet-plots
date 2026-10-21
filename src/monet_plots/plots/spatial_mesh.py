@@ -40,4 +40,6 @@ class SpatialMeshPlot(SpatialContourPlot):
             self.add_colorbar(
                 self.mappable, **{"label": variable_label(field), **cbar_kwargs}
             )
+        if not self.ax.get_title():
+            self.ax.set_title(field.attrs.get("long_name", field.name or ""))
         return self.ax

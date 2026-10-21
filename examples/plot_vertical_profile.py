@@ -22,7 +22,6 @@ data using either shading or box-and-whisker plots.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from monet_plots.plots.profile import VerticalProfilePlot
 
 # 1. Create dummy data for observations and two models

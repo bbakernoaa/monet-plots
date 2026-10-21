@@ -327,5 +327,5 @@ plot.plot(data)
 **Related Resources**:
 
 - [Plot Types API](../plots/index.md) - Specific plot type implementations
-- [Style Configuration](../style) - Customizing plot appearance
+- [Style Configuration](./style.md) - Customizing plot appearance
 - [Examples](../examples/index.md) - Practical usage examples

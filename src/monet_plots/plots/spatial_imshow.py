@@ -29,9 +29,10 @@ class SpatialImshowPlot(SpatialPlot):
 
     def __new__(
         cls,
-        modelvar: Any,
+        data: Any = None,
         gridobj: Any | None = None,
         plotargs: dict[str, Any] | None = None,
+        modelvar: Any = None,
         **kwargs: Any,
     ) -> Any:
         """Redirect to SpatialFacetGridPlot if faceting is requested.
@@ -41,7 +42,7 @@ class SpatialImshowPlot(SpatialPlot):
 
         Parameters
         ----------
-        modelvar : Any
+        data : Any
             The input data to plot.
         gridobj : Any, optional
             Object with LAT and LON variables, by default None.
@@ -58,6 +59,7 @@ class SpatialImshowPlot(SpatialPlot):
         """
         from .facet_grid import SpatialFacetGridPlot
 
+        modelvar = data if data is not None else modelvar
         ax = kwargs.get("ax")
 
         # Aligns with Xarray's trigger for faceting
@@ -92,7 +94,7 @@ class SpatialImshowPlot(SpatialPlot):
 
     def __init__(
         self,
-        modelvar: Any,
+        data: Any = None,
         gridobj: Any | None = None,
         plotargs: dict[str, Any] | None = None,
         ncolors: int = 15,
@@ -102,13 +104,14 @@ class SpatialImshowPlot(SpatialPlot):
         col_wrap: int | None = None,
         size: float | None = None,
         aspect: float | None = None,
+        modelvar: Any = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the spatial imshow plot.
 
         Parameters
         ----------
-        modelvar : Any
+        data : Any
             The input data to plot. Preferred format is an xarray DataArray.
         gridobj : Any, optional
             Object with LAT and LON variables to determine extent, by default None.
@@ -137,7 +140,7 @@ class SpatialImshowPlot(SpatialPlot):
         super().__init__(**kwargs)
 
         # Standardize data to Xarray for consistency and lazy evaluation
-        self.modelvar = normalize_data(modelvar)
+        self.modelvar = normalize_data(data if data is not None else modelvar)
         if isinstance(self.modelvar, xr.Dataset) and len(self.modelvar.data_vars) == 1:
             self.modelvar = self.modelvar[list(self.modelvar.data_vars)[0]]
 
@@ -173,6 +176,7 @@ class SpatialImshowPlot(SpatialPlot):
                 self.modelvar, self.lon_coord, self.lat_coord
             )
 
+        self.data = self.modelvar
         _update_history(self.modelvar, "Initialized monet-plots.SpatialImshowPlot")
 
     def plot(self, **kwargs: Any) -> Axes:
@@ -227,6 +231,12 @@ class SpatialImshowPlot(SpatialPlot):
                 else None
             )
             self.add_colorbar(self.mappable, **{"label": label, **cbar_kwargs})
+        if not self.ax.get_title():
+            title = self.modelvar.attrs.get("long_name") or getattr(
+                self.modelvar, "name", None
+            )
+            if title:
+                self.ax.set_title(title)
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:

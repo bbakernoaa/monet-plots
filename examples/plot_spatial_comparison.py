@@ -10,10 +10,9 @@ Cartopy's Natural Earth cache (downloaded on first rendering).
 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+import monet_plots as mp
 import numpy as np
 import xarray as xr
-
-import monet_plots as mp
 
 lon = np.linspace(-125, -65, 61)
 lat = np.linspace(25, 50, 31)

@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import xarray as xr
-
 from monet_plots.plots.profile import VerticalProfilePlot
 
 try:
