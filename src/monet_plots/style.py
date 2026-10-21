@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+from functools import wraps
+from inspect import signature
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -272,3 +275,38 @@ def get_style_setting(key: str, default: Any = None) -> Any:
 
 # Expose wiley_style for direct import if needed for backward compatibility
 wiley_style = _wiley_style
+
+
+@contextmanager
+def style_context(context: str | None = None):
+    """Apply a named style temporarily, restoring rcParams and custom settings.
+
+    Use ``set_style`` for an intentional session-wide change. Plot objects use
+    this context so composing figures does not alter unrelated plots.
+    """
+    global _current_style_name
+    previous = _current_style_name
+    with plt.rc_context():
+        try:
+            if context is not None:
+                set_style(context)
+            yield
+        finally:
+            _current_style_name = previous
+
+
+def _scoped_plot_method(method):
+    """Scope plot lifecycle methods, including third-party BasePlot subclasses."""
+    sig = signature(method)
+
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        if method.__name__ == "__init__":
+            bound = sig.bind_partial(self, *args, **kwargs)
+            context = bound.arguments.get("style", kwargs.get("style", "wiley"))
+        else:
+            context = getattr(self, "_style", None)
+        with style_context(context):
+            return method(self, *args, **kwargs)
+
+    return wrapped

@@ -124,3 +124,8 @@ docs/gallery/
 
 .conda
 .venv/
+
+# Locally rendered review artifacts
+artifacts/
+
+!tests/plots/baseline_images/*.png

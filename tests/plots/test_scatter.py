@@ -1,9 +1,9 @@
+import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-import cartopy.crs as ccrs
 
 try:
     import dask.array as da

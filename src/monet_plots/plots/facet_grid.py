@@ -1,28 +1,26 @@
-# src/monet_plots/plots/facet_grid.py
+"""Faceting for tabular plots and geographically comparable spatial panels."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from inspect import Parameter, signature
+from typing import Any, Callable
 
-import numpy as np
 import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import xarray as xr
+from matplotlib.colors import BoundaryNorm, LogNorm, Normalize
+from xarray.plot import FacetGrid as XarrayFacetGrid
 
-from ..plot_utils import to_dataframe
-from ..style import set_style
+from ..geo import identify_coords, validate_data_crs, variable_label
+from ..plot_utils import normalize_data, to_dataframe
+from ..style import style_context
 from .base import BasePlot
-
-if TYPE_CHECKING:
-    import cartopy.crs as ccrs
 
 
 class FacetGridPlot(BasePlot):
-    """Creates a facet grid plot.
-
-    This class creates a facet grid plot using seaborn's FacetGrid.
-    """
+    """A consistent figure wrapper around seaborn and xarray FacetGrid."""
 
     def __init__(
         self,
@@ -33,206 +31,145 @@ class FacetGridPlot(BasePlot):
         col_wrap: int | None = None,
         size: float | None = None,
         aspect: float = 1,
-        subplot_kws: dict[str, Any] | None = None,
+        subplot_kws: dict | None = None,
         style: str | None = "wiley",
-        **kwargs: Any,
-    ) -> None:
-        """Initializes the facet grid.
-
-        Parameters
-        ----------
-        data : Any
-            The data to plot.
-        row : str, optional
-            Variable to map to row facets, by default None.
-        col : str, optional
-            Variable to map to column facets, by default None.
-        hue : str, optional
-            Variable to map to color mapping, by default None.
-        col_wrap : int, optional
-            Number of columns before wrapping, by default None.
-        size : float, optional
-            Height (in inches) of each facet, by default 3.
-            Aligns with Xarray convention.
-        aspect : float, optional
-            Aspect ratio of each facet, by default 1.
-        subplot_kws : dict, optional
-            Keyword arguments for subplots (e.g. projection).
-        style : str, optional
-            Style name to apply, by default "wiley".
-        **kwargs : Any
-            Additional keyword arguments to pass to `FacetGrid`.
-            `height` is supported as an alias for `size` (Seaborn convention).
-        """
-        # Apply style
-        if style:
-            set_style(style)
-
-        # Handle size/height alignment (Xarray vs Seaborn)
-        self.size = size or kwargs.pop("height", 3)
+        **kwargs,
+    ):
+        self.row, self.col, self.hue, self.col_wrap = row, col, hue, col_wrap
+        self.size = size if size is not None else kwargs.pop("height", 3)
         self.aspect = aspect
-
-        # Store facet parameters
-        self.row = row
-        self.col = col
-        self.hue = hue
-        self.col_wrap = col_wrap
-
-        # Aero Protocol: Preserve lazy Xarray objects
         self.raw_data = data
         self.is_xarray = isinstance(data, (xr.DataArray, xr.Dataset))
-
+        if row is not None and col_wrap is not None:
+            raise ValueError("col_wrap cannot be combined with row faceting.")
         if self.is_xarray:
-            self.data = data  # Keep as Xarray
-            # For Xarray, we can use xarray.plot.FacetGrid
-            # We delay creation to SpatialFacetGridPlot if possible,
-            # or initialize it here if we have enough info.
-            self.grid = None
-            if col or row:
-                try:
-                    from xarray.plot.facetgrid import FacetGrid as xrFacetGrid
-
-                    self.grid = xrFacetGrid(
-                        data,
-                        col=col,
-                        row=row,
-                        col_wrap=col_wrap,
-                        subplot_kws=subplot_kws,
-                    )
-                    # Initialize default titles for Xarray
-                    self.grid.set_titles()
-                except (ImportError, TypeError, AttributeError):
-                    pass
-        else:
-            self.data = to_dataframe(data).reset_index()
-            # Create the Seaborn FacetGrid
-            self.grid = sns.FacetGrid(
+            if row is None and col is None:
+                raise ValueError("Specify row or col to create an xarray facet grid.")
+            if hue is not None:
+                raise ValueError("hue is supported for tabular facets only.")
+            self.data = normalize_data(data)
+            # Fail with the actual xarray error; never silently create an empty figure.
+            self.grid = XarrayFacetGrid(
                 self.data,
-                row=self.row,
-                col=self.col,
-                hue=self.hue,
-                col_wrap=self.col_wrap,
-                height=self.size,
-                aspect=self.aspect,
+                row=row,
+                col=col,
+                col_wrap=col_wrap,
+                size=self.size,
+                aspect=aspect,
                 subplot_kws=subplot_kws,
                 **kwargs,
             )
-
-        # Unified BasePlot initialization
-        axes = getattr(self.grid, "axs", None)
-        if axes is None:
-            axes = getattr(self.grid, "axes", None)
-        if axes is not None:
-            super().__init__(fig=self.grid.fig, ax=axes.flatten()[0], style=style)
+            self.grid.set_titles()
         else:
-            super().__init__(style=style)
-
-        # For compatibility with tests, also store as 'g'
+            self.data = to_dataframe(data).reset_index()
+            self.grid = sns.FacetGrid(
+                self.data,
+                row=row,
+                col=col,
+                hue=hue,
+                col_wrap=col_wrap,
+                height=self.size,
+                aspect=aspect,
+                subplot_kws=subplot_kws,
+                **kwargs,
+            )
+        axes = self.grid.axs if self.is_xarray else self.grid.axes
+        super().__init__(fig=self.grid.fig, ax=axes.flat[0], style=style)
+        self.axes = axes
         self.g = self.grid
 
-    def map_dataframe(self, plot_func: Callable, *args: Any, **kwargs: Any) -> None:
-        """Maps a plotting function to the facet grid.
-
-        Args:
-            plot_func (function): The plotting function to map.
-            *args: Positional arguments to pass to the plotting function.
-            **kwargs: Keyword arguments to pass to the plotting function.
-        """
+    def map_dataframe(self, plot_func: Callable, *args, **kwargs):
+        """Map a seaborn-style function over tabular subsets."""
+        if self.is_xarray:
+            raise TypeError(
+                "map_dataframe requires tabular data; use map_monet for spatial xarray facets."
+            )
         self.grid.map_dataframe(plot_func, *args, **kwargs)
+        return self
 
     def set_titles(self, *args, **kwargs):
-        """Sets the titles of the facet grid.
-
-        Args:
-            *args: Positional arguments to pass to `set_titles`.
-            **kwargs: Keyword arguments to pass to `set_titles`.
-        """
+        """Set panel titles with the underlying backend's formatting options."""
         self.grid.set_titles(*args, **kwargs)
-
-    def save(self, filename, **kwargs):
-        """Saves the plot to a file.
-
-        Args:
-            filename (str): The name of the file to save the plot to.
-            **kwargs: Additional keyword arguments to pass to `savefig`.
-        """
-        self.fig.savefig(filename, **kwargs)
+        return self
 
     def plot(self, plot_func=None, *args, **kwargs):
-        """Plots the data using the FacetGrid.
-
-        Args:
-            plot_func (function, optional): The plotting function to use.
-            *args: Positional arguments to pass to the plotting function.
-            **kwargs: Keyword arguments to pass to the plotting function.
-        """
+        """Map a function over the facet grid."""
         if plot_func is not None:
             self.grid.map(plot_func, *args, **kwargs)
-
-    def close(self):
-        """Closes the plot."""
-        plt.close(self.fig)
+        return self
 
 
 class SpatialFacetGridPlot(FacetGridPlot):
-    """Geospatial version of FacetGridPlot."""
+    """Spatial panels with explicit CRS and scientifically comparable scales.
+
+    ``colorbar='shared'`` (default) uses one norm across all panels. ``'each'``
+    permits independent scales, including variables with incompatible units.
+    ``False`` hides colorbars while retaining a common scale. Initialization
+    preserves lazy arrays; rendering computes the global scale and panel values.
+    """
 
     def __init__(
         self,
-        data: Any,
+        data,
         *,
-        row: str | None = None,
-        col: str | None = None,
-        col_wrap: int | None = None,
-        projection: ccrs.Projection | None = None,
-        size: float | None = None,
-        aspect: float = 1.2,
-        style: str | None = "wiley",
-        **kwargs: Any,
-    ) -> None:
-        """Initialize Spatial Facet Grid.
-
-        Parameters
-        ----------
-        data : Any
-            Geospatial data to plot. Preferred format is xr.DataArray or xr.Dataset.
-        row : str, optional
-            Dimension/variable to map to rows.
-        col : str, optional
-            Dimension/variable to map to columns.
-        col_wrap : int, optional
-            Wrap columns at this number.
-        projection : ccrs.Projection, optional
-            Cartopy projection for the maps. Defaults to PlateCarree.
-        size : float, optional
-            Height (in inches) of each facet, by default 4.
-            Aligns with Xarray convention.
-        aspect : float, optional
-            Aspect ratio of each facet, by default 1.2.
-        style : str, optional
-            Style name to apply, by default "wiley".
-        **kwargs : Any
-            Additional arguments for FacetGrid.
-        """
+        row=None,
+        col=None,
+        col_wrap=None,
+        projection=None,
+        data_crs=None,
+        extent_crs=None,
+        size=None,
+        aspect=1.2,
+        style="wiley",
+        colorbar="shared",
+        _plotter_class=None,
+        _plotter_kwargs=None,
+        **kwargs,
+    ):
         self.original_data = data
-        import cartopy.crs as ccrs
-
-        self.projection = projection or ccrs.PlateCarree()
-
-        # Handle xr.Dataset by converting to DataArray if faceting by variable
-        # or if there is only one data variable.
         self.is_dataset = isinstance(data, xr.Dataset)
-        if self.is_dataset:
-            if row == "variable" or col == "variable":
-                data = data.to_array(dim="variable", name="value")
-            elif len(data.data_vars) == 1:
-                # Auto-select the only variable to ensure map_dataarray works
-                data = data[list(data.data_vars)[0]]
-
-        # Aligns with Xarray's default size for maps
-        size = size or kwargs.pop("height", 4)
-
-        # Call FacetGridPlot init which handles the two-track branching
+        self.projection = projection or ccrs.PlateCarree()
+        self._data_crs_explicit = data_crs is not None
+        self.data_crs = data_crs or ccrs.PlateCarree()
+        self.extent_crs = extent_crs or ccrs.PlateCarree()
+        self.default_plotter = _plotter_class
+        self.plotter_kwargs = _plotter_kwargs or {}
+        self.colorbar_mode = colorbar
+        self.plotters, self.mappables = [], []
+        self._variable_facet = self.is_dataset and "variable" in (row, col)
+        if self._variable_facet:
+            if len({frozenset(v.dims) for v in data.data_vars.values()}) > 1:
+                raise ValueError(
+                    "Variables must have matching dimensions to facet; select compatible fields or regrid explicitly."
+                )
+            # Keep metadata on original variables for labels and unit validation.
+            data = data.to_array(dim="variable", name="value")
+        elif self.is_dataset and len(data.data_vars) == 1:
+            data = data[next(iter(data.data_vars))]
+        height = kwargs.pop("height", 4)
+        size = size if size is not None else height
+        grid_keys = (
+            {"figsize", "sharex", "sharey"}
+            if isinstance(data, (xr.Dataset, xr.DataArray))
+            else {
+                "row_order",
+                "col_order",
+                "hue",
+                "hue_order",
+                "palette",
+                "sharex",
+                "sharey",
+                "margin_titles",
+                "despine",
+                "dropna",
+                "legend_out",
+                "gridspec_kws",
+            }
+        )
+        grid_options = {
+            key: kwargs.pop(key) for key in list(kwargs) if key in grid_keys
+        }
+        self.render_options = {**(self.plotter_kwargs.get("plotargs") or {}), **kwargs}
         super().__init__(
             data,
             row=row,
@@ -242,137 +179,143 @@ class SpatialFacetGridPlot(FacetGridPlot):
             aspect=aspect,
             subplot_kws={"projection": self.projection},
             style=style,
-            **kwargs,
+            **grid_options,
         )
+        self.fig.set_layout_engine("constrained")
+        self._set_default_titles()
 
-        # Set default titles if grid is already created (Pandas track)
-        if self.grid:
-            self._set_default_titles()
+    def _panels(self):
+        if self.is_xarray:
+            for ax, selection in zip(self.axes.flat, self.grid.name_dicts.flat):
+                if selection is None:
+                    ax.set_visible(False)
+                    continue
+                subset = self.data.sel(selection)
+                if self._variable_facet and "variable" in selection:
+                    subset = subset.assign_attrs(
+                        self.original_data[selection["variable"]].attrs
+                    )
+                    subset.name = str(selection["variable"])
+                yield ax, subset, selection
+        else:
+            for (i, j, _), subset in self.grid.facet_data():
+                if subset.empty:
+                    continue
+                ax = self.axes.flat[j] if self.col_wrap else self.axes[i, j]
+                selection = {}
+                if self.row:
+                    selection[self.row] = self.grid.row_names[i]
+                if self.col:
+                    selection[self.col] = self.grid.col_names[j]
+                yield ax, subset, selection
 
-    def _set_default_titles(self) -> None:
-        """Format facet titles with metadata and date-time."""
-        axes = getattr(self.grid, "axs", None)
-        if axes is None:
-            axes = getattr(self.grid, "axes", None)
-        if axes is None:
+    def _set_default_titles(self):
+        if not self.is_xarray:
             return
-
-        for ax in axes.flatten():
-            if ax is None:
-                continue
-            title = ax.get_title()
-
-            # Handle titles that might have multiple facets (e.g. "row = val | col = val")
-            parts = title.split(" | ")
-            new_parts = []
-
-            for part in parts:
-                if " = " in part:
-                    # Use split(" = ", 1) to handle values that might contain " = "
-                    dim_val = part.split(" = ", 1)
-                    if len(dim_val) == 2:
-                        dim, val = dim_val
-                        dim = dim.strip()
-                        val = val.strip()
-
-                        # Handle date-time formatting
-                        try:
-                            dt = pd.to_datetime(val)
-                            val = dt.strftime("%Y-%m-%d %H:%M")
-                        except (ValueError, TypeError):
-                            pass
-
-                        # Handle long_name and units for dimensions/variables
-                        target_obj = None
-                        if dim == "variable" and self.is_dataset:
-                            try:
-                                target_obj = self.original_data[val]
-                            except (KeyError, AttributeError):
-                                pass
-                        elif dim in self.original_data.coords:
-                            target_obj = self.original_data.coords[dim]
-                        elif (
-                            hasattr(self.original_data, "data_vars")
-                            and dim in self.original_data.data_vars
-                        ):
-                            target_obj = self.original_data.data_vars[dim]
-
-                        if target_obj is not None:
-                            long_name = target_obj.attrs.get(
-                                "long_name", dim if dim != "variable" else val
-                            )
-                            units = target_obj.attrs.get("units", "")
-
-                            if dim == "variable":
-                                val = f"{long_name} ({units})" if units else long_name
-                                dim = ""
-                            else:
-                                dim = long_name
-                                if units and not any(
-                                    u in val for u in [f"({units})", f"[{units}]"]
-                                ):
-                                    val = f"{val} ({units})"
-
-                        new_parts.append(f"{dim} {val}".strip())
-                    else:
-                        new_parts.append(part)
+        for annotation in self.grid.row_labels:
+            if annotation is not None and annotation.axes is not None:
+                annotation.remove()
+        self.grid.row_labels = []
+        for ax, _, selection in self._panels():
+            parts = []
+            for dim, value in selection.items():
+                if dim == "variable" and self._variable_facet:
+                    parts.append(variable_label(self.original_data[value]))
                 else:
-                    new_parts.append(part)
+                    coord = self.original_data.coords.get(dim)
+                    label = (
+                        coord.attrs.get("long_name", dim) if coord is not None else dim
+                    )
+                    if isinstance(value, (np.datetime64, pd.Timestamp)):
+                        value = pd.Timestamp(value).strftime("%Y-%m-%d %H:%M")
+                    parts.append(f"{label} = {value}")
+            ax.set_title(" | ".join(parts))
 
-            ax.set_title(" | ".join(new_parts))
-
-    def add_map_features(self, **kwargs: Any) -> None:
-        """Add cartopy features to all facets.
-
-        Parameters
-        ----------
-        **kwargs : Any
-            Keyword arguments passed to SpatialPlot.add_features.
-            Default is coastlines=True.
-        """
+    def add_map_features(self, **kwargs):
+        """Add features to occupied panels, leaving wrapped empty cells hidden."""
         from .spatial import SpatialPlot
 
-        if "coastlines" not in kwargs:
-            kwargs["coastlines"] = True
+        for ax, _, _ in self._panels():
+            SpatialPlot(
+                ax=ax,
+                data_crs=self.data_crs,
+                extent_crs=self.extent_crs,
+                style=self._style,
+                **kwargs,
+            )
+        return self
 
-        axes = getattr(self.grid, "axs", None)
-        if axes is None:
-            axes = getattr(self.grid, "axes", None)
-        if axes is None:
-            return
+    def plot(self, plotter_class=None, **kwargs):
+        """Render using the originating spatial class, or SpatialMeshPlot."""
+        from .spatial_mesh import SpatialMeshPlot
 
-        for ax in axes.flatten():
-            if ax is None:
-                continue
-            # Use SpatialPlot's feature logic on each axis
-            SpatialPlot(ax=ax, projection=self.projection, **kwargs)
+        return self.map_monet(
+            plotter_class or self.default_plotter or SpatialMeshPlot, **kwargs
+        )
 
     def map_monet(
-        self,
-        plotter_class: type,
-        *,
-        x: str | None = None,
-        y: str | None = None,
-        var_name: str | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Map a monet-plots spatial plotter to the grid.
+        self, plotter_class: type, *, x=None, y=None, var_name=None, **kwargs
+    ):
+        """Render each subset using a spatial plotter, returning this grid.
 
-        Parameters
-        ----------
-        plotter_class : type
-            A class from monet_plots.plots (e.g., SpatialImshowPlot).
-        x : str, optional
-            Column name for longitude.
-        y : str, optional
-            Column name for latitude.
-        var_name : str, optional
-            The variable name to plot.
-        **kwargs : Any
-            Arguments passed to the plotter and map features.
+        Constructor-only arguments (e.g. col1/col2, gridobj) are routed to the
+        constructor. Rendering options (e.g. norm, cmap) are sent to ``plot``.
+        ``colorbar`` accepts 'shared', 'each', or False; ``add_colorbar`` is a
+        boolean compatibility alias. ``cbar_kwargs`` configure the real mappable.
         """
-        # Separate feature kwargs
-        feature_keys = [
+        options = {**self.render_options, **kwargs}
+        mode = options.pop("colorbar", self.colorbar_mode)
+        if "add_colorbar" in options:
+            mode = "shared" if options.pop("add_colorbar") else False
+        if mode not in ("shared", "each", False):
+            raise ValueError("colorbar must be 'shared', 'each', or False.")
+        cbar_kwargs = options.pop("cbar_kwargs", {})
+        label = options.pop("label", None)
+        if self._variable_facet and mode != "each":
+            units = {
+                str(v.attrs.get("units", ""))
+                for v in self.original_data.data_vars.values()
+            }
+            if len(units) > 1:
+                raise ValueError(
+                    "Variables have incompatible units; use colorbar='each' or convert units first."
+                )
+        x = x or options.pop("lon_coord", None)
+        y = y or options.pop("lat_coord", None)
+        x, y = identify_coords(self.data, x, y)
+        validate_data_crs(
+            self.data, x, y, self.data_crs if self._data_crs_explicit else None
+        )
+        # Determine the field used for normalization, including model-minus-obs bias.
+        if "col1" in options and "col2" in options:
+            scale_data = self.data[options["col2"]] - self.data[options["col1"]]
+        elif isinstance(self.data, xr.Dataset):
+            if var_name is None:
+                raise ValueError(
+                    "Specify var_name when plotting a Dataset with multiple variables."
+                )
+            scale_data = self.data[var_name]
+        elif isinstance(self.data, xr.DataArray):
+            scale_data = self.data
+        else:
+            if var_name is None:
+                raise ValueError("Specify var_name for tabular spatial facets.")
+            scale_data = self.data[var_name]
+        if mode != "each":
+            options = _shared_scale(scale_data, options, plotter_class)
+        constructor_parameters = signature(plotter_class.__init__).parameters
+        constructor_keys = {
+            name
+            for name, param in constructor_parameters.items()
+            if name not in {"self", "data", "modelvar"}
+            and param.kind not in {Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL}
+        }
+        constructor_options = dict(self.plotter_kwargs)
+        for key in list(options):
+            # Render vmin/vmax/norm/cmap together so a shared norm stays intact.
+            if key in constructor_keys and key not in {"vmin", "vmax", "cmap"}:
+                constructor_options[key] = options.pop(key)
+        feature_keys = {
             "coastlines",
             "states",
             "countries",
@@ -384,228 +327,154 @@ class SpatialFacetGridPlot(FacetGridPlot):
             "gridlines",
             "extent",
             "resolution",
-        ]
-        feature_kwargs = {k: kwargs.pop(k) for k in feature_keys if k in kwargs}
-        add_shared_cb = kwargs.pop("add_colorbar", False)
-
-        if self.is_xarray:
-            # Track A: Xarray-native faceting (Lazy by Default)
-            # Identify coordinates if not provided
-            if x is None or y is None:
-                from .spatial import SpatialPlot
-
-                sp = SpatialPlot(style=None)
-                x_id, y_id = sp._identify_coords(self.data)
-                x = x or x_id
-                y = y or y_id
-
-            # Prepare plotting arguments
-            plot_kwargs = kwargs.copy()
-            # If we want a shared colorbar, we don't want each plotter to add its own
-            plot_kwargs["add_colorbar"] = False
-
-            # Select data variable if it's a Dataset
-            plot_data = self.data
-            if isinstance(plot_data, xr.Dataset):
-                if var_name:
-                    plot_data = plot_data[var_name]
-                else:
-                    # Pick the first data variable that is not a facet dimension
-                    for v in plot_data.data_vars:
-                        if v not in [self.col, self.row]:
-                            plot_data = plot_data[v]
-                            break
-
-            # Create the FacetGrid if it doesn't exist
-            if self.grid is None:
-                from xarray.plot.facetgrid import FacetGrid as xrFacetGrid
-
-                self.grid = xrFacetGrid(
-                    plot_data,
-                    col=self.col,
-                    row=self.row,
-                    col_wrap=self.col_wrap,
-                    subplot_kws={"projection": self.projection},
-                )
-
-            # Identify variables needed by the plotter
-            vars_to_map = []
-            if var_name:
-                vars_to_map = [var_name]
-            elif "col1" in kwargs and "col2" in kwargs:
-                # For SpatialBiasScatterPlot
-                vars_to_map = [kwargs["col1"], kwargs["col2"]]
-            elif isinstance(plot_data, xr.DataArray) and plot_data.name:
-                vars_to_map = [plot_data.name]
-            elif isinstance(plot_data, xr.Dataset):
-                # Use all data variables if not specified
-                vars_to_map = list(plot_data.data_vars)
-
-            # Use a wrapper to instantiate the plotter class for each facet
-            def _monet_wrapper(*args, **inner_kwargs):
-                ax = inner_kwargs.pop("ax", plt.gca())
-                # Remove xarray's extra internal kwargs, but preserve levels and norm
-                # if they were explicitly provided in the original kwargs.
-                for k in ["x", "y", "add_labels", "_is_facetgrid", "extend"]:
-                    inner_kwargs.pop(k, None)
-
-                # If levels/norm were not in kwargs but are in inner_kwargs (from xarray's auto-scale),
-                # we only keep them if they are not None.
-                if "levels" in inner_kwargs and "levels" not in kwargs:
-                    if inner_kwargs["levels"] is None:
-                        inner_kwargs.pop("levels")
-                if "norm" in inner_kwargs and "norm" not in kwargs:
-                    if inner_kwargs["norm"] is None:
-                        inner_kwargs.pop("norm")
-
-                if len(args) == 1:
-                    data_subset = args[0]
-                elif len(args) > 1:
-                    # Check if args are numpy arrays (sometimes happens in xarray versions)
-                    processed_args = []
-                    for i, arg in enumerate(args):
-                        if isinstance(arg, np.ndarray):
-                            var_name_at_index = vars_to_map[i]
-                            # Try to find matching DataArray in the original data to copy coordinates
-                            # self.data is the full data (DataArray or Dataset)
-                            coords = None
-                            dims = None
-                            if isinstance(self.data, xr.Dataset):
-                                if var_name_at_index in self.data:
-                                    # Subset coordinates to only those that match the arg shape
-                                    full_da = self.data[var_name_at_index]
-                                    dims = [
-                                        d
-                                        for d in full_da.dims
-                                        if d not in [self.col, self.row]
-                                    ]
-                                    coords = {
-                                        c: full_da.coords[c]
-                                        for c in full_da.coords
-                                        if all(
-                                            d in dims for d in full_da.coords[c].dims
-                                        )
-                                    }
-                            elif isinstance(self.data, xr.DataArray):
-                                dims = [
-                                    d
-                                    for d in self.data.dims
-                                    if d not in [self.col, self.row]
-                                ]
-                                coords = {
-                                    c: self.data.coords[c]
-                                    for c in self.data.coords
-                                    if all(d in dims for d in self.data.coords[c].dims)
-                                }
-
-                            da = xr.DataArray(
-                                arg, name=var_name_at_index, coords=coords, dims=dims
-                            )
-                            processed_args.append(da)
-                        else:
-                            processed_args.append(arg)
-
-                    # Merge multiple DataArrays back into a Dataset
-                    data_subset = xr.merge(processed_args, compat="override")
-                else:
-                    # Fallback if no args passed
-                    data_subset = None
-
-                # Create the plotter instance
-                plotter = plotter_class(
-                    data_subset, ax=ax, _is_facetgrid=True, **inner_kwargs
-                )
-                # Call its plot method
-                plotter.plot()
-
-            # Map the wrapper to the grid
-            if isinstance(self.grid.data, xr.Dataset):
-                self.grid.map(_monet_wrapper, *vars_to_map, **plot_kwargs)
-            elif hasattr(self.grid, "map_dataarray"):
-                self.grid.map_dataarray(_monet_wrapper, x, y, **plot_kwargs)
-            else:
-                self.grid.map(_monet_wrapper, **plot_kwargs)
-
-            # Update BasePlot attributes
-            self.fig = self.grid.fig
-            axes = getattr(self.grid, "axs", None)
-            if axes is None:
-                axes = getattr(self.grid, "axes", None)
-            self.ax = axes.flatten()[0]
-            self.g = self.grid
-
-            # Add features to all facets
-            self.add_map_features(**feature_kwargs)
-            self._set_default_titles()
-
-        else:
-            # Track B: Seaborn-based faceting (Eager/Pandas)
-            x = x or "lon"
-            y = y or "lat"
-            if var_name is None:
-                if "variable" in self.data.columns:
-                    var_name = "value"
-                elif isinstance(self.raw_data, xr.DataArray):
-                    var_name = self.raw_data.name
-                elif isinstance(self.raw_data, xr.Dataset):
-                    var_name = list(self.raw_data.data_vars)[0]
-
-            def _mapped_plot(*args, **kwargs_inner):
-                data_df = kwargs_inner.pop("data")
-                ax = plt.gca()
-                temp_da = data_df.set_index([y, x]).to_xarray()[var_name]
-                plotter = plotter_class(temp_da, ax=ax, **kwargs_inner)
-                plotter.plot()
-
-            self.map_dataframe(_mapped_plot, **kwargs)
-            self.add_map_features(**feature_kwargs)
-            if add_shared_cb:
-                self._add_shared_colorbar(**kwargs)
-
-    def _add_shared_colorbar(self, **kwargs: Any) -> None:
-        """Add a shared colorbar to the figure."""
-        # Find the last mappable object in the facets and the last valid axis
-        mappable = None
-        target_ax = None
-        axes = getattr(self.grid, "axs", None)
-        if axes is None:
-            axes = getattr(self.grid, "axes", None)
-        if axes is None:
-            return
-
-        for ax in reversed(axes.flatten()):
-            if ax is None:
-                continue
-            if target_ax is None:
-                target_ax = ax
-            if ax.collections and mappable is None:
-                mappable = ax.collections[0]
-            if ax.images and mappable is None:
-                mappable = ax.images[0]
-
-        if mappable and target_ax:
-            # For contourf, we might want to use the levels if available
-            levels = kwargs.get("levels")
-            if (
-                levels is not None
-                and not isinstance(levels, int)
-                and hasattr(levels, "__len__")
+            "natural_earth",
+        }
+        features = {
+            key: options.pop(key) for key in list(options) if key in feature_keys
+        }
+        features.setdefault("coastlines", True)
+        for ax, subset, _ in self._panels():
+            if isinstance(subset, xr.Dataset) and var_name is not None:
+                subset = subset[var_name]
+            elif (
+                isinstance(subset, pd.DataFrame)
+                and not {"col1", "col2"} <= constructor_options.keys()
             ):
-                # Use discrete colorbar if levels are provided
-                from ..colorbars import colorbar_index
+                from .spatial import SpatialTrack
 
-                colorbar_index(
-                    len(levels) - 1,
-                    mappable.get_cmap(),
-                    minval=levels[0],
-                    maxval=levels[-1],
-                    ax=target_ax,
-                    label=kwargs.get("label", ""),
+                if issubclass(plotter_class, SpatialTrack):
+                    subset = xr.DataArray(
+                        subset[var_name].to_numpy(),
+                        dims="sample",
+                        coords={
+                            x: ("sample", subset[x].to_numpy()),
+                            y: ("sample", subset[y].to_numpy()),
+                        },
+                    )
+                else:
+                    subset = subset.set_index([y, x]).to_xarray()[var_name]
+            with style_context(self._style):
+                plotter = plotter_class(
+                    subset,
+                    ax=ax,
+                    style=self._style,
+                    data_crs=self.data_crs,
+                    extent_crs=self.extent_crs,
+                    lon_coord=x,
+                    lat_coord=y,
+                    **features,
+                    **constructor_options,
                 )
-            else:
-                # Add colorbar to the last valid axis
-                self.add_colorbar(
-                    mappable,
-                    ax=target_ax,
-                    label=kwargs.get("label", ""),
+                plotter.plot(**options, add_colorbar=False)
+            if hasattr(plotter, "gridliner") and any(
+                (
+                    plotter.gridliner.top_labels,
+                    plotter.gridliner.right_labels,
+                    plotter.gridliner.left_labels,
+                    plotter.gridliner.bottom_labels,
                 )
+            ):
+                index = next(
+                    i for i, candidate in enumerate(self.axes.flat) if candidate is ax
+                )
+                rows, cols = (
+                    self.axes.shape if self.axes.ndim == 2 else (1, self.axes.size)
+                )
+                row_index, col_index = divmod(index, cols)
+                plotter.gridliner.top_labels = False
+                plotter.gridliner.right_labels = False
+                plotter.gridliner.left_labels = col_index == 0
+                plotter.gridliner.bottom_labels = (
+                    row_index == rows - 1
+                    or index + cols >= sum(1 for _ in self._panels())
+                )
+            self.plotters.append(plotter)
+            if plotter.mappable is not None:
+                self.mappables.append(plotter.mappable)
+                if mode == "each":
+                    panel_label = label
+                    if panel_label is None and isinstance(subset, xr.DataArray):
+                        panel_label = variable_label(subset)
+                    cb = self.fig.colorbar(
+                        plotter.mappable,
+                        ax=ax,
+                        **{"label": panel_label or "", **cbar_kwargs},
+                    )
+                    self.colorbars.append(cb)
+        if self.mappables:
+            self.mappable = self.mappables[-1]
+        if mode == "shared" and self.mappables:
+            if label is None and isinstance(scale_data, xr.DataArray):
+                label = variable_label(scale_data)
+            cb = self.fig.colorbar(
+                self.mappables[-1],
+                ax=[ax for ax, _, _ in self._panels()],
+                **{"label": label or "", **cbar_kwargs},
+            )
+            self.colorbars.append(cb)
+        self._set_default_titles()
+        return self
+
+
+def _shared_scale(data, options, plotter_class):
+    """Resolve one norm and contour levels without materializing all panel values."""
+    from .spatial_bias_scatter import SpatialBiasScatterPlot
+    from .spatial_contour import SpatialContourPlot
+    from .spatial_mesh import SpatialMeshPlot
+
+    options = options.copy()
+    norm = options.get("norm")
+    cmap = options.get("cmap")
+    if isinstance(cmap, tuple):
+        options["cmap"], tuple_norm = cmap
+        norm = norm or tuple_norm
+    vmin, vmax = options.pop("vmin", None), options.pop("vmax", None)
+    explicit_limits = vmin is not None or vmax is not None
+    levels = options.get("levels")
+    if levels is not None and not np.isscalar(levels):
+        vmin = levels[0] if vmin is None else vmin
+        vmax = levels[-1] if vmax is None else vmax
+    if norm is not None and explicit_limits:
+        raise ValueError("Supply norm or vmin/vmax, not both.")
+    norm = norm or Normalize(vmin, vmax)
+    if norm.vmin is None or norm.vmax is None:
+        if isinstance(norm, LogNorm):
+            data = (
+                data.where(data > 0)
+                if isinstance(data, xr.DataArray)
+                else data[data > 0]
+            )
+        if isinstance(data, xr.DataArray):
+            import dask
+
+            low, high = dask.compute(data.min(skipna=True), data.max(skipna=True))
+            low, high = float(low), float(high)
+        else:
+            low, high = float(data.min()), float(data.max())
+        if not np.isfinite([low, high]).all():
+            raise ValueError(
+                "Cannot determine a color scale from entirely missing/non-finite data; supply explicit limits."
+            )
+        if issubclass(plotter_class, SpatialBiasScatterPlot):
+            low, high = -max(abs(low), abs(high)), max(abs(low), abs(high))
+        if norm.vmin is None:
+            norm.vmin = low
+        if norm.vmax is None:
+            norm.vmax = high
+    if norm.vmin == norm.vmax:
+        delta = abs(norm.vmin) * 0.01 or 0.5
+        norm.vmin -= delta
+        norm.vmax += delta
+    options["norm"] = norm
+    if issubclass(plotter_class, SpatialContourPlot) and not issubclass(
+        plotter_class, SpatialMeshPlot
+    ):
+        if levels is None and isinstance(norm, BoundaryNorm):
+            options["levels"] = norm.boundaries
+        elif levels is None or np.isscalar(levels):
+            options["levels"] = np.linspace(
+                norm.vmin,
+                norm.vmax,
+                int(levels) if levels is not None else options.get("ncolors", 10) + 1,
+            )
+    return options

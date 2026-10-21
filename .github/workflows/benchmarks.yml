@@ -1,0 +1,40 @@
+name: Performance benchmarks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: performance-benchmarks
+  cancel-in-progress: false
+
+env:
+  MPLBACKEND: Agg
+
+jobs:
+  spatial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install plotting and memory measurement dependencies
+        run: python -m pip install '.[benchmark]'
+      - name: Benchmark large spatial datasets
+        run: |
+          python benchmarks/bench_spatial.py --profile standard --repeat 2 --output artifacts/benchmarks.json
+          python benchmarks/plot_results.py artifacts/benchmarks.json --output artifacts/benchmarks.png
+      - name: Preserve raw measurements and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-benchmarks-${{ github.run_id }}
+          path: artifacts/benchmarks.*
+          if-no-files-found: warn
+          retention-days: 90

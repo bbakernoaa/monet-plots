@@ -2,12 +2,13 @@
 """Vertical curtain plot for cross-sectional data."""
 
 from __future__ import annotations
+
 from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 import xarray as xr
 
-from ..plot_utils import get_plot_kwargs, _update_history, normalize_data
+from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
 from .base import BasePlot
 
 
@@ -41,7 +42,7 @@ class CurtainPlot(BasePlot):
             **kwargs: Arguments passed to BasePlot.
         """
         super().__init__(**kwargs)
-        self.data = data
+        self.data = normalize_data(data)
         self.x = x
         self.y = y
         self.obs_data = normalize_data(obs_data) if obs_data is not None else None

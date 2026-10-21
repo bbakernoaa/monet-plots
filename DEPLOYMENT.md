@@ -4,7 +4,7 @@
 This document provides deployment and maintenance procedures for the MONET Plots library, a comprehensive scientific visualization library for meteorological and climate data.
 
 ## System Requirements
-- Python 3.7+
+- Python 3.11+
 - Dependencies (as defined in pyproject.toml):
   - matplotlib
   - seaborn
@@ -131,11 +131,12 @@ python -m pytest tests/test_comprehensive_coverage.py
 ## Versioning and Updates
 
 ### Release Process
-1. Update version in pyproject.toml
-2. Run complete test suite
-3. Update documentation
-4. Create release tag
-5. Publish to PyPI
+
+Releases are automated with Release Please after the complete CI matrix succeeds.
+Use Conventional Commit PR titles and squash merge into `main`. Review and merge
+the generated release PR to publish a versioned GitHub release with distribution
+archives. See [release setup and recovery](docs/releases.md) for token setup,
+SemVer rules, and the prerequisite for enabling PyPI publishing.
 
 ### Backward Compatibility
 - Maintain API compatibility within major versions

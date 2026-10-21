@@ -822,7 +822,7 @@ plot.save("notebook_plot.png")
 
 **A**:
 **A**:
-- Python 3.7+
+- Python 3.11+
 - 512MB RAM minimum (1GB+ recommended)
 - 50MB disk space
 - Optional: cartopy for geospatial features, xarray for NetCDF support

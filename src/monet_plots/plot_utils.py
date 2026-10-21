@@ -284,7 +284,7 @@ def _normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
 
 def normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
     """
-    Public API for normalizing data.
+    Normalize plot-owned data, copying metadata without computing lazy arrays.
 
     Args:
         data: Input data of various types
@@ -294,7 +294,12 @@ def normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
     Returns:
         Either an xarray DataArray, xarray Dataset, or pandas DataFrame
     """
-    return _normalize_data(data, prefer_xarray=prefer_xarray)
+    result = _normalize_data(data, prefer_xarray=prefer_xarray)
+    if isinstance(result, (xr.DataArray, xr.Dataset)):
+        return result.copy(deep=False)
+    if isinstance(result, pd.DataFrame):
+        return result.copy()
+    return result
 
 
 def get_plot_kwargs(cmap: Any = None, norm: Any = None, **kwargs: Any) -> dict:

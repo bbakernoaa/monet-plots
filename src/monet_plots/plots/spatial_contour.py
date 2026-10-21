@@ -3,11 +3,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import cartopy.crs as ccrs
-import numpy as np
 import xarray as xr
 
-from ..colorbars import colorbar_index
+from ..geo import grid_data, identify_coords, validate_data_crs, variable_label
 from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
 from .spatial import SpatialPlot
 
@@ -64,7 +62,12 @@ class SpatialContourPlot(SpatialPlot):
 
         # Redirect to FacetGrid if faceting requested and no existing axes
         if ax is None and is_faceting:
-            return SpatialFacetGridPlot(modelvar, **kwargs)
+            return SpatialFacetGridPlot(
+                modelvar,
+                _plotter_class=cls,
+                _plotter_kwargs={"gridobj": gridobj, "date": date},
+                **kwargs,
+            )
 
         # Also redirect if input is a Dataset with multiple variables
         if (
@@ -74,7 +77,12 @@ class SpatialContourPlot(SpatialPlot):
         ):
             # Default to faceting by variable if not specified
             kwargs.setdefault("col", "variable")
-            return SpatialFacetGridPlot(modelvar, **kwargs)
+            return SpatialFacetGridPlot(
+                modelvar,
+                _plotter_class=cls,
+                _plotter_kwargs={"gridobj": gridobj, "date": date},
+                **kwargs,
+            )
 
         return super().__new__(cls)
 
@@ -124,7 +132,8 @@ class SpatialContourPlot(SpatialPlot):
             Keyword arguments passed to :class:`SpatialPlot` for map features
             and projection.
         """
-        # Initialize the map canvas via SpatialPlot
+        lon_coord = kwargs.pop("lon_coord", None)
+        lat_coord = kwargs.pop("lat_coord", None)
         super().__init__(**kwargs)
 
         # Standardize data to Xarray for consistency and lazy evaluation
@@ -138,192 +147,71 @@ class SpatialContourPlot(SpatialPlot):
         self.ncolors = ncolors
         self.dtype = dtype
 
-        # Aero Protocol: Centralized coordinate identification
         try:
-            self.lon_coord, self.lat_coord = self._identify_coords(self.modelvar)
+            self.lon_coord, self.lat_coord = identify_coords(
+                self.modelvar, lon_coord, lat_coord
+            )
         except ValueError:
-            self.lon_coord = kwargs.get("lon_coord", "lon")
-            self.lat_coord = kwargs.get("lat_coord", "lat")
+            if gridobj is None or lon_coord is not None or lat_coord is not None:
+                raise
+            self.lon_coord, self.lat_coord = "lon", "lat"
+
+        if getattr(self, "gridobj", None) is None:
+            validate_data_crs(
+                self.modelvar,
+                self.lon_coord,
+                self.lat_coord,
+                self.data_crs if self._data_crs_explicit else None,
+            )
 
         # Ensure coordinates are monotonic for correct plotting
-        self.modelvar = self._ensure_monotonic(
-            self.modelvar, self.lon_coord, self.lat_coord
-        )
+        if (
+            isinstance(self.modelvar, xr.DataArray)
+            and self.lon_coord in self.modelvar.coords
+            and self.lat_coord in self.modelvar.coords
+        ):
+            self.modelvar = self._ensure_monotonic(
+                self.modelvar, self.lon_coord, self.lat_coord
+            )
 
         _update_history(self.modelvar, "Initialized monet-plots.SpatialContourPlot")
 
     def plot(self, **kwargs: Any) -> Axes:
-        """Generate a static publication-quality spatial contour plot (Track A).
+        """Render filled contours, retaining the actual contour levels in its colorbar.
 
-        Parameters
-        ----------
-        **kwargs : Any
-            Keyword arguments passed to `matplotlib.pyplot.contourf`.
-            Common options include `cmap`, `levels`, `vmin`, `vmax`, and `alpha`.
-            Map features (e.g., `coastlines=True`) can also be passed here.
-
-        Returns
-        -------
-        matplotlib.axes.Axes
-            The matplotlib axes object containing the plot.
+        Rendering options can be supplied at construction or here. ``transform``
+        defaults to ``data_crs``; ``extent`` sets the viewport in ``extent_crs``.
         """
-        lat = None
-        lon = None
+        options = {**self._plot_defaults, **kwargs}
+        add_colorbar = options.pop("add_colorbar", True)
+        cbar_kwargs = options.pop("cbar_kwargs", {})
+        if self.gridobj is not None:
 
-        if hasattr(self.gridobj, "variables"):
-            # Handle legacy gridobj
-            try:
-                lat_var = self.gridobj.variables["LAT"]
-                lon_var = self.gridobj.variables["LON"]
+            def coordinate(name):
+                value = self.gridobj.variables[name]
+                while value.ndim > 2:
+                    value = value[0]
+                return value
 
-                # Flexible indexing based on dimension count
-                if lat_var.ndim == 4:
-                    lat = lat_var[0, 0, :, :].squeeze()
-                    lon = lon_var[0, 0, :, :].squeeze()
-                elif lat_var.ndim == 3:
-                    lat = lat_var[0, :, :].squeeze()
-                    lon = lon_var[0, :, :].squeeze()
-                else:
-                    lat = lat_var.squeeze()
-                    lon = lon_var.squeeze()
-            except (AttributeError, KeyError):
-                pass
-        elif self.gridobj is not None:
-            # Assume it's already an array or similar
-            try:
-                lat = self.gridobj.LAT
-                lon = self.gridobj.LON
-            except AttributeError:
-                pass
-
-        # Automatically compute extent if not provided
-        if "extent" not in kwargs:
-            if lon is not None and lat is not None:
-                kwargs["extent"] = [
-                    float(lon.min()),
-                    float(lon.max()),
-                    float(lat.min()),
-                    float(lat.max()),
-                ]
-            else:
-                kwargs["extent"] = self._get_extent_from_data(
-                    self.modelvar, self.lon_coord, self.lat_coord
-                )
-
-        # Draw map features and get remaining kwargs for contourf
-        plot_kwargs = self.add_features(**kwargs)
-
-        # Set default contour settings
-        plot_kwargs.setdefault("cmap", "viridis")
-
-        # Data is in lat/lon, so specify transform
-        plot_kwargs.setdefault("transform", ccrs.PlateCarree())
-
-        # For coordinates and values, we prefer passing the xarray objects directly.
-        # This allows Matplotlib to handle the conversion and maintains
-        # parity for Dask-backed arrays.
-        if lon is None or lat is None:
-            longitude = self.modelvar[self.lon_coord]
-            latitude = self.modelvar[self.lat_coord]
+            longitude, latitude = coordinate("LON"), coordinate("LAT")
+            field = self.modelvar
         else:
-            longitude = lon
-            latitude = lat
-
-        # Handle colormap and normalization
-        final_kwargs = get_plot_kwargs(**plot_kwargs)
-
-        mesh = self.ax.contourf(longitude, latitude, self.modelvar, **final_kwargs)
-
-        # Handle colorbar
-        if self.discrete:
-            cmap = final_kwargs.get("cmap")
-            levels = final_kwargs.get("levels")
-            ncolors = self.ncolors
-            if ncolors is None and levels is not None:
-                if isinstance(levels, int):
-                    ncolors = levels - 1
-                    # Use a single compute call for efficiency (Aero Protocol)
-                    try:
-                        import dask
-
-                        dmin, dmax = dask.compute(
-                            self.modelvar.min(), self.modelvar.max()
-                        )
-                    except (ImportError, AttributeError):
-                        dmin, dmax = self.modelvar.min(), self.modelvar.max()
-
-                    # Handle pandas DataFrame where .min() returns a Series
-                    try:
-                        fmin, fmax = float(dmin), float(dmax)
-                    except (TypeError, ValueError):
-                        # dmin/dmax could be Series if modelvar was a DataFrame
-                        fmin = (
-                            float(dmin.min())
-                            if hasattr(dmin, "min")
-                            else float(np.min(dmin))
-                        )
-                        fmax = (
-                            float(dmax.max())
-                            if hasattr(dmax, "max")
-                            else float(np.max(dmax))
-                        )
-                    levels_seq = np.linspace(fmin, fmax, levels)
-                else:
-                    ncolors = len(levels) - 1
-                    levels_seq = levels
-            else:
-                levels_seq = levels
-
-            if levels_seq is None:
-                # Fallback: calculate from data to ensure a discrete colorbar
-                # if requested but no levels were provided.
-                try:
-                    import dask
-
-                    dmin, dmax = dask.compute(self.modelvar.min(), self.modelvar.max())
-                except (ImportError, AttributeError):
-                    dmin, dmax = self.modelvar.min(), self.modelvar.max()
-
-                # Handle pandas DataFrame where .min() returns a Series
-                try:
-                    fmin, fmax = float(dmin), float(dmax)
-                except (TypeError, ValueError):
-                    fmin = (
-                        float(dmin.min())
-                        if hasattr(dmin, "min")
-                        else float(np.min(dmin))
-                    )
-                    fmax = (
-                        float(dmax.max())
-                        if hasattr(dmax, "max")
-                        else float(np.max(dmax))
-                    )
-                n_lev = self.ncolors if self.ncolors is not None else 10
-                levels_seq = np.linspace(fmin, fmax, n_lev + 1)
-                ncolors = n_lev
-
-            if levels_seq is not None:
-                colorbar_index(
-                    ncolors,
-                    cmap,
-                    minval=levels_seq[0],
-                    maxval=levels_seq[-1],
-                    dtype=self.dtype,
-                    ax=self.ax,
-                )
-        else:
-            self.add_colorbar(mesh)
-
+            field = grid_data(self.modelvar, self.lon_coord, self.lat_coord)
+            longitude = field[self.lon_coord]
+            latitude = field[self.lat_coord]
+        options = self.add_features(**options)
+        options.setdefault("cmap", "viridis")
+        options.setdefault("transform", self.data_crs)
+        if self.ncolors is not None:
+            options.setdefault("levels", self.ncolors + 1)
+        self.mappable = self.ax.contourf(
+            longitude, latitude, field, **get_plot_kwargs(**options)
+        )
+        if add_colorbar:
+            label = variable_label(field) if isinstance(field, xr.DataArray) else None
+            self.add_colorbar(self.mappable, **{"label": label, **cbar_kwargs})
         if self.date:
-            titstring = self.date.strftime("%B %d %Y %H")
-            self.ax.set_title(titstring)
-
-        if (
-            self.fig.get_layout_engine() is None
-            and not hasattr(self, "_is_facetgrid")
-            and not kwargs.get("_is_facetgrid")
-        ):
-            self.fig.tight_layout()
+            self.ax.set_title(self.date.strftime("%B %d %Y %H"))
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:
@@ -352,6 +240,7 @@ class SpatialContourPlot(SpatialPlot):
             "x": self.lon_coord,
             "y": self.lat_coord,
             "geo": True,
+            "crs": self.data_crs,
             "rasterize": True,
             "cmap": "viridis",
             "kind": "contourf",

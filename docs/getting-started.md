@@ -6,7 +6,7 @@ Welcome to MONET Plots! This comprehensive guide will help you get up and runnin
 
 ### System Requirements
 
-- **Python**: 3.7 or higher (recommended 3.8+)
+- **Python**: 3.11 or higher (CI covers 3.11–3.14)
 - **pip**: Python package manager (comes with Python)
 - **Optional**: conda (for managing complex dependencies)
 - **Memory**: Minimum 512MB RAM (1GB+ recommended for large datasets)
@@ -141,7 +141,7 @@ pip install monet_plots
 **Conda Environment:**
 ```bash
 # Create conda environment
-conda create -n monet_plots python=3.8
+conda create -n monet_plots python=3.14
 conda activate monet_plots
 
 # Install with conda

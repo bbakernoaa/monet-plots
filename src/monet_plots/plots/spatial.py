@@ -6,11 +6,13 @@ from typing import TYPE_CHECKING, Any, Union
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.typing import ArrayLike
 
-from ..plot_utils import _update_history
+from ..geo import identify_coords, ordered_grid, validate_data_crs
+from ..plot_utils import _update_history, normalize_data
 from ..style import get_style_setting
 from .base import BasePlot
 
@@ -39,6 +41,8 @@ class SpatialPlot(BasePlot):
         self,
         *,
         projection: ccrs.Projection = ccrs.PlateCarree(),
+        data_crs: ccrs.CRS | None = None,
+        extent_crs: ccrs.CRS | None = None,
         fig: Figure | None = None,
         ax: Axes | None = None,
         figsize: tuple[float, float] | None = None,
@@ -55,6 +59,10 @@ class SpatialPlot(BasePlot):
         ----------
         projection : ccrs.Projection, optional
             The cartopy projection for the map, by default ccrs.PlateCarree().
+        data_crs : cartopy.crs.CRS, optional
+            CRS of plotted coordinates, default PlateCarree.
+        extent_crs : cartopy.crs.CRS, optional
+            CRS of viewport bounds, default PlateCarree (longitude/latitude).
         fig : plt.Figure | None, optional
             An existing matplotlib Figure object. If None, a new one is
             created, by default None.
@@ -86,6 +94,11 @@ class SpatialPlot(BasePlot):
         current_subplot_kw = subplot_kw.copy() if subplot_kw else {}
         current_subplot_kw["projection"] = projection
 
+        self._data_crs_explicit = data_crs is not None
+        self.data_crs = data_crs or ccrs.PlateCarree()
+        self.extent_crs = extent_crs or ccrs.PlateCarree()
+        self._requested_extent = kwargs.get("extent")
+        self._plot_defaults = {}
         self.resolution = kwargs.pop("resolution", "50m")
         style = kwargs.pop("style", "wiley")
 
@@ -103,8 +116,14 @@ class SpatialPlot(BasePlot):
         if self.ax is None:
             self.ax = self.fig.add_subplot(1, 1, 1, **current_subplot_kw)
 
+        self.axes = np.asarray([[self.ax]], dtype=object)
+        if not hasattr(self.ax, "projection"):
+            raise TypeError(
+                "Spatial plots require a Cartopy GeoAxes; create axes with subplot_kw={'projection': ...}."
+            )
         # Add features from kwargs
-        self.add_features(**kwargs)
+        self._plot_defaults = self.add_features(**kwargs)
+        self._plot_defaults.pop("_is_facetgrid", None)
 
     def _get_feature_registry(self, resolution: str) -> dict[str, dict[str, Any]]:
         """Return a registry of cartopy features and their default styles.
@@ -278,7 +297,7 @@ class SpatialPlot(BasePlot):
             If None, the extent is not changed.
         """
         if extent is not None:
-            self.ax.set_extent(extent)
+            self.ax.set_extent(extent, crs=self.extent_crs)
 
     def _draw_features(self, **kwargs: Any) -> dict[str, Any]:
         """Draw vector features on the map.
@@ -330,135 +349,25 @@ class SpatialPlot(BasePlot):
             "draw_labels": True,
             "linestyle": "--",
             "color": "gray",
+            "x_inline": False,
+            "y_inline": False,
+            "rotate_labels": False,
         }
-        gridline_kwargs = self._get_style(style, gridline_defaults)
-        self.ax.gridlines(**gridline_kwargs)
+        gridline_kwargs = {
+            **gridline_defaults,
+            **self._get_style(style, gridline_defaults),
+        }
+        self.gridliner = self.ax.gridlines(**gridline_kwargs)
 
-    def _identify_coords(self, data: Any) -> tuple[str, str]:
-        """Identify longitude and latitude coordinate names in data.
+    @staticmethod
+    def _identify_coords(data: Any) -> tuple[str, str]:
+        """Resolve coordinates without creating figures or scanning name substrings."""
+        return identify_coords(data)
 
-        This method follows CF conventions and common naming patterns to
-        find the spatial coordinates. It supports both xarray and pandas.
-
-        Parameters
-        ----------
-        data : Any
-            The input data to search for coordinates.
-
-        Returns
-        -------
-        tuple[str, str]
-            The identified (longitude, latitude) coordinate names.
-
-        Raises
-        ----------
-        ValueError
-            If coordinates cannot be identified.
-        """
-        lon_name, lat_name = None, None
-
-        # Handle xarray
-        if hasattr(data, "coords"):
-            # Check coords, but also data_vars for Datasets
-            search_items = list(data.coords.items())
-            if hasattr(data, "data_vars"):
-                search_items += list(data.data_vars.items())
-
-            # Check for standard names or units/axis attributes (CF conventions)
-            for name, obj in search_items:
-                name_str = str(name).lower()
-                # Longitude identification
-                if (
-                    any(pattern in name_str for pattern in ["lon", "longitude", "x"])
-                    or obj.attrs.get("units")
-                    in [
-                        "degrees_east",
-                        "degree_east",
-                        "degree_E",
-                    ]
-                    or obj.attrs.get("axis") == "X"
-                ):
-                    lon_name = str(name)
-                # Latitude identification
-                if (
-                    any(pattern in name_str for pattern in ["lat", "latitude", "y"])
-                    or obj.attrs.get("units")
-                    in [
-                        "degrees_north",
-                        "degree_north",
-                        "degree_N",
-                    ]
-                    or obj.attrs.get("axis") == "Y"
-                ):
-                    lat_name = str(name)
-
-        # Handle pandas or other objects with columns
-        elif hasattr(data, "columns"):
-            cols = [str(c).lower() for c in data.columns]
-            for pattern in ["lon", "longitude", "x"]:
-                if pattern in cols:
-                    lon_name = data.columns[cols.index(pattern)]
-                    break
-
-            for pattern in ["lat", "latitude", "y"]:
-                if pattern in cols:
-                    lat_name = data.columns[cols.index(pattern)]
-                    break
-
-        if lon_name and lat_name:
-            return lon_name, lat_name
-
-        raise ValueError(
-            "Could not identify longitude and latitude coordinates. "
-            "Please ensure they are named 'lon'/'lat', 'longitude'/'latitude', "
-            "or 'x'/'y', or have CF-compliant units/axis attributes."
-        )
-
-    def _ensure_monotonic(self, data: Any, lon_name: str, lat_name: str) -> Any:
-        """Ensure spatial dimensions are monotonically increasing.
-
-        Some plotting backends (like GeoViews/hvPlot) require monotonically
-        increasing coordinates for correct rendering and interpolation.
-
-        Parameters
-        ----------
-        data : Any
-            The input data to sort.
-        lon_name : str
-            Name of the longitude coordinate.
-        lat_name : str
-            Name of the latitude coordinate.
-
-        Returns
-        -------
-        Any
-            The data with sorted spatial dimensions.
-        """
-        is_xarray = hasattr(data, "sortby")
-
-        # Ensure latitude is increasing
-        try:
-            lats = data[lat_name].values if is_xarray else data[lat_name].values
-            if lats[0] > lats[-1]:
-                if is_xarray:
-                    data = data.sortby(lat_name)
-                else:
-                    data = data.sort_values(lat_name)
-        except (AttributeError, KeyError, IndexError):
-            pass
-
-        # Ensure longitude is increasing
-        try:
-            lons = data[lon_name].values if is_xarray else data[lon_name].values
-            if lons[0] > lons[-1]:
-                if is_xarray:
-                    data = data.sortby(lon_name)
-                else:
-                    data = data.sort_values(lon_name)
-        except (AttributeError, KeyError, IndexError):
-            pass
-
-        return data
+    @staticmethod
+    def _ensure_monotonic(data: Any, lon_name: str, lat_name: str) -> Any:
+        """Sort independent grid axes while preserving station and curvilinear grids."""
+        return ordered_grid(data, lon_name, lat_name)
 
     def _get_extent_from_data(
         self,
@@ -557,7 +466,7 @@ class SpatialTrack(SpatialPlot):
         is_faceting = any(kwargs.get(k) is not None for k in facet_kwargs)
 
         if ax is None and is_faceting:
-            return SpatialFacetGridPlot(data, **kwargs)
+            return SpatialFacetGridPlot(data, _plotter_class=cls, **kwargs)
 
         return super().__new__(cls)
 
@@ -599,7 +508,7 @@ class SpatialTrack(SpatialPlot):
         super().__init__(**kwargs)
 
         # Set data and update history for provenance
-        self.data = data
+        self.data = normalize_data(data)
 
         # Identify coordinates if not provided
         if lon_coord is None or lat_coord is None:
@@ -619,6 +528,12 @@ class SpatialTrack(SpatialPlot):
                 f"Latitude coordinate '{self.lat_coord}' not found in DataArray."
             )
 
+        validate_data_crs(
+            self.data,
+            self.lon_coord,
+            self.lat_coord,
+            self.data_crs if self._data_crs_explicit else None,
+        )
         _update_history(self.data, "Plotted with monet-plots.SpatialTrack")
 
     def plot(self, **kwargs: Any) -> plt.Artist:
@@ -645,16 +560,13 @@ class SpatialTrack(SpatialPlot):
         """
         from ..plot_utils import get_plot_kwargs
 
-        # Automatically compute extent if not provided
-        if "extent" not in kwargs:
-            kwargs["extent"] = self._get_extent_from_data(
-                self.data, self.lon_coord, self.lat_coord, buffer=0.1
-            )
-
+        kwargs = {**self._plot_defaults, **kwargs}
+        add_colorbar = kwargs.pop("add_colorbar", False)
+        cbar_kwargs = kwargs.pop("cbar_kwargs", {})
         # Add features and get remaining kwargs for scatter
         scatter_kwargs = self.add_features(**kwargs)
 
-        scatter_kwargs.setdefault("transform", ccrs.PlateCarree())
+        scatter_kwargs.setdefault("transform", self.data_crs)
 
         # For coordinates and values, we pass the xarray objects directly.
         # This allows Matplotlib to handle the conversion, maintaining
@@ -666,4 +578,7 @@ class SpatialTrack(SpatialPlot):
         final_kwargs = get_plot_kwargs(c=self.data, **scatter_kwargs)
 
         sc = self.ax.scatter(longitude, latitude, **final_kwargs)
+        self.mappable = sc
+        if add_colorbar:
+            self.add_colorbar(sc, **cbar_kwargs)
         return sc

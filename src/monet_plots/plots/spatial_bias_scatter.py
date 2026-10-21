@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
 from ..colorbars import get_discrete_scale
+from ..geo import identify_coords, validate_data_crs
 from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
 from .spatial import SpatialPlot
 
@@ -39,7 +38,9 @@ class SpatialBiasScatterPlot(SpatialPlot):
         is_faceting = any(kwargs.get(k) is not None for k in facet_kwargs)
 
         if ax is None and is_faceting:
-            return SpatialFacetGridPlot(data, **kwargs)
+            return SpatialFacetGridPlot(
+                data, _plotter_class=cls, col1=col1, col2=col2, **kwargs
+            )
 
         return super().__new__(cls)
 
@@ -81,6 +82,8 @@ class SpatialBiasScatterPlot(SpatialPlot):
             Additional keyword arguments for map creation, passed to
             :class:`monet_plots.plots.spatial.SpatialPlot`.
         """
+        lon_coord = kwargs.pop("lon_coord", None)
+        lat_coord = kwargs.pop("lat_coord", None)
         super().__init__(**kwargs)
         self.data = normalize_data(data)
         self.col1 = col1
@@ -92,7 +95,17 @@ class SpatialBiasScatterPlot(SpatialPlot):
         self.cmap = cmap
 
         # Identify coordinates
-        self.lon_coord, self.lat_coord = self._identify_coords(self.data)
+        self.lon_coord, self.lat_coord = identify_coords(
+            self.data, lon_coord, lat_coord
+        )
+
+        if getattr(self, "gridobj", None) is None:
+            validate_data_crs(
+                self.data,
+                self.lon_coord,
+                self.lat_coord,
+                self.data_crs if self._data_crs_explicit else None,
+            )
 
         # Ensure coordinates are monotonic if it's a grid (not strictly necessary for scatter but good practice)
         self.data = self._ensure_monotonic(self.data, self.lon_coord, self.lat_coord)
@@ -100,119 +113,56 @@ class SpatialBiasScatterPlot(SpatialPlot):
         _update_history(self.data, "Initialized monet-plots.SpatialBiasScatterPlot")
 
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
-        """Generate a static publication-quality spatial bias scatter plot (Track A).
+        """Plot paired biases with optional shared normalization and colorbar.
 
-        Parameters
-        ----------
-        **kwargs : Any
-            Keyword arguments passed to `matplotlib.pyplot.scatter`.
-            Map features (e.g., `coastlines=True`) can also be passed here.
-
-        Returns
-        -------
-        matplotlib.axes.Axes
-            The matplotlib axes object containing the plot.
+        All-zero differences retain a finite, symmetric scale. Gridded
+        coordinates are broadcast to the field; missing pairs remain masked.
         """
-        # Separate feature kwargs from scatter kwargs
-        scatter_kwargs = self.add_features(**kwargs)
-
-        # Handle different data types for bias calculation
-        if isinstance(self.data, (xr.Dataset, xr.DataArray)):
-            # Vectorized calculation using Xarray/Dask
-            diff = self.data[self.col2] - self.data[self.col1]
-
-            # Efficient percentile calculation
-            try:
-                top_val = diff.assign_coords(
-                    {"abs_diff": np.abs(diff)}
-                ).abs_diff.quantile(0.95)
-                if hasattr(top_val, "compute"):
-                    top = float(top_val.compute())
-                else:
-                    top = float(top_val)
-            except (ImportError, AttributeError, ValueError):
-                top = float(np.nanquantile(np.abs(diff.values), 0.95))
-
-            top = np.around(top)
-
-            # Compute only what's necessary for plotting
-            plot_ds = xr.Dataset(
-                {
-                    "diff": diff,
-                    "lat": self.data[self.lat_coord],
-                    "lon": self.data[self.lon_coord],
-                }
+        options = {**self._plot_defaults, **kwargs}
+        add_colorbar = options.pop("add_colorbar", True)
+        cbar_kwargs = options.pop("cbar_kwargs", {})
+        options = self.add_features(**options)
+        diff = self.data[self.col2] - self.data[self.col1]
+        if isinstance(diff, xr.DataArray):
+            diff, lon, lat = xr.broadcast(
+                diff, self.data[self.lon_coord], self.data[self.lat_coord]
             )
-
-            # Drop NaNs before compute to minimize transfer
-            if plot_ds.dims:
-                plot_ds = plot_ds.dropna(dim=list(plot_ds.dims)[0])
-
-            concrete = plot_ds.compute()
-            diff_vals = concrete["diff"].values
-            lat_vals = concrete["lat"].values
-            lon_vals = concrete["lon"].values
+            concrete = xr.Dataset({"diff": diff, "lon": lon, "lat": lat}).compute()
+            values, longitude, latitude = (
+                concrete[k].values.ravel() for k in ("diff", "lon", "lat")
+            )
         else:
-            # Fallback for Pandas
-            df = self.data.dropna(subset=[self.col1, self.col2])
-            diff_vals = (df[self.col2] - df[self.col1]).values
-            lat_vals = df[self.lat_coord].values
-            lon_vals = df[self.lon_coord].values
-            top = np.around(np.nanquantile(np.abs(diff_vals), 0.95))
-
-        # Use scaling tools
-        v_min = self.vmin if self.vmin is not None else -top
-        v_max = self.vmax if self.vmax is not None else top
-        cmap, norm = get_discrete_scale(
-            diff_vals, cmap=self.cmap, n_levels=self.ncolors, vmin=v_min, vmax=v_max
+            values = diff.to_numpy()
+            longitude, latitude = self.data[self.lon_coord], self.data[self.lat_coord]
+        finite = np.asarray(values)[np.isfinite(values)]
+        top = float(np.quantile(np.abs(finite), 0.95)) if finite.size else 1.0
+        top = top or 1.0
+        norm = options.pop("norm", None)
+        cmap = options.pop("cmap", self.cmap)
+        if norm is None:
+            vmin = options.pop("vmin", self.vmin)
+            vmax = options.pop("vmax", self.vmax)
+            cmap, norm = get_discrete_scale(
+                values,
+                cmap=cmap,
+                n_levels=self.ncolors,
+                vmin=-top if vmin is None else vmin,
+                vmax=top if vmax is None else vmax,
+            )
+        options.setdefault("s", np.minimum(np.abs(values) / top * 100 * self.fact, 300))
+        options.setdefault("transform", self.data_crs)
+        if not {"edgecolors", "edgecolor", "ec"} & options.keys():
+            options["edgecolors"] = "k"
+        if not {"linewidths", "linewidth", "lw"} & options.keys():
+            options["linewidths"] = 0.5
+        self.mappable = self.ax.scatter(
+            longitude,
+            latitude,
+            c=values,
+            **get_plot_kwargs(cmap=cmap, norm=norm, **options),
         )
-
-        # Create colorbar
-        mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
-        cbar = self.add_colorbar(mappable, format="%1.2g")
-        cbar.ax.tick_params(labelsize=10)
-
-        if top > 0:
-            ss = np.abs(diff_vals) / top * 100.0 * self.fact
-        else:
-            ss = np.ones_like(diff_vals) * 20.0  # Constant size if no variance
-        ss[ss > 300] = 300.0
-
-        # Prepare scatter kwargs, popping handled keys to avoid conflicts in get_plot_kwargs
-        # We also pop aliases to avoid "Got both 'edgecolor' and 'edgecolors'"
-        for key in [
-            "cmap",
-            "norm",
-            "s",
-            "c",
-            "transform",
-            "edgecolors",
-            "edgecolor",
-            "ec",
-            "linewidths",
-            "linewidth",
-            "lw",
-            "alpha",
-        ]:
-            scatter_kwargs.pop(key, None)
-
-        final_scatter_kwargs = get_plot_kwargs(
-            cmap=cmap,
-            norm=norm,
-            s=ss,
-            c=diff_vals,
-            transform=ccrs.PlateCarree(),
-            edgecolors="k",
-            linewidths=0.25,
-            alpha=0.7,
-            **scatter_kwargs,
-        )
-
-        self.ax.scatter(
-            lon_vals,
-            lat_vals,
-            **final_scatter_kwargs,
-        )
+        if add_colorbar:
+            self.add_colorbar(self.mappable, **cbar_kwargs)
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:
@@ -250,6 +200,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
             "y": self.lat_coord,
             "c": "bias",
             "geo": True,
+            "crs": self.data_crs,
             "rasterize": True,
             "cmap": self.cmap,
         }

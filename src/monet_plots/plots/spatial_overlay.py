@@ -1,14 +1,15 @@
 # src/monet_plots/plots/spatial_overlay.py
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Optional
 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
+from ..geo import identify_coords, variable_label
+from ..plot_utils import _update_history, normalize_data
 from .spatial import SpatialPlot
 
 if TYPE_CHECKING:
@@ -54,12 +55,20 @@ class SpatialOverlayPlot(SpatialPlot):
 
         if model_var is None and isinstance(self.model_data, xr.DataArray):
             self.model_var = self.model_data.name
+        elif (
+            model_var is None
+            and isinstance(self.model_data, xr.Dataset)
+            and len(self.model_data.data_vars) == 1
+        ):
+            self.model_var = next(iter(self.model_data.data_vars))
         else:
             self.model_var = model_var
 
         if obs_var is None:
             # Attempt to identify variable that is not a coordinate
-            if hasattr(self.obs_data, "data_vars"):
+            if isinstance(self.obs_data, xr.DataArray):
+                self.obs_var = self.obs_data.name
+            elif hasattr(self.obs_data, "data_vars"):
                 vars = list(self.obs_data.data_vars)
                 if vars:
                     self.obs_var = vars[0]
@@ -84,6 +93,11 @@ class SpatialOverlayPlot(SpatialPlot):
                     self.obs_var = vars[0]
         else:
             self.obs_var = obs_var
+
+        if isinstance(self.model_data, xr.Dataset) and self.model_var is None:
+            raise ValueError("Specify model_var for a Dataset with multiple variables.")
+        if not hasattr(self, "obs_var"):
+            raise ValueError("Specify obs_var for observation data.")
 
         _update_history(
             self.model_data, "Initialized monet-plots.SpatialOverlayPlot (model)"
@@ -116,92 +130,78 @@ class SpatialOverlayPlot(SpatialPlot):
         **kwargs : Any
             Additional arguments for the gridded plot.
         """
-        # Coordinate identification for model
-        lon_m, lat_m = self._identify_coords(self.model_data)
-        # Coordinate identification for obs
-        lon_o, lat_o = self._identify_coords(self.obs_data)
+        from .facet_grid import _shared_scale
+        from .spatial_contour import SpatialContourPlot
+        from .spatial_imshow import SpatialImshowPlot
+        from .spatial_mesh import SpatialMeshPlot
 
-        # Ensure monotonic for gridded data
-        self.model_data = self._ensure_monotonic(self.model_data, lon_m, lat_m)
-
-        # Determine common vmin/vmax
-        if vmin is None or vmax is None:
-            m_da = (
-                self.model_data[self.model_var]
-                if isinstance(self.model_data, xr.Dataset)
-                else self.model_data
-            )
-            o_da = (
-                self.obs_data[self.obs_var]
-                if isinstance(self.obs_data, (xr.Dataset, pd.DataFrame))
-                else self.obs_data
-            )
-
-            m_min, m_max = m_da.min(), m_da.max()
-            o_min, o_max = o_da.min(), o_da.max()
-
-            # Efficiently compute if dask
-            try:
-                import dask
-
-                vals = dask.compute(m_min, m_max, o_min, o_max)
-                vmin = vmin or float(min(vals[0], vals[2]))
-                vmax = vmax or float(max(vals[1], vals[3]))
-            except (ImportError, AttributeError):
-                vmin = vmin or min(float(m_min), float(o_min))
-                vmax = vmax or max(float(m_max), float(o_max))
-
-        # Setup plot kwargs
-        plot_kwargs = self.add_features(**kwargs)
-        plot_kwargs.setdefault("transform", ccrs.PlateCarree())
-
-        levels = np.linspace(vmin, vmax, nlevels)
-        final_gridded_kwargs = get_plot_kwargs(
-            cmap=cmap, vmin=vmin, vmax=vmax, levels=levels, **plot_kwargs
-        )
-
-        # Plot gridded data
-        m_da = (
+        renderers = {
+            "contourf": SpatialContourPlot,
+            "imshow": SpatialImshowPlot,
+            "pcolormesh": SpatialMeshPlot,
+        }
+        if kind not in renderers:
+            raise ValueError("kind must be 'contourf', 'imshow', or 'pcolormesh'")
+        options = {**self._plot_defaults, **kwargs}
+        add_colorbar = options.pop("add_colorbar", True)
+        cbar_kwargs = options.pop("cbar_kwargs", {})
+        obs_crs = options.pop("obs_crs", ccrs.PlateCarree())
+        model = (
             self.model_data[self.model_var]
             if isinstance(self.model_data, xr.Dataset)
             else self.model_data
         )
-        if kind == "contourf":
-            mappable = self.ax.contourf(
-                self.model_data[lon_m],
-                self.model_data[lat_m],
-                m_da,
-                **final_gridded_kwargs,
+        obs = (
+            self.obs_data[self.obs_var]
+            if isinstance(self.obs_data, (xr.Dataset, pd.DataFrame))
+            else self.obs_data
+        )
+        if (
+            model.attrs.get("units")
+            and obs.attrs.get("units")
+            and model.attrs["units"] != obs.attrs["units"]
+        ):
+            raise ValueError(
+                "Model and observation units differ; convert units before overlaying."
             )
-        elif kind == "imshow":
-            # Simplified imshow logic
-            extent = [
-                float(self.model_data[lon_m].min()),
-                float(self.model_data[lon_m].max()),
-                float(self.model_data[lat_m].min()),
-                float(self.model_data[lat_m].max()),
-            ]
-            mappable = self.ax.imshow(
-                m_da, extent=extent, origin="lower", **final_gridded_kwargs
-            )
-        else:
-            raise ValueError("kind must be 'contourf' or 'imshow'")
+        if options.get("norm") is None:
+            import dask
 
-        # Overlay obs
-        self.ax.scatter(
+            bounds = dask.compute(model.min(), model.max(), obs.min(), obs.max())
+            vmin = min(float(bounds[0]), float(bounds[2])) if vmin is None else vmin
+            vmax = max(float(bounds[1]), float(bounds[3])) if vmax is None else vmax
+            options.update(vmin=vmin, vmax=vmax)
+        options.setdefault("cmap", cmap)
+        if kind == "contourf":
+            options.setdefault("levels", nlevels)
+        options = _shared_scale(model, options, renderers[kind])
+        options = self.add_features(**options)
+        renderer = renderers[kind](
+            model,
+            ax=self.ax,
+            data_crs=self.data_crs,
+            extent_crs=self.extent_crs,
+            coastlines=False,
+            style=self._style,
+        )
+        renderer.plot(**options, add_colorbar=False)
+        self.mappable = renderer.mappable
+        lon_o, lat_o = identify_coords(self.obs_data)
+        self.observation_artist = self.ax.scatter(
             self.obs_data[lon_o],
             self.obs_data[lat_o],
-            c=self.obs_data[self.obs_var],
-            norm=mappable.norm,
-            cmap=mappable.cmap,
+            c=obs,
+            norm=self.mappable.norm,
+            cmap=self.mappable.cmap,
             edgecolors="k",
             s=30,
-            transform=ccrs.PlateCarree(),
+            transform=obs_crs,
             label="Observations",
         )
-
-        self.add_colorbar(mappable)
-
+        if add_colorbar:
+            self.add_colorbar(
+                self.mappable, **{"label": variable_label(model), **cbar_kwargs}
+            )
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:

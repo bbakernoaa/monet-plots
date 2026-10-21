@@ -22,6 +22,8 @@ edit_uri: edit/develop/docs/
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Model Evaluation: model-evaluation.md
+  - Spatial Comparisons: spatial-comparisons.md
   - Examples Gallery: gallery/index.md
   - API Reference:
       - API Home: api/index.md
@@ -32,6 +34,9 @@ nav:
       - Taylor Diagram: api/taylordiagram.md
       - Plot Types: plots/index.md
       - Ridgeline Plot: plots/ridgeline.md
+  - Releases: releases.md
   - Configuration: configuration/index.md
-  - Performance: performance/index.md
+  - Performance:
+      - Overview: performance/index.md
+      - Large Datasets: performance/large-datasets.md
   - Troubleshooting: troubleshooting/index.md

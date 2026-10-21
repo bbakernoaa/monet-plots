@@ -1,0 +1,6 @@
+include CHANGELOG.md
+include release-please-config.json
+include .release-please-manifest.json
+include scripts/check_release.py
+recursive-include tests/plots/baseline_images *.png
+recursive-include benchmarks *.py *.md *.json

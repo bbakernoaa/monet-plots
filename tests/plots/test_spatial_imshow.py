@@ -1,8 +1,9 @@
+from unittest.mock import MagicMock
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import xarray as xr
-from unittest.mock import MagicMock
-import matplotlib.pyplot as plt
 
 try:
     import dask.array as da

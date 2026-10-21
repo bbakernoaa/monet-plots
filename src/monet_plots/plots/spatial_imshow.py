@@ -2,10 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import cartopy.crs as ccrs
 import xarray as xr
 
-from ..colorbars import colorbar_index
+from ..colorbars import get_discrete_scale
+from ..geo import (
+    grid_data,
+    identify_coords,
+    raster_extent,
+    validate_data_crs,
+    variable_label,
+)
 from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
 from .spatial import SpatialPlot
 
@@ -60,7 +66,12 @@ class SpatialImshowPlot(SpatialPlot):
 
         # Redirect to FacetGrid if faceting requested and no existing axes
         if ax is None and is_faceting:
-            return SpatialFacetGridPlot(modelvar, **kwargs)
+            return SpatialFacetGridPlot(
+                modelvar,
+                _plotter_class=cls,
+                _plotter_kwargs={"gridobj": gridobj, "plotargs": plotargs},
+                **kwargs,
+            )
 
         # Also redirect if input is a Dataset with multiple variables
         if (
@@ -70,7 +81,12 @@ class SpatialImshowPlot(SpatialPlot):
         ):
             # Default to faceting by variable if not specified
             kwargs.setdefault("col", "variable")
-            return SpatialFacetGridPlot(modelvar, **kwargs)
+            return SpatialFacetGridPlot(
+                modelvar,
+                _plotter_class=cls,
+                _plotter_kwargs={"gridobj": gridobj, "plotargs": plotargs},
+                **kwargs,
+            )
 
         return super().__new__(cls)
 
@@ -116,7 +132,8 @@ class SpatialImshowPlot(SpatialPlot):
             Keyword arguments passed to :class:`SpatialPlot` for map features
             and projection.
         """
-        # Initialize the map canvas via SpatialPlot
+        lon_coord = kwargs.pop("lon_coord", None)
+        lat_coord = kwargs.pop("lat_coord", None)
         super().__init__(**kwargs)
 
         # Standardize data to Xarray for consistency and lazy evaluation
@@ -129,94 +146,87 @@ class SpatialImshowPlot(SpatialPlot):
         self.ncolors = ncolors
         self.discrete = discrete
 
-        # Aero Protocol: Centralized coordinate identification
         try:
-            self.lon_coord, self.lat_coord = self._identify_coords(self.modelvar)
+            self.lon_coord, self.lat_coord = identify_coords(
+                self.modelvar, lon_coord, lat_coord
+            )
         except ValueError:
-            self.lon_coord = kwargs.get("lon_coord", "lon")
-            self.lat_coord = kwargs.get("lat_coord", "lat")
+            if gridobj is None or lon_coord is not None or lat_coord is not None:
+                raise
+            self.lon_coord, self.lat_coord = "lon", "lat"
+
+        if getattr(self, "gridobj", None) is None:
+            validate_data_crs(
+                self.modelvar,
+                self.lon_coord,
+                self.lat_coord,
+                self.data_crs if self._data_crs_explicit else None,
+            )
 
         # Ensure coordinates are monotonic for correct plotting
-        self.modelvar = self._ensure_monotonic(
-            self.modelvar, self.lon_coord, self.lat_coord
-        )
+        if (
+            isinstance(self.modelvar, xr.DataArray)
+            and self.lon_coord in self.modelvar.coords
+            and self.lat_coord in self.modelvar.coords
+        ):
+            self.modelvar = self._ensure_monotonic(
+                self.modelvar, self.lon_coord, self.lat_coord
+            )
 
         _update_history(self.modelvar, "Initialized monet-plots.SpatialImshowPlot")
 
     def plot(self, **kwargs: Any) -> Axes:
-        """Generate a static publication-quality spatial imshow plot (Track A).
+        """Render a regular raster with pixel-edge bounds in ``data_crs``.
 
-        Parameters
-        ----------
-        **kwargs : Any
-            Keyword arguments passed to `matplotlib.pyplot.imshow`.
-            Common options include `cmap`, `vmin`, `vmax`, and `alpha`.
-            Map features (e.g., `coastlines=True`) can also be passed here.
-
-        Returns
-        -------
-        matplotlib.axes.Axes
-            The matplotlib axes object containing the plot.
+        ``extent`` controls the map viewport in ``extent_crs`` (geographic by
+        default). ``image_extent`` explicitly overrides the raster bounds in
+        data coordinates. Use SpatialMeshPlot for irregular/curvilinear grids.
+        Set ``add_colorbar=False`` when composing multiple layers.
         """
-        # Automatically compute extent if not provided
-        if "extent" not in kwargs:
-            if self.gridobj is not None:
-                # Handle legacy gridobj
-                try:
-                    lat_var = self.gridobj.variables["LAT"]
-                    lon_var = self.gridobj.variables["LON"]
-                    kwargs["extent"] = [
-                        float(lon_var.min()),
-                        float(lon_var.max()),
-                        float(lat_var.min()),
-                        float(lat_var.max()),
-                    ]
-                except (AttributeError, KeyError):
-                    kwargs["extent"] = self._get_extent_from_data(
-                        self.modelvar, self.lon_coord, self.lat_coord
-                    )
-            else:
-                kwargs["extent"] = self._get_extent_from_data(
-                    self.modelvar, self.lon_coord, self.lat_coord
-                )
-
-        # Draw map features and get remaining kwargs for imshow
-        imshow_kwargs = self.add_features(**kwargs)
-
-        if self.plotargs:
-            imshow_kwargs.update(self.plotargs)
-
-        # Set default imshow settings
-        imshow_kwargs.setdefault("cmap", "viridis")
-        imshow_kwargs.setdefault("origin", "lower")
-        imshow_kwargs.setdefault("transform", ccrs.PlateCarree())
-
-        # Extract extent for imshow [left, right, bottom, top]
-        extent = imshow_kwargs.pop("extent", None)
-
-        # Delay computation as much as possible
-        # For imshow, we still need concrete values for Track A.
-        # But we use xarray's values which handle Dask if properly initialized.
-        model_values = self.modelvar.values
-
-        # Handle colormap and normalization
-        final_kwargs = get_plot_kwargs(**imshow_kwargs)
-
-        img = self.ax.imshow(model_values, extent=extent, **final_kwargs)
-
-        # Handle colorbar
-        if self.discrete:
-            vmin, vmax = img.get_clim()
-            colorbar_index(
-                self.ncolors,
-                final_kwargs["cmap"],
-                minval=vmin,
-                maxval=vmax,
-                ax=self.ax,
-            )
+        options = {**self._plot_defaults, **(self.plotargs or {}), **kwargs}
+        add_colorbar = options.pop("add_colorbar", True)
+        cbar_kwargs = options.pop("cbar_kwargs", {})
+        image_extent = options.pop("image_extent", None)
+        if self.gridobj is not None:
+            if image_extent is None:
+                lon = self.gridobj.variables["LON"]
+                lat = self.gridobj.variables["LAT"]
+                image_extent = [
+                    float(lon.min()),
+                    float(lon.max()),
+                    float(lat.min()),
+                    float(lat.max()),
+                ]
+            values = self.modelvar.values
         else:
-            self.add_colorbar(img)
-
+            field = grid_data(self.modelvar, self.lon_coord, self.lat_coord)
+            if image_extent is None:
+                image_extent = raster_extent(field, self.lon_coord, self.lat_coord)
+            values = field.values
+        if "extent" not in options and self._requested_extent is None:
+            self.ax.set_extent(image_extent, crs=self.data_crs)
+        options = self.add_features(**options)
+        options.setdefault("origin", "lower")
+        options.setdefault("transform", self.data_crs)
+        options.setdefault("cmap", "viridis")
+        if self.discrete and options.get("norm") is None:
+            options["cmap"], options["norm"] = get_discrete_scale(
+                values,
+                cmap=options["cmap"],
+                n_levels=self.ncolors,
+                vmin=options.pop("vmin", None),
+                vmax=options.pop("vmax", None),
+            )
+        self.mappable = self.ax.imshow(
+            values, extent=image_extent, **get_plot_kwargs(**options)
+        )
+        if add_colorbar:
+            label = (
+                variable_label(self.modelvar)
+                if isinstance(self.modelvar, xr.DataArray)
+                else None
+            )
+            self.add_colorbar(self.mappable, **{"label": label, **cbar_kwargs})
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:
@@ -249,6 +259,7 @@ class SpatialImshowPlot(SpatialPlot):
             "x": self.lon_coord,
             "y": self.lat_coord,
             "geo": True,
+            "crs": self.data_crs,
             "rasterize": True,
             "cmap": "viridis",
         }

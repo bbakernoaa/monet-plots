@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
-from monet_plots.tools import calc_24hr_ave, calc_8hr_rolling_max
+
+from monet_plots.tools import calc_8hr_rolling_max, calc_24hr_ave
 
 
 def test_regulatory_calcs():

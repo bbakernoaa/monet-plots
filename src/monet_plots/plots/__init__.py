@@ -5,7 +5,7 @@ from .conditional_quantile import ConditionalQuantilePlot
 from .curtain import CurtainPlot
 from .diurnal_error import DiurnalErrorPlot
 from .ensemble import SpreadSkillPlot
-from .facet_grid import FacetGridPlot
+from .facet_grid import FacetGridPlot, SpatialFacetGridPlot
 from .fingerprint import FingerprintPlot
 from .kde import KDEPlot
 from .performance_diagram import PerformanceDiagramPlot
@@ -26,10 +26,12 @@ from .scatter import ScatterPlot
 from .scorecard import ScorecardPlot
 from .soccer import SoccerPlot
 from .spatial import SpatialPlot, SpatialTrack
-from .spatial_overlay import SpatialOverlayPlot
 from .spatial_bias_scatter import SpatialBiasScatterPlot
+from .spatial_comparison import SpatialComparisonPlot
 from .spatial_contour import SpatialContourPlot
 from .spatial_imshow import SpatialImshowPlot
+from .spatial_mesh import SpatialMeshPlot
+from .spatial_overlay import SpatialOverlayPlot
 from .taylor_diagram import TaylorDiagramPlot
 from .timeseries import TimeSeriesPlot
 from .trajectory import TrajectoryPlot
@@ -37,6 +39,9 @@ from .wind_barbs import WindBarbsPlot
 from .wind_quiver import WindQuiverPlot
 
 __all__ = [
+    "SpatialComparisonPlot",
+    "SpatialMeshPlot",
+    "SpatialFacetGridPlot",
     "BasePlot",
     "ScatterPlot",
     "TimeSeriesPlot",

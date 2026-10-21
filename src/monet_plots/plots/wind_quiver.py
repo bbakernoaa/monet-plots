@@ -2,7 +2,6 @@
 
 from typing import Any
 
-import cartopy.crs as ccrs
 import numpy as np
 
 from .. import tools
@@ -32,8 +31,8 @@ class WindQuiverPlot(SpatialPlot):
 
     def plot(self, **kwargs):
         """Generate the wind quiver plot."""
-        quiver_kwargs = self.add_features(**kwargs)
-        quiver_kwargs.setdefault("transform", ccrs.PlateCarree())
+        quiver_kwargs = self.add_features(**{**self._plot_defaults, **kwargs})
+        quiver_kwargs.setdefault("transform", self.data_crs)
 
         lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
         lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
@@ -46,4 +45,5 @@ class WindQuiverPlot(SpatialPlot):
             v[::15, ::15],
             **quiver_kwargs,
         )
+        self.mappable = quiv
         return quiv
