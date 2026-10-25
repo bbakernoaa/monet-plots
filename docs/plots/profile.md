@@ -44,3 +44,23 @@ y = np.arange(10)
 plot = StickPlot(u, v, y)
 plot.plot()
 ```
+
+## VerticalProfilePlot with pressure coordinates
+
+Use `alt_col` to select pressure instead of height. Pressure is detected from the
+column name (for example, `pressure` or `pressure_hpa`) or Xarray units metadata,
+and the vertical axis is inverted so larger pressure values appear lower.
+
+```python
+plot = VerticalProfilePlot(
+    sounding_dataframe,
+    obs_col="temperature_obs",
+    mod_cols="temperature_model",
+    alt_col="pressure_hpa",
+    bins=[100, 200, 300, 500, 700, 850, 1000],
+)
+plot.plot()
+```
+
+For coordinates whose names or units do not identify pressure, pass
+`vertical_axis="pressure"`. Set `vertical_axis="height"` to force height orientation.
