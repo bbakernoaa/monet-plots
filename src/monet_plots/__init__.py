@@ -6,6 +6,7 @@ from .plots.conditional_bias import ConditionalBiasPlot
 from .plots.ensemble import SpreadSkillPlot
 from .plots.facet_grid import FacetGridPlot, SpatialFacetGridPlot
 from .plots.kde import KDEPlot
+from .plots.layout import PlotLayout
 from .plots.meteogram import Meteogram
 from .plots.performance_diagram import PerformanceDiagramPlot
 from .plots.profile import ProfilePlot
@@ -33,6 +34,7 @@ from .plots.windrose import Windrose
 from .style import get_available_styles, get_style_setting, set_style, style_context
 
 __all__ = [
+    "PlotLayout",
     "SkewTPlot",
     "compare_spatial",
     "SpatialComparisonPlot",

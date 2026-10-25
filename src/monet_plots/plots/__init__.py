@@ -9,6 +9,7 @@ from .ensemble import SpreadSkillPlot
 from .facet_grid import FacetGridPlot, SpatialFacetGridPlot
 from .fingerprint import FingerprintPlot
 from .kde import KDEPlot
+from .layout import PlotLayout
 from .performance_diagram import PerformanceDiagramPlot
 from .polar import BivariatePolarPlot
 from .profile import (
@@ -42,6 +43,7 @@ from .wind_barbs import WindBarbsPlot
 from .wind_quiver import WindQuiverPlot
 
 __all__ = [
+    "PlotLayout",
     "SkewTPlot",
     "SpatialComparisonPlot",
     "SpatialMeshPlot",

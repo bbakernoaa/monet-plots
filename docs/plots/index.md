@@ -80,3 +80,27 @@ All plot classes follow the same core structure:
 4.  **Output**: Save the figure using `.save()` and close with `.close()`.
 
 For more details on styling, including the **Pivotal Weather** and **WeatherMesh** styles, please see the [Configuration Guide](../configuration/index.md).
+
+## Heterogeneous figure layouts
+
+`PlotLayout` composes different plot classes in a shared `Figure`. Use it when a
+scientific summary needs unlike panels, such as a Skew-T beside a spatial map.
+It creates and owns the subplot axes while each returned plot instance retains
+its usual `plot`, `save` and artist APIs.
+
+```python
+from monet_plots import PlotLayout, SkewTPlot
+
+layout = PlotLayout((1, 2), figsize=(12, 7))
+skew = layout.add(
+    SkewTPlot,
+    cell=(0, 0),
+    subplot_kwargs={"projection": "monet_skewt"},
+)
+skew.plot(pressure, temperature, dewpoint, parcel=True)
+# Add other plot classes to the remaining cells and call their plot methods.
+layout.save("sounding_summary.png", dpi=180)
+```
+
+Use `subplot_kwargs` for axes projections, `plot_kwargs` for a plot constructor,
+and the returned instance's `plot()` for the data rendering options.
