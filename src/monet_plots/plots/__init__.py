@@ -26,6 +26,7 @@ from .ridgeline import RidgelinePlot
 from .roc_curve import ROCCurvePlot
 from .scatter import ScatterPlot
 from .scorecard import ScorecardPlot
+from .skewt import SkewTPlot
 from .soccer import SoccerPlot
 from .spatial import SpatialPlot, SpatialTrack
 from .spatial_bias_scatter import SpatialBiasScatterPlot
@@ -41,6 +42,7 @@ from .wind_barbs import WindBarbsPlot
 from .wind_quiver import WindQuiverPlot
 
 __all__ = [
+    "SkewTPlot",
     "SpatialComparisonPlot",
     "SpatialMeshPlot",
     "SpatialFacetGridPlot",

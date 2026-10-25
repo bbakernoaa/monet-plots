@@ -10,6 +10,7 @@ import xarray as xr
 
 from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
 from .base import BasePlot
+from .vertical import configure_vertical_axis
 
 
 class CurtainPlot(BasePlot):
@@ -28,6 +29,8 @@ class CurtainPlot(BasePlot):
         y: Optional[str] = None,
         obs_data: Optional[Any] = None,
         obs_var: Optional[str] = None,
+        vertical_axis: str = "auto",
+        yscale: Optional[str] = None,
         **kwargs,
     ):
         """
@@ -47,6 +50,8 @@ class CurtainPlot(BasePlot):
         self.y = y
         self.obs_data = normalize_data(obs_data) if obs_data is not None else None
         self.obs_var = obs_var
+        self.vertical_axis = vertical_axis
+        self.yscale = yscale
 
         _update_history(self.data, "Initialized monet-plots.CurtainPlot")
 
@@ -90,6 +95,15 @@ class CurtainPlot(BasePlot):
             self.x = da.dims[1]
         if self.y is None:
             self.y = da.dims[0]
+
+        if self.x not in da.coords or self.y not in da.coords:
+            raise ValueError("x and y must name coordinates in the curtain data")
+        if self.x in da.dims and self.y in da.dims:
+            da = da.transpose(self.y, self.x)
+        elif da.ndim != 2:
+            raise ValueError(
+                "curtain coordinates must describe a two-dimensional field"
+            )
 
         if two_subplot:
             # Re-initialize fig/ax for two subplots
@@ -148,13 +162,11 @@ class CurtainPlot(BasePlot):
                 ax2.set_xlabel(xlabel)
                 ax2.set_title("Observations Only")
 
-        # Invert y-axis if pressure
-        y_units = da.coords[self.y].attrs.get("units", "").lower()
-        if "pressure" in str(self.y).lower() or y_units in {"hpa", "mbar", "pa", "mb"}:
-            if not ax1.yaxis_inverted():
-                ax1.invert_yaxis()
-            if ax2 is not None and not ax2.yaxis_inverted():
-                ax2.invert_yaxis()
+        configure_vertical_axis(ax1, da.coords[self.y], self.vertical_axis, self.yscale)
+        if ax2 is not None:
+            configure_vertical_axis(
+                ax2, da.coords[self.y], self.vertical_axis, self.yscale
+            )
 
         if colorbar:
             label = da.attrs.get("long_name", da.name or "")

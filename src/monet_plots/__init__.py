@@ -15,6 +15,7 @@ from .plots.rev import RelativeEconomicValuePlot
 from .plots.roc_curve import ROCCurvePlot
 from .plots.scatter import ScatterPlot
 from .plots.scorecard import ScorecardPlot
+from .plots.skewt import SkewTPlot
 from .plots.spatial import SpatialPlot
 from .plots.spatial_bias_scatter import SpatialBiasScatterPlot
 from .plots.spatial_comparison import SpatialComparisonPlot
@@ -32,6 +33,7 @@ from .plots.windrose import Windrose
 from .style import get_available_styles, get_style_setting, set_style, style_context
 
 __all__ = [
+    "SkewTPlot",
     "compare_spatial",
     "SpatialComparisonPlot",
     "SpatialMeshPlot",

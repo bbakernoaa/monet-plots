@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from .. import tools, verification_metrics
 from ..plot_utils import _update_history, normalize_data
 from .base import BasePlot
+from .vertical import configure_vertical_axis
 
 
 class ProfilePlot(BasePlot):
@@ -47,7 +48,11 @@ class ProfilePlot(BasePlot):
         y: np.ndarray = None,  # legacy alias
         **kwargs: t.Any,
     ) -> None:
+        vertical_axis = kwargs.pop("vertical_axis", "auto")
+        yscale = kwargs.pop("yscale", None)
         super().__init__(**kwargs)
+        self.vertical_axis = vertical_axis
+        self.yscale = yscale
         self.x = var1 if var1 is not None else x
         if alt_adjust is not None:
             self.y = (var2 if var2 is not None else y) - alt_adjust
@@ -68,10 +73,14 @@ class ProfilePlot(BasePlot):
                 self.fig = plt.figure()
             self.ax = self.fig.add_subplot()
 
+        if self.x is None or self.y is None:
+            raise ValueError("ProfilePlot requires x/var1 and y/var2")
         if self.z is not None:
             self.ax.contourf(self.x, self.y, self.z, **kwargs)
         else:
             self.ax.plot(self.x, self.y, **kwargs)
+        configure_vertical_axis(self.ax, self.y, self.vertical_axis, self.yscale)
+        return self.ax
 
 
 class VerticalProfilePlot(BasePlot):
@@ -159,7 +168,9 @@ class VerticalProfilePlot(BasePlot):
                 stats = stats.compute()
 
             label = col
-            color = kwargs.get("color", plt.cm.tab10(i))
+            line_kwargs = dict(kwargs)
+            color = line_kwargs.pop("color", plt.cm.tab10(i))
+            line_kwargs.pop("label", None)
 
             if self.interquartile_style == "shading":
                 # Plot median line
@@ -168,7 +179,7 @@ class VerticalProfilePlot(BasePlot):
                     stats["bin_center"],
                     label=f"{label} (median)",
                     color=color,
-                    **kwargs,
+                    **line_kwargs,
                 )
                 # Plot IQR shading
                 self.ax.fill_betweenx(
@@ -276,7 +287,11 @@ class VerticalSlice(ProfilePlot):
                 self.fig = plt.figure()
             self.ax = self.fig.add_subplot()
 
+        if self.z is None:
+            raise ValueError("VerticalSlice requires z values")
         self.ax.contourf(self.x, self.y, self.z, **kwargs)
+        configure_vertical_axis(self.ax, self.y, self.vertical_axis, self.yscale)
+        return self.ax
 
 
 class StickPlot(BasePlot):
