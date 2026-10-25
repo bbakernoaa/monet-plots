@@ -90,3 +90,22 @@ def test_StickPlot_plot(clear_figures):
     result = plot.plot()
     assert plot.ax is not None
     assert isinstance(result, Quiver)
+
+
+def test_stick_rejects_mismatched_vectors():
+    with pytest.raises(ValueError, match="matching shapes"):
+        StickPlot([1, 2], [1], [1000, 900])
+
+
+def test_vertical_box_rejects_unsorted_thresholds():
+    with pytest.raises(ValueError, match="strictly increasing"):
+        VerticalBoxPlot([1, 2], [100, 200], [0, 200, 100])
+
+
+def test_profile_returns_axes_and_pressure_orientation():
+    from xarray import DataArray
+
+    pressure = DataArray([1000, 900, 800], dims="level", attrs={"units": "hPa"})
+    plot = ProfilePlot(x=[1, 2, 3], y=pressure)
+    assert plot.plot() is plot.ax
+    assert plot.ax.yaxis_inverted()

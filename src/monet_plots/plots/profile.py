@@ -128,6 +128,10 @@ class VerticalProfilePlot(BasePlot):
         **kwargs : Any
             Additional arguments passed to BasePlot.
         """
+        self.vertical_axis = kwargs.pop("vertical_axis", "auto")
+        self.yscale = kwargs.pop("yscale", None)
+        if interquartile_style not in {"shading", "box"}:
+            raise ValueError("interquartile_style must be 'shading' or 'box'")
         super().__init__(fig=fig, ax=ax, **kwargs)
         self.data = normalize_data(data)
         self.obs_col = obs_col
@@ -235,8 +239,10 @@ class VerticalProfilePlot(BasePlot):
 
         self.ax.set_ylabel(self.alt_col)
         self.ax.set_xlabel(self.obs_col)
+        configure_vertical_axis(
+            self.ax, self.data[self.alt_col], self.vertical_axis, self.yscale
+        )
         self.ax.legend()
-
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:
@@ -306,24 +312,23 @@ class StickPlot(BasePlot):
             y (np.ndarray, pd.Series, xr.DataArray): Vertical coordinate.
             **kwargs: Additional keyword arguments passed to BasePlot.
         """
+        self.vertical_axis = kwargs.pop("vertical_axis", "auto")
+        self.yscale = kwargs.pop("yscale", None)
         super().__init__(*args, **kwargs)
-        self.u = u
-        self.v = v
-        self.y = y
+        self.u = np.asarray(u)
+        self.v = np.asarray(v)
+        self.y = np.asarray(y)
+        if self.u.shape != self.v.shape or self.u.shape != self.y.shape:
+            raise ValueError("u, v, and vertical coordinate must have matching shapes")
         self.x = np.zeros_like(self.y)
 
-    def plot(self, **kwargs: t.Any) -> None:
-        """
-        Parameters
-        ----------
-        **kwargs
-            Keyword arguments passed to `matplotlib.pyplot.quiver`.
-        """
+    def plot(self, **kwargs: t.Any):
+        """Draw the vector sticks and return the Matplotlib quiver artist."""
         if self.ax is None:
             if self.fig is None:
                 self.fig = plt.figure()
             self.ax = self.fig.add_subplot()
-
+        configure_vertical_axis(self.ax, self.y, self.vertical_axis, self.yscale)
         return self.ax.quiver(self.x, self.y, self.u, self.v, **kwargs)
 
 
@@ -331,38 +336,33 @@ class VerticalBoxPlot(BasePlot):
     """Vertical box plot."""
 
     def __init__(self, data, y, thresholds, *args, **kwargs):
-        """
-        Initialize the vertical box plot.
-        Args:
-            data (np.ndarray, pd.Series, xr.DataArray): Data to plot.
-            y (np.ndarray, pd.Series, xr.DataArray): Vertical coordinate.
-            thresholds (list): List of thresholds to bin the data.
-            **kwargs: Additional keyword arguments passed to BasePlot.
-        """
+        self.vertical_axis = kwargs.pop("vertical_axis", "auto")
+        self.yscale = kwargs.pop("yscale", None)
         super().__init__(*args, **kwargs)
-        self.data = data
-        self.y = y
-        self.thresholds = thresholds
+        self.data = np.asarray(data)
+        self.y = np.asarray(y)
+        self.thresholds = np.asarray(thresholds, dtype=float)
+        if self.data.shape != self.y.shape:
+            raise ValueError("data and vertical coordinate must have matching shapes")
+        if (
+            self.thresholds.ndim != 1
+            or len(self.thresholds) < 2
+            or not np.all(np.isfinite(self.thresholds))
+            or not np.all(np.diff(self.thresholds) > 0)
+        ):
+            raise ValueError(
+                "thresholds must be finite, one-dimensional, and strictly increasing"
+            )
 
-    def plot(self, **kwargs: t.Any) -> None:
-        """
-        Parameters
-        ----------
-        **kwargs
-            Keyword arguments passed to `matplotlib.pyplot.boxplot`.
-        """
+    def plot(self, **kwargs: t.Any):
+        """Draw horizontal distributions in vertical-coordinate bins."""
         if self.ax is None:
             if self.fig is None:
                 self.fig = plt.figure()
             self.ax = self.fig.add_subplot()
-
         output_list = tools.split_by_threshold(self.data, self.y, self.thresholds)
-        position_list_1 = self.thresholds[:-1]
-        position_list_2 = self.thresholds[1:]
-        position_list_mid = [
-            (p1 + p2) / 2 for p1, p2 in zip(position_list_1, position_list_2)
-        ]
-
-        if "orientation" not in kwargs:
-            kwargs["orientation"] = "horizontal"
-        return self.ax.boxplot(output_list, positions=position_list_mid, **kwargs)
+        mids = (self.thresholds[:-1] + self.thresholds[1:]) / 2
+        widths = np.diff(self.thresholds) * 0.5
+        kwargs.setdefault("orientation", "horizontal")
+        configure_vertical_axis(self.ax, self.y, self.vertical_axis, self.yscale)
+        return self.ax.boxplot(output_list, positions=mids, widths=widths, **kwargs)
