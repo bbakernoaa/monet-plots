@@ -50,6 +50,7 @@ These plots are used for vertical and regional atmospheric analysis.
 | Plot Name | Description | Documentation Link |
 | :--- | :--- | :--- |
 | `ProfilePlot` | Basic vertical atmospheric profile. | [`Profile`](./profile.md) |
+| `SkewTPlot` | Skew-T log-pressure sounding with thermodynamic guides. | [`Upper Air`](./upper_air.md) |
 | `VerticalProfilePlot` | Binned vertical statistics comparing models and obs. | [`Profile`](./profile.md) |
 | `CurtainPlot` | Vertical cross-section (altitude vs time/distance). | [`Curtain`](./curtain.md) |
 | `VerticalSlice` | Cross-sectional contour plot of 2D slices. | [`Profile`](./profile.md) |
@@ -62,6 +63,8 @@ These plots are used for vertical and regional atmospheric analysis.
 | `BivariatePolarPlot` | Variable dependence on wind speed and direction. | [`Polar`](./polar.md) |
 
 ## Advanced Layouts
+
+| `PlotLayout` | Heterogeneous plot panels in one shared figure. | [`Plot Layout`](./layout.md) |
 
 | Plot Name | Description | Documentation Link |
 | :--- | :--- | :--- |

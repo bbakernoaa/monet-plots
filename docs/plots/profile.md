@@ -4,6 +4,14 @@
 
 ::: monet_plots.plots.profile.ProfilePlot
 
+## VerticalProfilePlot
+
+::: monet_plots.plots.profile.VerticalProfilePlot
+
+## VerticalBoxPlot
+
+::: monet_plots.plots.profile.VerticalBoxPlot
+
 ## VerticalSlice
 
 ::: monet_plots.plots.profile.VerticalSlice

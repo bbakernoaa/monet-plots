@@ -37,7 +37,9 @@ Unlabeled arrays use hPa, Celsius, and m/s. DataArray units are read from their
 `wind_units` override them. Parcel ascent marks the LCL and uses a liquid-water
 pseudoadiabatic approximation above it; CAPE and CIN are not calculated.
 The diagram uses a standard Skew-T aspect ratio of 80.5; pass `aspect=` to
-`SkewTPlot` to adjust it for your layout. Multiple calls to `plot` overlay labeled
+`SkewTPlot` to adjust it for your layout. In a grid cell spanning multiple rows,
+use `aspect="auto"` so the Skew-T fills the allocated height. Multiple calls to
+`plot` overlay labeled
 soundings. For subplot layouts, create
 axes with `subplot_kw={"projection": "monet_skewt"}` and pass an axis to
 `SkewTPlot`.

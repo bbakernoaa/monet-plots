@@ -33,6 +33,7 @@ nav:
       - Colorbars: api/colorbars.md
       - Taylor Diagram: api/taylordiagram.md
       - Plot Types: plots/index.md
+      - Heterogeneous Layouts: plots/layout.md
       - Ridgeline Plot: plots/ridgeline.md
   - Releases: releases.md
   - Configuration: configuration/index.md
