@@ -72,7 +72,9 @@ def _moist(pressure, temperature):
 class SkewTPlot(BasePlot):
     """Plot soundings. Unlabeled arrays default to hPa, Celsius, and m/s."""
 
-    def __init__(self, data=None, *, fig=None, ax=None, rotation=30, **kwargs):
+    def __init__(
+        self, data=None, *, fig=None, ax=None, rotation=30, aspect=80.5, **kwargs
+    ):
         if ax is not None and not isinstance(ax, SkewTAxes):
             raise ValueError(
                 "Use subplot_kw={'projection': 'monet_skewt'} for supplied axes"
@@ -88,6 +90,7 @@ class SkewTPlot(BasePlot):
         self.ax.set_yscale("log")
         self.ax.set_ylim(1050, 100)
         self.ax.set_xlim(-40, 50)
+        self.ax.set_aspect(aspect, adjustable="box")
         self.ax.set_xlabel("Temperature (°C)")
         self.ax.set_ylabel("Pressure (hPa)")
         p = np.geomspace(1050, 100, 150)

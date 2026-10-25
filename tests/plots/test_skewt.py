@@ -72,3 +72,16 @@ def test_sounding_and_guides_reach_surface_pressure():
         assert plot.ax.transData.transform((24, 1000))[0] < bbox.xmax
     finally:
         plot.close()
+
+
+def test_skewt_default_aspect_is_meteorological():
+    plot = SkewTPlot(style=None)
+    try:
+        assert plot.ax.get_aspect() == 80.5
+        custom = SkewTPlot(aspect=60, style=None)
+        try:
+            assert custom.ax.get_aspect() == 60
+        finally:
+            custom.close()
+    finally:
+        plot.close()

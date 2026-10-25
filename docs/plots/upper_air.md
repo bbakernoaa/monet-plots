@@ -36,6 +36,8 @@ Unlabeled arrays use hPa, Celsius, and m/s. DataArray units are read from their
 `units` attributes; explicit `pressure_units`, `temperature_units`, and
 `wind_units` override them. Parcel ascent marks the LCL and uses a liquid-water
 pseudoadiabatic approximation above it; CAPE and CIN are not calculated.
-Multiple calls to `plot` overlay labeled soundings. For subplot layouts, create
+The diagram uses a standard Skew-T aspect ratio of 80.5; pass `aspect=` to
+`SkewTPlot` to adjust it for your layout. Multiple calls to `plot` overlay labeled
+soundings. For subplot layouts, create
 axes with `subplot_kw={"projection": "monet_skewt"}` and pass an axis to
 `SkewTPlot`.
