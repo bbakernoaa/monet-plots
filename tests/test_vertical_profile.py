@@ -54,3 +54,31 @@ def test_vertical_profile_plot_lazy():
     ax = plot.plot()
     assert ax is not None
     plt.close(plot.fig)
+
+
+def test_vertical_profile_supports_pressure_coordinate():
+    """Pressure bins plot with larger pressure values toward the bottom."""
+    pressure = np.linspace(100, 1000, 200)
+    temperature = 25 - 0.07 * (pressure - 100)
+    data = xr.Dataset(
+        {
+            "obs": ("sample", temperature),
+            "model": ("sample", temperature + 1),
+            "pressure_hpa": ("sample", pressure),
+        }
+    )
+    plot = VerticalProfilePlot(
+        data,
+        obs_col="obs",
+        mod_cols="model",
+        alt_col="pressure_hpa",
+        bins=np.arange(100, 1101, 100),
+        style=None,
+    )
+    try:
+        ax = plot.plot()
+        assert ax.yaxis_inverted()
+        assert ax.get_ylabel() == "pressure_hpa"
+        assert len(ax.lines) >= 2
+    finally:
+        plot.close()
