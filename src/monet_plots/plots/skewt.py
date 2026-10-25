@@ -17,13 +17,11 @@ class SkewTAxes(Axes):
         super().__init__(*args, **kwargs)
 
     def _set_lim_and_transforms(self):
+        """Skew data in display space so the bottom temperature scale stays fixed."""
         super()._set_lim_and_transforms()
-        self.transData = (
-            self.transData
-            + self.transAxes.inverted()
-            + Affine2D().skew_deg(self.rotation, 0)
-            + self.transAxes
-        )
+        skew = Affine2D().translate(0, -self.bbox.ymin).skew_deg(self.rotation, 0)
+        skew.translate(0, self.bbox.ymin)
+        self.transData += skew
 
 
 register_projection(SkewTAxes)

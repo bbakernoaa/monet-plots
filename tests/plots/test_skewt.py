@@ -49,3 +49,26 @@ def test_height_axis_can_be_forced():
         assert not plot.ax.yaxis_inverted()
     finally:
         plot.close()
+
+
+def test_sounding_and_guides_reach_surface_pressure():
+    plot = SkewTPlot(style=None)
+    try:
+        plot.plot([1000, 850, 500, 100], [24, 13, -18, -68])
+        plot.fig.canvas.draw()
+        bbox = plot.ax.bbox
+        for line in plot.ax.lines:
+            pressure = np.asarray(line.get_ydata())
+            if pressure.size and pressure.max() >= 1000 and pressure.min() <= 100:
+                vertices = line.get_transform().transform(
+                    np.column_stack((line.get_xdata(), pressure))
+                )
+                visible = np.isfinite(vertices).all(axis=1)
+                assert np.any(
+                    visible
+                    & (vertices[:, 1] <= bbox.ymax)
+                    & (vertices[:, 1] >= bbox.ymin)
+                )
+        assert plot.ax.transData.transform((24, 1000))[0] < bbox.xmax
+    finally:
+        plot.close()
