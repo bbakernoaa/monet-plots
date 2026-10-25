@@ -101,11 +101,50 @@ class SkewTPlot(BasePlot):
                 alpha=0.25,
                 linewidth=0.6,
             )
-        for t in np.arange(273.15, 314, 10):
+        for t in np.arange(253.15, 303.15, 5):
             self.ax.plot(
-                _moist(p, t) - 273.15, p, color="green", alpha=0.25, linewidth=0.6
+                _moist(p, t) - 273.15, p, color="tab:green", alpha=0.32, linewidth=0.8
             )
-        self.ax.grid(alpha=0.3)
+        # Mixing-ratio lines: derive dewpoint from vapor pressure and draw only
+        # where vapor pressure is physically below the ambient pressure.
+        for ratio in (
+            0.1,
+            0.2,
+            0.4,
+            0.6,
+            1,
+            1.5,
+            2,
+            3,
+            4,
+            6,
+            8,
+            10,
+            13,
+            16,
+            20,
+            25,
+            30,
+        ):
+            vapor = p * (ratio / 1000) / (0.622 + ratio / 1000)
+            log_ratio = np.log(vapor / 6.112)
+            dewpoint = 243.5 * log_ratio / (17.67 - log_ratio)
+            valid = (vapor < p) & np.isfinite(dewpoint)
+            self.ax.plot(
+                np.where(valid, dewpoint, np.nan),
+                p,
+                color="tab:blue",
+                alpha=0.35,
+                linewidth=0.65,
+                linestyle=":",
+            )
+        pressure_ticks = np.array(
+            [1000, 925, 850, 700, 500, 400, 300, 250, 200, 150, 100]
+        )
+        self.ax.set_yticks(pressure_ticks)
+        self.ax.set_yticklabels([str(value) for value in pressure_ticks])
+        self.ax.grid(which="major", alpha=0.45, color="0.55", linewidth=0.65)
+        self.ax.grid(which="minor", alpha=0.18, color="0.7", linewidth=0.4)
 
     def plot(
         self,
