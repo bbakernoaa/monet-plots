@@ -4,7 +4,8 @@ import numpy as np
 
 from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_pod, compute_success_ratio
-from .base import BasePlot
+from ..style import CB_MARKERS
+from .base import BasePlot, figure_style
 
 
 class PerformanceDiagramPlot(BasePlot):
@@ -30,6 +31,7 @@ class PerformanceDiagramPlot(BasePlot):
     def __init__(self, fig=None, ax=None, **kwargs):
         super().__init__(fig=fig, ax=ax, **kwargs)
 
+    @figure_style
     def plot(
         self,
         data: Any,
@@ -37,6 +39,8 @@ class PerformanceDiagramPlot(BasePlot):
         y_col: str = "pod",
         counts_cols: Optional[List[str]] = None,
         label_col: Optional[str] = None,
+        *,
+        title: str | None = None,
         **kwargs,
     ):
         """
@@ -49,6 +53,7 @@ class PerformanceDiagramPlot(BasePlot):
             counts_cols (list, optional): List of columns [hits, misses, fa, cn]
                                         to calculate metrics if x_col/y_col not present.
             label_col (str, optional): Column to use for legend labels.
+            title: Optional panel title.
             **kwargs: Matplotlib kwargs.
         """
         df = to_dataframe(data)
@@ -64,19 +69,24 @@ class PerformanceDiagramPlot(BasePlot):
         # Plot Data
         # TDD Anchor: Verify scatter points match input data coordinates
         if label_col:
-            for name, group in df_plot.groupby(label_col):
-                self.ax.plot(
-                    group[x_col],
-                    group[y_col],
-                    marker="o",
-                    label=name,
-                    linestyle="none",
-                    **kwargs,
-                )
+            for index, (name, group) in enumerate(df_plot.groupby(label_col)):
+                label = str(name)
+                marker = "o"
+                if self._figure_style is not None:
+                    marker = CB_MARKERS[index % len(CB_MARKERS)]
+                    if len(group) == 1:
+                        sr, pod = group[[x_col, y_col]].iloc[0]
+                        denominator = sr + pod - sr * pod
+                        if denominator > 0:
+                            label += f" · CSI {sr * pod / denominator:.2f}"
+                options = {"marker": marker, "linestyle": "none", **kwargs}
+                self.ax.plot(group[x_col], group[y_col], label=label, **options)
             self.ax.legend(loc="best")
         else:
             self.ax.plot(
-                df_plot[x_col], df_plot[y_col], marker="o", linestyle="none", **kwargs
+                df_plot[x_col],
+                df_plot[y_col],
+                **{"marker": "o", "linestyle": "none", **kwargs},
             )
 
         # Formatting
@@ -85,6 +95,15 @@ class PerformanceDiagramPlot(BasePlot):
         self.ax.set_xlabel("Success Ratio (1-FAR)")
         self.ax.set_ylabel("Probability of Detection (POD)")
         self.ax.set_aspect("equal")
+        if self._figure_style is not None:
+            heading = title or "Event forecast performance"
+            self.ax.set_title(
+                heading + "\nDashed: critical success index · Dotted: Frequency bias",
+                loc="left",
+            )
+            self.ax.set_xlabel("Success ratio (fraction of alerts that verify)")
+        elif title is not None:
+            self.ax.set_title(title, loc="left")
 
     def _validate_inputs(self, data, x, y, counts):
         """Validates input dataframe structure."""

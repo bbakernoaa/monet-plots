@@ -25,6 +25,15 @@ def split_by_threshold(data_list, alt_list, threshold_list):
     return output_list
 
 
+def wind_grid_slice(shape, skip=None):
+    """Keep small wind grids intact and limit dense grids to 16 samples per axis."""
+    if skip is not None:
+        if not isinstance(skip, (int, np.integer)) or skip < 1:
+            raise ValueError("skip must be a positive integer.")
+        return (slice(None, None, skip),) * 2
+    return tuple(slice(None, None, max(1, (size + 15) // 16)) for size in shape)
+
+
 def wsdir2uv(ws, wdir):
     """Converts wind speed and direction to u and v components.
 

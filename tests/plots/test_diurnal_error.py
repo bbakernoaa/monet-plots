@@ -108,3 +108,19 @@ def test_diurnal_error_hvplot():
 
     # Just check it returns a HoloViews object
     assert hasattr(hv_obj, "type") or "holoviews" in str(type(hv_obj)).lower()
+
+
+def test_diurnal_bias_uses_symmetric_scale_and_compact_hour_labels():
+    time = pd.date_range("2025-01-01", periods=48, freq="h")
+    frame = pd.DataFrame(
+        {"time": time, "obs": 0, "model": np.tile(np.arange(24) - 3, 2)}
+    )
+    plot = DiurnalErrorPlot(frame, "obs", "model", style="journal")
+    try:
+        ax = plot.plot(reference_label="Station observations")
+        assert ax.collections[0].norm.vmin == -20
+        assert ax.collections[0].norm.vmax == 20
+        assert len(ax.get_xticklabels()) < 10
+        assert "Station observations" in ax.collections[0].colorbar.ax.get_ylabel()
+    finally:
+        plot.close()

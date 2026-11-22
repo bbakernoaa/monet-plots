@@ -3,10 +3,11 @@
 
 from typing import Any, Optional
 
+import pandas as pd
 import xarray as xr
 
-from ..plot_utils import get_plot_kwargs
-from .base import BasePlot
+from ..plot_utils import get_plot_kwargs, set_concise_time_axis
+from .base import BasePlot, figure_style
 
 
 class CurtainPlot(BasePlot):
@@ -39,6 +40,7 @@ class CurtainPlot(BasePlot):
         self.x = x
         self.y = y
 
+    @figure_style
     def plot(self, kind: str = "pcolormesh", colorbar: bool = True, **kwargs):
         """
         Generate the curtain plot.
@@ -103,6 +105,17 @@ class CurtainPlot(BasePlot):
             if self.y in da.coords
             else self.y
         )
+
+        time_index = (
+            da[self.x].to_index()
+            if self.x in da.coords and da[self.x].ndim == 1
+            else None
+        )
+        if isinstance(time_index, pd.DatetimeIndex):
+            timezone = time_index.tz
+            set_concise_time_axis(self.ax, timezone)
+            if timezone:
+                self.ax.set_xlabel(f"{self.ax.get_xlabel()} ({timezone})")
 
         # Invert y-axis for pressure-level data (hPa decreases with altitude)
         _y_units = ""

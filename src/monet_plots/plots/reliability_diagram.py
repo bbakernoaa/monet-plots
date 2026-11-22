@@ -5,7 +5,7 @@ import pandas as pd
 
 from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_reliability_curve
-from .base import BasePlot
+from .base import BasePlot, figure_style
 
 
 class ReliabilityDiagramPlot(BasePlot):
@@ -17,7 +17,7 @@ class ReliabilityDiagramPlot(BasePlot):
     Functional Requirements:
     1. Plot Observed Frequency (y-axis) vs Forecast Probability (x-axis).
     2. Draw "Perfect Reliability" diagonal (1:1).
-    3. Draw "No Skill" line (horizontal at climatology/sample mean).
+    3. Show climatology and the no-skill boundary.
     4. Shade "Skill" areas (where Brier Skill Score > 0).
     5. Include inset histogram of forecast usage (Sharpness) if requested.
 
@@ -29,6 +29,7 @@ class ReliabilityDiagramPlot(BasePlot):
     def __init__(self, fig=None, ax=None, **kwargs):
         super().__init__(fig=fig, ax=ax, **kwargs)
 
+    @figure_style
     def plot(
         self,
         data: Any,
@@ -60,6 +61,9 @@ class ReliabilityDiagramPlot(BasePlot):
         df = to_dataframe(data)
         # Compute if raw data provided
         if forecasts_col and observations_col:
+            df = df.loc[
+                df[forecasts_col].between(0, 1) & df[observations_col].isin([0, 1])
+            ]
             if climatology is None:
                 climatology = float(df[observations_col].mean())
             bin_centers, obs_freq, bin_counts = compute_reliability_curve(
@@ -72,9 +76,14 @@ class ReliabilityDiagramPlot(BasePlot):
             validate_dataframe(df, required_columns=[x_col, y_col])
             plot_data = df
 
+        if "count" in plot_data:
+            plot_data = plot_data.assign(
+                **{y_col: plot_data[y_col].where(plot_data["count"].ne(0))}
+            )
+
         # Draw Reference Lines
         self.ax.plot([0, 1], [0, 1], "k--", label="Perfect Reliability")
-        if climatology is not None:
+        if climatology is not None and np.isfinite(climatology):
             self.ax.axhline(
                 climatology, color="gray", linestyle=":", label="Climatology"
             )
@@ -109,13 +118,27 @@ class ReliabilityDiagramPlot(BasePlot):
 
     def _draw_skill_regions(self, clim):
         """Shades areas where BSS > 0."""
-        x = np.linspace(0, 1, 100)
-        y_no_skill = np.full_like(x, clim)
-        y_perfect = x
-
-        # Shade skill region (above no-skill towards perfect)
+        x = np.array([0, clim, 1])
+        boundary = (x + clim) / 2
+        self.ax.plot([0, 1], [clim / 2, (1 + clim) / 2], "k-.", label="No skill")
         self.ax.fill_between(
-            x, y_no_skill, y_perfect, alpha=0.15, color="#009E73", label="Skill Region"
+            x,
+            0,
+            boundary,
+            where=x <= clim,
+            interpolate=True,
+            alpha=0.12,
+            color="#009E73",
+            label="Improvement over climatology",
+        )
+        self.ax.fill_between(
+            x,
+            boundary,
+            1,
+            where=x >= clim,
+            interpolate=True,
+            alpha=0.12,
+            color="#009E73",
         )
 
     def _add_sharpness_histogram(self, data, x_col):

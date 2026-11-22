@@ -54,3 +54,14 @@ def test_wind_quiver_plot(clear_figures, sample_data):
     plot = WindQuiverPlot(ws=ws, wdir=wdir, gridobj=GridObj())
     quiv = plot.plot()
     assert quiv is not None
+
+
+def test_wind_defaults_keep_small_grid_and_allow_explicit_thinning(
+    clear_figures, sample_data
+):
+    ws, wdir = sample_data
+    arrows = WindQuiverPlot(ws, wdir, GridObj(), coastlines=False)
+    assert arrows.plot().U.size == 100
+    barbs = WindBarbsPlot(ws, wdir, GridObj(), coastlines=False)
+    barbs.plot(skip=2)
+    assert barbs.ax.collections[-1].u.size == 25

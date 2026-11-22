@@ -31,3 +31,21 @@ def test_curtain_plot_contourf():
     ax = plot.plot(kind="contourf")
     assert isinstance(ax, plt.Axes)
     plt.close(plot.fig)
+
+
+def test_curtain_uses_concise_time_labels_for_datetime_input():
+    from matplotlib.dates import ConciseDateFormatter
+
+    data = xr.DataArray(
+        np.zeros((2, 48)),
+        coords={
+            "altitude": [10, 20],
+            "time": pd.date_range("2025-01-01", periods=48, freq="h"),
+        },
+        dims=["altitude", "time"],
+    )
+    plot = CurtainPlot(data, style="journal")
+    try:
+        assert isinstance(plot.plot().xaxis.get_major_formatter(), ConciseDateFormatter)
+    finally:
+        plot.close()

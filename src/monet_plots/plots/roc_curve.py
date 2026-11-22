@@ -2,7 +2,7 @@ from typing import Any, Optional
 
 from ..plot_utils import to_dataframe, validate_dataframe
 from ..verification_metrics import compute_auc
-from .base import BasePlot
+from .base import BasePlot, figure_style
 
 
 class ROCCurvePlot(BasePlot):
@@ -27,6 +27,7 @@ class ROCCurvePlot(BasePlot):
     def __init__(self, fig=None, ax=None, **kwargs):
         super().__init__(fig=fig, ax=ax, **kwargs)
 
+    @figure_style
     def plot(
         self,
         data: Any,
@@ -34,6 +35,8 @@ class ROCCurvePlot(BasePlot):
         y_col: str = "pod",
         label_col: Optional[str] = None,
         show_auc: bool = True,
+        *,
+        title: str | None = None,
         **kwargs,
     ):
         """
@@ -45,6 +48,7 @@ class ROCCurvePlot(BasePlot):
             y_col (str): Column name for POD (Hit Rate).
             label_col (str, optional): Column for grouping different curves.
             show_auc (bool): Whether to calculate and append AUC to labels.
+            title: Optional panel title.
             **kwargs: Matplotlib kwargs.
         """
         df = to_dataframe(data)
@@ -73,6 +77,10 @@ class ROCCurvePlot(BasePlot):
         self.ax.set_xlabel("Probability of False Detection (POFD)")
         self.ax.set_ylabel("Probability of Detection (POD)")
         self.ax.set_aspect("equal")
+        if title is not None or self._figure_style is not None:
+            self.ax.set_title(title or "Forecast discrimination", loc="left")
+        if self._figure_style is not None:
+            self.ax.legend(loc="lower right")
 
     def _plot_single_curve(self, df, x_col, y_col, label, show_auc, **kwargs):
         """
@@ -101,7 +109,8 @@ class ROCCurvePlot(BasePlot):
 
         full_label = label + auc_str
         self.ax.plot(x, y, label=full_label, **kwargs)
-        self.ax.fill_between(x, 0, y, alpha=0.2, **kwargs)
+        if self._figure_style is None:
+            self.ax.fill_between(x, 0, y, alpha=0.2, **kwargs)
 
 
 # TDD Anchors (Unit Tests):

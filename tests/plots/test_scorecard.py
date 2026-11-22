@@ -57,3 +57,36 @@ def test_scorecard_weathermesh_features(clear_figures):
     texts = [t.get_text() for t in plot.ax.texts]
     assert "2.5 | 3.0" in texts
     assert "3.5 | 3.0" in texts
+
+
+def test_journal_scorecard_groups_cells_and_labels_missing(clear_figures, tmp_path):
+    frame = pd.DataFrame(
+        {
+            "region": ["East", "East", "East", "West"],
+            "metric": ["Temperature", "Temperature", "Wind", "Temperature"],
+            "period": ["Day 1", "Day 2", "Day 1", "Day 1"],
+            "lead": ["00 Z", "00 Z", "00 Z", "00 Z"],
+            "change": [-8.0, 3.0, -2.0, 1.0],
+            "significant": [True, False, False, True],
+        }
+    )
+    plot = ScorecardPlot(style="journal", figsize=(7, 4), layout="constrained")
+    plot.plot(
+        frame,
+        "lead",
+        "metric",
+        "change",
+        sig_col="significant",
+        row_group="region",
+        col_group="period",
+        baseline="Control forecast",
+        units="%",
+        lower_is_better=True,
+    )
+    assert plot.ax.collections[0].get_array().shape == (3, 2)
+    assert plot.ax.collections[0].norm.vmin == -8
+    assert plot.ax.collections[0].norm.vmax == 8
+    assert "Control forecast" in plot.ax.get_title(loc="left")
+    assert "−8.0*" in [item.get_text() for item in plot.ax.texts]
+    assert sum(item.get_text() == "—" for item in plot.ax.texts) == 2
+    plot.save(tmp_path / "scorecard.pdf")

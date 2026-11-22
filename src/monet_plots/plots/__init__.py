@@ -19,6 +19,7 @@ from .ridgeline import RidgelinePlot
 from .roc_curve import ROCCurvePlot
 from .scatter import ScatterPlot
 from .scorecard import ScorecardPlot
+from .temporal_scorecard import TemporalScorecardPlot
 from .soccer import SoccerPlot
 from .spatial import SpatialPlot, SpatialTrack
 from .spatial_bias_scatter import SpatialBiasScatterPlot
@@ -61,6 +62,7 @@ __all__ = [
     "RankHistogramPlot",
     "BrierScoreDecompositionPlot",
     "ScorecardPlot",
+    "TemporalScorecardPlot",
     "RelativeEconomicValuePlot",
     "ConditionalBiasPlot",
     "SpreadSkillPlot",

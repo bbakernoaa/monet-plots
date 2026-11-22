@@ -11,6 +11,15 @@ except ImportError:
     xr = None
 
 
+def set_concise_time_axis(ax, timezone=None):
+    """Use compact labels and preserve date context on a datetime axis."""
+    from matplotlib.dates import AutoDateLocator, ConciseDateFormatter
+
+    locator = AutoDateLocator(tz=timezone, minticks=3, maxticks=7)
+    ax.xaxis.set_major_locator(locator)
+    ax.xaxis.set_major_formatter(ConciseDateFormatter(locator, tz=timezone))
+
+
 def to_dataframe(data: Any) -> pd.DataFrame:
     """
     Convert input data to a pandas DataFrame.

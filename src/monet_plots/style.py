@@ -201,6 +201,45 @@ _styles = {
     "default": {},  # Matplotlib default style
 }
 
+# These presets are also available as figure-local BasePlot styles.
+FIGURE_STYLES = {
+    "journal": {
+        "font.family": "DejaVu Sans",
+        "font.size": 8,
+        "axes.labelsize": 8,
+        "axes.titlesize": 9,
+        "legend.fontsize": 7,
+        "xtick.labelsize": 7,
+        "ytick.labelsize": 7,
+        "figure.figsize": (6.5, 4),
+        "figure.facecolor": "white",
+        "axes.facecolor": "white",
+        "axes.prop_cycle": plt.cycler(
+            color=["#0072B2", "#D55E00", "#009E73", "#CC79A7"]
+        )
+        + plt.cycler(linestyle=["-", "--", "-.", ":"]),
+        "savefig.bbox": "standard",
+        "savefig.dpi": 600,
+        "savefig.format": "pdf",
+        "pdf.fonttype": 42,
+        "axes.grid": False,
+    },
+    "operations": {},
+}
+FIGURE_STYLES["operations"] = {
+    **FIGURE_STYLES["journal"],
+    "font.size": 12,
+    "axes.labelsize": 12,
+    "axes.titlesize": 14,
+    "legend.fontsize": 10,
+    "xtick.labelsize": 10,
+    "ytick.labelsize": 10,
+    "figure.figsize": (10, 6),
+    "savefig.dpi": 150,
+    "savefig.format": "png",
+}
+_styles.update(FIGURE_STYLES)
+
 _current_style_name = "wiley"
 
 

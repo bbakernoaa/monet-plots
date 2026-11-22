@@ -63,3 +63,25 @@ def test_spatial_bias_scatter_on_existing_ax():
     # 5. Assert that a scatter plot was actually created
     # A scatter plot adds a PathCollection to the axes
     assert len(ax.collections) > 0
+
+
+def test_bias_scale_respects_shared_limits_and_shows_zero():
+    data = pd.DataFrame(
+        {
+            "lat": [30, 31, 32, 33],
+            "lon": [-99, -98, -97, -96],
+            "obs": [0, 0, 0, 0],
+            "model": [-0.05, 0, 0.3, np.nan],
+        }
+    )
+    plot = SpatialBiasScatterPlot(
+        data, "obs", "model", vmin=-0.1, vmax=0.1, coastlines=False
+    )
+    try:
+        ax = plot.plot()
+        marker = ax.collections[0]
+        assert marker.norm.vmin == -0.1
+        assert marker.norm.vmax == 0.1
+        assert marker.get_sizes()[1] > 0
+    finally:
+        plot.close()

@@ -8,7 +8,7 @@ import pandas as pd
 import xarray as xr
 
 from ..plot_utils import normalize_data
-from .base import BasePlot
+from .base import BasePlot, figure_style
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -67,6 +67,7 @@ class TimeSeriesPlot(BasePlot):
         self.ylabel = ylabel
         self.label = label
 
+    @figure_style
     def plot(self, **kwargs: Any) -> plt.Axes:
         """
         Generate the timeseries plot.
@@ -126,9 +127,8 @@ class TimeSeriesPlot(BasePlot):
         e = self.data.groupby(self.x).std(numeric_only=True)
 
         variable = self.y
-        unit = "None"
-        if "units" in self.data.columns:
-            unit = str(self.data["units"].iloc[0])
+        units = self.data["units"].dropna().unique() if "units" in self.data else []
+        unit = units[0] if len(units) == 1 else self.data.attrs.get("units")
 
         upper = m[self.y] + e[self.y]
         lower = m[self.y] - e[self.y]
@@ -142,14 +142,14 @@ class TimeSeriesPlot(BasePlot):
             plot_label = self.y
 
         m[self.y].plot(ax=self.ax, label=plot_label, **self.plotargs)
-        self.ax.fill_between(m.index, lower_vals, upper_vals, **self.fillargs)
+        self.ax.fill_between(m.index, lower_vals, upper_vals, **self._spread_options())
 
         if self.ylabel is None:
-            self.ax.set_ylabel(f"{variable} ({unit})")
+            self.ax.set_ylabel(f"{variable} ({unit})" if unit else variable)
         else:
             self.ax.set_ylabel(self.ylabel)
 
-        self.ax.set_xlabel(self.x)
+        self.ax.set_xlabel(self._time_label(m.index))
         self.ax.legend()
         self.ax.set_title(self.title)
         import warnings
@@ -158,6 +158,19 @@ class TimeSeriesPlot(BasePlot):
             warnings.simplefilter("ignore", UserWarning)
             self.fig.tight_layout()
         return self.ax
+
+    def _spread_options(self):
+        return {"label": "Mean ± 1 standard deviation", **self.fillargs}
+
+    def _time_label(self, values):
+        timezone = getattr(values, "tz", None) or getattr(values, "attrs", {}).get(
+            "timezone"
+        )
+        if timezone:
+            return f"{self.x} ({timezone})"
+        if pd.api.types.is_datetime64_any_dtype(values):
+            return f"{self.x} (time zone unspecified)"
+        return self.x
 
     def _plot_xarray(self, **kwargs: Any) -> plt.Axes:
         """
@@ -209,17 +222,20 @@ class TimeSeriesPlot(BasePlot):
         lower = mean_data - std_data
 
         self.ax.fill_between(
-            mean_data[self.x].values, lower.values, upper.values, **self.fillargs
+            mean_data[self.x].values,
+            lower.values,
+            upper.values,
+            **self._spread_options(),
         )
 
-        unit = data[self.y].attrs.get("units", "None")
+        unit = data[self.y].attrs.get("units")
 
         if self.ylabel is None:
-            self.ax.set_ylabel(f"{self.y} ({unit})")
+            self.ax.set_ylabel(f"{self.y} ({unit})" if unit else self.y)
         else:
             self.ax.set_ylabel(self.ylabel)
 
-        self.ax.set_xlabel(self.x)
+        self.ax.set_xlabel(self._time_label(mean_data[self.x]))
         self.ax.legend()
         self.ax.set_title(self.title)
         import warnings

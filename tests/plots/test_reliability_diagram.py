@@ -34,3 +34,19 @@ def test_reliability_diagram_plot_show_hist():
     )
     plot.plot(data, show_hist=True)
     assert plot.ax is not None
+
+
+def test_empty_bins_are_gaps_with_correct_skill_boundary():
+    plot = ReliabilityDiagramPlot()
+    try:
+        data = pd.DataFrame(
+            {"prob": [0.1, 0.5, 0.9], "freq": [0.2, 0, 0.8], "count": [5, 0, 5]}
+        )
+        plot.plot(data, climatology=0.4)
+        assert np.isnan(plot.ax.lines[-1].get_ydata()[1])
+        boundary = next(
+            line for line in plot.ax.lines if line.get_label() == "No skill"
+        )
+        np.testing.assert_allclose(boundary.get_ydata(), [0.2, 0.7])
+    finally:
+        plot.close()

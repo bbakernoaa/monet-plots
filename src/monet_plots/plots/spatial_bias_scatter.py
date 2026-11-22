@@ -6,9 +6,13 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib.colors import BoundaryNorm
+from matplotlib.lines import Line2D
+from matplotlib.markers import MarkerStyle
 
-from ..colorbars import get_discrete_scale
+from ..colorbars import cmap_discretize
 from ..plot_utils import _update_history, get_plot_kwargs, normalize_data
+from .base import figure_style
 from .spatial import SpatialPlot
 
 if TYPE_CHECKING:
@@ -74,6 +78,7 @@ class SpatialBiasScatterPlot(SpatialPlot):
 
         _update_history(self.data, "Initialized monet-plots.SpatialBiasScatterPlot")
 
+    @figure_style
     def plot(self, **kwargs: Any) -> matplotlib.axes.Axes:
         """Generate a static publication-quality spatial bias scatter plot (Track A).
 
@@ -95,20 +100,6 @@ class SpatialBiasScatterPlot(SpatialPlot):
         if isinstance(self.data, (xr.Dataset, xr.DataArray)):
             # Vectorized calculation using Xarray/Dask
             diff = self.data[self.col2] - self.data[self.col1]
-
-            # Efficient percentile calculation
-            try:
-                top_val = diff.assign_coords(
-                    {"abs_diff": np.abs(diff)}
-                ).abs_diff.quantile(0.95)
-                if hasattr(top_val, "compute"):
-                    top = float(top_val.compute())
-                else:
-                    top = float(top_val)
-            except (ImportError, AttributeError, ValueError):
-                top = float(np.nanquantile(np.abs(diff.values), 0.95))
-
-            top = np.around(top)
 
             # Identify coordinates
             lat_name = next(
@@ -137,59 +128,119 @@ class SpatialBiasScatterPlot(SpatialPlot):
                 {"diff": diff, "lat": self.data[lat_name], "lon": self.data[lon_name]}
             )
 
-            # Drop NaNs before compute to minimize transfer
-            if plot_ds.dims:
-                plot_ds = plot_ds.dropna(dim=list(plot_ds.dims)[0])
-
-            concrete = plot_ds.compute()
+            concrete = plot_ds.broadcast_like(diff).compute()
             diff_vals = concrete["diff"].values
             lat_vals = concrete["lat"].values
             lon_vals = concrete["lon"].values
         else:
             # Fallback for Pandas
-            df = self.data.dropna(subset=[self.col1, self.col2])
+            df = self.data
             diff_vals = (df[self.col2] - df[self.col1]).values
             lat_name = next((c for c in ["latitude", "lat"] if c in df.columns), "lat")
             lon_name = next((c for c in ["longitude", "lon"] if c in df.columns), "lon")
             lat_vals = df[lat_name].values
             lon_vals = df[lon_name].values
-            top = np.around(np.nanquantile(np.abs(diff_vals), 0.95))
-
-        # Use scaling tools
-        cmap, norm = get_discrete_scale(
-            diff_vals, cmap=self.cmap, n_levels=self.ncolors, vmin=-top, vmax=top
+        valid = np.isfinite(diff_vals)
+        values = diff_vals[valid]
+        limits = [abs(limit) for limit in (self.vmin, self.vmax) if limit is not None]
+        top = (
+            max(limits)
+            if limits
+            else (float(np.quantile(np.abs(values), 0.95)) if values.size else 0)
         )
+        top = top or (float(np.max(np.abs(values))) if values.size else 0) or 1.0
+        overflow = (
+            "both"
+            if np.any(values < -top) and np.any(values > top)
+            else "min"
+            if np.any(values < -top)
+            else "max"
+            if np.any(values > top)
+            else "neither"
+        )
+
+        # Use an odd number of bins so zero has a neutral central color.
+        bins = max(3, self.ncolors | 1)
+        cmap = cmap_discretize(self.cmap, bins)
+        norm = BoundaryNorm(np.linspace(-top, top, bins + 1), cmap.N)
 
         # Create colorbar with units label
         mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
         _units = getattr(self.data, "attrs", {}).get("units", "")
-        _cbar_label = f"Bias ({_units})" if _units else "Bias"
-        cbar = self.add_colorbar(mappable, label=_cbar_label)
+        if isinstance(self.data, xr.Dataset):
+            _units = self.data[self.col2].attrs.get("units", _units)
+        label = f"Bias ({self.col2} − {self.col1})"
+        if _units:
+            label += f" [{_units}]"
+        cbar = self.add_colorbar(
+            mappable, label=label, extend=overflow, ticks=np.linspace(-top, top, 7)
+        )
         cbar.ax.tick_params(labelsize=9)
 
         with np.errstate(divide="ignore", invalid="ignore"):
-            ss = np.abs(diff_vals) / top * 100.0 * self.fact
-            ss[np.isnan(ss)] = 0.0
-            ss[ss > 300] = 300.0
+            ss = np.clip(np.abs(values) / top * 100.0 * self.fact, 12.0, 300.0)
 
         # Prepare scatter kwargs
         final_scatter_kwargs = get_plot_kwargs(
             cmap=cmap,
             norm=norm,
             s=ss,
-            c=diff_vals,
+            c=values,
             transform=ccrs.PlateCarree(),
             edgecolors="k",
-            linewidths=0.25,
+            linewidths=0.55,
             alpha=0.7,
             **scatter_kwargs,
         )
 
-        self.ax.scatter(
-            lon_vals,
-            lat_vals,
+        scatter = self.ax.scatter(
+            lon_vals[valid],
+            lat_vals[valid],
             **final_scatter_kwargs,
         )
+        if "marker" not in scatter_kwargs:
+            markers = ("v", "o", "^")
+            shapes = [MarkerStyle(marker) for marker in markers]
+            paths = [
+                shape.get_path().transformed(shape.get_transform()) for shape in shapes
+            ]
+            scatter.set_paths(
+                [paths[index] for index in (np.sign(values) + 1).astype(int)]
+            )
+            self.ax.legend(
+                handles=[
+                    Line2D(
+                        [], [], marker=marker, color="0.25", linestyle="", label=name
+                    )
+                    for marker, name in zip(
+                        markers, ("Negative", "Zero", "Positive"), strict=True
+                    )
+                ]
+                + (
+                    [
+                        Line2D(
+                            [],
+                            [],
+                            marker="x",
+                            color="0.35",
+                            linestyle="",
+                            label="Missing",
+                        )
+                    ]
+                    if np.any(~valid)
+                    else []
+                ),
+                loc="upper left",
+            )
+        if np.any(~valid):
+            self.ax.scatter(
+                lon_vals[~valid],
+                lat_vals[~valid],
+                marker="x",
+                color="0.35",
+                transform=ccrs.PlateCarree(),
+                label="Missing bias",
+            )
         return self.ax
 
     def hvplot(self, **kwargs: Any) -> Any:

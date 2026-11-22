@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from calendar import day_abbr, month_abbr
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -11,7 +12,7 @@ import seaborn as sns
 import xarray as xr
 
 from ..plot_utils import _update_history, compute, is_lazy, normalize_data
-from .base import BasePlot
+from .base import BasePlot, figure_style
 
 if TYPE_CHECKING:
     import holoviews as hv
@@ -222,7 +223,7 @@ class DiurnalErrorPlot(BasePlot):
                 df["second_val"] = df[self.time_col].dt.month
                 self.second_label = "Month"
             elif self.second_dim == "dayofweek":
-                df["second_val"] = df[self.time_col].dt.dayofweek
+                df["second_val"] = df[self.time_col].dt.day_of_week
                 self.second_label = "Day of Week"
             elif self.second_dim == "date":
                 df["second_val"] = df[self.time_col].dt.date
@@ -258,7 +259,10 @@ class DiurnalErrorPlot(BasePlot):
             )
             self.aggregated = _update_history(self.aggregated, msg)
 
-    def plot(self, cmap: str = "RdBu_r", **kwargs: Any) -> matplotlib.axes.Axes:
+    @figure_style
+    def plot(
+        self, cmap: str = "RdBu_r", *, reference_label: str | None = None, **kwargs: Any
+    ) -> matplotlib.axes.Axes:
         """
         Generate the diurnal error heatmap (Track A: Static).
 
@@ -266,6 +270,8 @@ class DiurnalErrorPlot(BasePlot):
         ----------
         cmap : str, optional
             Colormap to use, by default "RdBu_r".
+        reference_label : str, optional
+            Display name for the observed reference in the color scale.
         **kwargs : Any
             Additional arguments passed to sns.heatmap.
 
@@ -290,14 +296,48 @@ class DiurnalErrorPlot(BasePlot):
         # Convert to DataFrame for Seaborn
         plot_df = data_to_plot.to_pandas()
 
+        is_bias = self.metric == "bias"
+        if is_bias and not any(
+            key in kwargs for key in ("vmin", "vmax", "norm", "robust")
+        ):
+            values = plot_df.to_numpy()
+            finite = values[np.isfinite(values)]
+            span = float(np.max(np.abs(finite))) if finite.size else 0
+            kwargs.update(vmin=-(span or 1), vmax=span or 1)
+        ref = reference_label or self.var1
+        label = (
+            f"Bias (model − {ref})"
+            if is_bias
+            else f"{self.metric.capitalize()} vs {ref}"
+        )
+        options = {"label": label, **kwargs.pop("cbar_kws", {})}
+        annotate_hours = "xticklabels" not in kwargs
+        annotate_periods = "yticklabels" not in kwargs
         sns.heatmap(
             plot_df,
             ax=self.ax,
             cmap=cmap,
-            center=0 if self.metric == "bias" else None,
+            center=0 if is_bias else None,
+            cbar_kws=options,
             **kwargs,
         )
 
+        if annotate_hours:
+            positions = np.flatnonzero(np.asarray(plot_df.columns) % 4 == 0)
+            if not positions.size:
+                positions = np.arange(len(plot_df.columns))
+            self.ax.set_xticks(
+                positions + 0.5,
+                [f"{hour:02d}:00" for hour in plot_df.columns[positions]],
+                rotation=0,
+            )
+        if annotate_periods and self.second_dim in ("month", "dayofweek"):
+            names = month_abbr if self.second_dim == "month" else day_abbr
+            self.ax.set_yticks(
+                np.arange(len(plot_df.index)) + 0.5,
+                [names[int(value)] for value in plot_df.index],
+                rotation=0,
+            )
         self.ax.set_xlabel("Hour of Day")
         self.ax.set_ylabel(self.second_label)
         self.ax.set_title(f"Diurnal {self.metric.capitalize()}")

@@ -6,6 +6,7 @@ import cartopy.crs as ccrs
 import numpy as np
 
 from .. import tools
+from .base import figure_style
 from .spatial import SpatialPlot
 
 
@@ -30,21 +31,22 @@ class WindBarbsPlot(SpatialPlot):
         self.wdir = np.asarray(wdir)
         self.gridobj = gridobj
 
-    def plot(self, **kwargs):
-        """Generate the wind barbs plot."""
+    @figure_style
+    def plot(self, *, skip=None, **kwargs):
+        """Generate the wind barbs plot. Set skip to override automatic grid thinning."""
         barb_kwargs = self.add_features(**kwargs)
         barb_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
-        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+        lat = self.gridobj.variables["LAT"][0, 0, :, :]
+        lon = self.gridobj.variables["LON"][0, 0, :, :]
         u, v = tools.wsdir2uv(self.ws, self.wdir)
-        # Subsample the data for clarity
-        skip = barb_kwargs.pop("skip", 15)
+        selection = tools.wind_grid_slice(u.shape, skip)
+        barb_kwargs.setdefault("length", 5)
         self.ax.barbs(
-            lon[::skip, ::skip],
-            lat[::skip, ::skip],
-            u[::skip, ::skip],
-            v[::skip, ::skip],
+            lon[selection],
+            lat[selection],
+            u[selection],
+            v[selection],
             **barb_kwargs,
         )
         return self.ax

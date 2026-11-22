@@ -6,6 +6,7 @@ import cartopy.crs as ccrs
 import numpy as np
 
 from .. import tools
+from .base import figure_style
 from .spatial import SpatialPlot
 
 
@@ -30,20 +31,23 @@ class WindQuiverPlot(SpatialPlot):
         self.wdir = np.asarray(wdir)
         self.gridobj = gridobj
 
-    def plot(self, **kwargs):
-        """Generate the wind quiver plot."""
+    @figure_style
+    def plot(self, *, skip=None, **kwargs):
+        """Generate the wind quiver plot. Set skip to override automatic grid thinning."""
         quiver_kwargs = self.add_features(**kwargs)
         quiver_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        lat = self.gridobj.variables["LAT"][0, 0, :, :].squeeze()
-        lon = self.gridobj.variables["LON"][0, 0, :, :].squeeze()
+        lat = self.gridobj.variables["LAT"][0, 0, :, :]
+        lon = self.gridobj.variables["LON"][0, 0, :, :]
         u, v = tools.wsdir2uv(self.ws, self.wdir)
-        # Subsample the data for clarity
+        selection = tools.wind_grid_slice(u.shape, skip)
+        quiver_kwargs.setdefault("pivot", "middle")
+        quiver_kwargs.setdefault("width", 0.004)
         quiv = self.ax.quiver(
-            lon[::15, ::15],
-            lat[::15, ::15],
-            u[::15, ::15],
-            v[::15, ::15],
+            lon[selection],
+            lat[selection],
+            u[selection],
+            v[selection],
             **quiver_kwargs,
         )
         return quiv

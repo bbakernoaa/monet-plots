@@ -18,11 +18,13 @@ plugins:
   - gallery:
       examples_dirs: examples
       gallery_dirs: docs/gallery
+      ignore_pattern: '(__init__|plot_(scientific_quality|verification_presets|grouped_scorecard|temporal_scorecard))\.py$'
 edit_uri: edit/develop/docs/
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Examples Gallery: gallery/index.md
+  - Scientific Figure Examples: examples/scientific-plot-quality.md
   - API Reference:
       - API Home: api/index.md
       - Base Plot: api/base.md

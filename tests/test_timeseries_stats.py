@@ -88,3 +88,24 @@ def test_timeseries_stats_invalid_stat(sample_ts_data):
     with pytest.raises(ValueError, match="is not supported"):
         plot.plot(stat="nonexistent_stat")
     plt.close(plot.fig)
+
+
+def test_timeseries_labels_spread_and_time_basis():
+    import pandas as pd
+
+    from monet_plots.plots.timeseries import TimeSeriesPlot
+
+    frame = pd.DataFrame(
+        {
+            "time": pd.to_datetime(["2020-01-01", "2020-01-01"], utc=True),
+            "obs": [1.0, 3.0],
+        }
+    )
+    plot = TimeSeriesPlot(frame)
+    try:
+        ax = plot.plot()
+        assert ax.get_ylabel() == "obs"
+        assert "UTC" in ax.get_xlabel()
+        assert "standard deviation" in ax.collections[-1].get_label()
+    finally:
+        plot.close()

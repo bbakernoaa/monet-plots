@@ -28,3 +28,15 @@ def test_meteogram_plot_creates_plot(clear_figures, sample_data):
     plot = Meteogram(df=sample_data, variables=["temp", "pressure"])
     plot.plot()
     assert plot.ax is not None
+
+
+def test_meteogram_uses_shared_concise_time_axis(clear_figures, sample_data):
+    from matplotlib.dates import ConciseDateFormatter
+
+    sample_data.index = sample_data.index.tz_localize("UTC")
+    plot = Meteogram(df=sample_data, variables=["temp", "pressure"], style="journal")
+    plot.plot()
+    first, last = plot.ax
+    assert first.get_shared_x_axes().joined(first, last)
+    assert isinstance(last.xaxis.get_major_formatter(), ConciseDateFormatter)
+    assert "UTC" in last.get_xlabel()

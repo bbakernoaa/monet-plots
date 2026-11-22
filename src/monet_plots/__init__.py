@@ -13,6 +13,7 @@ from .plots.rev import RelativeEconomicValuePlot
 from .plots.roc_curve import ROCCurvePlot
 from .plots.scatter import ScatterPlot
 from .plots.scorecard import ScorecardPlot
+from .plots.temporal_scorecard import TemporalScorecardPlot
 from .plots.spatial import SpatialPlot
 from .plots.spatial_bias_scatter import SpatialBiasScatterPlot
 from .plots.spatial_contour import SpatialContourPlot
@@ -41,6 +42,7 @@ __all__ = [
     "RankHistogramPlot",
     "BrierScoreDecompositionPlot",
     "ScorecardPlot",
+    "TemporalScorecardPlot",
     "RelativeEconomicValuePlot",
     "ConditionalBiasPlot",
     "SpreadSkillPlot",
