@@ -74,8 +74,10 @@ MONET's facet mapping, title, and legend methods. Code that called methods
 specific to Seaborn's grid can use the Matplotlib axes directly. KDE and
 categorical styling options are passed to the corresponding Matplotlib artists.
 For categorical plots, use a Matplotlib colormap or explicit colors for
-`palette`. The legacy categorical options `facet_kws`, `hue_norm`, and
-`log_scale` are unavailable. Use the returned axes to adjust scales and layout.
+`palette`. Categorical plots accept `facet_kws` for subplot layout and axes
+settings, `hue_norm` for numeric hue mapping, and `log_scale` for logarithmic
+axes. When the measurement axis is logarithmic, estimates and violin densities
+are computed in log space from positive samples.
 
 ```python
 # Check required dependencies

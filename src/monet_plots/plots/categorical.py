@@ -1,13 +1,14 @@
 """Categorical plots drawn with Matplotlib."""
 
 from colorsys import hls_to_rgb, rgb_to_hls
+from functools import partial
 from itertools import product
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from matplotlib.colors import to_rgba
+from matplotlib.colors import Colormap, LinearSegmentedColormap, Normalize, to_rgba
 from matplotlib.patches import Patch
 from scipy.stats import gaussian_kde
 
@@ -118,7 +119,17 @@ def _weighted_mean(values, weights):
     )
 
 
-def _colors(levels, palette, color):
+def _colors(levels, palette, color, hue_norm=None):
+    if hue_norm is not None and levels:
+        values = np.asarray(levels, dtype=float)
+        norm = hue_norm if isinstance(hue_norm, Normalize) else Normalize(*hue_norm)
+        if isinstance(palette, dict):
+            return [palette[level] for level in levels]
+        if palette is None or isinstance(palette, (str, Colormap)):
+            cmap = plt.get_cmap("viridis" if palette is None else palette)
+        else:
+            cmap = LinearSegmentedColormap.from_list("categorical_hue", palette)
+        return cmap(norm(values))
     if isinstance(palette, dict):
         return [palette[level] for level in levels]
     if isinstance(palette, str):
@@ -136,7 +147,7 @@ def _colors(levels, palette, color):
     return [palette[i % len(palette)] for i in range(len(levels))]
 
 
-def _draw_bars(ax, groups, horizontal, options):
+def _draw_bars(ax, groups, horizontal, options, inverse_value, inverse_category):
     estimator = options.pop("estimator", np.mean)
     if isinstance(estimator, str):
         estimator = getattr(np, estimator)
@@ -165,7 +176,19 @@ def _draw_bars(ax, groups, horizontal, options):
                 continue
         else:
             center = estimator(values)
-        draw_bar(position, center, width, color=color, **options)
+        if inverse_category is np.asarray:
+            draw_bar(position, inverse_value(center), width, color=color, **options)
+        else:
+            lower, upper = inverse_category(
+                [position - width / 2, position + width / 2]
+            )
+            draw_bar(
+                lower,
+                inverse_value(center),
+                upper - lower,
+                color=color,
+                **{"align": "edge", **options},
+            )
         limits = _interval(
             values, center, estimator, errorbar, n_boot, seed, weights, units
         )
@@ -187,10 +210,11 @@ def _draw_bars(ax, groups, horizontal, options):
                 ],
                 [limits[0], limits[0], np.nan, *limits, np.nan, limits[1], limits[1]],
             ]
+        coordinates = [inverse_category(coordinates[0]), inverse_value(coordinates[1])]
         ax.plot(*(coordinates[::-1] if horizontal else coordinates), **error_options)
 
 
-def _draw_violins(ax, groups, horizontal, options):
+def _draw_violins(ax, groups, horizontal, options, inverse_value, inverse_category):
     points = options.pop("gridsize", 100)
     bandwidth = options.pop("bw_method", options.pop("bw", "scott"))
     bw_adjust = options.pop("bw_adjust", 1)
@@ -228,7 +252,9 @@ def _draw_violins(ax, groups, horizontal, options):
     draw = ax.fill_between if horizontal else ax.fill_betweenx
 
     def line(category, value, **kwargs):
-        coords = (value, category) if horizontal else (category, value)
+        coords = (inverse_category(category), inverse_value(value))
+        if horizontal:
+            coords = coords[::-1]
         ax.plot(*coords, **kwargs)
 
     for position, width, color, values, group, key, support, density in stats:
@@ -254,9 +280,9 @@ def _draw_violins(ax, groups, horizontal, options):
             )
             position = center
         draw(
-            support,
-            lower,
-            upper,
+            inverse_value(support),
+            inverse_category(lower),
+            inverse_category(upper),
             facecolor=color if fill else "none",
             edgecolor=edgecolor if fill else color,
             **options,
@@ -301,6 +327,9 @@ def categorical_plot(
     xlabel=None,
     ylabel=None,
     sharey=True,
+    facet_kws=None,
+    hue_norm=None,
+    log_scale=None,
     **kwargs,
 ):
     """Draw categorical bars or violins with Matplotlib.
@@ -311,6 +340,12 @@ def categorical_plot(
     hue_order, row_order, and col_order. Bars show means and 95% bootstrap
     confidence intervals by default. Supply weights for a weighted mean or
     units for a clustered bootstrap. Violins use a Gaussian kernel density.
+
+    Use hue_norm=(vmin, vmax) or a Matplotlib Normalize to map numeric hues
+    to a colormap. log_scale accepts a boolean, a base, or an (x, y) pair.
+    Statistics on the measurement axis are computed in log space when that
+    axis is logarithmic. facet_kws controls shared axes, limits, subplot and
+    GridSpec options, despining, margin titles, and legend placement.
 
     Returns the Matplotlib figure and NumPy array of axes.
     """
@@ -358,6 +393,39 @@ def categorical_plot(
             category_positions = np.asarray(category_levels, dtype=float)
         else:
             native = False
+    log_x, log_y = (
+        log_scale if isinstance(log_scale, (tuple, list)) else (log_scale, log_scale)
+    )
+    category_base, value_base = (log_y, log_x) if horizontal else (log_x, log_y)
+    numeric_category = native and pd.api.types.is_numeric_dtype(
+        np.asarray(category_levels)
+    )
+    if not isinstance(log_scale, (tuple, list)) and not numeric_category:
+        category_base = None
+    if any(
+        base and base is not True and base <= 1 for base in (category_base, value_base)
+    ):
+        raise ValueError("Logarithm bases must be greater than one")
+    category_base = 10 if category_base is True else category_base
+    value_base = 10 if value_base is True else value_base
+    inverse_category = np.asarray
+    inverse_value = np.asarray
+    if category_base:
+        if not numeric_category:
+            raise ValueError(
+                "A logarithmic category axis requires native numeric positions"
+            )
+        positive = category_positions > 0
+        category_levels = [
+            level for level, keep in zip(category_levels, positive) if keep
+        ]
+        category_positions = np.log(category_positions[positive]) / np.log(
+            category_base
+        )
+        inverse_category = partial(np.power, category_base)
+    if value_base:
+        inverse_value = partial(np.power, value_base)
+
     hue_levels, row_levels, col_levels = [
         _levels(columns[key], kwargs.pop(f"{role}_order", None))
         if key is not None
@@ -395,6 +463,11 @@ def categorical_plot(
     weights = as_float(columns[weights_key]) if weights_key is not None else None
     units = columns[units_key] if units_key is not None else None
     finite = np.isfinite(values)
+    if value_base:
+        finite &= values > 0
+        logged = np.full(values.shape, np.nan)
+        np.log(values, out=logged, where=finite)
+        values = logged / np.log(value_base)
     if weights is not None:
         finite &= np.isfinite(weights)
         if np.any(weights[finite] < 0):
@@ -409,8 +482,22 @@ def categorical_plot(
     )
     draw = _draw_bars if kind == "bar" else _draw_violins
 
+    facet_options = dict(facet_kws or {})
+    xlim, ylim = (facet_options.pop(key, None) for key in ("xlim", "ylim"))
+    despine = facet_options.pop("despine", False)
+    margin_titles = facet_options.pop("margin_titles", False)
+    legend_out = facet_options.pop("legend_out", True)
+    facet_options.pop("dropna", None)  # Missing plotted values are already omitted.
+    subplot_options = {
+        "sharex": kwargs.pop("sharex", False),
+        "sharey": sharey,
+        **facet_options,
+    }
+    if hue is None and hue_norm is not None:
+        raise ValueError("hue_norm requires a numeric hue variable")
+
     with plt.style.context(style.wiley_style):
-        colors = _colors(hue_levels, palette, color)
+        colors = _colors(hue_levels, palette, color, hue_norm)
         if saturation != 1:
             shades = []
             for shade in colors:
@@ -422,11 +509,18 @@ def categorical_plot(
             nrows,
             ncols,
             figsize=figsize,
-            sharey=sharey,
             squeeze=False,
-            sharex=kwargs.pop("sharex", False),
+            **subplot_options,
         )
-        for ax, (rlevel, clevel) in zip(axes.flat, facets):
+        for panel, (ax, (rlevel, clevel)) in enumerate(zip(axes.flat, facets)):
+            if category_base:
+                (ax.set_yscale if horizontal else ax.set_xscale)(
+                    "log", base=category_base
+                )
+            if value_base:
+                (ax.set_xscale if horizontal else ax.set_yscale)("log", base=value_base)
+            if despine:
+                ax.spines[["top", "right"]].set_visible(False)
             selected = finite.copy()
             for key, level in ((row, rlevel), (col, clevel)):
                 if key is not None:
@@ -449,7 +543,7 @@ def categorical_plot(
                                 None if units is None else units[mask],
                             )
                         )
-            draw(ax, groups, horizontal, kwargs.copy())
+            draw(ax, groups, horizontal, kwargs.copy(), inverse_value, inverse_category)
             tick_labels = [str(level) for level in category_levels]
             if native and pd.api.types.is_datetime64_any_dtype(
                 np.asarray(category_levels)
@@ -463,7 +557,23 @@ def categorical_plot(
                 ax.set_xlim(-0.5, len(tick_labels) - 0.5)
             ax.set_xlabel(x if xlabel is None else xlabel)
             ax.set_ylabel(y if ylabel is None else ylabel)
-            if row is not None or col is not None:
+            if xlim is not None:
+                ax.set_xlim(xlim)
+            if ylim is not None:
+                ax.set_ylim(ylim)
+            if margin_titles and row is not None:
+                if col is not None and panel < ncols:
+                    ax.set_title(f"{col} = {clevel}", wrap=True)
+                if panel % ncols == ncols - 1:
+                    ax.text(
+                        1.02,
+                        0.5,
+                        f"{row} = {rlevel}",
+                        transform=ax.transAxes,
+                        rotation=-90,
+                        va="center",
+                    )
+            elif row is not None or col is not None:
                 ax.set_title(
                     " | ".join(
                         f"{key} = {level}"
@@ -484,7 +594,10 @@ def categorical_plot(
             )
             if len(labels) != len(hue_levels):
                 raise ValueError("legend_labels must match the number of hue levels")
-            fig.legend([Patch(facecolor=shade) for shade in colors], labels, title=hue)
+            legend_owner = fig if legend_out else axes.flat[0]
+            legend_owner.legend(
+                [Patch(facecolor=shade) for shade in colors], labels, title=hue
+            )
     if wrap:
         axes = axes.ravel()[: len(facets)]
     return fig, axes
