@@ -85,3 +85,44 @@ def test_bias_scale_respects_shared_limits_and_shows_zero():
         assert marker.get_sizes()[1] > 0
     finally:
         plot.close()
+
+
+def test_bias_scatter_preserves_nullable_numbers_and_missing_values():
+    data = pd.DataFrame(
+        {
+            "latitude": [30, 31, 32],
+            "longitude": [-99, -98, -97],
+            "obs": pd.Series([2.0, 2.0, 3.0], dtype="Float64"),
+            "model": pd.Series([3.0, pd.NA, 1.0], dtype="Float64"),
+        }
+    )
+    plot = SpatialBiasScatterPlot(data, "obs", "model", coastlines=False)
+    try:
+        ax = plot.plot()
+        np.testing.assert_allclose(ax.collections[0].get_array(), [1.0, -2.0])
+        np.testing.assert_allclose(ax.collections[1].get_offsets(), [[-98, 31]])
+    finally:
+        plot.close()
+
+
+def test_bias_scatter_aligns_rectilinear_grid_to_data_dimension_order():
+    import xarray as xr
+
+    values = np.arange(6).reshape(3, 2)
+    data = xr.Dataset(
+        {
+            "obs": (("lon", "lat"), np.zeros_like(values)),
+            "model": (("lon", "lat"), values),
+        },
+        coords={"lat": [30, 40], "lon": [-110, -100, -90]},
+    )
+    plot = SpatialBiasScatterPlot(data, "obs", "model", coastlines=False)
+    try:
+        ax = plot.plot()
+        np.testing.assert_allclose(ax.collections[0].get_array(), values.ravel())
+        np.testing.assert_allclose(
+            ax.collections[0].get_offsets(),
+            [[lon, lat] for lon in data.lon.values for lat in data.lat.values],
+        )
+    finally:
+        plot.close()

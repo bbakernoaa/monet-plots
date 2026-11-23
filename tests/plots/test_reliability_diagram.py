@@ -50,3 +50,30 @@ def test_empty_bins_are_gaps_with_correct_skill_boundary():
         np.testing.assert_allclose(boundary.get_ydata(), [0.2, 0.7])
     finally:
         plot.close()
+
+
+def test_raw_grouped_reliability_bins_each_model_independently():
+    data = pd.DataFrame(
+        {
+            "model": ["A", "A", "B", "B", "B"],
+            "probability": [0.1, 0.1, 0.1, 0.9, np.nan],
+            "event": [0, 0, 1, 1, 0],
+        }
+    )
+    plot = ReliabilityDiagramPlot()
+    try:
+        plot.plot(
+            data,
+            forecasts_col="probability",
+            observations_col="event",
+            label_col="model",
+            n_bins=2,
+            show_hist=True,
+        )
+        lines = {line.get_label(): line for line in plot.ax.lines}
+        np.testing.assert_allclose(lines["A"].get_ydata(), [0, np.nan])
+        np.testing.assert_allclose(lines["B"].get_ydata(), [1, 1])
+        np.testing.assert_allclose(lines["Climatology"].get_ydata(), [0.5, 0.5])
+        assert sorted(bar.get_height() for bar in plot.fig.axes[-1].patches) == [1, 3]
+    finally:
+        plot.close()

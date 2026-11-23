@@ -41,3 +41,11 @@ def test_journal_rank_facets_share_scale_and_show_sample_count(tmp_path, clear_f
     )
     plot.save(tmp_path / "rank.pdf")
     assert (tmp_path / "rank.pdf").exists()
+
+
+def test_rank_facet_sample_count_matches_plotted_valid_ranks(clear_figures):
+    frame = pd.DataFrame({"rank": [0, 1, 2, None, 4], "scenario": ["A"] * 5})
+    plot = RankHistogramPlot(style="journal")
+    plot.plot(frame, n_members=2, facet_col="scenario", normalize=False)
+    assert plot.ax.get_title(loc="left") == "A · n=3"
+    np.testing.assert_allclose(plot.ax.lines[-1].get_ydata(), [1, 1])

@@ -53,3 +53,23 @@ def test_samples_expand_rendered_domain(tmp_path):
             fig.savefig(tmp_path / f"taylor.{suffix}")
     finally:
         plt.close(fig)
+
+
+def test_sample_accepts_correlation_roundoff_at_boundary():
+    import numpy as np
+
+    dia = TaylorDiagram(1.0)
+    point = dia.add_sample(2.0, np.nextafter(-1.0, -2.0))
+    np.testing.assert_allclose(point.get_xdata(), [np.pi])
+
+
+def test_contour_labels_survive_domain_expansion():
+    dia = TaylorDiagram(1.0)
+    contours = dia.add_contours([0.5, 1.0])
+    dia.ax.clabel(contours, [0.5], fmt="RMS %.1f", fontsize=7)
+    dia.add_sample(2.0, -1)
+
+    labels = dia.ax.texts
+    assert labels
+    assert all(text.get_text() == "RMS 0.5" for text in labels)
+    assert all(text.get_fontsize() == 7 for text in labels)

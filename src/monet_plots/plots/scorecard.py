@@ -79,6 +79,7 @@ class ScorecardPlot(BasePlot):
         """
         df = to_dataframe(data).copy()
         validate_dataframe(df, required_columns=[x_col, y_col, val_col])
+        df[val_col] = df[val_col].to_numpy(dtype=float, na_value=np.nan)
 
         # Extract title before passing kwargs to heatmap
         title = kwargs.pop("title", "Performance Scorecard")
@@ -91,7 +92,7 @@ class ScorecardPlot(BasePlot):
                 for value in (row_group, col_group, baseline, units, lower_is_better)
             )
         )
-        if grouped_layout and not (cbar_labels or key_text):
+        if grouped_layout:
             self._plot_grouped(
                 df,
                 x_col,
@@ -107,6 +108,8 @@ class ScorecardPlot(BasePlot):
                 title,
                 cmap,
                 center,
+                cbar_labels,
+                key_text,
                 kwargs,
             )
             return
@@ -209,6 +212,8 @@ class ScorecardPlot(BasePlot):
         title,
         cmap,
         center,
+        cbar_labels,
+        key_text,
         options,
     ):
         row_keys = [row_group, y_col] if row_group else [y_col]
@@ -254,15 +259,31 @@ class ScorecardPlot(BasePlot):
             )
             or 1.0
         )
-        low = center - span if low is None else low
-        high = center + span if high is None else high
         norm = options.pop("norm", None)
         if norm is None:
-            norm = mpl.colors.TwoSlopeNorm(vmin=low, vcenter=center, vmax=high)
+            norm = mpl.colors.TwoSlopeNorm(
+                vmin=center - span if low is None else low,
+                vcenter=center,
+                vmax=center + span if high is None else high,
+            )
+        else:
+            if norm.vmin is None and low is not None:
+                norm.vmin = low
+            if norm.vmax is None and high is not None:
+                norm.vmax = high
+            norm.autoscale_None(
+                finite if finite.size else [center - span, center + span]
+            )
 
         cell_format = options.pop("fmt", "+.1f")
         annotations = options.pop("annot", True)
-        if annotations is True:
+        generated_annotations = annotations is True
+        flags = (
+            grid(sig_col).eq(True).fillna(False).to_numpy(dtype=bool) & np.isfinite(raw)
+            if sig_col
+            else None
+        )
+        if generated_annotations:
             if annot_cols:
                 columns_to_show = [grid(column).to_numpy() for column in annot_cols]
                 annotations = np.array(
@@ -283,8 +304,7 @@ class ScorecardPlot(BasePlot):
                     ],
                     dtype=object,
                 ).reshape(raw.shape)
-            if sig_col:
-                flags = grid(sig_col).eq(True).fillna(False).to_numpy(dtype=bool)
+            if flags is not None:
                 annotations[flags] = [text + "*" for text in annotations[flags]]
             cell_format = ""
 
@@ -316,6 +336,7 @@ class ScorecardPlot(BasePlot):
         options.setdefault("linewidths", 0.7)
         options.setdefault("linecolor", "white")
         palette = mpl.colormaps.get_cmap(cmap).with_extremes(bad="#e6e9ee")
+        collection_index = len(self.ax.collections)
         sns.heatmap(
             values,
             ax=self.ax,
@@ -326,6 +347,47 @@ class ScorecardPlot(BasePlot):
             cbar_kws=cbar,
             **options,
         )
+
+        colorbar = self.ax.collections[collection_index].colorbar
+        if cbar_labels and colorbar is not None:
+            colorbar_ax = colorbar.ax
+            if colorbar.orientation == "horizontal":
+                for x, label, align in zip(
+                    (0, 1), cbar_labels, ("left", "right"), strict=True
+                ):
+                    colorbar_ax.text(
+                        x,
+                        1.1,
+                        label,
+                        ha=align,
+                        va="bottom",
+                        transform=colorbar_ax.transAxes,
+                    )
+            else:
+                for y, label in zip((0, 1), cbar_labels, strict=True):
+                    colorbar_ax.text(
+                        1.1,
+                        y,
+                        label,
+                        ha="left",
+                        va="center",
+                        transform=colorbar_ax.transAxes,
+                    )
+        if flags is not None and not generated_annotations:
+            for i, j in zip(*np.where(flags), strict=True):
+                lightness = np.dot(
+                    palette(norm(raw[i, j]))[:3], [0.2126, 0.7152, 0.0722]
+                )
+                corner = annotations is not False
+                self.ax.text(
+                    j + (0.85 if corner else 0.5),
+                    i + (0.2 if corner else 0.5),
+                    "*",
+                    ha="center",
+                    va="center",
+                    fontweight="bold",
+                    color="black" if lightness > 0.5 else "white",
+                )
 
         if annotations is not False:
             for i, j in zip(*np.where(~np.isfinite(raw)), strict=True):
@@ -365,9 +427,21 @@ class ScorecardPlot(BasePlot):
         heading = f"{title}\nRelative to {baseline}" if baseline else title
         if sig_col:
             heading += "  ·  * Significant"
-        self.ax.set_title(
-            heading, loc="left", pad=39 if col_group else 24, fontweight="bold"
-        )
+        title_pad = 39 if col_group else 24
+        if key_text:
+            self.ax.annotate(
+                key_text,
+                xy=(1, 1),
+                xycoords="axes fraction",
+                xytext=(0, title_pad),
+                textcoords="offset points",
+                ha="right",
+                va="bottom",
+                annotation_clip=False,
+                bbox={"facecolor": "white", "edgecolor": "#455467"},
+            )
+            title_pad += 16
+        self.ax.set_title(heading, loc="left", pad=title_pad, fontweight="bold")
 
     def _overlay_significance(self, data_grid, sig_grid):
         """

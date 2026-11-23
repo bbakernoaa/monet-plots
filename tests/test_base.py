@@ -84,3 +84,26 @@ def test_save_wraps_each_axes_title_to_its_own_width(tmp_path, monkeypatch):
         assert (tmp_path / "wrapped.pdf").stat().st_size
     finally:
         plot.close()
+
+
+def test_save_reserves_vertical_space_for_wrapped_title(tmp_path, monkeypatch):
+    plot = BasePlot(style="journal", figsize=(2.2, 1.5))
+    text = "Comparing observed and forecast temperatures over the verification period"
+    title = plot.ax.set_title(text)
+    position = plot.ax.get_position(original=True).bounds
+    savefig = plot.fig.savefig
+
+    def check_bounds(*args, **kwargs):
+        plot.fig.canvas.draw()
+        bounds = title.get_window_extent(plot.fig.canvas.get_renderer())
+        assert bounds.y1 <= plot.fig.bbox.y1
+        return savefig(*args, **kwargs)
+
+    monkeypatch.setattr(plot.fig, "savefig", check_bounds)
+    try:
+        plot.save(tmp_path / "narrow.png")
+        plot.save(tmp_path / "narrow.pdf")
+        assert title.get_text() == text
+        assert plot.ax.get_position(original=True).bounds == position
+    finally:
+        plot.close()

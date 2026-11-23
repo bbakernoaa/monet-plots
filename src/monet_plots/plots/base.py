@@ -116,19 +116,68 @@ class BasePlot:
         if not titles:
             self.fig.savefig(filename, **kwargs)
             return
-        # Resolve constrained layouts and fixed-aspect axes before measuring.
+        # Resolve current layout and fixed-aspect axes before measuring.
         self.fig.draw_without_rendering()
         renderer = RendererAgg(1, 1, self.fig.dpi)
+        original_sizes = [title.get_fontsize() for _, title, _ in titles]
+        original_top = self.fig.subplotpars.top
+        positions = None
         try:
             for ax, title, original in titles:
                 wrapped = _wrap_title(title, ax.bbox.width * 0.98, renderer)
                 if wrapped != original:
                     title.set_text(wrapped)
+            bounded_export = (
+                kwargs.get("bbox_inches", plt.rcParams["savefig.bbox"]) is None
+            )
+            if bounded_export and self.fig.get_layout_engine() is None:
+                height = self.fig.bbox.height
+                padding = renderer.points_to_pixels(2)
+                top_limit = self.fig.bbox.y1 - padding
+                excess = max(
+                    title.get_window_extent(renderer).y1 - top_limit
+                    for _, title, _ in titles
+                )
+                if excess > 0:
+                    positions = [
+                        (
+                            ax,
+                            ax.get_position(original=True).frozen(),
+                            ax.get_in_layout(),
+                        )
+                        for ax in self.fig.axes
+                    ]
+                    min_top = self.fig.subplotpars.bottom + 0.12
+                    self.fig.subplots_adjust(
+                        top=max(min_top, original_top - excess / height)
+                    )
+                    self.fig.draw_without_rendering()
+                    for ax, title, original in titles:
+                        title.set_text(original)
+                        title.set_text(
+                            _wrap_title(title, ax.bbox.width * 0.98, renderer)
+                        )
+                        while (
+                            title.get_window_extent(renderer).y1 > top_limit
+                            and title.get_fontsize() > 1
+                        ):
+                            title.set_fontsize(title.get_fontsize() * 0.85)
+                            title.set_text(original)
+                            title.set_text(
+                                _wrap_title(title, ax.bbox.width * 0.98, renderer)
+                            )
             self.fig.savefig(filename, **kwargs)
         finally:
-            for _, title, original in titles:
+            if positions is not None:
+                self.fig.subplots_adjust(top=original_top)
+                for ax, position, in_layout in positions:
+                    ax.set_position(position)
+                    ax.set_in_layout(in_layout)
+            for (_, title, original), size in zip(titles, original_sizes, strict=True):
                 if title.get_text() != original:
                     title.set_text(original)
+                if title.get_fontsize() != size:
+                    title.set_fontsize(size)
 
     def close(self):
         """Closes the plot figure."""

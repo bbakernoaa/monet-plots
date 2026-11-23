@@ -158,25 +158,29 @@ class TaylorDiagram:
             if theta > self._theta_max:
                 self._theta_max = np.pi
             self._update_domain()
-            for index, (artist, levels, options, label_options) in enumerate(
+            for index, (artist, levels, options, label_calls) in enumerate(
                 self._contours
             ):
-                for label in list(artist.labelTexts):
-                    label.remove()
+                if any(
+                    args or kwargs.get("levels") is not None
+                    for args, kwargs in label_calls
+                ):
+                    levels = artist.levels
+                for label in artist.labelTexts:
+                    if label in self.ax.texts:
+                        label.remove()
                 artist.labelTexts.clear()
                 artist.remove()
-                artist = self._draw_contours(levels, options)
-                if label_options is not None:
-                    self.ax.clabel(artist, **label_options)
-                self._contours[index] = (artist, levels, options, label_options)
+                replacement = self._draw_contours(levels, options)
+                for label_args, label_kwargs in label_calls:
+                    replacement.clabel(*label_args, **label_kwargs)
+                self._contours[index] = (replacement, levels, options, label_calls)
 
         # A single-point line is invisible without a marker; provide sensible defaults.
         kwargs.setdefault("marker", "o")
         kwargs.setdefault("ls", "")
         kwargs.setdefault("clip_on", False)
-        (line,) = self.ax.plot(
-            np.arccos(corrcoef), stddev, *args, **kwargs
-        )  # (theta,radius)
+        (line,) = self.ax.plot(theta, stddev, *args, **kwargs)
         self.samplePoints.append(line)
 
         return line
@@ -210,9 +214,23 @@ class TaylorDiagram:
 
     def _add_managed_contours(self, levels, options, label_options=None):
         contours = self._draw_contours(levels, options)
+        label_calls = []
+        clabel = contours.clabel
+
+        @functools.wraps(clabel)
+        def remember_labels(*args, **kwargs):
+            count = len(contours.labelTexts)
+            labels = clabel(*args, **kwargs)
+            if kwargs.get("manual") is not None and kwargs["manual"] is not False:
+                kwargs["manual"] = [label.get_position() for label in labels[count:]]
+            label_calls.append((args, kwargs))
+            return labels
+
+        # Axes.clabel and pyplot.clabel both dispatch to the contour set's method.
+        contours.clabel = remember_labels
         if label_options is not None:
             self.ax.clabel(contours, **label_options)
-        self._contours.append((contours, levels, options, label_options))
+        self._contours.append((contours, levels, options, label_calls))
         return contours
 
     def _draw_contours(self, levels, options):

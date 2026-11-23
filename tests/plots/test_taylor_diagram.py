@@ -137,4 +137,36 @@ def test_raw_taylor_table_matches_plotted_pairs_and_centered_rms(clear_figures):
         radius * np.cos(angle) - plot.dia.refstd, radius * np.sin(angle)
     )
     assert row["paired_count"] == 3
+    assert row["available_count"] == 4
     assert row["centered_rms"] == pytest.approx(distance)
+
+
+def test_raw_taylor_table_reports_valid_pairs_when_common_geometry_is_unavailable(
+    clear_figures,
+):
+    frame = pd.DataFrame(
+        {"obs": [0, 2, 4], "first": [1, 3, np.nan], "second": [np.nan, 3, 5]}
+    )
+    plot = TaylorDiagramPlot(frame, var2=["first", "second"], show_error_table=True)
+    plot.plot()
+
+    assert plot.error_table["paired_count"].tolist() == [2, 2]
+    assert plot.error_table["centered_rms"].tolist() == [0, 0]
+    assert plot.error_table["status"].str.contains("common finite rows").all()
+
+
+def test_shared_taylor_table_refreshes_from_either_wrapper(clear_figures):
+    frame = pd.DataFrame({"obs": [0, 1, 2], "first": [0, 1, 2], "second": [2, 1, 0]})
+    first = TaylorDiagramPlot(
+        frame, var2="first", normalize=True, show_error_table=True
+    )
+    first.plot()
+    second = TaylorDiagramPlot(
+        frame, var2="second", dia=first.dia, normalize=True, show_error_table=True
+    )
+    second.plot()
+    first.plot()
+
+    assert sorted(first.error_table["model"]) == ["first", "second"]
+    assert len(first.fig.axes) == 2
+    assert len(first.dia.samples) == 3

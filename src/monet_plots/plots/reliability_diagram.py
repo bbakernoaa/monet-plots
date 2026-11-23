@@ -59,21 +59,47 @@ class ReliabilityDiagramPlot(BasePlot):
             **kwargs: Matplotlib kwargs.
         """
         df = to_dataframe(data)
-        # Compute if raw data provided
+        histogram_data = None
         if forecasts_col and observations_col:
+            required = [forecasts_col, observations_col] + (
+                [label_col] if label_col else []
+            )
+            validate_dataframe(df, required_columns=required)
             df = df.loc[
                 df[forecasts_col].between(0, 1) & df[observations_col].isin([0, 1])
             ]
+            if label_col:
+                df = df.dropna(subset=[label_col])
+            if df.empty:
+                raise ValueError(
+                    "No valid forecast probabilities and binary observations."
+                )
             if climatology is None:
                 climatology = float(df[observations_col].mean())
-            bin_centers, obs_freq, bin_counts = compute_reliability_curve(
-                np.asarray(df[forecasts_col]), np.asarray(df[observations_col]), n_bins
-            )
-            plot_data = pd.DataFrame(
-                {x_col: bin_centers, y_col: obs_freq, "count": bin_counts}
-            )
+
+            def bin_forecasts(frame):
+                x, frequency, count = compute_reliability_curve(
+                    frame[forecasts_col].to_numpy(dtype=float),
+                    frame[observations_col].to_numpy(dtype=float),
+                    n_bins,
+                )
+                return pd.DataFrame({x_col: x, y_col: frequency, "count": count})
+
+            if label_col:
+                plot_data = pd.concat(
+                    [
+                        bin_forecasts(group).assign(**{label_col: name})
+                        for name, group in df.groupby(label_col, observed=True)
+                    ],
+                    ignore_index=True,
+                )
+                if show_hist:
+                    histogram_data = bin_forecasts(df)
+            else:
+                plot_data = bin_forecasts(df)
         else:
-            validate_dataframe(df, required_columns=[x_col, y_col])
+            required = [x_col, y_col] + ([label_col] if label_col else [])
+            validate_dataframe(df, required_columns=required)
             plot_data = df
 
         if "count" in plot_data:
@@ -83,7 +109,11 @@ class ReliabilityDiagramPlot(BasePlot):
 
         # Draw Reference Lines
         self.ax.plot([0, 1], [0, 1], "k--", label="Perfect Reliability")
-        if climatology is not None and np.isfinite(climatology):
+        if climatology is not None:
+            if not 0 <= climatology <= 1:
+                raise ValueError(
+                    "Climatology must be a probability between zero and one."
+                )
             self.ax.axhline(
                 climatology, color="gray", linestyle=":", label="Climatology"
             )
@@ -95,17 +125,21 @@ class ReliabilityDiagramPlot(BasePlot):
                 # pop label from kwargs if it exists to avoid multiple values
                 k = kwargs.copy()
                 k.pop("label", None)
-                self.ax.plot(group[x_col], group[y_col], marker="o", label=name, **k)
+                self.ax.plot(
+                    group[x_col], group[y_col], label=name, **{"marker": "o", **k}
+                )
         else:
             k = kwargs.copy()
             label = k.pop("label", "Model")
             self.ax.plot(
-                plot_data[x_col], plot_data[y_col], marker="o", label=label, **k
+                plot_data[x_col], plot_data[y_col], label=label, **{"marker": "o", **k}
             )
 
         # Histogram Overlay (Sharpness)
         if show_hist and "count" in plot_data.columns:
-            self._add_sharpness_histogram(plot_data, x_col)
+            if histogram_data is None:
+                histogram_data = plot_data.groupby(x_col, as_index=False)["count"].sum()
+            self._add_sharpness_histogram(histogram_data.dropna(subset=[x_col]), x_col)
 
         # Formatting
         self.ax.set_xlim(0, 1)
@@ -117,7 +151,7 @@ class ReliabilityDiagramPlot(BasePlot):
         self.ax.legend()
 
     def _draw_skill_regions(self, clim):
-        """Shades areas where BSS > 0."""
+        """Show which bins improve on the reference event probability."""
         x = np.array([0, clim, 1])
         boundary = (x + clim) / 2
         self.ax.plot([0, 1], [clim / 2, (1 + clim) / 2], "k-.", label="No skill")

@@ -78,7 +78,7 @@ class RankHistogramPlot(BasePlot):
         if normalize:
             expected = 1.0 / num_bins
         else:
-            expected = len(df) / num_bins
+            expected = df[rank_col].isin(range(num_bins)).sum() / num_bins
 
         # TDD Anchor: Validate inputs
 
@@ -143,12 +143,13 @@ class RankHistogramPlot(BasePlot):
         axes = self.fig.subplots(nrows, ncols, sharex=True, sharey=True, squeeze=False)
         for ax, (name, group) in zip(axes.flat, groups):
             self.ax = ax
+            sample_count = group[rank_col].isin(range(n_members + 1)).sum()
             self.plot(
                 group,
                 rank_col=rank_col,
                 n_members=n_members,
                 normalize=normalize,
-                title=f"{name} · n={len(group):,}",
+                title=f"{name} · n={sample_count:,}",
                 **options,
             )
             ax.get_legend().remove()

@@ -124,22 +124,27 @@ class SpatialBiasScatterPlot(SpatialPlot):
             )
 
             # Compute only what's necessary for plotting
-            plot_ds = xr.Dataset(
-                {"diff": diff, "lat": self.data[lat_name], "lon": self.data[lon_name]}
+            diff, lat, lon = xr.broadcast(
+                diff, self.data[lat_name], self.data[lon_name]
             )
-
-            concrete = plot_ds.broadcast_like(diff).compute()
-            diff_vals = concrete["diff"].values
-            lat_vals = concrete["lat"].values
-            lon_vals = concrete["lon"].values
+            plot_ds = (
+                xr.Dataset({"diff": diff, "latitudes": lat, "longitudes": lon})
+                .transpose(*diff.dims)
+                .compute()
+            )
+            diff_vals = plot_ds["diff"].values
+            lat_vals = plot_ds["latitudes"].values
+            lon_vals = plot_ds["longitudes"].values
         else:
             # Fallback for Pandas
             df = self.data
-            diff_vals = (df[self.col2] - df[self.col1]).values
+            diff_vals = (df[self.col2] - df[self.col1]).to_numpy(
+                dtype=float, na_value=np.nan
+            )
             lat_name = next((c for c in ["latitude", "lat"] if c in df.columns), "lat")
             lon_name = next((c for c in ["longitude", "lon"] if c in df.columns), "lon")
-            lat_vals = df[lat_name].values
-            lon_vals = df[lon_name].values
+            lat_vals = df[lat_name].to_numpy(dtype=float, na_value=np.nan)
+            lon_vals = df[lon_name].to_numpy(dtype=float, na_value=np.nan)
         valid = np.isfinite(diff_vals)
         values = diff_vals[valid]
         limits = [abs(limit) for limit in (self.vmin, self.vmax) if limit is not None]

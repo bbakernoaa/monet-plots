@@ -98,7 +98,7 @@ class ROCCurvePlot(BasePlot):
         # values.
         # TDD Anchor: Ensure sorting is applied correctly.
 
-        df_sorted = df.sort_values(by=x_col).dropna(subset=[x_col, y_col])
+        df_sorted = df.dropna(subset=[x_col, y_col]).sort_values([x_col, y_col])
         x = df_sorted[x_col].values
         y = df_sorted[y_col].values
 

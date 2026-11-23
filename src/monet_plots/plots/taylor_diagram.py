@@ -38,6 +38,9 @@ class TaylorDiagramPlot(BasePlot):
         Use standard deviation ratios and dimensionless centered RMS contours.
     show_error_table : bool, optional
         Show finite-pair bias, centered RMS difference, total RMSE, and counts.
+        Raw geometry uses rows finite across all models to share one reference spread.
+        Raw tables show both the row count used for errors and the available pair
+        count. If common rows cannot define a point, errors use the available pairs.
     comparison_groups : sequence of mappings, optional
         Normalized groups with label, reference column, model columns, and optional unit.
     **kwargs : Any
@@ -89,8 +92,8 @@ class TaylorDiagramPlot(BasePlot):
         self.label1 = label1
         self.scale = scale
         self.dia = dia
-        self.error_table = getattr(dia, "_error_rows", pd.DataFrame()).copy()
-        self._table_axes = getattr(dia, "_error_table_axes", None)
+        self.error_table = pd.DataFrame()
+        self._table_axes = None
         self._diagnostic = None
         self._added_samples = []
 
@@ -153,9 +156,18 @@ class TaylorDiagramPlot(BasePlot):
                 if use_paired_statistics:
                     data = self.data if self.normalize else legacy
                     row, coords = self._comparison(data, group, model)
+                    if not self.normalize:
+                        paired, _ = self._comparison(self.data, group, model)
+                        row["available_count"] = paired["paired_count"]
+                        if coords is not None:
+                            coords = (coords[0] * ref_std, coords[1])
+                        elif paired["paired_count"] > row["paired_count"]:
+                            row = {
+                                **paired,
+                                "available_count": paired["paired_count"],
+                                "status": "No point on common finite rows",
+                            }
                     rows.append(row)
-                    if coords is not None and not self.normalize:
-                        coords = (coords[0] * ref_std, coords[1])
                 else:
                     obs = legacy[self.var1]
                     pred = legacy[model]
@@ -248,7 +260,8 @@ class TaylorDiagramPlot(BasePlot):
             )
         if rows:
             table = pd.DataFrame(rows)
-            self.error_table = pd.concat([self.error_table, table], ignore_index=True)
+            previous = getattr(self.dia, "_error_rows", self.error_table)
+            self.error_table = pd.concat([previous, table], ignore_index=True)
             self.error_table = self.error_table.drop_duplicates(
                 subset=["reference", "model", "unit"], keep="last", ignore_index=True
             )
@@ -259,8 +272,9 @@ class TaylorDiagramPlot(BasePlot):
         return self.ax
 
     def _draw_error_table(self):
-        if self._table_axes is not None:
-            self._table_axes.remove()
+        axes = getattr(self.dia, "_error_table_axes", self._table_axes)
+        if axes in self.fig.axes:
+            axes.remove()
         columns = [
             "reference",
             "model",
@@ -274,6 +288,9 @@ class TaylorDiagramPlot(BasePlot):
         if self.normalize:
             columns += ["normalized_bias", "normalized_centered_rms", "normalized_rmse"]
             headers += ["Bias / σ", "cRMS / σ", "RMSE / σ"]
+        else:
+            columns.insert(3, "available_count")
+            headers[2:3] = ["Error N", "Pair N"]
         columns.append("status")
         headers.append("Status")
         cells = [
@@ -297,6 +314,8 @@ class TaylorDiagramPlot(BasePlot):
         weights = [1.6, 1.6, 0.55, 0.75, 1.15, 0.75, 0.6]
         if self.normalize:
             weights += [1, 1, 1]
+        else:
+            weights[2:3] = [0.8, 0.75]
         weights.append(2 if self.error_table["status"].ne("").any() else 0.7)
         widths = np.asarray(weights) / sum(weights)
         table = self._table_axes.table(
