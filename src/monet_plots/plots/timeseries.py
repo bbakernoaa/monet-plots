@@ -434,20 +434,38 @@ class TimeSeriesStatsPlot(BasePlot):
         --------
         >>> plot._plot_xarray(compute_bias, 'D', 'bias', {'color': 'red'})
         """
-        for model_col in self.var2:
-
-            def resample_func(ds):
-                # Dim is None means reduce over all dimensions in the group
-                # which is correct for a time series plot of a bulk statistic.
-                return metric_func(ds[self.col1], ds[model_col])
-
-            # Resample and calculate using .map() to maintain laziness
+        observations = self.data[self.col1]
+        # These metrics are means of pointwise errors. One grouped reduction
+        # preserves each bin's sample weighting without a graph per time bin.
+        if stat_name in {"bias", "mae", "rmse"} and all(
+            self.data[model].dims == observations.dims for model in self.var2
+        ):
+            summaries = []
+            for model in self.var2:
+                error = self.data[model] - observations
+                if stat_name == "mae":
+                    error = abs(error)
+                elif stat_name == "rmse":
+                    error = error**2
+                series = error.resample({self.x: freq}).mean(dim=list(error.dims))
+                summaries.append(series**0.5 if stat_name == "rmse" else series)
+        else:
             resampled = self.data.resample({self.x: freq})
-            stat_series = resampled.map(resample_func)
+            for model_col in self.var2:
 
-            # Extract label if present or use col name
-            label = model_col
-            stat_series.plot(ax=self.ax, label=label, **plot_kwargs)
+                def resample_func(ds, model=model_col):
+                    return metric_func(ds[self.col1], ds[model])
+
+                series = resampled.map(resample_func)
+                series.plot(ax=self.ax, label=model_col, **plot_kwargs)
+            return
+
+        if any(series.chunks is not None for series in summaries):
+            summaries = (
+                compute(*summaries) if len(summaries) > 1 else (compute(summaries[0]),)
+            )
+        for model_col, series in zip(self.var2, summaries, strict=True):
+            series.plot(ax=self.ax, label=model_col, **plot_kwargs)
 
     def _plot_dataframe(
         self, metric_func: Any, freq: str, stat_name: str, plot_kwargs: dict
@@ -687,6 +705,7 @@ class TimeSeriesErrorBarPlot(BasePlot):
         else:
             ds = self.data
 
+        time_dims, summaries = [], []
         for col in self.y:
             da = ds[col]
             time_dim = self.x if self.x in da.dims else da.dims[0]
@@ -704,6 +723,14 @@ class TimeSeriesErrorBarPlot(BasePlot):
                     else xr.zeros_like(da)
                 )
 
+            time_dims.append(time_dim)
+            summaries.extend((mean_da, err_da))
+
+        if any(series.chunks is not None for series in summaries):
+            summaries = compute(*summaries)
+        for col, time_dim, mean_da, err_da in zip(
+            self.y, time_dims, summaries[::2], summaries[1::2], strict=True
+        ):
             times = mean_da[time_dim].values
             means = mean_da.values
             errs = err_da.values

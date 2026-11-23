@@ -212,38 +212,36 @@ def test_spatialtrack_history_attribute_updated(sample_dataarray, clear_figures)
     assert "Plotted with monet-plots.SpatialTrack" in track_plot_2.data.attrs["history"]
 
 
-def test_spatialtrack_plot_is_lazy_with_dask(clear_figures):
-    """Test that SpatialTrack.plot preserves lazy evaluation with dask."""
-    dask = pytest.importorskip("dask")
-    import dask.array as da
+@pytest.mark.parametrize("explicit_extent", [False, True])
+def test_spatialtrack_batches_render_data(clear_figures, explicit_extent):
+    """Materialize the plot inputs once and preserve the source and rendered extent."""
+    from dask.callbacks import Callback
 
-    # 1. Create lazy data
-    time = np.arange(20)
-    lon = np.linspace(-120, -80, 20)
-    lat = np.linspace(30, 45, 20)
-    concentration = da.from_array(np.linspace(0, 100, 20), chunks=(10,))
-    da_lazy = xr.DataArray(
-        concentration,
-        dims=["time"],
-        coords={"time": time, "lon": ("time", lon), "lat": ("time", lat)},
-        name="O3_concentration_lazy",
+    data = xr.DataArray(
+        np.linspace(0, 100, 20),
+        dims="time",
+        coords={
+            "lon": ("time", np.linspace(-120, -80, 20)),
+            "lat": ("time", np.linspace(30, 45, 20)),
+        },
+        name="O3_concentration",
+        attrs={"history": "Created for test"},
     )
-
-    # 2. Instantiate and plot, spying on the scatter call
-    track_plot = SpatialTrack(data=da_lazy, states=True, resolution="110m")
-
-    with patch.object(track_plot.ax, "scatter") as mock_scatter:
-        track_plot.plot()
-        # 3. Validation
-        mock_scatter.assert_called_once()
-        args, kwargs = mock_scatter.call_args
-        c_arg = kwargs.get("c")
-
-        # Ensure 'c' is an xarray.DataArray wrapping a dask array
-        assert isinstance(c_arg, xr.DataArray), "The 'c' argument is not a DataArray."
-        assert isinstance(
-            c_arg.data, dask.array.Array
-        ), "The underlying data is not a dask array."
+    extent = (-125, -75, 27, 48)
+    options = {"extent": extent} if explicit_extent else {}
+    eager_plot = SpatialTrack(data.copy(), coastlines=False)
+    eager_artist = eager_plot.plot(coastlines=False, **options)
+    runs = []
+    with Callback(start=lambda graph: runs.append(len(graph))):
+        lazy_plot = SpatialTrack(data.chunk({"time": 5}), coastlines=False)
+        assert not runs
+        artist = lazy_plot.plot(coastlines=False, **options)
+    assert len(runs) == 1
+    assert lazy_plot.data.chunks is not None
+    assert "Created for test" in lazy_plot.data.attrs["history"]
+    np.testing.assert_allclose(artist.get_offsets(), eager_artist.get_offsets())
+    np.testing.assert_allclose(artist.get_array(), eager_artist.get_array())
+    np.testing.assert_allclose(lazy_plot.ax.get_extent(), eager_plot.ax.get_extent())
 
 
 def test_spatial_plot_coastlines_default():

@@ -199,6 +199,13 @@ class SpatialContourPlot(SpatialPlot):
             except AttributeError:
                 pass
 
+        modelvar = self.modelvar
+        if isinstance(modelvar, xr.DataArray):
+            coordinates = (
+                (self.lon_coord, self.lat_coord) if lon is None or lat is None else ()
+            )
+            modelvar = self._spatial_render_data(modelvar, *coordinates)
+
         # Automatically compute extent if not provided
         if "extent" not in kwargs:
             if lon is not None and lat is not None:
@@ -210,7 +217,7 @@ class SpatialContourPlot(SpatialPlot):
                 ]
             else:
                 kwargs["extent"] = self._get_extent_from_data(
-                    self.modelvar, self.lon_coord, self.lat_coord
+                    modelvar, self.lon_coord, self.lat_coord
                 )
 
         # Draw map features and get remaining kwargs for contourf
@@ -222,12 +229,9 @@ class SpatialContourPlot(SpatialPlot):
         # Data is in lat/lon, so specify transform
         plot_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        # For coordinates and values, we prefer passing the xarray objects directly.
-        # This allows Matplotlib to handle the conversion and maintains
-        # parity for Dask-backed arrays.
         if lon is None or lat is None:
-            longitude = self.modelvar[self.lon_coord]
-            latitude = self.modelvar[self.lat_coord]
+            longitude = modelvar[self.lon_coord]
+            latitude = modelvar[self.lat_coord]
         else:
             longitude = lon
             latitude = lat
@@ -235,7 +239,7 @@ class SpatialContourPlot(SpatialPlot):
         # Handle colormap and normalization
         final_kwargs = get_plot_kwargs(**plot_kwargs)
 
-        mesh = self.ax.contourf(longitude, latitude, self.modelvar, **final_kwargs)
+        mesh = self.ax.contourf(longitude, latitude, modelvar, **final_kwargs)
 
         # Handle colorbar
         if self.discrete:
@@ -245,8 +249,7 @@ class SpatialContourPlot(SpatialPlot):
             if ncolors is None and levels is not None:
                 if isinstance(levels, int):
                     ncolors = levels - 1
-                    # Use a single compute call for efficiency (Aero Protocol)
-                    dmin, dmax = compute(self.modelvar.min(), self.modelvar.max())
+                    dmin, dmax = compute(modelvar.min(), modelvar.max())
 
                     # Handle pandas DataFrame where .min() returns a Series
                     try:
@@ -273,7 +276,7 @@ class SpatialContourPlot(SpatialPlot):
             if levels_seq is None:
                 # Fallback: calculate from data to ensure a discrete colorbar
                 # if requested but no levels were provided.
-                dmin, dmax = compute(self.modelvar.min(), self.modelvar.max())
+                dmin, dmax = compute(modelvar.min(), modelvar.max())
 
                 # Handle pandas DataFrame where .min() returns a Series
                 try:

@@ -95,7 +95,7 @@ class RadarPlot(BasePlot):
             mod_cols = [mod_cols]
 
         data_xr = normalize_data(data, prefer_xarray=True)
-        obs = data_xr[obs_col]
+        obs = np.asarray(data_xr[obs_col])
 
         model_results = []
         for mod_col in mod_cols:

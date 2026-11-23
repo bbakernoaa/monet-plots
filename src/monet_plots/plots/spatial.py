@@ -336,7 +336,8 @@ class SpatialPlot(BasePlot):
         gridline_kwargs = self._get_style(style, gridline_defaults)
         self.ax.gridlines(**gridline_kwargs)
 
-    def _identify_coords(self, data: Any) -> tuple[str, str]:
+    @staticmethod
+    def _identify_coords(data: Any) -> tuple[str, str]:
         """Identify longitude and latitude coordinate names in data.
 
         This method follows CF conventions and common naming patterns to
@@ -449,6 +450,27 @@ class SpatialPlot(BasePlot):
             pass
 
         return data
+
+    @staticmethod
+    def _spatial_render_data(
+        data: xr.DataArray, *coordinate_names: str
+    ) -> xr.DataArray:
+        """Materialize only the field and geolocation required by a static renderer."""
+        coordinates = {name: data[name] for name in coordinate_names}
+        if data.chunks is None and all(
+            coord.chunks is None for coord in coordinates.values()
+        ):
+            return data
+
+        subset = data.reset_coords(drop=True)
+        subset = subset.assign_coords(
+            {
+                name: coord.variable
+                for name, coord in coordinates.items()
+                if name not in subset.coords
+            }
+        )
+        return compute(subset)
 
     def _get_extent_from_data(
         self,
@@ -623,10 +645,13 @@ class SpatialTrack(SpatialPlot):
         """
         from ..plot_utils import get_plot_kwargs
 
+        render_data = self._spatial_render_data(
+            self.data, self.lon_coord, self.lat_coord
+        )
         # Automatically compute extent if not provided
         if "extent" not in kwargs:
             kwargs["extent"] = self._get_extent_from_data(
-                self.data, self.lon_coord, self.lat_coord, buffer=0.1
+                render_data, self.lon_coord, self.lat_coord, buffer=0.1
             )
 
         # Add features and get remaining kwargs for scatter
@@ -634,14 +659,11 @@ class SpatialTrack(SpatialPlot):
 
         scatter_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        # For coordinates and values, we pass the xarray objects directly.
-        # This allows Matplotlib to handle the conversion, maintaining
-        # compatibility with existing tests that check for lazy objects.
-        longitude = self.data[self.lon_coord]
-        latitude = self.data[self.lat_coord]
+        longitude = render_data[self.lon_coord]
+        latitude = render_data[self.lat_coord]
 
         # Use get_plot_kwargs to handle (cmap, norm) tuples
-        final_kwargs = get_plot_kwargs(c=self.data, **scatter_kwargs)
+        final_kwargs = get_plot_kwargs(c=render_data, **scatter_kwargs)
 
         sc = self.ax.scatter(longitude, latitude, **final_kwargs)
         return sc

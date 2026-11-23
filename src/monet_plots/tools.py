@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from .plot_utils import compute
+
 
 def split_by_threshold(data_list, alt_list, threshold_list):
     """
@@ -32,6 +34,21 @@ def wind_grid_slice(shape, skip=None):
             raise ValueError("skip must be a positive integer.")
         return (slice(None, None, skip),) * 2
     return tuple(slice(None, None, max(1, (size + 15) // 16)) for size in shape)
+
+
+def sample_wind_grid(ws, wdir, grid, skip):
+    """Load only the coordinates and wind vectors selected for display."""
+    shape = np.broadcast_shapes(ws.shape, wdir.shape)
+    selection = wind_grid_slice(shape, skip)
+    wind = [
+        (np.broadcast_to(data, shape) if data.shape != shape else data)[selection]
+        for data in (ws, wdir)
+    ]
+    lon = grid.variables["LON"][0, 0, *selection]
+    lat = grid.variables["LAT"][0, 0, *selection]
+    ws, wdir, lon, lat = compute(*wind, lon, lat)
+    u, v = wsdir2uv(np.asarray(ws), np.asarray(wdir))
+    return lon, lat, u, v
 
 
 def wsdir2uv(ws, wdir):

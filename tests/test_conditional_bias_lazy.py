@@ -119,3 +119,25 @@ def test_compute_binned_bias_bin_range():
     res = stats.compute()
     assert len(res.bin_center) == 5
     np.testing.assert_allclose(res.bias_mean, 1.0)
+
+
+def test_conditional_bias_accepts_chunked_grouping_labels():
+    values = np.tile(np.arange(8, dtype=float), 4)
+    data = xr.Dataset(
+        {
+            "obs": ("sample", values),
+            "model": ("sample", values + np.repeat([1.0, -2.0], 16)),
+            "region": ("sample", ["west"] * 16 + ["east"] * 16),
+        }
+    )
+    from monet_plots.plots.conditional_bias import ConditionalBiasPlot
+
+    plot = ConditionalBiasPlot(data=data.chunk({"sample": 8}))
+    try:
+        ax = plot.plot(var1="obs", var2="model", label_col="region", n_bins=[-1, 4, 9])
+        for errorbar, expected in zip(ax.containers, [-2, 1], strict=True):
+            np.testing.assert_allclose(
+                np.asarray(errorbar.lines[0].get_ydata(), dtype=float), expected
+            )
+    finally:
+        plot.close()

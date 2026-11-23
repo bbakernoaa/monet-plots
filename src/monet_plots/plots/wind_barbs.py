@@ -6,6 +6,7 @@ import cartopy.crs as ccrs
 import numpy as np
 
 from .. import tools
+from ..plot_utils import is_lazy
 from .base import figure_style
 from .spatial import SpatialPlot
 
@@ -27,8 +28,8 @@ class WindBarbsPlot(SpatialPlot):
             **kwargs: Keyword arguments passed to SpatialPlot for projection and features.
         """
         super().__init__(*args, **kwargs)
-        self.ws = np.asarray(ws)
-        self.wdir = np.asarray(wdir)
+        self.ws = getattr(ws, "data", ws) if is_lazy(ws) else np.asarray(ws)
+        self.wdir = getattr(wdir, "data", wdir) if is_lazy(wdir) else np.asarray(wdir)
         self.gridobj = gridobj
 
     @figure_style
@@ -37,16 +38,13 @@ class WindBarbsPlot(SpatialPlot):
         barb_kwargs = self.add_features(**kwargs)
         barb_kwargs.setdefault("transform", ccrs.PlateCarree())
 
-        lat = self.gridobj.variables["LAT"][0, 0, :, :]
-        lon = self.gridobj.variables["LON"][0, 0, :, :]
-        u, v = tools.wsdir2uv(self.ws, self.wdir)
-        selection = tools.wind_grid_slice(u.shape, skip)
+        lon, lat, u, v = tools.sample_wind_grid(self.ws, self.wdir, self.gridobj, skip)
         barb_kwargs.setdefault("length", 5)
         self.ax.barbs(
-            lon[selection],
-            lat[selection],
-            u[selection],
-            v[selection],
+            lon,
+            lat,
+            u,
+            v,
             **barb_kwargs,
         )
         return self.ax

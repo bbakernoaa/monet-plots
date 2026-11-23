@@ -104,3 +104,35 @@ def test_ridgeline_new_features():
     ax = plot.plot(color_by_group=True)
     assert isinstance(ax, plt.Axes)
     plt.close(plot.fig)
+
+
+def test_ridgeline_gradient_batches_artists_and_lazy_range_reduction():
+    from dask.callbacks import Callback
+
+    values = np.array([[-3.0, -1, 0.5, 2], [-1.0, 0, 2, 4]])
+    data = xr.DataArray(values, dims=("group", "sample"), coords={"group": [1, 2]})
+    plot = RidgelinePlot(data.chunk({"group": 1, "sample": 2}), group_dim="group")
+    try:
+        runs = []
+        with Callback(start=lambda graph: runs.append(len(graph))):
+            ax = plot.plot()
+        assert len(runs) == 3  # Joint range reduction and one load per ridge.
+        assert len(ax.collections) == 2
+        for collection, line, baseline in zip(
+            ax.collections, ax.lines[:2], [0, -0.5], strict=True
+        ):
+            x, y = line.get_data()
+            segments = collection.get_paths()
+            assert len(segments) == len(x) - 1
+            for i, segment in enumerate(segments):
+                np.testing.assert_allclose(
+                    segment.vertices[:4],
+                    [
+                        [x[i], baseline],
+                        [x[i], y[i]],
+                        [x[i + 1], y[i + 1]],
+                        [x[i + 1], baseline],
+                    ],
+                )
+    finally:
+        plot.close()

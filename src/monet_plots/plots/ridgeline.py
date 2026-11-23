@@ -7,10 +7,11 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 import numpy as np
 import xarray as xr
+from matplotlib.collections import PolyCollection
 from scipy.stats import gaussian_kde
 
 from ..colorbars import get_linear_scale
-from ..plot_utils import normalize_data
+from ..plot_utils import compute, normalize_data
 from .base import BasePlot
 
 if TYPE_CHECKING:
@@ -107,32 +108,20 @@ class RidgelinePlot(BasePlot):
         from ..verification_metrics import _update_history
 
         # 1. Prepare Data and Groups
-        if isinstance(self.data, xr.DataArray):
-            da = self.data
+        if isinstance(self.data, (xr.DataArray, xr.Dataset)):
+            if isinstance(self.data, xr.Dataset):
+                if self.x is None:
+                    self.x = next(iter(self.data.data_vars))
+                da = self.data[self.x]
+            else:
+                da = self.data
             da_sorted = da.sortby(self.group_dim, ascending=False)
             groups = da_sorted[self.group_dim].values
             data_name = str(da.name) if da.name else "Value"
 
             if self.x_range is None:
-                vmin = float(da.min().compute())
-                vmax = float(da.max().compute())
-            else:
-                vmin, vmax = self.x_range
-
-            if np.isnan(vmin) or np.isnan(vmax):
-                raise ValueError("No valid data points found to plot.")
-
-        elif isinstance(self.data, xr.Dataset):
-            if self.x is None:
-                self.x = list(self.data.data_vars)[0]
-            da = self.data[self.x]
-            da_sorted = da.sortby(self.group_dim, ascending=False)
-            groups = da_sorted[self.group_dim].values
-            data_name = str(da.name) if da.name else self.x
-
-            if self.x_range is None:
-                vmin = float(da.min().compute())
-                vmax = float(da.max().compute())
+                low, high = compute(da.min(), da.max())
+                vmin, vmax = float(low), float(high)
             else:
                 vmin, vmax = self.x_range
 
@@ -222,17 +211,23 @@ class RidgelinePlot(BasePlot):
                     zorder=len(groups) - i + 0.1,
                 )
             elif gradient:
-                # Plot in segments to create a gradient effect
-                for j in range(len(x_grid) - 1):
-                    self.ax.fill_between(
-                        x_grid[j : j + 2],
-                        baseline,
-                        y_final[j : j + 2],
-                        facecolor=cmap(norm(x_grid[j])),
-                        edgecolor="none",
+                # One collection draws the same colored quadrilaterals per ridge.
+                vertices = np.empty((len(x_grid) - 1, 4, 2))
+                vertices[:, :, 0] = np.column_stack(
+                    (x_grid[:-1], x_grid[:-1], x_grid[1:], x_grid[1:])
+                )
+                vertices[:, 0, 1] = vertices[:, 3, 1] = baseline
+                vertices[:, 1, 1] = y_final[:-1]
+                vertices[:, 2, 1] = y_final[1:]
+                self.ax.add_collection(
+                    PolyCollection(
+                        vertices,
+                        facecolors=cmap(norm(x_grid[:-1])),
+                        edgecolors="none",
                         alpha=self.alpha,
                         zorder=len(groups) - i,
                     )
+                )
                 # Add a clean top outline
                 self.ax.plot(
                     x_grid,

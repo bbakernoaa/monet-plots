@@ -109,3 +109,73 @@ def test_timeseries_labels_spread_and_time_basis():
         assert "standard deviation" in ax.collections[-1].get_label()
     finally:
         plot.close()
+
+
+@pytest.mark.parametrize("kind", ["statistics", "errorbar"])
+def test_xarray_timeseries_batches_multi_model_summaries(kind):
+    from dask.callbacks import Callback
+
+    from monet_plots.plots.timeseries import TimeSeriesErrorBarPlot
+
+    times = pd.date_range("2025-01-01", periods=12, freq="h")
+    obs = np.arange(36, dtype=float).reshape(12, 3)
+    data = xr.Dataset(
+        {
+            "obs": (("time", "station"), obs),
+            "a": (("time", "station"), obs + 1),
+            "b": (("time", "station"), obs - 2),
+        },
+        coords={"time": times},
+    )
+    lazy = data.chunk({"time": 3, "station": 2})
+    if kind == "statistics":
+        plot_type, constructor, options = (
+            TimeSeriesStatsPlot,
+            {"col1": "obs", "col2": ["a", "b"]},
+            {"freq": "3h"},
+        )
+    else:
+        plot_type, constructor, options = TimeSeriesErrorBarPlot, {"y": ["a", "b"]}, {}
+    eager_plot = plot_type(data, **constructor)
+    lazy_plot = plot_type(lazy, **constructor)
+    try:
+        starts = []
+        with Callback(start=lambda graph: starts.append(len(graph))):
+            actual = lazy_plot.plot(**options)
+        assert len(starts) == 1
+        expected = eager_plot.plot(**options)
+        for left, right in zip(actual.lines, expected.lines, strict=True):
+            np.testing.assert_allclose(left.get_ydata(), right.get_ydata())
+        for left, right in zip(actual.collections, expected.collections, strict=True):
+            for a, b in zip(left.get_segments(), right.get_segments(), strict=True):
+                np.testing.assert_allclose(a, b)
+    finally:
+        eager_plot.close()
+        lazy_plot.close()
+
+
+@pytest.mark.parametrize("stat", ["bias", "mae", "rmse"])
+def test_time_statistics_weight_each_valid_pair_when_bins_have_missing_data(stat):
+    obs = np.array([[1.0, 2.0], [3.0, np.nan], [5.0, 6.0], [np.nan, np.nan]])
+    model = np.array([[2.0, 4.0], [6.0, 12.0], [1.0, 8.0], [20.0, 30.0]])
+    data = xr.Dataset(
+        {
+            "obs": (("time", "site"), obs),
+            "model": (("time", "site"), model),
+        },
+        coords={"time": pd.date_range("2025-01-01", periods=4, freq="h")},
+    )
+    plot = TimeSeriesStatsPlot(
+        data.chunk({"time": 1, "site": 1}), col1="obs", col2="model"
+    )
+    try:
+        axis = plot.plot(stat=stat, freq="2h")
+        differences = (model - obs).reshape(2, 4)
+        expected = {
+            "bias": np.nanmean(differences, axis=1),
+            "mae": np.nanmean(np.abs(differences), axis=1),
+            "rmse": np.sqrt(np.nanmean(differences**2, axis=1)),
+        }[stat]
+        np.testing.assert_allclose(axis.lines[0].get_ydata(), expected)
+    finally:
+        plot.close()

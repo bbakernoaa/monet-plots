@@ -5,7 +5,7 @@ from typing import Any, Optional
 import pandas as pd
 import xarray as xr
 
-from ..plot_utils import normalize_data
+from ..plot_utils import compute, is_lazy, normalize_data
 from ..verification_metrics import compute_binned_bias
 from .base import BasePlot
 
@@ -107,7 +107,13 @@ class ConditionalBiasPlot(BasePlot):
 
         try:
             if label_col:
-                # Handle grouping for multiple models/categories
+                # Xarray needs concrete group labels, but the samples can stay lazy.
+                if isinstance(plot_data, (xr.Dataset, xr.DataArray)):
+                    labels = plot_data[label_col]
+                    if is_lazy(labels):
+                        plot_data = plot_data.assign_coords(
+                            {label_col: compute(labels)}
+                        )
                 for name, group in plot_data.groupby(label_col):
                     v1 = group[var1]
                     v2 = group[var2]

@@ -124,3 +124,25 @@ def test_diurnal_bias_uses_symmetric_scale_and_compact_hour_labels():
         assert "Station observations" in ax.collections[0].colorbar.ax.get_ylabel()
     finally:
         plot.close()
+
+
+def test_chunked_custom_diurnal_labels_keep_metric_lazy():
+    times = pd.date_range("2025-01-01", periods=48, freq="h")
+    data = xr.Dataset(
+        {
+            "obs": ("time", np.zeros(48)),
+            "model": ("time", np.arange(48, dtype=float)),
+            "region": ("time", ["west"] * 24 + ["east"] * 24),
+        },
+        coords={"time": times},
+    )
+    eager = DiurnalErrorPlot(data, "obs", "model", second_dim="region")
+    lazy = DiurnalErrorPlot(
+        data.chunk({"time": 12}), "obs", "model", second_dim="region"
+    )
+    try:
+        assert lazy.aggregated.chunks is not None
+        xr.testing.assert_allclose(lazy.aggregated.compute(), eager.aggregated)
+    finally:
+        eager.close()
+        lazy.close()

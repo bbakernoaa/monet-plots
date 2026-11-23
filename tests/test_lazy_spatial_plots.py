@@ -262,3 +262,45 @@ def test_spatial_bias_scatter_plot_parity():
     assert ax_lazy is not None
 
     plt.close("all")
+
+
+def test_discrete_contour_uses_one_dask_pass_and_matches_eager():
+    import matplotlib.pyplot as plt
+    from dask.callbacks import Callback
+
+    data = xr.DataArray(
+        np.arange(48, dtype=float).reshape(6, 8),
+        dims=("lat", "lon"),
+        coords={"lat": np.linspace(30, 40, 6), "lon": np.linspace(-110, -80, 8)},
+        attrs={"history": "Created for test"},
+    )
+    options = {"coastlines": False, "extent": (-113, -78, 28, 43), "levels": 5}
+    eager = SpatialContourPlot(data.copy(), coastlines=False)
+    eager.plot(**options)
+
+    runs = []
+    try:
+        with Callback(start=lambda graph: runs.append(len(graph))):
+            lazy = SpatialContourPlot(
+                data.chunk({"lat": 3, "lon": 4}), coastlines=False
+            )
+            assert not runs
+            lazy.plot(**options)
+        assert len(runs) == 1
+        assert lazy.modelvar.chunks is not None
+        assert "Created for test" in lazy.modelvar.attrs["history"]
+        eager_contours, lazy_contours = (
+            eager.ax.collections[-1],
+            lazy.ax.collections[-1],
+        )
+        np.testing.assert_allclose(eager_contours.levels, lazy_contours.levels)
+        for expected, actual in zip(
+            eager_contours.get_paths(), lazy_contours.get_paths(), strict=True
+        ):
+            np.testing.assert_allclose(expected.vertices, actual.vertices)
+        np.testing.assert_allclose(
+            eager.fig.axes[-1].get_yticks(), lazy.fig.axes[-1].get_yticks()
+        )
+        np.testing.assert_allclose(lazy.ax.get_extent(), eager.ax.get_extent())
+    finally:
+        plt.close("all")

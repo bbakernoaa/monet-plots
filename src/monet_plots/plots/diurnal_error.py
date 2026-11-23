@@ -173,7 +173,10 @@ class DiurnalErrorPlot(BasePlot):
                 self.second_label = "Date"
             else:
                 if self.second_dim in ds.coords or self.second_dim in ds.data_vars:
-                    val = val.assign_coords(second_val=ds[self.second_dim])
+                    labels = ds[self.second_dim]
+                    if is_lazy(labels):
+                        labels = compute(labels)
+                    val = val.assign_coords(second_val=labels)
                     self.second_label = self.second_dim
                 else:
                     raise ValueError(

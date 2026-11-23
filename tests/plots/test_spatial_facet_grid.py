@@ -71,3 +71,30 @@ def test_spatial_facet_grid_map_monet():
     for ax in _axes.flatten():
         assert len(ax.images) > 0
     plt.close()
+
+
+def test_lazy_facet_loads_shared_scale_and_panel_values_together():
+    from dask.callbacks import Callback
+
+    data = xr.DataArray(
+        np.arange(48).reshape(4, 3, 4),
+        dims=("time", "lat", "lon"),
+        coords={
+            "time": np.arange(4),
+            "lat": [30, 33, 36],
+            "lon": [-105, -100, -95, -90],
+        },
+    ).chunk({"time": 1, "lat": 2, "lon": 2})
+    grid = SpatialFacetGridPlot(data, col="time", col_wrap=2)
+    try:
+        runs = []
+        with Callback(start=lambda graph: runs.append(len(graph))):
+            grid.map_monet(SpatialImshowPlot, x="lon", y="lat", coastlines=False)
+        assert len(runs) == 1
+        assert grid.grid.data.chunks is not None
+        for i, ax in enumerate(grid.grid.axs.flat):
+            image = ax.images[0]
+            np.testing.assert_allclose(image.get_array(), data.isel(time=i).values)
+            assert image.get_clim() == (0, 47)
+    finally:
+        grid.close()

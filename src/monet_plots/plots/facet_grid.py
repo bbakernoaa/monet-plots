@@ -383,8 +383,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
 
             # Identify coordinates if not provided
             if x is None or y is None:
-                sp = SpatialPlot(style=None)
-                x_id, y_id = sp._identify_coords(self.data)
+                x_id, y_id = SpatialPlot._identify_coords(self.data)
                 x = x or x_id
                 y = y or y_id
 
@@ -430,7 +429,19 @@ class SpatialFacetGridPlot(FacetGridPlot):
 
                     self.grid.map(_mapped_xr_plot, x, y, **plot_kwargs)
                 elif hasattr(self.grid, "map_dataarray"):
-                    self.grid.map_dataarray(func, x, y, **plot_kwargs)
+                    if (
+                        isinstance(grid_data, xr.DataArray)
+                        and grid_data.chunks is not None
+                    ):
+                        # Xarray needs all panel values for its shared scale. Use
+                        # one snapshot for the scale and individual panel renders.
+                        self.grid.data = grid_data.compute()
+                        try:
+                            self.grid.map_dataarray(func, x, y, **plot_kwargs)
+                        finally:
+                            self.grid.data = grid_data
+                    else:
+                        self.grid.map_dataarray(func, x, y, **plot_kwargs)
                 else:
                     self.grid.map(func, x, y, **plot_kwargs)
             else:
