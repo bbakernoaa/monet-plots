@@ -9,6 +9,7 @@ MONET Plots is designed with performance in mind, but large datasets and complex
 | Optimization Level | Difficulty | Focus Area |
 |-------------------|------------|------------|
 | [Basic Optimization](./basic-optimization.md) | Beginner | Quick wins for most users |
+| [Dask plot benchmark](./dask-plot-benchmark.md) | Intermediate | Scheduler work and first-render time |
 | [Memory Management](./memory-management) | Intermediate | Large datasets and memory usage |
 | [Rendering Optimization](./rendering-optimization) | Advanced | Plot generation speed |
 | [Workflow Optimization](./workflow-optimization) | Intermediate | Multi-plot workflows |

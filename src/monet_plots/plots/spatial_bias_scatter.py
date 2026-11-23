@@ -123,18 +123,21 @@ class SpatialBiasScatterPlot(SpatialPlot):
                 "lon",
             )
 
-            # Compute only what's necessary for plotting
+            # Materialize native coordinates before broadcasting. NumPy can
+            # present the expanded coordinates as views instead of storing a grid.
+            plot_ds = xr.Dataset(
+                {
+                    "diff": diff,
+                    "latitudes": self.data[lat_name],
+                    "longitudes": self.data[lon_name],
+                }
+            ).compute()
             diff, lat, lon = xr.broadcast(
-                diff, self.data[lat_name], self.data[lon_name]
+                plot_ds["diff"], plot_ds["latitudes"], plot_ds["longitudes"]
             )
-            plot_ds = (
-                xr.Dataset({"diff": diff, "latitudes": lat, "longitudes": lon})
-                .transpose(*diff.dims)
-                .compute()
-            )
-            diff_vals = plot_ds["diff"].values
-            lat_vals = plot_ds["latitudes"].values
-            lon_vals = plot_ds["longitudes"].values
+            diff_vals = diff.values
+            lat_vals = lat.transpose(*diff.dims).values
+            lon_vals = lon.transpose(*diff.dims).values
         else:
             # Fallback for Pandas
             df = self.data

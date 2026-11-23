@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 
-from ..plot_utils import normalize_data
+from ..plot_utils import compute, normalize_data
 from .base import BasePlot, figure_style
 
 if TYPE_CHECKING:
@@ -214,6 +214,9 @@ class TimeSeriesPlot(BasePlot):
         else:
             mean_data = data[self.y]
             std_data = xr.zeros_like(mean_data)
+
+        if mean_data.chunks is not None or std_data.chunks is not None:
+            mean_data, std_data = compute(mean_data, std_data)
 
         plot_label = self.label if self.label is not None else self.y
         mean_data.dropna(self.x).plot(ax=self.ax, label=plot_label, **self.plotargs)

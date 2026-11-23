@@ -126,3 +126,39 @@ def test_bias_scatter_aligns_rectilinear_grid_to_data_dimension_order():
         )
     finally:
         plot.close()
+
+
+def test_lazy_rectilinear_bias_computes_native_coordinates(monkeypatch):
+    import dask.array as da
+    import xarray as xr
+
+    values = np.array([[1, np.nan, -2], [0, 3, 2]], dtype=float)
+    data = xr.Dataset(
+        {
+            "obs": (("row", "col"), np.zeros_like(values)),
+            "model": (("row", "col"), values),
+        },
+        coords={"lat": ("row", [25.0, 40.0]), "lon": ("col", [-110.0, -100.0, -90.0])},
+    )
+    lazy = data.chunk({"row": 1, "col": 2})
+    assert isinstance(lazy.lat.data, da.Array)
+    original_compute = xr.Dataset.compute
+
+    def check_compute(dataset, *args, **kwargs):
+        if "diff" in dataset:
+            assert dataset["latitudes"].ndim == 1
+            assert dataset["longitudes"].ndim == 1
+        return original_compute(dataset, *args, **kwargs)
+
+    monkeypatch.setattr(xr.Dataset, "compute", check_compute)
+    plot = SpatialBiasScatterPlot(lazy, "obs", "model", coastlines=False)
+    try:
+        ax = plot.plot()
+        np.testing.assert_allclose(ax.collections[0].get_array(), [1, -2, 0, 3, 2])
+        np.testing.assert_allclose(
+            ax.collections[0].get_offsets(),
+            [[-110, 25], [-90, 25], [-110, 40], [-100, 40], [-90, 40]],
+        )
+        np.testing.assert_allclose(ax.collections[1].get_offsets(), [[-100, 25]])
+    finally:
+        plot.close()

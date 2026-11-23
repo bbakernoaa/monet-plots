@@ -96,3 +96,37 @@ def test_scatter_plot_geospatial():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_timeseries_materializes_reduced_mean_and_spread_once():
+    from dask.callbacks import Callback
+
+    from monet_plots.plots.timeseries import TimeSeriesPlot
+
+    data = xr.DataArray(
+        np.arange(24, dtype=float).reshape(8, 3),
+        dims=("time", "station"),
+        coords={"time": np.arange(8)},
+        name="temperature",
+    )
+    data[3] = np.nan
+    eager_plot = TimeSeriesPlot(data)
+    lazy_plot = TimeSeriesPlot(data.chunk({"time": 3, "station": 1}))
+    starts = []
+    try:
+        eager = eager_plot.plot()
+        with Callback(start=lambda graph: starts.append(len(graph))):
+            lazy = lazy_plot.plot()
+        assert len(starts) == 1
+        np.testing.assert_allclose(
+            lazy.lines[0].get_ydata(), eager.lines[0].get_ydata()
+        )
+        for lazy_path, eager_path in zip(
+            lazy.collections[0].get_paths(),
+            eager.collections[0].get_paths(),
+            strict=True,
+        ):
+            np.testing.assert_allclose(lazy_path.vertices, eager_path.vertices)
+    finally:
+        eager_plot.close()
+        lazy_plot.close()
