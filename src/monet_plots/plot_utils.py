@@ -20,13 +20,39 @@ def set_concise_time_axis(ax, timezone=None):
     ax.xaxis.set_major_formatter(ConciseDateFormatter(locator, tz=timezone))
 
 
+def _materialize_dask_table(data: Any) -> pd.DataFrame | None:
+    """Adapt native Dask collections at a pandas table boundary."""
+    if not hasattr(data, "__dask_graph__"):
+        return None
+
+    try:
+        from dask.array import Array
+    except ImportError:
+        return None
+
+    if isinstance(data, Array):
+        return _convert_array_to_dataframe(data)
+
+    try:
+        from dask.dataframe import DataFrame, Series
+    except ImportError:
+        return None
+
+    if isinstance(data, DataFrame):
+        return data.compute()
+    if isinstance(data, Series):
+        return data.compute().to_frame()
+    return None
+
+
 def to_dataframe(data: Any) -> pd.DataFrame:
     """
     Convert input data to a pandas DataFrame.
 
     Args:
-        data: Input data. Can be a pandas DataFrame, xarray DataArray,
-              xarray Dataset, or numpy ndarray.
+        data: pandas DataFrame, xarray DataArray or Dataset, NumPy array,
+              or a Dask DataFrame, Series, or array. Dask collections are
+              computed here because the result is an in-memory table.
 
     Returns:
         A pandas DataFrame.
@@ -37,20 +63,18 @@ def to_dataframe(data: Any) -> pd.DataFrame:
     if isinstance(data, pd.DataFrame):
         return data
 
-    # Using hasattr to avoid direct dependency on xarray for users who don't have it
-    # installed.
-    if hasattr(data, "to_dataframe"):  # Works for both xarray DataArray and Dataset
+    if xr is not None and isinstance(data, (xr.DataArray, xr.Dataset)):
         return data.to_dataframe()
 
     if isinstance(data, np.ndarray):
-        if data.ndim == 1:
-            return pd.DataFrame(data, columns=["col_0"])
-        elif data.ndim == 2:
-            return pd.DataFrame(
-                data, columns=[f"col_{i}" for i in range(data.shape[1])]
-            )
-        else:
-            raise ValueError(f"numpy array with {data.ndim} dimensions not supported")
+        return _convert_array_to_dataframe(data)
+
+    dask_table = _materialize_dask_table(data)
+    if dask_table is not None:
+        return dask_table
+
+    if hasattr(data, "to_dataframe"):
+        return data.to_dataframe()
 
     raise TypeError(f"Unsupported data type: {type(data).__name__}")
 
@@ -237,16 +261,17 @@ def _try_xarray_conversion(data: Any) -> Any:
     return None
 
 
-def _convert_numpy_to_dataframe(data: np.ndarray) -> pd.DataFrame:
-    """Internal helper to convert numpy array to pandas DataFrame."""
-    if data.ndim == 1:
-        return pd.DataFrame(data, columns=["col_0"])
-    elif data.ndim == 2:
-        return pd.DataFrame(data, columns=[f"col_{i}" for i in range(data.shape[1])])
-    else:
+def _convert_array_to_dataframe(data: Any) -> pd.DataFrame:
+    """Give NumPy and Dask arrays identical generated column names."""
+    if data.ndim not in (1, 2):
+        kind = "numpy" if isinstance(data, np.ndarray) else "Dask"
         raise ValueError(
-            f"numpy array with {data.ndim} dimensions not supported for automatic DataFrame conversion"
+            f"{kind} array with {data.ndim} dimensions not supported for DataFrame conversion"
         )
+    if not isinstance(data, np.ndarray):
+        data = data.compute()
+    width = 1 if data.ndim == 1 else data.shape[1]
+    return pd.DataFrame(data, columns=[f"col_{i}" for i in range(width)])
 
 
 def _normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
@@ -256,7 +281,8 @@ def _normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
     This function intelligently handles different input types:
     - xarray DataArray/Dataset: returned as-is
     - pandas DataFrame: returned as-is
-    - numpy array: converted to DataFrame
+    - NumPy array: converted to DataFrame
+    - Dask tables and arrays: materialized as DataFrames
     - Other types: converted to xarray if prefer_xarray=True, else DataFrame
 
     Args:
@@ -277,6 +303,10 @@ def _normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
     if isinstance(data, pd.DataFrame):
         return data
 
+    dask_table = _materialize_dask_table(data)
+    if dask_table is not None:
+        return dask_table
+
     # If xarray is preferred and available, try it
     if prefer_xarray and xr is not None:
         xarray_result = _try_xarray_conversion(data)
@@ -285,7 +315,7 @@ def _normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
 
     # Check if data is numpy array
     if isinstance(data, np.ndarray):
-        return _convert_numpy_to_dataframe(data)
+        return _convert_array_to_dataframe(data)
 
     # Fall back to existing to_dataframe logic for backward compatibility
     return to_dataframe(data)
@@ -297,8 +327,9 @@ def normalize_data(data: Any, prefer_xarray: bool = True) -> Any:
 
     Args:
         data: Input data of various types
-        prefer_xarray: If True, attempts to convert non-pandas/non-xarray objects to xarray.
-                      If False, returns pandas objects as-is and converts others to DataFrame.
+        prefer_xarray: Try xarray conversion for otherwise unrecognized data.
+                      Existing xarray objects remain native and lazy. Native
+                      Dask tables and arrays materialize as pandas DataFrames.
 
     Returns:
         Either an xarray DataArray, xarray Dataset, or pandas DataFrame

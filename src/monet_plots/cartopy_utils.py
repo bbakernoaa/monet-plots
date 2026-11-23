@@ -3,6 +3,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from .plot_utils import to_dataframe
+
 try:
     import cartopy.crs as ccrs
     import cartopy.feature as cfeature
@@ -671,7 +673,7 @@ def plot_points_map(
 
     Parameters
     ----------
-    df : pandas.DataFrame
+    df : pandas.DataFrame or dask.dataframe.DataFrame
         DataFrame with longitude and latitude columns.
     lon_col, lat_col : str
         Column names for longitude and latitude.
@@ -706,6 +708,7 @@ def plot_points_map(
     -------
     fig, ax : matplotlib Figure and Axes
     """
+    df = to_dataframe(df)
     # Setup
     projection = _setup_map_projection(projection)
     map_kws = map_kws or {}
@@ -766,7 +769,7 @@ def plot_lines_map(
 
     Parameters
     ----------
-    df : pandas.DataFrame
+    df : pandas.DataFrame or dask.dataframe.DataFrame
         DataFrame with longitude and latitude columns.
     lon_col, lat_col : str
         Column names for longitude and latitude.
@@ -799,6 +802,7 @@ def plot_lines_map(
     -------
     fig, ax : matplotlib Figure and Axes
     """
+    df = to_dataframe(df)
     # Setup
     projection = _setup_map_projection(projection)
     map_kws = map_kws or {}

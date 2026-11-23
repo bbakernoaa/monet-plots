@@ -28,6 +28,7 @@ from monet_plots.plots.curtain import CurtainPlot
 from monet_plots.plots.diurnal_error import DiurnalErrorPlot
 from monet_plots.plots.facet_grid import FacetGridPlot
 from monet_plots.plots.radar import RadarPlot
+from monet_plots.plots.reliability_diagram import ReliabilityDiagramPlot
 from monet_plots.plots.ridgeline import RidgelinePlot
 from monet_plots.plots.scatter import ScatterPlot
 from monet_plots.plots.soccer import SoccerPlot
@@ -79,6 +80,32 @@ def geographic_field(facets=False):
 
 def build_case(case):
     """Return constructor, renderer, and description of workload."""
+    if case in {"reliability-xarray", "reliability-dataframe"}:
+        n, chunks = 1_048_576, 32_768
+        rng = da.random.RandomState(42)
+        forecast = rng.random_sample(n, chunks=chunks)
+        event = (rng.random_sample(n, chunks=chunks) < forecast).astype("uint8")
+        data = xr.Dataset(
+            {
+                "forecast": ("sample", forecast),
+                "event": ("sample", event),
+                "model": ("sample", da.arange(n, chunks=chunks) % 4),
+            }
+        )
+        if case == "reliability-dataframe":
+            data = data.to_dask_dataframe()
+        return (
+            ReliabilityDiagramPlot,
+            lambda p: p.plot(
+                data,
+                forecasts_col="forecast",
+                observations_col="event",
+                label_col="model",
+                n_bins=10,
+                show_hist=True,
+            ),
+            n,
+        )
     if case == "timeseries-errorbars":
         shape, chunks = (168, 2_048), (24, 256)
         rng = da.random.RandomState(42)
@@ -245,6 +272,8 @@ def build_case(case):
 
 
 CASES = (
+    "reliability-xarray",
+    "reliability-dataframe",
     "timeseries-errorbars",
     "timeseries-stats",
     "scatter",

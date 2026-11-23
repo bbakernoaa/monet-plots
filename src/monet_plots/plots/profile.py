@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 import numpy as np
+from dask import compute, is_dask_collection
 from matplotlib import pyplot as plt
 
 from .. import tools
@@ -126,7 +127,10 @@ class StickPlot(BasePlot):
                 self.fig = plt.figure()
             self.ax = self.fig.add_subplot()
 
-        return self.ax.quiver(self.x, self.y, self.u, self.v, **kwargs)
+        vectors = (self.x, self.y, self.u, self.v)
+        if any(is_dask_collection(value) for value in vectors):
+            vectors = compute(*vectors)
+        return self.ax.quiver(*vectors, **kwargs)
 
 
 class VerticalBoxPlot(BasePlot):

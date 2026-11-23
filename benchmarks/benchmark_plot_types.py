@@ -19,7 +19,6 @@ import importlib
 import json
 import multiprocessing
 import os
-import resource
 import runpy
 import statistics
 import subprocess
@@ -239,7 +238,7 @@ def draw_fixture(name):
         raise KeyError(f"No benchmark fixture for {name}")
 
 
-def benchmark(case, cartopy_data):
+def benchmark(case, cartopy_data, observe=None):
     import cartopy
     import matplotlib
     import matplotlib.pyplot as plt
@@ -261,6 +260,8 @@ def benchmark(case, cartopy_data):
             fig.canvas.draw()
             draw_seconds += perf_counter() - start
             rendered.add(fig)
+            if observe is not None:
+                observe(fig)
 
     def draw_all(*_args, **_kwargs):
         for number in plt.get_fignums():
@@ -278,12 +279,16 @@ def benchmark(case, cartopy_data):
     elapsed = perf_counter() - start
     if not rendered:
         raise RuntimeError("No figure was rendered")
-    peak_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    rss_divisor = 1024**2 if sys.platform == "darwin" else 1024
+    peak_rss_mib = None
+    if sys.platform != "win32":
+        import resource
+
+        rss_divisor = 1024**2 if sys.platform == "darwin" else 1024
+        peak_rss_mib = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rss_divisor
     return {
         "first_render_ms": elapsed * 1000,
         "canvas_draw_ms": draw_seconds * 1000,
-        "peak_rss_mib": peak_rss / rss_divisor,
+        "peak_rss_mib": peak_rss_mib,
         "figures_rendered": len(rendered),
         "matplotlib": matplotlib.__version__,
     }
@@ -468,7 +473,8 @@ def main():
                 output.flush()
                 if result["status"] == "ok":
                     elapsed.append(result["first_render_ms"])
-                    peaks.append(result["peak_rss_mib"])
+                    if result["peak_rss_mib"] is not None:
+                        peaks.append(result["peak_rss_mib"])
                 else:
                     any_failures = True
                     print(
@@ -476,9 +482,10 @@ def main():
                         flush=True,
                     )
             if elapsed:
+                peak_text = f", max peak RSS {max(peaks):.1f} MiB" if peaks else ""
                 print(
-                    f"{case}: median {statistics.median(elapsed):.1f} ms, "
-                    f"max peak RSS {max(peaks):.1f} MiB ({len(elapsed)}/{args.repeats} passed)",
+                    f"{case}: median {statistics.median(elapsed):.1f} ms{peak_text} "
+                    f"({len(elapsed)}/{args.repeats} passed)",
                     flush=True,
                 )
     return int(any_failures)

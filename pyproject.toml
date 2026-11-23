@@ -42,6 +42,7 @@ interactive = [
     "datashader",
 ]
 test = [
+    "dask[dataframe]",
     "pytest",
     "pytest-xdist",
     "ruff",

@@ -43,6 +43,7 @@ fig, ax = categorical_plot(
     x="category",
     y="measurement",
     kind="bar",
+    seed=42,
     title="Mean Measurement per Category",
     xlabel="Category",
     ylabel="Measurement Value",

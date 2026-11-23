@@ -59,3 +59,29 @@ The render comparison uses three fresh processes per side. Both wind cases went 
 ## Remaining workload limits
 
 The suite exercises representative static and local Dask workloads. Large remote or distributed datasets, alternate chunk layouts, and interactive backends have their own costs. Table-oriented plots accept prepared tables, so aggregate gridded inputs before invoking them. Adaptive bins in conditional bias and wind rose require discovering boundaries before binning. Explicit edges skip that pass when they match the scientific definition. Dense scatter and trajectory plots can be dominated by drawing markers. Spatial facets still need the panel array in memory for Xarray's shared scale.
+
+## Chunked input compatibility
+
+Run the offline eager-versus-chunked check with the test extras installed.
+
+```bash
+python benchmarks/check_chunked_plot_parity.py --output chunked-plot-parity.jsonl
+```
+
+The check passes Dask-backed xarray objects, Dask DataFrames, or Dask arrays
+through the same public entry points as the eager examples. It compares the
+first rendered Agg figures and reports Dask scheduler runs. The standalone
+`SpatialPlot` map builder and low-level `TaylorDiagram` accept map settings or
+scalar statistics. Their data-aware variants are covered by the same suite.
+Static map features are bypassed so the check can run offline.
+
+Table-based plots materialize the data they send to pandas or Seaborn. Dask DataFrame input
+requires the `dask[dataframe]` extra. Use xarray for labeled chunked fields and
+the native xarray reduction paths. Raw reliability diagrams reduce forecasts to
+per-group bin counts and sums before computing the combined summary.
+
+The `reliability-xarray` and `reliability-dataframe` workloads benchmark raw forecasts.
+In a local raw reliability run with 1,048,576 samples, four groups, and ten
+bins, the chunked xarray path went from three scheduler runs to one. Peak
+process RSS went from about 310 MiB to 247 MiB, and plot plus first draw took
+0.86 s and 0.76 s respectively. These are single-run measurements.

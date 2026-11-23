@@ -1,6 +1,7 @@
 # src/monet_plots/plots/kde.py
 
 import seaborn as sns
+from dask.base import is_dask_collection
 
 from .base import BasePlot
 
@@ -53,16 +54,15 @@ class KDEPlot(BasePlot):
 
     def plot(self, **kwargs):
         """Generate the KDE plot."""
+        data = self.data.compute() if is_dask_collection(self.data) else self.data
         with sns.axes_style("ticks"):
             # If var1 is set, use as x; else fallback to y for 1D, or both for 2D
             if self.var1:
                 self.ax = sns.kdeplot(
-                    data=self.data, x=self.var1, ax=self.ax, label=self.label, **kwargs
+                    data=data, x=self.var1, ax=self.ax, label=self.label, **kwargs
                 )
             else:
-                self.ax = sns.kdeplot(
-                    data=self.data, ax=self.ax, label=self.label, **kwargs
-                )
+                self.ax = sns.kdeplot(data=data, ax=self.ax, label=self.label, **kwargs)
             if self.title:
                 self.ax.set_title(self.title)
             sns.despine()
