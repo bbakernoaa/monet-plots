@@ -101,7 +101,9 @@ def check_inventory():
         node.name
         for path in (ROOT / "src/monet_plots/plots").glob("*.py")
         for node in ast.parse(path.read_text()).body
-        if isinstance(node, ast.ClassDef) and node.name not in EXCLUSIONS
+        if isinstance(node, ast.ClassDef)
+        and not node.name.startswith("_")
+        and node.name not in EXCLUSIONS
     }
     expected = classes | {"TaylorDiagram", "categorical_plot"}
     registered = GALLERY.keys() | FIXTURES.keys()

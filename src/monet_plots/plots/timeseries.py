@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 
-from ..plot_utils import compute, normalize_data
+from ..plot_utils import compute, normalize_data, set_concise_time_axis
 from .base import BasePlot, figure_style
 
 if TYPE_CHECKING:
@@ -118,38 +118,29 @@ class TimeSeriesPlot(BasePlot):
         --------
         >>> plot._plot_dataframe()
         """
-        df = self.data.copy()
-        df.index = df[self.x]
-        # Keep only numeric columns for grouping, but make sure self.y is there
-        df = df.reset_index(drop=True)
-        # We need to preserve self.x for grouping if it's not the index
-        m = self.data.groupby(self.x).mean(numeric_only=True)
-        e = self.data.groupby(self.x).std(numeric_only=True)
+        summary = self.data.groupby(self.x)[self.y].agg(["mean", "std"])
+        times = summary.index
+        mean = summary["mean"].to_numpy(dtype=float, na_value=float("nan"))
+        spread = summary["std"].to_numpy(dtype=float, na_value=float("nan"))
 
         variable = self.y
         units = self.data["units"].dropna().unique() if "units" in self.data else []
         unit = units[0] if len(units) == 1 else self.data.attrs.get("units")
+        plot_label = self.label if self.label is not None else self.y
 
-        upper = m[self.y] + e[self.y]
-        lower = m[self.y] - e[self.y]
-        # lower.loc[lower < 0] = 0 # Not always desired for all variables
-        lower_vals = lower.values
-        upper_vals = upper.values
-
-        if self.label is not None:
-            plot_label = self.label
-        else:
-            plot_label = self.y
-
-        m[self.y].plot(ax=self.ax, label=plot_label, **self.plotargs)
-        self.ax.fill_between(m.index, lower_vals, upper_vals, **self._spread_options())
+        self.ax.plot(times, mean, label=plot_label, **self.plotargs)
+        self.ax.fill_between(
+            times, mean - spread, mean + spread, **self._spread_options()
+        )
+        if isinstance(times, pd.DatetimeIndex):
+            set_concise_time_axis(self.ax, times.tz)
 
         if self.ylabel is None:
             self.ax.set_ylabel(f"{variable} ({unit})" if unit else variable)
         else:
             self.ax.set_ylabel(self.ylabel)
 
-        self.ax.set_xlabel(self._time_label(m.index))
+        self.ax.set_xlabel(self._time_label(times))
         self.ax.legend()
         self.ax.set_title(self.title)
         import warnings
@@ -503,7 +494,13 @@ class TimeSeriesStatsPlot(BasePlot):
                 return metric_func(group[self.col1].values, group[model_col].values)
 
             stat_series = df.resample(freq).apply(pandas_metric)
-            stat_series.plot(ax=self.ax, label=model_col, **plot_kwargs)
+            self.ax.plot(
+                stat_series.index,
+                stat_series.to_numpy(),
+                label=model_col,
+                **plot_kwargs,
+            )
+        set_concise_time_axis(self.ax, df.index.tz)
 
 
 class TimeSeriesErrorBarPlot(BasePlot):

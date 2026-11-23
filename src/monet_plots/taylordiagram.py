@@ -17,7 +17,7 @@ import functools
 
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
+from matplotlib import cycler
 from matplotlib.ticker import MaxNLocator
 
 __version__ = "Time-stamp: <2012-02-17 20:59:35 ycopin>"
@@ -26,12 +26,12 @@ __author__ = "Yannick Copin <yannick.copin@laposte.net>"
 colors = ["#DA70D6", "#228B22", "#FA8072", "#FF1493"]
 
 
-def _sns_context(f):
-    """Decorator to apply seaborn color palette to a function."""
+def _sample_palette(f):
+    """Apply the Taylor diagram color cycle locally."""
 
     @functools.wraps(f)
     def inner(*args, **kwargs):
-        with sns.color_palette(colors):
+        with plt.rc_context({"axes.prop_cycle": cycler(color=colors)}):
             return f(*args, **kwargs)
 
     return inner
@@ -55,7 +55,7 @@ class TaylorDiagram:
     This provides a comprehensive view of how well a model pattern matches observations.
     """
 
-    @_sns_context
+    @_sample_palette
     def __init__(self, refstd, scale=1.5, fig=None, rect=111, label="_"):
         """Initialize the Taylor diagram.
 
@@ -119,7 +119,7 @@ class TaylorDiagram:
         """Property to provide compatibility with tests expecting 'samples' attribute."""
         return self.samplePoints
 
-    @_sns_context
+    @_sample_palette
     def add_sample(self, stddev, corrcoef, *args, **kwargs):
         """Add a sample point to the Taylor diagram.
 
@@ -185,7 +185,7 @@ class TaylorDiagram:
 
         return line
 
-    @_sns_context
+    @_sample_palette
     def add_contours(self, levels=5, **kwargs):
         """Add constant RMS difference contours to the Taylor diagram.
 
@@ -264,7 +264,7 @@ if __name__ == "__main__":
     dia = TaylorDiagram(refstd, fig=fig, rect=122, label="Reference")
     # colors_ = plt.matplotlib.cm.jet(np.linspace(0, 1, len(samples)))
     colors_ = [None] * len(samples)
-    with sns.color_palette(colors):
+    with plt.rc_context({"axes.prop_cycle": cycler(color=colors)}):
         ax1 = fig.add_subplot(1, 2, 1, xlabel="X", ylabel="Y")
         ax1.plot(x, data, "ko", label="Data")
         for i, m in enumerate([m1, m2, m3]):

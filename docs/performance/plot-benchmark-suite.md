@@ -75,7 +75,7 @@ first rendered Agg figures and reports Dask scheduler runs. The standalone
 scalar statistics. Their data-aware variants are covered by the same suite.
 Static map features are bypassed so the check can run offline.
 
-Table-based plots materialize the data they send to pandas or Seaborn. Dask DataFrame input
+Some table-based plots materialize Dask inputs in pandas for grouping or reshaping. Dask DataFrame input
 requires the `dask[dataframe]` extra. Use xarray for labeled chunked fields and
 the native xarray reduction paths. Raw reliability diagrams reduce forecasts to
 per-group bin counts and sums before computing the combined summary.

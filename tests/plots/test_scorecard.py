@@ -149,3 +149,31 @@ def test_grouped_scorecard_applies_labels_key_and_significance_without_numbers(
     assert "Difference from control" in [text.get_text() for text in plot.ax.texts]
     colorbar = plot.ax.collections[0].colorbar
     assert {"Better", "Worse"} <= {text.get_text() for text in colorbar.ax.texts}
+
+
+def test_scorecard_masks_cells_before_selecting_scale_and_annotations(clear_figures):
+    frame = pd.DataFrame(
+        {
+            "lead": [1, 2, 1, 2],
+            "region": ["East", "East", "West", "West"],
+            "score": [-1.0, 99.0, 1.0, 4.0],
+        }
+    )
+    plot = ScorecardPlot()
+    plot.plot(
+        frame,
+        "lead",
+        "region",
+        "score",
+        mask=[[False, True], [False, False]],
+        fmt="+.0f",
+        cbar_kws={"label": "Bias"},
+    )
+    mesh = plot.ax.collections[0]
+    np.testing.assert_array_equal(
+        mesh.get_array().mask, [[False, True], [False, False]]
+    )
+    assert mesh.get_clim() == (-1, 4)
+    assert [text.get_text() for text in plot.ax.texts] == ["-1", "+1", "+4"]
+    assert mesh.colorbar.ax.get_ylabel() == "Bias"
+    assert [label.get_text() for label in plot.ax.get_yticklabels()] == ["East", "West"]

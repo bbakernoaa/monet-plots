@@ -3,10 +3,10 @@ from typing import Any, Optional
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
 from ..plot_utils import to_dataframe, validate_dataframe
 from ..style import FIGURE_STYLES
+from ._heatmap import draw_heatmap
 from .base import BasePlot, figure_style
 
 
@@ -75,7 +75,7 @@ class ScorecardPlot(BasePlot):
             baseline: Name of the reference for precomputed differences.
             units: Units of the cell values and color scale.
             lower_is_better: Set the interpretation of negative and positive changes.
-            **kwargs: Seaborn heatmap kwargs.
+            **kwargs: Heatmap options such as annot, fmt, mask, and cbar_kws.
         """
         df = to_dataframe(data).copy()
         validate_dataframe(df, required_columns=[x_col, y_col, val_col])
@@ -165,9 +165,11 @@ class ScorecardPlot(BasePlot):
         # Plot Heatmap
         kwargs.setdefault("linewidths", 0.5)
         kwargs.setdefault("linecolor", "lightgray")
-        sns.heatmap(
-            pivot_data,
-            ax=self.ax,
+        draw_heatmap(
+            self.ax,
+            pivot_data.to_numpy(),
+            xlabels=pivot_data.columns,
+            ylabels=pivot_data.index,
             cmap=cmap,
             center=center,
             **kwargs,
@@ -336,10 +338,9 @@ class ScorecardPlot(BasePlot):
         options.setdefault("linewidths", 0.7)
         options.setdefault("linecolor", "white")
         palette = mpl.colormaps.get_cmap(cmap).with_extremes(bad="#e6e9ee")
-        collection_index = len(self.ax.collections)
-        sns.heatmap(
-            values,
-            ax=self.ax,
+        mesh = draw_heatmap(
+            self.ax,
+            raw,
             cmap=palette,
             norm=norm,
             annot=annotations,
@@ -348,7 +349,7 @@ class ScorecardPlot(BasePlot):
             **options,
         )
 
-        colorbar = self.ax.collections[collection_index].colorbar
+        colorbar = mesh.colorbar
         if cbar_labels and colorbar is not None:
             colorbar_ax = colorbar.ax
             if colorbar.orientation == "horizontal":

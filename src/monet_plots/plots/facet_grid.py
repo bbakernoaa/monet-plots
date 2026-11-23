@@ -1,20 +1,21 @@
 # src/monet_plots/plots/facet_grid.py
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from itertools import cycle, islice, product
+from math import ceil
+from typing import Any, Callable
 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+from matplotlib import colormaps
+from matplotlib.patches import Patch
 import pandas as pd
-import seaborn as sns
+import numpy as np
 import xarray as xr
 
 from ..plot_utils import to_dataframe
 from ..style import set_style
 from .base import BasePlot
-
-if TYPE_CHECKING:
-    import cartopy.crs as ccrs
 
 
 def _get_grid_axes(grid):
@@ -25,10 +26,304 @@ def _get_grid_axes(grid):
     return axes
 
 
+def _facet_levels(data, column, order):
+    if column is None:
+        return []
+    if order is not None:
+        return list(order)
+    values = data[column]
+    if isinstance(values.dtype, pd.CategoricalDtype):
+        return list(values.cat.categories)
+    levels = list(values.dropna().unique())
+    return sorted(levels) if pd.api.types.is_numeric_dtype(values) else levels
+
+
+def _facet_colors(palette, levels):
+    if isinstance(palette, dict):
+        return [palette[level] for level in levels]
+    if isinstance(palette, str):
+        # Matplotlib bundles the six-color palettes used by older seaborn styles.
+        legacy = plt.style.library.get(f"seaborn-v0_8-{palette.removesuffix('6')}", {})
+        if "axes.prop_cycle" in legacy:
+            palette = legacy["axes.prop_cycle"].by_key()["color"]
+        else:
+            cmap = colormaps["Dark2" if palette in {"dark", "dark6"} else palette]
+            if cmap.N > 20:
+                return list(cmap(np.linspace(0, 1, len(levels) + 2)[1:-1]))
+            palette = cmap.colors
+    if palette is None:
+        palette = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    return list(islice(cycle(palette), len(levels)))
+
+
+class _TableFacetGrid:
+    """Create Matplotlib panels and dispatch callbacks for tabular facets."""
+
+    def __init__(
+        self,
+        data,
+        *,
+        row,
+        col,
+        hue,
+        col_wrap,
+        height,
+        aspect,
+        subplot_kws,
+        row_order=None,
+        col_order=None,
+        hue_order=None,
+        sharex=True,
+        sharey=True,
+        palette=None,
+        hue_kws=None,
+        legend_out=True,
+        despine=True,
+        margin_titles=False,
+        dropna=False,
+        xlim=None,
+        ylim=None,
+        gridspec_kws=None,
+    ):
+        if col_wrap is not None and (row is not None or col is None or col_wrap < 1):
+            raise ValueError("col_wrap requires column facets and a positive width.")
+        self.data = data
+        self._row, self._col, self._hue = row, col, hue
+        self._wrap = col_wrap
+        self._dropna = dropna
+        self._legend_out = legend_out
+        self._margin_titles = margin_titles
+        self.hue_kws = hue_kws or {}
+        self.row_names = _facet_levels(data, row, row_order)
+        self.col_names = _facet_levels(data, col, col_order)
+        self.hue_names = (
+            _facet_levels(data, hue, hue_order) if hue is not None else None
+        )
+
+        self._colors = _facet_colors(palette, self.hue_names or [None])
+
+        nrow, ncol = len(self.row_names) or 1, len(self.col_names) or 1
+        self._facets = list(product(range(nrow), range(ncol)))
+        if col_wrap:
+            nrow, ncol = ceil(ncol / col_wrap), col_wrap
+        self.fig, self.axs = plt.subplots(
+            nrow,
+            ncol,
+            squeeze=False,
+            sharex=sharex,
+            sharey=sharey,
+            figsize=(ncol * height * aspect, nrow * height),
+            subplot_kw=subplot_kws,
+            gridspec_kw=gridspec_kws,
+        )
+        self.figure = self.fig
+        self.axes = self.axs.ravel()[: len(self._facets)] if col_wrap else self.axs
+        self.axes_dict = {}
+        for (i, j), ax in zip(self._facets, self.axs.flat):
+            key = tuple(
+                names[k]
+                for names, k in ((self.row_names, i), (self.col_names, j))
+                if names
+            )
+            if key:
+                self.axes_dict[key[0] if len(key) == 1 else key] = ax
+            if despine:
+                ax.spines[["right", "top"]].set_visible(False)
+            if xlim is not None:
+                ax.set_xlim(xlim)
+            if ylim is not None:
+                ax.set_ylim(ylim)
+        for ax in self.axs.ravel()[len(self._facets) :]:
+            ax.set_visible(False)
+        if col_wrap and sharex:
+            for ax in self._outer_axes("x"):
+                ax.tick_params(labelbottom=True)
+        self._margin_annotations = []
+        self._legend = None
+        self.set_titles()
+
+    @property
+    def ax(self):
+        if self.axes.size != 1:
+            raise AttributeError("Use .axes for a grid with multiple facets.")
+        return self.axes.flat[0]
+
+    def facet_axis(self, row_i, col_j, modify_state=True):
+        ax = self.axes[col_j] if self._wrap else self.axes[row_i, col_j]
+        if modify_state:
+            plt.sca(ax)
+        return ax
+
+    def facet_data(self):
+        """Yield each row, column and hue subset with its facet indices."""
+
+        def masks(column, levels):
+            if column is None:
+                return [np.ones(len(self.data), dtype=bool)]
+            return [self.data[column].eq(level).fillna(False) for level in levels]
+
+        groups = zip(
+            (self._row, self._col, self._hue),
+            (self.row_names, self.col_names, self.hue_names),
+        )
+        for (i, row), (j, col), (k, hue) in product(
+            *(enumerate(masks(column, levels)) for column, levels in groups)
+        ):
+            yield (i, j, k), self.data.loc[row & col & hue]
+
+    def _map(self, func, args, kwargs, *, frame):
+        color = kwargs.pop("color", None)
+        for (i, j, k), subset in self.facet_data():
+            if subset.empty:
+                continue
+            self.facet_axis(i, j)
+            options = dict(kwargs, color=self._colors[k] if color is None else color)
+            options.update({name: values[k] for name, values in self.hue_kws.items()})
+            if self.hue_names is not None:
+                options["label"] = str(self.hue_names[k])
+            if frame:
+                options["data"] = subset.dropna() if self._dropna else subset
+                func(*args, **options)
+            else:
+                columns = subset[list(args)]
+                if self._dropna:
+                    columns = columns.dropna()
+                values = (column for _, column in columns.items())
+                if getattr(func, "__module__", "").startswith("matplotlib"):
+                    values = (column.to_numpy() for _, column in columns.items())
+                func(*values, **options)
+        labels = [kwargs.get("x"), kwargs.get("y")]
+        labels[: len(args[:2])] = args[:2]
+        self.set_axis_labels(*labels)
+        return self.set_titles().tight_layout()
+
+    def map(self, func, *args, **kwargs):
+        """Call a plotting function with the selected columns as arrays."""
+        return self._map(func, args, kwargs, frame=False)
+
+    def map_dataframe(self, func, *args, **kwargs):
+        """Call a plotting function with a subset passed as the data keyword."""
+        return self._map(func, args, kwargs, frame=True)
+
+    def _outer_axes(self, axis):
+        if axis == "y":
+            return [ax for ax in self.axs[:, 0] if ax.get_visible()]
+        bottom = []
+        for column in self.axs.T:
+            visible = [ax for ax in column if ax.get_visible()]
+            if visible:
+                bottom.append(visible[-1])
+        return bottom
+
+    def set_xlabels(self, label=None, clear_inner=True, **kwargs):
+        return self._set_labels("x", label, clear_inner, **kwargs)
+
+    def set_ylabels(self, label=None, clear_inner=True, **kwargs):
+        return self._set_labels("y", label, clear_inner, **kwargs)
+
+    def _set_labels(self, axis, label, clear_inner, **kwargs):
+        if label is not None:
+            outer = self._outer_axes(axis)
+            for ax in self.axes.flat:
+                if ax in outer or clear_inner:
+                    getattr(ax, f"set_{axis}label")(
+                        label if ax in outer else "", **kwargs
+                    )
+        return self
+
+    def set_axis_labels(self, x_var=None, y_var=None, clear_inner=True, **kwargs):
+        return self.set_xlabels(x_var, clear_inner, **kwargs).set_ylabels(
+            y_var, clear_inner, **kwargs
+        )
+
+    def set_titles(self, template=None, row_template=None, col_template=None, **kwargs):
+        row_template = row_template or "{row_var} = {row_name}"
+        col_template = col_template or "{col_var} = {col_name}"
+        for artist in self._margin_annotations:
+            artist.remove()
+        self._margin_annotations.clear()
+        for i, j in self._facets:
+            ax = self.facet_axis(i, j, modify_state=False)
+            values = {
+                "row_var": self._row,
+                "col_var": self._col,
+                "row_name": self.row_names[i] if self.row_names else None,
+                "col_name": self.col_names[j] if self.col_names else None,
+            }
+            if self._margin_titles:
+                if i == 0 and self.col_names:
+                    ax.set_title(col_template.format(**values), **kwargs)
+                if j == self.axs.shape[1] - 1 and self.row_names:
+                    self._margin_annotations.append(
+                        ax.annotate(
+                            row_template.format(**values),
+                            xy=(1.02, 0.5),
+                            xycoords="axes fraction",
+                            rotation=270,
+                            va="center",
+                            **kwargs,
+                        )
+                    )
+            else:
+                parts = [
+                    part
+                    for names, part in (
+                        (self.row_names, row_template),
+                        (self.col_names, col_template),
+                    )
+                    if names
+                ]
+                if parts:
+                    ax.set_title(
+                        (template or " | ".join(parts)).format(**values), **kwargs
+                    )
+        return self
+
+    def add_legend(self, legend_data=None, title=None, label_order=None, **kwargs):
+        """Add a legend using handles from all the facet axes."""
+        if legend_data is None:
+            legend_data = {}
+            for ax in self.axes.flat:
+                handles, labels = ax.get_legend_handles_labels()
+                legend_data.update(zip(labels, handles))
+        if label_order is None:
+            label_order = self.hue_names if self.hue_names is not None else legend_data
+        labels = list(map(str, label_order))
+        handles = [legend_data.get(label, Patch(visible=False)) for label in labels]
+        title = self._hue if title is None else title
+        if self._legend is not None:
+            self._legend.remove()
+        if self._legend_out:
+            kwargs.setdefault("loc", "center right")
+            self._legend = self.fig.legend(handles, labels, title=title, **kwargs)
+            width = self._legend.get_window_extent().width / self.fig.bbox.width
+            self._layout_rect = (0, 0, max(0.1, 1 - width), 1)
+            self.tight_layout()
+        else:
+            self._legend = self.axes.flat[0].legend(
+                handles, labels, title=title, **kwargs
+            )
+        return self
+
+    def tight_layout(self, *args, **kwargs):
+        kwargs.setdefault("rect", getattr(self, "_layout_rect", None))
+        self.fig.tight_layout(*args, **kwargs)
+        return self
+
+    def set(self, **kwargs):
+        for ax in self.axes.flat:
+            ax.set(**kwargs)
+        return self
+
+    def savefig(self, *args, **kwargs):
+        kwargs.setdefault("bbox_inches", "tight")
+        return self.fig.savefig(*args, **kwargs)
+
+
 class FacetGridPlot(BasePlot):
     """Creates a facet grid plot.
 
-    This class creates a facet grid plot using seaborn's FacetGrid.
+    Tabular facets use Matplotlib axes and apply a callback to each group.
     """
 
     def __init__(
@@ -68,15 +363,17 @@ class FacetGridPlot(BasePlot):
         style : str, optional
             Style name to apply, by default "wiley".
         **kwargs : Any
-            Additional keyword arguments to pass to `FacetGrid`.
-            `height` is supported as an alias for `size` (Seaborn convention).
+            Additional options for tabular facets, including facet orders, palette,
+            shared axes, and legend placement.
+            `height` is supported as an alias for `size`.
         """
         # Apply style
         if style:
             set_style(style)
 
-        # Handle size/height alignment (Xarray vs Seaborn)
-        self.size = size or kwargs.pop("height", 3)
+        # Accept both conventions for facet height.
+        height = kwargs.pop("height", 3)
+        self.size = height if size is None else size
         self.aspect = aspect
 
         # Store facet parameters
@@ -112,8 +409,7 @@ class FacetGridPlot(BasePlot):
                     pass
         else:
             self.data = to_dataframe(data).reset_index()
-            # Create the Seaborn FacetGrid
-            self.grid = sns.FacetGrid(
+            self.grid = _TableFacetGrid(
                 self.data,
                 row=self.row,
                 col=self.col,
@@ -261,7 +557,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
             return
 
         for ax in axes.flatten():
-            if ax is None:
+            if ax is None or not ax.get_visible():
                 continue
             title = ax.get_title()
 
@@ -296,7 +592,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
                                 dim = ""
                             except (KeyError, AttributeError):
                                 pass
-                        elif dim in self.original_data.coords:
+                        elif dim in getattr(self.original_data, "coords", ()):
                             try:
                                 coord_obj = self.original_data.coords[dim]
                                 long_name = coord_obj.attrs.get("long_name", dim)
@@ -331,7 +627,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
             return
 
         for ax in axes.flatten():
-            if ax is None:
+            if ax is None or not ax.get_visible():
                 continue
             # Use SpatialPlot's feature logic on each axis
             SpatialPlot(ax=ax, projection=self.projection, **kwargs)
@@ -467,7 +763,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
             self._set_default_titles()
 
         else:
-            # Track B: Seaborn-based faceting (Eager/Pandas)
+            # Track B: Tabular faceting
             x = x or "lon"
             y = y or "lat"
             if var_name is None:
@@ -500,7 +796,7 @@ class SpatialFacetGridPlot(FacetGridPlot):
             return
 
         for ax in reversed(axes.flatten()):
-            if ax is None:
+            if ax is None or not ax.get_visible():
                 continue
             if target_ax is None:
                 target_ax = ax

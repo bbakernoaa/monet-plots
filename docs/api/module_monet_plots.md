@@ -66,6 +66,17 @@ print(monet_plots.__url__)          # Project URL
 
 ### Dependencies
 
+The core renderer uses Matplotlib. KDE uses SciPy for density estimation.
+DataFrame inputs are supported and some plots use pandas to prepare tables.
+
+For tabular `FacetGridPlot`, the grid provides Matplotlib axes and retains
+MONET's facet mapping, title, and legend methods. Code that called methods
+specific to Seaborn's grid can use the Matplotlib axes directly. KDE and
+categorical styling options are passed to the corresponding Matplotlib artists.
+For categorical plots, use a Matplotlib colormap or explicit colors for
+`palette`. The legacy categorical options `facet_kws`, `hue_norm`, and
+`log_scale` are unavailable. Use the returned axes to adjust scales and layout.
+
 ```python
 # Check required dependencies
 print(monet_plots.__dependencies__)
@@ -73,7 +84,6 @@ print(monet_plots.__optional_dependencies__)
 
 # Check if optional dependencies are available
 print(monet_plots.has_cartopy)      # True if cartopy is installed
-print(monet_plots.has_seaborn)     # True if seaborn is installed
 print(monet_plots.has_xarray)       # True if xarray is installed
 ```
 

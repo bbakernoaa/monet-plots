@@ -146,3 +146,31 @@ def test_chunked_custom_diurnal_labels_keep_metric_lazy():
     finally:
         eager.close()
         lazy.close()
+
+
+def test_diurnal_heatmap_draws_from_array_without_pandas_conversion(monkeypatch):
+    time = pd.date_range("2025-01-01", periods=24, freq="h")
+    data = xr.Dataset(
+        {"obs": ("time", np.zeros(24)), "model": ("time", np.arange(24))},
+        coords={"time": time},
+    )
+    plot = DiurnalErrorPlot(data, "obs", "model")
+
+    def reject_conversion(*args, **kwargs):
+        pytest.fail(
+            "The aggregated heatmap should be drawn directly from xarray values"
+        )
+
+    monkeypatch.setattr(xr.DataArray, "to_pandas", reject_conversion)
+    try:
+        ax = plot.plot(cbar=False, xticklabels=6)
+        np.testing.assert_array_equal(ax.collections[0].get_array(), [np.arange(24)])
+        assert [label.get_text() for label in ax.get_xticklabels()] == [
+            "0",
+            "6",
+            "12",
+            "18",
+        ]
+        assert ax.get_ylim() == (1, 0)
+    finally:
+        plot.close()

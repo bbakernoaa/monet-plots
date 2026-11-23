@@ -50,7 +50,7 @@ except ImportError as e:
 # Install specific optional dependencies
 pip install cartopy  # For geospatial plotting
 pip install xarray netcdf4  # For NetCDF support
-pip install seaborn pandas  # For enhanced plotting
+pip install pandas  # For tabular inputs
 pip install scipy  # For statistical functions
 ```
 
@@ -60,7 +60,6 @@ pip install scipy  # For statistical functions
 optional_deps = {
     'cartopy': 'Geospatial plotting',
     'xarray': 'NetCDF data handling',
-    'seaborn': 'Enhanced statistical plotting',
     'scipy': 'Advanced statistical functions'
 }
 

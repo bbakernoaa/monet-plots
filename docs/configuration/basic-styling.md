@@ -411,6 +411,8 @@ style.set_style("web")
 
 ## Common Styling Patterns
 
+The `seaborn-v0_8-*` styles in these examples are bundled with Matplotlib.
+
 ### Pattern 1: Quick Style Application
 
 ```python

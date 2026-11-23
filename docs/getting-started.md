@@ -49,7 +49,7 @@ MONET Plots has a modular design with optional dependencies for enhanced functio
 **Core Dependencies (Recommended for most users):**
 ```bash
 # Essential data processing and visualization
-pip install pandas seaborn matplotlib
+pip install pandas matplotlib
 
 # Statistical computing
 pip install numpy scipy

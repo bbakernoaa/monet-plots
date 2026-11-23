@@ -4,9 +4,9 @@
 from typing import Any
 
 import pandas as pd
-import seaborn as sns
 
 from ..plot_utils import to_dataframe
+from ._heatmap import draw_heatmap
 from .base import BasePlot
 
 
@@ -81,7 +81,14 @@ class FingerprintPlot(BasePlot):
             index="y_val", columns="x_val", values=self.val_col, aggfunc="mean"
         )
 
-        sns.heatmap(pivot_df, ax=self.ax, cmap=cmap, **kwargs)
+        draw_heatmap(
+            self.ax,
+            pivot_df.to_numpy(),
+            xlabels=pivot_df.columns,
+            ylabels=pivot_df.index,
+            cmap=cmap,
+            **kwargs,
+        )
 
         self.ax.set_xlabel(self.x_scale.capitalize())
         self.ax.set_ylabel(self.y_scale.capitalize())

@@ -179,3 +179,21 @@ def test_time_statistics_weight_each_valid_pair_when_bins_have_missing_data(stat
         np.testing.assert_allclose(axis.lines[0].get_ydata(), expected)
     finally:
         plot.close()
+
+
+def test_dataframe_stat_draws_with_matplotlib(monkeypatch):
+    from pandas.plotting import PlotAccessor
+
+    def reject_pandas_plot(*args, **kwargs):
+        raise AssertionError("TimeSeriesStatsPlot delegated rendering to pandas")
+
+    monkeypatch.setattr(PlotAccessor, "__call__", reject_pandas_plot)
+    dates = pd.date_range("2024-01-01", periods=4, freq="12h", tz="UTC")
+    data = pd.DataFrame({"obs": [1, 2, 3, 4], "model": [2, 5, 3, 6]}, index=dates)
+    plot = TimeSeriesStatsPlot(data, "obs", "model")
+    try:
+        (line,) = plot.plot().get_lines()
+        np.testing.assert_allclose(line.get_ydata(), [2, 1])
+        assert list(line.get_xdata()) == list(dates[::2])
+    finally:
+        plot.close()

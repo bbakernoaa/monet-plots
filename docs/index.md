@@ -4,7 +4,7 @@ A comprehensive plotting library for scientific visualization, spun off from the
 
 ## Overview
 
-MONET Plots is designed to make scientific plotting easier, more consistent, and publication-ready. It leverages the power of matplotlib, seaborn, and cartopy while providing a simplified API and consistent styling.
+MONET Plots is designed to make scientific plotting easier, more consistent, and publication-ready. It leverages the power of Matplotlib and Cartopy while providing a simplified API and consistent styling.
 
 ## Features
 
@@ -45,7 +45,7 @@ For full functionality, install additional optional dependencies:
 pip install cartopy
 
 # For statistical plotting
-pip install seaborn pandas
+pip install pandas
 
 # For advanced Taylor diagrams
 pip install numpy matplotlib

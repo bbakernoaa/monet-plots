@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import xarray as xr
 
 from ..plot_utils import _update_history, compute, is_lazy, normalize_data
+from ._heatmap import draw_heatmap
 from .base import BasePlot, figure_style
 
 if TYPE_CHECKING:
@@ -276,7 +276,7 @@ class DiurnalErrorPlot(BasePlot):
         reference_label : str, optional
             Display name for the observed reference in the color scale.
         **kwargs : Any
-            Additional arguments passed to sns.heatmap.
+            Heatmap options such as annot, fmt, mask, and cbar_kws.
 
         Returns
         -------
@@ -296,14 +296,14 @@ class DiurnalErrorPlot(BasePlot):
         if is_lazy(data_to_plot):
             data_to_plot = compute(data_to_plot)
 
-        # Convert to DataFrame for Seaborn
-        plot_df = data_to_plot.to_pandas()
+        values = data_to_plot.to_numpy()
+        hours = data_to_plot["hour"].to_numpy()
+        periods = data_to_plot["second_val"].to_numpy()
 
         is_bias = self.metric == "bias"
         if is_bias and not any(
             key in kwargs for key in ("vmin", "vmax", "norm", "robust")
         ):
-            values = plot_df.to_numpy()
             finite = values[np.isfinite(values)]
             span = float(np.max(np.abs(finite))) if finite.size else 0
             kwargs.update(vmin=-(span or 1), vmax=span or 1)
@@ -316,9 +316,11 @@ class DiurnalErrorPlot(BasePlot):
         options = {"label": label, **kwargs.pop("cbar_kws", {})}
         annotate_hours = "xticklabels" not in kwargs
         annotate_periods = "yticklabels" not in kwargs
-        sns.heatmap(
-            plot_df,
-            ax=self.ax,
+        draw_heatmap(
+            self.ax,
+            values,
+            xlabels=hours,
+            ylabels=periods,
             cmap=cmap,
             center=0 if is_bias else None,
             cbar_kws=options,
@@ -326,19 +328,19 @@ class DiurnalErrorPlot(BasePlot):
         )
 
         if annotate_hours:
-            positions = np.flatnonzero(np.asarray(plot_df.columns) % 4 == 0)
+            positions = np.flatnonzero(hours % 4 == 0)
             if not positions.size:
-                positions = np.arange(len(plot_df.columns))
+                positions = np.arange(len(hours))
             self.ax.set_xticks(
                 positions + 0.5,
-                [f"{hour:02d}:00" for hour in plot_df.columns[positions]],
+                [f"{hour:02d}:00" for hour in hours[positions]],
                 rotation=0,
             )
         if annotate_periods and self.second_dim in ("month", "dayofweek"):
             names = month_abbr if self.second_dim == "month" else day_abbr
             self.ax.set_yticks(
-                np.arange(len(plot_df.index)) + 0.5,
-                [names[int(value)] for value in plot_df.index],
+                np.arange(len(periods)) + 0.5,
+                [names[int(value)] for value in periods],
                 rotation=0,
             )
         self.ax.set_xlabel("Hour of Day")
